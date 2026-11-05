@@ -47,21 +47,42 @@ function notifyExpired() {
 
 let refreshing: Promise<boolean> | null = null;
 
+const REFRESH_ATTEMPTS = 3;
+
+/**
+ * POST /auth/refresh. Only a definite rejection (401/403) means "signed out".
+ * A rate limit (429) or a network/server hiccup is retried with a short
+ * backoff: the backend rejects those requests before touching the token, so
+ * the cookie is still valid and retrying is safe.
+ */
 async function postRefresh(): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_BASE}/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) return false;
-    const body = (await res.json()) as TokenResponse;
-    accessToken = body.access_token;
-    return true;
-  } catch {
-    return false;
+  for (let attempt = 1; attempt <= REFRESH_ATTEMPTS; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+    } catch {
+      if (attempt === REFRESH_ATTEMPTS) return false;
+      await delay(1000 * attempt);
+      continue;
+    }
+    if (res.ok) {
+      const body = (await res.json()) as TokenResponse;
+      accessToken = body.access_token;
+      return true;
+    }
+    const transient = res.status === 429 || res.status >= 500;
+    if (!transient || attempt === REFRESH_ATTEMPTS) return false;
+    const retryAfter = Number(res.headers.get("retry-after"));
+    await delay(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 30) * 1000 : 2000 * attempt);
   }
+  return false;
 }
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function withCrossTabLock<T>(fn: () => Promise<T>): Promise<T> {
   if (typeof navigator !== "undefined" && "locks" in navigator && navigator.locks) {
