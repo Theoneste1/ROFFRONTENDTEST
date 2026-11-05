@@ -2,6 +2,8 @@
 
 Audit date: 2026-11-05. **Integration status for every module is "Not connected"**: the frontend makes no API calls.
 
+> **Live status:** this matrix is the audit baseline. Current integration status per module is tracked in `INTEGRATION_PROGRESS.md` (phases 1–3 done: auth, shell and the whole student portal are connected).
+
 Backend readiness:
 
 - ✅ **Ready**: the endpoints exist and cover the UI.

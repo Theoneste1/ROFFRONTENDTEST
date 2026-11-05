@@ -9,8 +9,8 @@ Last updated: 2026-11-05
 | — | Audit (frontend, backend, mapping, gaps, roadmap) | ✅ Done |
 | 1 | Foundation and API integration | ✅ Done, tested against the running backend |
 | 2 | Authentication and application shell | ✅ Done (Help/Settings links and the notification bell come in phase 6) |
-| 3 | Student portal | ⏭ Next |
-| 4 | Mentor portal | ⏸ |
+| 3 | Student portal | ✅ Done, tested against the running backend (one flow pending admin; see Phase 3) |
+| 4 | Mentor portal | ⏸ Waiting for the owner's review of phase 3 |
 | 5 | Admin portal | ⏸ (needs admin credentials for testing; see Issues) |
 | 6 | Notifications, discussions, other supported modules | ⏸ |
 | 7 | Testing and final QA | ⏸ (continuous) |
@@ -179,6 +179,123 @@ Modified:
 
 ---
 
+## Phase 3: Student portal
+
+### What was implemented
+
+Every student page now reads and writes real backend data, keeps its existing layout and colours, and has loading, error, empty and success states. All mock arrays in `app/student/` are gone.
+
+| Page | What it does now |
+|---|---|
+| **Dashboard** `/student/dashboard` | <ul><li>Greeting, points and problems solved come from `/me`.</li><li>The 4 course cards use `/courses` and `/me/courses`, with the course's progress label.</li><li>"Current Assignments" lists open, not-yet-reviewed assignments with deadline chips.</li><li>The ranking card shows **division** rank "#r of N" and the points needed to pass the student above.</li><li>The calendar is now a working month view: prev/next work, deadline dots, red for due within 3 days.</li><li>"Recent Alerts" shows the latest notifications.</li><li>The motivational quote is kept as static copy; the badge/streak alert was removed.</li></ul> |
+| **Courses** `/student/courses` | <ul><li>The 4 fixed courses with backend descriptions, counts and progress.</li><li>Shows the student's division (Junior S1–S3 / Senior S4–S6).</li><li>Links use the course UUID.</li></ul> |
+| **Course detail** `/student/courses/[id]` | <ul><li>Tabs: Overview, Books (BOOK/EBOOK), Past Papers (PAST_PAPER), **Notes & Materials** (NOTE/ATTACHMENT, new so every backend resource type is reachable) and **Discussion** (new).</li><li>Resource files open or download through authenticated fetch.</li><li>"Mark course as completed" calls `POST /courses/:id/complete`.</li><li>"Ask a question" opens the course discussion.</li><li>Unknown or out-of-scope id → "Course not found".</li></ul> |
+| **Assignments** `/student/assignments` | <ul><li>Backend `displayStatus` badges.</li><li>Search (`q`, debounced; Ctrl/⌘+K focuses it), course filter and pagination run on the server.</li><li>Status filter and sort apply to the loaded page (no backend support for them).</li><li>Empty state, and "no matches" for filters.</li></ul> |
+| **Assignment detail** `/student/assignments/[id]` | <ul><li>Shows instructions, course, division, marks and points, resubmission and late rules, and brief files.</li><li>**Submission panel:** typed answer and/or up to 10 files (20 MB each, checked before sending), drag and drop, optional note, the existing confirm and success modals, duplicate-submit guard, backend error codes shown. It is offered only when `canSubmit`; resubmission requests show the mentor's note and due date.</li><li>**Submission history:** every attempt with its files and the request log.</li><li>**Results tab:** only after publication. Shows score, percentage, points awarded, mentor feedback and files, earlier versions, and a link to the discussion (no replies, per the backend).</li><li>**Discussion tab:** topics, comments, replies, LIKE/HELPFUL/CONFUSED reactions, edit or delete own comments, report.</li></ul> |
+| **Results** `/student/assignments/results` | <ul><li>Published results with a course filter applied by "Apply", arrange by date, score or name, and pagination.</li><li>Rows open the assignment's Results tab.</li></ul> |
+| **Leaderboard** `/student/leaderboard` | <ul><li>Students / Schools toggle for the student's division.</li><li>Podium, your rank, total points and next milestone, ranking list with Prev/Next.</li></ul> |
+| **Shell** | <ul><li>"Live Sessions" removed.</li><li>The dashboard link label is now "Dashboard".</li><li>The sidebar starts collapsed on phones.</li></ul> |
+
+### Consolidated or removed (owner decisions)
+
+| Removed | Why |
+|---|---|
+| `app/student/live-sessions/page.tsx` and its sidebar link | Live sessions were removed from the backend (owner decision 2026-11-05) |
+| `app/student/assignments/[id]/components/StepCheckbox.tsx` plus the "Steps", "Deliverables" and "Evaluation Criteria" sections | No backend support (`INTEGRATION_MAPPING.md` §5, B8) |
+| `app/student/courses/[course]/components/CourseTabs.tsx` | It was already unused (dead code). The tabs are in `CourseDetail.tsx` |
+| Course "Learning Circle", "Recommendation", "Avg. completion time", mentor office hours card | No backend support (B7). Replaced by real fields: division, discipline, progress, counts, discussion status |
+| Leaderboard "Study Group" toggle, podium badge titles ("THE G.O.A.T"…) | Study groups disabled (B12); badges hidden (B13) |
+| Results page "Filters" and "Sort By" buttons | They duplicated the Course and Arrange-by controls next to them |
+
+### Fix found during testing (affects the phase 2 pages)
+
+While the dev server was slow, a click on **Reset password** before React had hydrated made the browser do a native GET submit, which **put the password in the URL**. The fix has two parts:
+- The shared `Button` stays disabled until hydration (`lib/hooks/useHydrated.ts`).
+- All public account forms use `method="post"`.
+
+A regression check now asserts that no password or e-mail ever appears in a URL.
+
+### Endpoints integrated
+
+- **Courses:** `GET /courses`, `GET /courses/:id`, `GET /me/courses`, `POST /courses/:id/complete`.
+- **Resources:** `GET /courses/:courseId/resources`, `GET /courses/:courseId/resources/:resourceId/attachments/:attachmentId/file`.
+- **Assignments:** `GET /me/assignments` (`q`, `courseId`, `page`, `limit`), `GET /assignments/:id`, `GET /assignments/:id/attachments/:attachmentId/file`.
+- **Submissions:** `POST /submissions` (multipart `assignmentId`, `answerText`, `note`, `files`), `GET /submissions/:id`, `GET /submissions/:id/history`, `GET /submissions/:id/attachments/:attachmentId/file`.
+- **Results:** `GET /me/results` (`courseId`, `page`, `limit`), `GET /me/results/:submissionId`, `GET /me/results/:submissionId/feedback-files/:attachmentId`.
+- **Leaderboard:** `GET /leaderboard`, `GET /leaderboard/me`, `GET /leaderboard/schools`.
+- **Notifications:** `GET /notifications`.
+- **Discussions:** `GET`/`POST /courses/:courseId/threads`, `GET`/`POST /assignments/:assignmentId/threads`, `GET`/`POST /threads/:id/comments`, `GET /comments/:id/replies`, `PATCH`/`DELETE /comments/:id`, `POST /comments/:id/reactions`, `POST /comments/:id/report`.
+
+### Tests run against the real backend (2026-11-05)
+
+Backend: the unchanged `node dist/main.js` on the local `rof` database. Accounts: `student.s2` (Junior) and `student.s5` (Senior). Browser: headless Edge over the DevTools protocol (test scripts kept outside the repo).
+
+| # | Owner's requirement | Result | Evidence |
+|---|---|---|---|
+| 1 | Dashboard loads the correct information | ✅ | Real name, 30 points and 1 problem solved (`/me`); 4 courses; division rank "#1 of 1"; the real notification "New Algebra material"; no mock strings |
+| 2 | Courses display for the student's division | ✅ | 4 courses; "Junior division · S1–S3"; counts from the API (Algebra: 1 resource, 1 assignment) |
+| 3 | Resources can be accessed | ✅ | The published `[TEST]` book appears under Books; file download → **200** via authenticated fetch; Past Papers empty state; unknown course → "Course not found" |
+| 4 | Available assignments are displayed | ✅ | "Sample set" with backend status "Reviewed"; search sends `q=` (200) and shows "No assignments match"; status filter works both ways |
+| 5 | Students can submit assignments | ⚠ **Partly tested** | The multipart request is accepted by the backend's validation, and the backend answered **409 `ASSIGNMENT_CLOSED`** for the closed assignment (shown to the user). The UI correctly hides the form when `canSubmit` is false. **A successful submission still needs an open published assignment, and only an admin can publish one.** This will be re-tested once admin credentials are available |
+| 6 | Submission status displayed correctly | ✅ | `displayStatus` badge and "Your Submission" card (submitted time, attempts); form hidden for a closed assignment |
+| 7 | Submission history and revisions | ✅ | "Attempt 1" with `work.pdf` (download 200) |
+| 8 | Released results displayed correctly | ✅ | 15/20, 75%, +30 points, feedback "Good work" by Jean Mentor, `feedback.pdf`; results list row opens the Results tab |
+| 9 | Leaderboard reflects the backend | ✅ | "Eric S." #1 with 30 points (Junior); Schools tab "Demo Secondary School"; `student.s5` sees only Senior ("Grace S.") |
+| 10 | No access to another student's information | ✅ | As `student.s5`, the API answered **404** for s2's submission, history, result, submitted file, feedback file, the Junior assignment and the Junior resource, and **403** for admin routes. In the UI, s5 opening the Junior assignment sees "Assignment not found", and the Junior resource and s2's result are not shown |
+| — | Discussions | ✅ | Post a comment, LIKE toggles, reply, delete own reply and comment |
+| — | Live sessions removed | ✅ | No sidebar link; `/student/live-sessions` → 404 |
+| — | Phone width (390 px) | ✅ | All 9 student views: no horizontal page scroll; content area 310 px |
+| — | Errors | ✅ | No 5xx responses; no app console errors |
+| — | Auth regression (phases 1–2) | ✅ 19/19 | Includes the new "no password in URL" check |
+| — | `tsc` / `next build` | ✅ | — |
+| — | `eslint` | ✅ for the student portal | The 8 baseline problems in student pages are fixed. 9 remain, all in untouched mentor pages |
+
+Browser suite totals: student **51/51**, auth **19/19**.
+
+### Test data created in the local database (real API calls, clearly labelled)
+
+- **Resource "[TEST] Algebra practice book".** Junior Algebra, BOOK, one PDF, published by `mentor.junior` (id `538a6567-3e98-41d2-9e38-8d26763ce4f9`). Publishing it also created the "New Algebra material" notification for Junior students. A mentor can remove it later (`DELETE /courses/:courseId/resources/:id`); the phase 4 resource UI will offer this.
+- **Discussion comments and replies titled "[TEST] comment …"** on the "Questions about this assignment" thread. The test deleted them again; they remain as "[deleted]" placeholders, which is backend behaviour.
+
+### Remaining issues
+
+1. **Successful submit and resubmit not yet exercised end to end.** This needs an admin to publish an open assignment (mentor drafts it, admin publishes). It will be re-tested when admin credentials are available, together with "resubmission requested" from a mentor in phase 4.
+2. **Notification items are not clickable yet.** Deep-link redirect routes come in phase 6.
+3. **Help and Settings sidebar buttons** are still placeholders (phase 6).
+4. **The status filter and sort on Assignments, and arrange-by on Results, work within the loaded page** (up to 50 and 20 items). The backend has no such parameters (B5, B6).
+5. **The backend rate-limits sign-in to 10 requests per minute per IP.** The login form shows "Too many requests" when hit. Normal use isn't affected, but test runs must pace their logins.
+
+### Files
+
+New:
+- `lib/api/{learning,assessment,community}.ts`
+- `lib/queries/{learning,assessment,community}.ts`
+- `lib/format.ts`
+- `lib/hooks/{useNow,useHydrated}.ts`
+- `app/components/ui/{FileButton,Pagination}.tsx`
+- `app/components/discussions/DiscussionPanel.tsx`
+- `app/student/components/studentUi.tsx`
+- `app/student/dashboard/components/DeadlineCalendar.tsx`
+- `app/student/courses/[course]/CourseDetail.tsx`
+- `app/student/assignments/[id]/AssignmentDetail.tsx`
+- `app/student/assignments/[id]/components/{SubmissionHistoryCard,ResultPanel}.tsx`
+
+Modified:
+- `lib/api/types.ts`, `lib/query/keys.ts`
+- `app/layout.tsx` (`suppressHydrationWarning` on `<html>`, for attributes the browser injects)
+- `app/components/ui/form.tsx`, the 4 `app/(auth)` forms (`method="post"`)
+- `app/student/components/StudentShell.tsx`, `app/student/dashboard/{page.tsx,components/Sidebar.tsx}`
+- `app/student/courses/{page.tsx,[course]/page.tsx}`
+- `app/student/assignments/{page.tsx,components/*,[id]/page.tsx,[id]/components/SubmissionPanel.tsx,results/page.tsx}`
+- `app/student/leaderboard/{page.tsx,components/*}`
+
+Deleted:
+- `app/student/live-sessions/page.tsx`
+- `app/student/assignments/[id]/components/StepCheckbox.tsx`
+- `app/student/courses/[course]/components/CourseTabs.tsx`
+
+---
+
 ## Module tracker
 
 | Module | Wired to API | Tested against backend | Notes |
@@ -186,13 +303,13 @@ Modified:
 | Foundation (API client, Query, errors, UI states) | ✅ | ✅ | |
 | Auth pages (login, activate, forgot/reset) | ✅ | ✅ (success paths of activate/reset pending a real token) | |
 | Shell (user, sign out) | ✅ | ✅ | Bell, Help, Settings in phase 6 |
-| Student: dashboard | ☐ | ☐ | |
-| Student: courses and course detail | ☐ | ☐ | |
-| Student: assignments list | ☐ | ☐ | |
-| Student: assignment detail, submission, discussion | ☐ | ☐ | |
-| Student: results | ☐ | ☐ | |
-| Student: leaderboard | ☐ | ☐ | Study-group toggle → division/school |
-| Student: live sessions | — | — | To be removed |
+| Student: dashboard | ✅ | ✅ | |
+| Student: courses and course detail | ✅ | ✅ | Includes resources, completion, course discussion |
+| Student: assignments list | ✅ | ✅ | |
+| Student: assignment detail, submission, discussion | ✅ | ⚠ | A successful submit needs an admin-published open assignment |
+| Student: results | ✅ | ✅ | |
+| Student: leaderboard | ✅ | ✅ | Students / Schools (division) |
+| Student: live sessions | — | — | ✅ Removed |
 | Mentor: scope selector, dashboard | ☐ | ☐ | |
 | Mentor: assignments list, detail, wizard | ☐ | ☐ | Consolidate 3 wizards |
 | Mentor: review queue and grading | ☐ | ☐ | Consolidate 2 trees |
@@ -202,10 +319,11 @@ Modified:
 | Mentor: live sessions | — | — | To be removed |
 | Admin: all modules | ☐ | ☐ | Needs admin credentials |
 | Notifications inbox and deep links | ☐ | ☐ | |
-| Discussions | ☐ | ☐ | |
+| Discussions | ✅ (component) | ✅ | Course and assignment threads done; `/discussions/[threadId]` deep link in phase 6 |
 | Settings / profile / help | ☐ | ☐ | |
 
 ## Change log
 
 - 2026-11-05: Audit documents created.
 - 2026-11-05: Phases 1–2 implemented and tested (foundation, authentication, shell).
+- 2026-11-05: Phase 3 (student portal) implemented and tested; auth forms hardened against pre-hydration submits.
