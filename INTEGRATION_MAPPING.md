@@ -108,3 +108,20 @@ The backend is read-only in this phase. For each gap the **default recommendatio
 | B11 | Live sessions | Student and mentor live-sessions pages | Deliberately removed by the backend | **Remove the pages** | None recommended (it was removed on purpose) |
 | B12 | Study-group leaderboard | Student leaderboard toggle | Module switched off | Replace with division and school | Re-register `StudyGroupsModule` (not recommended) |
 | B13 | Gamification (badges, streaks, quote, "lessons" progress) | Student dashboard, leaderboard podium, mentor overview | Decorative | Remove, or derive from points | None recommended |
+
+## 5. Decided limitations (owner decision, 2026-11-05)
+
+No backend functionality is added for these features in this phase. The frontend hides or removes them, and they are listed here for future development.
+
+| Feature | Frontend handling | Backend gap ref | What would be needed later |
+|---|---|---|---|
+| Live sessions (student and mentor) | **Removed** (pages, nav links, dashboard and overview items) | B11 | A new module (the backend removed it deliberately) |
+| Mentor students page, student list filter, messaging students | **Hidden** | B1, B2 | Mentor-scoped student list endpoint; messaging or announcement endpoint |
+| Assignment rubric, assignment type (and submission type, originality check) | **Hidden** in the mentor wizard | B8 | New Assignment fields |
+| Division "accepting new students" toggle | **Hidden** on admin divisions | B9 | New Division field or registration setting |
+| Badges, streaks, motivational quote, podium badge titles | **Hidden** | B13 | Gamification model |
+| Study groups (leaderboard toggle) | **Disabled**; division and school rankings used instead | B12 | Re-register `StudyGroupsModule` |
+| Mentor CSV and grade export, "Download report" | Hidden | B4 | Mentor-scoped exports |
+| Server-side sorting | Sort within the loaded page only | B5 | `sortBy`/`order` params |
+| Delete assignment | Not offered; recall to draft (mentor) or archive (admin) | B10 | `DELETE /assignments/:id` for drafts |
+| Mentor office hours on the student course page | Hidden | B7 | Scope mentors on `GET /courses/:id` |

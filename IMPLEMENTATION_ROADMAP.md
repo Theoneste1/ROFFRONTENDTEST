@@ -1,6 +1,8 @@
 # ROF LMS — Implementation Roadmap
 
-Audit date: 2026-11-05. Phases 1–4 (assessment, backend assessment, mapping, gap analysis) are **complete**; see `FRONTEND_AUDIT.md`, `BACKEND_AUDIT.md` and `INTEGRATION_MAPPING.md`. Phases 5–8 below are the plan. **Nothing will be implemented until the owner approves.**
+Audit date: 2026-11-05. Phases 1–4 (assessment, backend assessment, mapping, gap analysis) are **complete**; see `FRONTEND_AUDIT.md`, `BACKEND_AUDIT.md` and `INTEGRATION_MAPPING.md`. Phases 5–8 below are the plan.
+
+**Update 2026-11-05:** The owner approved the plan. Their decisions are recorded in `INTEGRATION_PROGRESS.md`, and the resulting hidden or removed features are listed in `INTEGRATION_MAPPING.md` §5. Execution follows the owner's phase order: (1) foundation, (2) auth and shell, (3) student, (4) mentor, (5) admin, (6) notifications, discussions and other modules, (7) testing and QA. Steps 0–2 below are **done**.
 
 ## Guiding rules
 

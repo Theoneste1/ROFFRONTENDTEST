@@ -146,5 +146,7 @@ Every error returns `{ statusCode, error, code, message, details?, requestId, pa
 
 ## 7. Seed and demo data
 
-- **Admin account:** username `admin`. The password comes from `SEED_ADMIN_PASSWORD`; if it is unset, a random password is generated and printed once. The guide says `Admin12345` in the Docker stack (**not verified**).
+Local run (verified 2026-11-05): `node dist/main.js` with `npx prisma dev --name rof` starts cleanly. The database is migrated and seeded with demo users, and SMTP is unset, so the e-mail module runs in **DRY_RUN** (no mail is delivered).
+
+- **Admin account:** username `admin`. The password comes from `SEED_ADMIN_PASSWORD`; if it is unset, a random password is generated and printed once. The guide says `Admin12345` in the Docker stack. **Verified 2026-11-05: `Admin12345` is not the admin password in the local `rof` database** (one attempt only, to stay under the lockout), so the owner must supply it.
 - **Demo accounts:** `mentor.junior` and `mentor.senior` (each scoped to all 4 courses in one division), and `student.s2` and `student.s5`. All use password `Demo1234`.

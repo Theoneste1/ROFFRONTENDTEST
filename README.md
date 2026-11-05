@@ -1,38 +1,73 @@
-# ROF
+# ROF LMS — Frontend
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+The web frontend of the Rwanda Olympiad Foundation Mathematics LMS. It has three portals: student, mentor and administrator. The backend is the NestJS API in the sibling folder `ROFBACKENDTEST`.
 
-## Getting Started
+Stack: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · TanStack Query 5 · lucide-react.
 
-First, run the development server:
+## Running locally
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+1. **Start the backend** (`ROFBACKENDTEST`; see its README). It listens on `http://localhost:3000`.
+2. **Configure the frontend:**
+   ```bash
+   cp .env.example .env.local      # API_PROXY_TARGET=http://localhost:3000
+   npm install
+   ```
+3. **Run** on port 3001:
+   ```bash
+   npm run dev                     # http://localhost:3001
+   ```
+
+The browser talks only to the Next.js server. `next.config.ts` proxies every `/api/*` request to the backend, so the app and the API share one origin. No CORS is needed, and the backend's `SameSite=Strict` refresh cookie works.
+
+### Backend setting the frontend needs
+
+E-mailed activation and password-reset links are built from the backend's `APP_URL`. Set it in `ROFBACKENDTEST/.env`:
+
+```
+APP_URL=http://localhost:3001
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+`CORS_ORIGINS` does not need to change, because the browser never calls port 3000 directly. In production, set `APP_URL` to the public frontend URL and serve the frontend and the API on the same site.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Demo accounts (backend seeded with `SEED_DEMO=true`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a font family for Vercel.
+| Username | Password | Role |
+|---|---|---|
+| `mentor.junior`, `mentor.senior` | `Demo1234` | Mentor |
+| `student.s2` (Junior), `student.s5` (Senior) | `Demo1234` | Student |
+| `admin` | printed once by the seed, or `SEED_ADMIN_PASSWORD` | Administrator |
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command | What it does |
+|---|---|
+| `npm run dev` | Development server on port 3001 |
+| `npm run build` / `npm start` | Production build / server on port 3001 |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript, no emit |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Code layout
 
-You can check out the [Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+app/
+  (auth)/            public pages: login, activate, forgot-password, reset-password
+  admin/ mentor/ student/   the three portals (each wrapped in RoleGate)
+  components/
+    auth/            RoleGate, password fields
+    shell/           NavbarUser, SignOutButton (shared by the portal shells)
+    ui/              loading / error / empty states, form controls
+  providers.tsx      TanStack Query + session provider
+lib/
+  api/               HTTP client, error type, endpoint modules, API types
+  auth/              session provider, role → portal routing
+  query/             QueryClient defaults, query keys
+```
 
-## Deploy on Vercel
+## Conventions
 
-The easiest way to deploy your app is using the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **All API calls go through `lib/api/client.ts`.** It keeps the access token in memory and refreshes once on a 401 (single-flight, and serialised across tabs with Web Locks, because refresh tokens rotate). It throws `ApiError` with the backend's `code`.
+- **Server state uses TanStack Query.** Keys live in `lib/query/keys.ts`, and mutations invalidate the keys they change.
+- **Branch on `error.code`, never on `message`.**
+- **Hiding UI by role or permission is a courtesy.** The backend enforces every rule.
 
-Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Project documents: `FRONTEND_AUDIT.md`, `BACKEND_AUDIT.md`, `INTEGRATION_MAPPING.md`, `IMPLEMENTATION_ROADMAP.md`, `INTEGRATION_PROGRESS.md`.
