@@ -9,7 +9,11 @@ interface AdminShellProps {
 }
 
 export default function AdminShell({ children }: AdminShellProps) {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    // Collapsed on phones so the content keeps the screen. The shell renders
+    // only on the client (after the session check in RoleGate).
+    const [isSidebarOpen, setIsSidebarOpen] = useState(
+        () => typeof window === "undefined" || window.matchMedia("(min-width: 768px)").matches,
+    );
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);

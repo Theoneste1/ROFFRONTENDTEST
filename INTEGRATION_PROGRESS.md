@@ -11,7 +11,7 @@ Last updated: 2026-11-05
 | 2 | Authentication and application shell | ✅ Done (Help/Settings links and the notification bell come in phase 6) |
 | 3 | Student portal | ✅ Done, tested against the running backend (one flow pending admin; see Phase 3) |
 | 4 | Mentor portal | ✅ Approved by the owner. Final mentor suite 57/57; grading end to end **pending manual verification** (needs admin) |
-| 5 | Admin portal | ⏸ (needs admin credentials for testing; see Issues) |
+| 5 | Admin portal | 🔄 In progress (plan approved 2026-11-05; see Phase 5). Admin-authenticated tests wait for credentials |
 | 6 | Notifications, discussions, other supported modules | ⏸ |
 | 7 | Testing and final QA | ⏸ (continuous) |
 
@@ -531,6 +531,65 @@ Deleted:
 Moved:
 - `app/mentor/students` → `app/mentor/_unsupported/students`
 - `app/mentor/courses/studentlist/**` → `app/mentor/_unsupported/studentlist/**`
+
+---
+
+## Phase 5: Admin portal
+
+Plan: `PHASE5_ADMIN_PLAN.md` (approved by the owner on 2026-11-05).
+
+Approved decisions:
+- **D1:** leave the legacy s5 submission unchanged and documented.
+- **D2:** prepare the end-to-end workflow, but run nothing that changes data without approval.
+- **D3:** platform settings are in scope.
+- **D4:** bulk e-mail is excluded.
+- **D5:** moderation is in scope.
+- **D6:** schools are read-only.
+- **D7:** no academic-year or enrolment management.
+- **D8:** remove the unsupported controls.
+- **D9:** no new test users without approval.
+- **D10:** the legacy sidebar is cleaned up in phase 7.
+
+### Steps
+
+| Step | Scope | Status | Commit |
+|---|---|---|---|
+| 5.0 | Foundation: admin API module, query keys and hooks, shared admin UI, shell collapses on phones | ✅ | see Git (phase 5) |
+| 5.1 | Dashboard | ☐ | |
+| 5.2 | Users | ☐ | |
+| 5.3 | Mentors and applications | ☐ | |
+| 5.4 | Students and schools (read-only) | ☐ | |
+| 5.5 | Divisions, courses, resources | ☐ | |
+| 5.6 | Assignment approval and management | ☐ | |
+| 5.7 | Submissions and distribution | ☐ | |
+| 5.8 | Review approval and send-back | ☐ | |
+| 5.9 | Result publication | ☐ | |
+| 5.10 | Reports and audit log | ☐ | |
+| 5.11 | Moderation and platform settings | ☐ | |
+| 5.12 | Final integration and regression | ☐ | |
+
+### 5.0 Foundation
+
+Files:
+- `lib/api/admin.ts`: admin endpoints, grouped by area, plus `downloadCsv`.
+- `lib/queries/admin.ts`: hooks, plus `useInvalidateAdmin`. Admin actions change many views, so mutations invalidate the whole `admin` namespace.
+- `lib/query/keys.ts`: the `admin` namespace.
+- `lib/api/types.ts`: admin types, taken from `docs/api/response-schemas.json`.
+- `app/admin/components/adminUi.tsx`, in the original admin style: page header, card, pill filters, debounced search, select filter, table card (scrolls inside the card), assignment and submission badges, CSV button, modal, confirm dialog with an optional validated note, notice, metric card.
+- `app/admin/components/AdminShell.tsx`: the sidebar starts collapsed on phones, as in the student and mentor portals.
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc --noEmit`, ESLint (changed files), `next build` | ✅ |
+| API isolation (`api-admin.mjs nonadmin`): student and mentor tokens on 22 admin read routes (including 2 CSV exports) and 15 admin mutations (non-existent ids, empty settings body) | ✅ 74/74 refused with 403 |
+| Admin part of `api-admin.mjs`: permissions, every read route 200, admin refused for create, submit and grade, legacy s5 record read-only | ⏳ Waiting for admin credentials. It reads `ROF_ADMIN_USER` and `ROF_ADMIN_PASSWORD` from the environment and stores nothing |
+
+### Tests that still need admin credentials or owner approval
+
+- **All admin-authenticated browser and API tests (plan §10, A–J).**
+- **Needs owner approval before running:** the end-to-end workflow (§5), test-user creation, and a real CSV import.
 
 ---
 

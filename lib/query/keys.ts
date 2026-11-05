@@ -9,6 +9,8 @@ import type { MyAssignmentFilters, MyResultFilters } from "@/lib/api/assessment"
 import type { ResourceFilters } from "@/lib/api/learning";
 import type { ThreadScope } from "@/lib/api/community";
 import type { AssignmentFilters, ReviewFilters } from "@/lib/api/mentor";
+import type { AuditFilters } from "@/lib/api/admin";
+import type { ReportFilters } from "@/lib/api/types";
 
 export const queryKeys = {
   me: {
@@ -81,5 +83,19 @@ export const queryKeys = {
     resourcesAll: ["mentor", "resources"] as const,
     resources: (courseId: string, divisionId: string) => [...queryKeys.mentor.resourcesAll, "list", courseId, divisionId] as const,
     resource: (courseId: string, resourceId: string) => [...queryKeys.mentor.resourcesAll, "detail", courseId, resourceId] as const,
+  },
+
+  /**
+   * Administrator data. Most admin actions change several views (dashboard
+   * counts, queues, reports), so mutations usually invalidate `admin.all`.
+   */
+  admin: {
+    all: ["admin"] as const,
+    dashboard: (filters: ReportFilters = {}) => [...queryKeys.admin.all, "dashboard", filters] as const,
+    overview: () => [...queryKeys.admin.all, "overview"] as const,
+    auditAll: ["admin", "audit"] as const,
+    audit: (filters: AuditFilters = {}) => [...queryKeys.admin.auditAll, "list", filters] as const,
+    auditEntry: (id: string) => [...queryKeys.admin.auditAll, "entry", id] as const,
+    auditActions: () => [...queryKeys.admin.auditAll, "actions"] as const,
   },
 };

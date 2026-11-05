@@ -607,3 +607,101 @@ export interface CourseAnalytics {
     mostViewed: { id: string; title: string; type: ResourceType; uniqueViewers: number }[];
   };
 }
+
+// ─── Admin ──────────────────────────────────────────────────────────────────
+// Shapes from ROFBACKENDTEST/docs/api/response-schemas.json (admin routes).
+
+/** Common report filters (`/admin/dashboard`, `/admin/reports/*`). */
+export interface ReportFilters {
+  academicYearId?: string;
+  divisionId?: string;
+  courseId?: string;
+  /** ISO date. */
+  from?: string;
+  to?: string;
+}
+
+export interface PersonRef {
+  id: string;
+  username: string | null;
+  firstName: string;
+  lastName: string;
+}
+
+/** `GET /admin/dashboard`. */
+export interface AdminDashboard {
+  generatedAt: string;
+  students: {
+    total: number;
+    active: number;
+    inactive: number;
+    awaitingSetup: number;
+    registeredInRange: number;
+    byDivision: { id: string; code: DivisionCode; name: string; students: number }[];
+    byCourse: { id: string; code: CourseCode; title: string; participating: number; completed: number }[];
+  };
+  mentors: {
+    total: number;
+    active: number;
+    inactive: number;
+    awaitingSetup: number;
+    activity: {
+      mentorsWithCompletedReviews: number;
+      mostReviewsCompleted: { mentor: PersonRef & { lastLoginAt: string | null }; reviewsCompleted: number; openReviews: number }[];
+    };
+  };
+  assignments: { byStatus: Partial<Record<AssignmentStatus, number>>; published: number };
+  submissions: { total: number; late: number; byStatus: Partial<Record<SubmissionStatus, number>> };
+  reviews: {
+    awaitingDistribution: number;
+    pendingMentorReview: number;
+    awaitingAdminApproval: number;
+    completed: number;
+    pendingByStatus: Partial<Record<ReviewStatus, number>>;
+  };
+  results: { awaitingPublication: number; published: number };
+  reportedContent: { open: number; total: number; byStatus: Record<string, number>; byReason: Record<string, number> };
+  accountsAwaitingSetup: {
+    total: number;
+    byRole: { STUDENT: number; MENTOR: number };
+    mentorApplications: number;
+    studentsAwaitingApproval: number;
+  };
+}
+
+/** `GET /admin/reports/overview`. */
+export interface ReportsOverview {
+  generatedAt: string;
+  actionRequired: {
+    assignmentsAwaitingApproval: number;
+    submissionsToDistribute: number;
+    reviewsAwaitingApproval: number;
+    resultsReadyToPublish: number;
+    mentorApplications: number;
+    studentsAwaitingApproval: number;
+    failedEmails: number;
+  };
+  activeUsers: Record<Role, number>;
+  assignments: Partial<Record<AssignmentStatus, number>>;
+  submissions: Partial<Record<SubmissionStatus, number>>;
+  studentsByDivision: { id: string; code: DivisionCode; name: string; students: number }[];
+}
+
+export type AuditCategory =
+  | "USERS" | "ENROLLMENT" | "MENTOR_ASSIGNMENTS" | "ASSIGNMENTS" | "SUBMISSIONS" | "DISTRIBUTION"
+  | "REVIEWS" | "RESULTS" | "MODERATION" | "SETTINGS" | "ACADEMIC_YEARS" | "COURSES" | "SECURITY"
+  | "DATA_EXPORTS" | "STUDY_GROUPS" | "OTHER";
+
+/** `GET /admin/audit-logs` items (append-only). */
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  category: AuditCategory;
+  entity: string;
+  entityId: string | null;
+  actorRole: Role | null;
+  actorUsername: string | null;
+  actor: (PersonRef & { role: Role }) | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
