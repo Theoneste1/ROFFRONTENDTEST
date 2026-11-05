@@ -555,7 +555,7 @@ Approved decisions:
 | Step | Scope | Status | Commit |
 |---|---|---|---|
 | 5.0 | Foundation: admin API module, query keys and hooks, shared admin UI, shell collapses on phones | ✅ | see Git (phase 5) |
-| 5.1 | Dashboard | ☐ | |
+| 5.1 | Dashboard | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.2 | Users | ☐ | |
 | 5.3 | Mentors and applications | ☐ | |
 | 5.4 | Students and schools (read-only) | ☐ | |
@@ -585,6 +585,31 @@ Tests:
 | `tsc --noEmit`, ESLint (changed files), `next build` | ✅ |
 | API isolation (`api-admin.mjs nonadmin`): student and mentor tokens on 22 admin read routes (including 2 CSV exports) and 15 admin mutations (non-existent ids, empty settings body) | ✅ 74/74 refused with 403 |
 | Admin part of `api-admin.mjs`: permissions, every read route 200, admin refused for create, submit and grade, legacy s5 record read-only | ⏳ Waiting for admin credentials. It reads `ROF_ADMIN_USER` and `ROF_ADMIN_PASSWORD` from the environment and stores nothing |
+
+### 5.1 Dashboard
+
+`app/admin/dashboard/page.tsx` keeps the original layout (5 cards, Needs attention, Recent activity). All data is real:
+
+| Element | Source |
+|---|---|
+| Greeting | Time of day and the admin's first name (`/me`) |
+| Total students, Total mentors (active / awaiting setup) | `GET /admin/dashboard` |
+| Junior and Senior students | `GET /admin/dashboard` → `students.byDivision` |
+| Published courses | `GET /courses` (status `PUBLISHED`) |
+| Needs attention | `GET /admin/reports/overview` → `actionRequired`. Only non-zero items are shown; each links to its queue (assignments awaiting approval, submissions to distribute, reviews awaiting approval, results to publish, mentor applications, students awaiting approval). Failed e-mails is shown without a link, because bulk e-mail is excluded (D4) |
+| Recent activity | `GET /admin/audit-logs?limit=6`, with a link to the audit log |
+
+The queue links pass filters (`?status=`, `?tab=applications`) that the later steps read.
+
+Shared: `app/admin/components/auditText.ts` turns audit entries into readable text and is reused by the audit log in 5.10.
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint | ✅ |
+| `e2e-admin.mjs nonadmin`: signed-out redirect to `/login?next=`; mentor on `/admin/*` lands on the mentor dashboard and sends no admin API request; student lands on the student dashboard | ✅ 9/9 |
+| `e2e-admin.mjs admin` (prepared): each card equals the API; attention items match the non-zero `actionRequired`; links stay inside `/admin`; no mock strings; 390 px layout | ⏳ Waiting for admin credentials |
 
 ### Tests that still need admin credentials or owner approval
 

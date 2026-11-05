@@ -1,96 +1,117 @@
-import React from 'react';
-import { ArrowRight } from 'lucide-react';
+'use client';
 
-interface MetricCardProps {
-  label: string;
-  value: string | number;
-  subtext?: string;
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+import { useSession } from '@/lib/auth/session';
+import { useAdminDashboard, useAuditLog, useReportsOverview } from '@/lib/queries/admin';
+import { useCourses } from '@/lib/queries/learning';
+import { useNow } from '@/lib/hooks/useNow';
+import { formatNumber, formatRelative } from '@/lib/format';
+import { EmptyState, ErrorState, LoadingBlock } from '@/app/components/ui/feedback';
+import { MetricCard } from '../components/adminUi';
+import { describeAudit } from '../components/auditText';
+import type { ReportsOverview } from '@/lib/api/types';
+
+function greeting(now: number) {
+  const h = new Date(now).getHours();
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ label, value, subtext }) => (
-  <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between">
-    <div>
-      <p className="text-xs font-semibold text-gray-400 tracking-wider uppercase mb-1">
-        {label}
-      </p>
-      <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-    </div>
-    {subtext && (
-      <p className="text-xs text-gray-400 mt-2 font-medium">{subtext}</p>
-    )}
-  </div>
-);
+const plural = (n: number, one: string, many = `${one}s`) => `${formatNumber(n)} ${n === 1 ? one : many}`;
 
 interface AttentionItemProps {
   title: string;
   description: string;
-  onClick?: () => void;
+  href?: string;
 }
 
-const AttentionItem: React.FC<AttentionItemProps> = ({ title, description, onClick }) => (
-  <div 
-    onClick={onClick}
-    className="group bg-white border border-gray-200/80 rounded-xl p-4 flex items-center justify-between cursor-pointer hover:border-gray-300 transition-all shadow-2xs"
-  >
-    <div>
-      <h4 className="font-semibold text-gray-900 text-sm">{title}</h4>
-      <p className="text-xs text-gray-500 mt-0.5">{description}</p>
-    </div>
-    <ArrowRight className="w-4 h-4 text-indigo-600 transition-transform group-hover:translate-x-1 shrink-0 ml-3" />
-  </div>
-);
-
-interface ActivityItemProps {
-  text: string;
-  date: string;
+function AttentionItem({ title, description, href }: AttentionItemProps) {
+  const body = (
+    <>
+      <div>
+        <h3 className="font-semibold text-gray-900 text-sm">{title}</h3>
+        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+      </div>
+      {href && <ArrowRight className="w-4 h-4 text-indigo-600 transition-transform group-hover:translate-x-1 shrink-0 ml-3" aria-hidden="true" />}
+    </>
+  );
+  const cls = 'group bg-white border border-gray-200/80 rounded-xl p-4 flex items-center justify-between transition-all shadow-2xs';
+  return href ? (
+    <Link href={href} className={`${cls} hover:border-gray-300`}>
+      {body}
+    </Link>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
 }
 
-const ActivityItem: React.FC<ActivityItemProps> = ({ text, date }) => (
-  <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 text-xs">
-    <span className="text-gray-700 font-medium">{text}</span>
-    <span className="text-gray-400 font-medium shrink-0 ml-4">{date}</span>
-  </div>
-);
+/** Items from `GET /admin/reports/overview` → `actionRequired`; only non-zero ones are shown. */
+function attentionItems(a: ReportsOverview['actionRequired']): AttentionItemProps[] {
+  const items: (AttentionItemProps & { count: number })[] = [
+    {
+      count: a.assignmentsAwaitingApproval,
+      title: 'Assignments awaiting approval',
+      description: `${plural(a.assignmentsAwaitingApproval, 'assignment')} submitted by mentors to publish or return.`,
+      href: '/admin/assignments?status=PENDING_APPROVAL',
+    },
+    {
+      count: a.submissionsToDistribute,
+      title: 'Submissions to distribute',
+      description: `${plural(a.submissionsToDistribute, 'submission')} not yet assigned to a mentor.`,
+      href: '/admin/assignments?status=PUBLISHED',
+    },
+    {
+      count: a.reviewsAwaitingApproval,
+      title: 'Reviews awaiting approval',
+      description: `${plural(a.reviewsAwaitingApproval, 'review')} sent by mentors for approval.`,
+      href: '/admin/results',
+    },
+    {
+      count: a.resultsReadyToPublish,
+      title: 'Results ready to publish',
+      description: `${plural(a.resultsReadyToPublish, 'approved result')} not yet released to students.`,
+      href: '/admin/results',
+    },
+    {
+      count: a.mentorApplications,
+      title: 'Mentor applications',
+      description: `${plural(a.mentorApplications, 'application')} waiting for a decision.`,
+      href: '/admin/mentors?tab=applications',
+    },
+    {
+      count: a.studentsAwaitingApproval,
+      title: 'Students awaiting approval',
+      description: `${plural(a.studentsAwaitingApproval, 'student account')} to approve.`,
+      href: '/admin/users?status=awaiting-approval',
+    },
+    {
+      count: a.failedEmails,
+      title: 'Failed e-mails',
+      description: `${plural(a.failedEmails, 'e-mail')} could not be delivered.`,
+    },
+  ];
+  return items.filter((i) => i.count > 0);
+}
 
 export default function DashboardMain() {
-  const metrics = [
-    { label: 'TOTAL STUDENTS', value: '2,480' },
-    { label: 'TOTAL MENTORS', value: '42' },
-    { label: 'JUNIOR STUDENTS', value: '1,320', subtext: 'S1–S3' },
-    { label: 'SENIOR STUDENTS', value: '1,160', subtext: 'S4–S6' },
-    { label: 'ACTIVE COURSES', value: '4', subtext: 'Mathematics' },
-  ];
+  const { user } = useSession();
+  const now = useNow();
+  const dashboard = useAdminDashboard();
+  const overview = useReportsOverview();
+  const activity = useAuditLog({ limit: 6 });
+  const courses = useCourses();
 
-  const attentionItems = [
-    {
-      title: 'Assignment reviews pending',
-      description: '8 submissions are currently with mentors · 9 awaiting distribution.',
-    },
-    {
-      title: 'Results awaiting publication',
-      description: '2 assignments have completed reviews.',
-    },
-    {
-      title: 'Mentor access requests',
-      description: '3 mentor accounts require attention.',
-    },
-  ];
-
-  const recentActivities = [
-    { text: '24 students submitted Quadratic Equations Practice', date: 'Today' },
-    { text: 'Mentor Jean Claude completed 8 reviews', date: 'Today' },
-    { text: 'Admin published Geometry Problems results', date: 'Yesterday' },
-    { text: '12 new student accounts were created', date: 'Yesterday' },
-    { text: 'Divisibility and Modular Arithmetic opened for submissions', date: 'Sep 27' },
-    { text: '3 mentor access requests are awaiting review', date: 'Sep 26' },
-  ];
+  const d = dashboard.data;
+  const junior = d?.students.byDivision.find((x) => x.code === 'JUNIOR');
+  const senior = d?.students.byDivision.find((x) => x.code === 'SENIOR');
+  const publishedCourses = courses.data?.filter((c) => c.status === 'PUBLISHED').length;
 
   return (
-    <main className="min-h-screen bg-[#E6EBF2] p-6 md:p-10 font-sans text-gray-800">
+    <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 font-sans text-gray-800">
       {/* Header Section */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-          Good afternoon, Admin
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+          {greeting(now)}, {user?.firstName ?? 'Admin'}
         </h1>
         <p className="text-sm text-gray-500 mt-1 font-normal">
           Platform overview — manage users, curriculum, assignments and the results workflow.
@@ -98,48 +119,86 @@ export default function DashboardMain() {
       </div>
 
       {/* Metric Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        {metrics.map((metric, idx) => (
+      {dashboard.isPending ? (
+        <LoadingBlock label="Loading platform figures…" />
+      ) : dashboard.isError ? (
+        <div className="mb-8">
+          <ErrorState error={dashboard.error} title="Couldn't load the dashboard" onRetry={() => dashboard.refetch()} />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <MetricCard label="Total students" value={formatNumber(d!.students.total)} subtext={`${formatNumber(d!.students.active)} active · ${formatNumber(d!.students.awaitingSetup)} awaiting setup`} />
+          <MetricCard label="Total mentors" value={formatNumber(d!.mentors.total)} subtext={`${formatNumber(d!.mentors.active)} active · ${formatNumber(d!.mentors.awaitingSetup)} awaiting setup`} />
+          <MetricCard label="Junior students" value={formatNumber(junior?.students ?? 0)} subtext="S1–S3" />
+          <MetricCard label="Senior students" value={formatNumber(senior?.students ?? 0)} subtext="S4–S6" />
           <MetricCard
-            key={idx}
-            label={metric.label}
-            value={metric.value}
-            subtext={metric.subtext}
+            label="Published courses"
+            value={courses.isPending ? '…' : courses.isError ? '—' : formatNumber(publishedCourses ?? 0)}
+            subtext={courses.data ? `of ${courses.data.length} · Mathematics` : 'Mathematics'}
           />
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Main Content Sections: Needs attention & Recent activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Needs Attention Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100/80 flex flex-col justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Needs attention</h2>
-            <p className="text-xs text-gray-500 mb-6">What requires action right now.</p>
-            
-            <div className="space-y-3">
-              {attentionItems.map((item, idx) => (
-                <AttentionItem
-                  key={idx}
-                  title={item.title}
-                  description={item.description}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+        <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100/80" aria-labelledby="attention-title">
+          <h2 id="attention-title" className="text-xl font-bold text-gray-900">Needs attention</h2>
+          <p className="text-xs text-gray-500 mb-6">What requires action right now.</p>
+          {overview.isPending ? (
+            <LoadingBlock />
+          ) : overview.isError ? (
+            <ErrorState error={overview.error} onRetry={() => overview.refetch()} />
+          ) : (
+            (() => {
+              const items = attentionItems(overview.data.actionRequired);
+              return items.length ? (
+                <div className="space-y-3">
+                  {items.map((item) => (
+                    <AttentionItem key={item.title} {...item} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState title="Nothing needs attention" description="No approvals, distributions or publications are waiting." />
+              );
+            })()
+          )}
+          {d && d.reviews.pendingMentorReview > 0 && (
+            <p className="text-xs text-gray-400 mt-4">{plural(d.reviews.pendingMentorReview, 'submission is', 'submissions are')} currently with mentors.</p>
+          )}
+        </section>
 
         {/* Recent Activity Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100/80">
-          <h2 className="text-xl font-bold text-gray-900">Recent activity</h2>
-          <p className="text-xs text-gray-500 mb-4">Latest events across the platform.</p>
-          <div className="mt-2 divide-y divide-gray-100">
-            {recentActivities.map((act, idx) => (
-              <ActivityItem key={idx} text={act.text} date={act.date} />
-            ))}
+        <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100/80" aria-labelledby="activity-title">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 id="activity-title" className="text-xl font-bold text-gray-900">Recent activity</h2>
+              <p className="text-xs text-gray-500 mb-4">Latest events across the platform.</p>
+            </div>
+            <Link href="/admin/audit-log" className="text-xs font-medium text-indigo-600 hover:text-indigo-800 shrink-0">
+              View audit log
+            </Link>
           </div>
-        </div>
+          {activity.isPending ? (
+            <LoadingBlock />
+          ) : activity.isError ? (
+            <ErrorState error={activity.error} onRetry={() => activity.refetch()} />
+          ) : activity.data.data.length === 0 ? (
+            <EmptyState title="No activity yet" />
+          ) : (
+            <ul className="mt-2 divide-y divide-gray-100">
+              {activity.data.data.map((e) => (
+                <li key={e.id} className="flex items-center justify-between gap-4 py-3 text-xs">
+                  <span className="text-gray-700 font-medium min-w-0 break-words">{describeAudit(e)}</span>
+                  <time dateTime={e.createdAt} className="text-gray-400 font-medium shrink-0">
+                    {formatRelative(e.createdAt, now)}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
-    </main>
+    </div>
   );
 }
