@@ -10,7 +10,11 @@ export default function MentorLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    // Collapsed on phones so the content keeps the screen. The layout content
+    // renders only on the client (after the session check in RoleGate).
+    const [isSidebarOpen, setIsSidebarOpen] = useState(
+        () => typeof window === "undefined" || window.matchMedia("(min-width: 768px)").matches,
+    );
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);

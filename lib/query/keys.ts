@@ -8,6 +8,7 @@
 import type { MyAssignmentFilters, MyResultFilters } from "@/lib/api/assessment";
 import type { ResourceFilters } from "@/lib/api/learning";
 import type { ThreadScope } from "@/lib/api/community";
+import type { AssignmentFilters, ReviewFilters } from "@/lib/api/mentor";
 
 export const queryKeys = {
   me: {
@@ -62,5 +63,23 @@ export const queryKeys = {
   notifications: {
     all: ["notifications"] as const,
     list: (params: { page?: number; limit?: number } = {}) => [...queryKeys.notifications.all, "list", params] as const,
+  },
+
+  mentor: {
+    all: ["mentor"] as const,
+    scopes: () => [...queryKeys.mentor.all, "scopes"] as const,
+    analyticsAll: ["mentor", "analytics"] as const,
+    analytics: (courseId: string, divisionId: string) => [...queryKeys.mentor.analyticsAll, courseId, divisionId] as const,
+    assignmentsAll: ["mentor", "assignments"] as const,
+    assignments: (filters: AssignmentFilters = {}) => [...queryKeys.mentor.assignmentsAll, "list", filters] as const,
+    assignment: (id: string) => [...queryKeys.mentor.assignmentsAll, "detail", id] as const,
+    assignmentHistory: (id: string) => [...queryKeys.mentor.assignmentsAll, "history", id] as const,
+    reviewsAll: ["mentor", "reviews"] as const,
+    reviews: (filters: ReviewFilters = {}) => [...queryKeys.mentor.reviewsAll, "queue", filters] as const,
+    review: (submissionId: string) => [...queryKeys.mentor.reviewsAll, "submission", submissionId] as const,
+    reviewCycles: (submissionId: string) => [...queryKeys.mentor.reviewsAll, "cycles", submissionId] as const,
+    resourcesAll: ["mentor", "resources"] as const,
+    resources: (courseId: string, divisionId: string) => [...queryKeys.mentor.resourcesAll, "list", courseId, divisionId] as const,
+    resource: (courseId: string, resourceId: string) => [...queryKeys.mentor.resourcesAll, "detail", courseId, resourceId] as const,
   },
 };

@@ -12,7 +12,6 @@ import {
     Users,
     ChevronDown
 } from 'lucide-react';
-import Link from 'next/link';
 
 interface Student {
     id: string;
@@ -126,7 +125,7 @@ export default function MentorStudents() {
                 {/* Header */}
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Students</h1>
-                    <p className="text-gray-600 mt-1">Manage and monitor your students' progress</p>
+                    <p className="text-gray-600 mt-1">Manage and monitor your students&apos; progress</p>
                 </div>
 
                 {/* Stats Overview */}

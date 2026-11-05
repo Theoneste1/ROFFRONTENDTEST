@@ -7,7 +7,7 @@ import {
     LayoutGrid,
     BookOpen,
     FileText,
-    Video,
+    ClipboardCheck,
     HelpCircle,
     Settings
 } from "lucide-react";
@@ -43,7 +43,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                 {/* Menu Link */}
                 <Link
                     href="/mentor/dashboard"
-                    title="Menu"
+                    title="Dashboard"
                     className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
                         } ${isActive("/mentor/dashboard")
                             ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
@@ -51,7 +51,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                         }`}
                 >
                     <LayoutGrid className="h-5 w-5 flex-shrink-0" />
-                    {isOpen && <span className="whitespace-nowrap">Menu</span>}
+                    {isOpen && <span className="whitespace-nowrap">Dashboard</span>}
                 </Link>
 
                 {/* Courses Link */}
@@ -81,19 +81,18 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                     <FileText className="h-5 w-5 flex-shrink-0" />
                     {isOpen && <span className="whitespace-nowrap">Assignments</span>}
                 </Link>
-
-                {/* Live Sessions Link */}
+                {/* Reviews Link */}
                 <Link
-                    href="/mentor/live-sessions"
-                    title="Live Sessions"
+                    href="/mentor/reviews"
+                    title="Reviews"
                     className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-                        } ${isActive("/mentor/live-sessions")
+                        } ${isActive("/mentor/reviews")
                             ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
                             : "hover:bg-white/5 text-slate-400 hover:text-white"
                         }`}
                 >
-                    <Video className="h-5 w-5 flex-shrink-0" />
-                    {isOpen && <span className="whitespace-nowrap">Live Sessions</span>}
+                    <ClipboardCheck className="h-5 w-5 flex-shrink-0" />
+                    {isOpen && <span className="whitespace-nowrap">Reviews</span>}
                 </Link>
             </div>
 

@@ -214,6 +214,8 @@ export interface CourseResource {
   createdAt: string;
   updatedAt: string;
   attachments: Attachment[];
+  /** Staff view. */
+  uploadedBy?: { id: string; firstName: string; lastName: string } | null;
 }
 
 // ─── Assessment ─────────────────────────────────────────────────────────────
@@ -472,4 +474,136 @@ export interface AppNotification {
   isRead: boolean;
   readAt: string | null;
   createdAt: string;
+}
+
+// ─── Mentor ─────────────────────────────────────────────────────────────────
+
+/** `GET /me/teaching`: a course × division the mentor is assigned to. */
+export interface TeachingScope {
+  id: string;
+  course: CourseRef;
+  division: DivisionRef;
+  createdAt: string;
+}
+
+/** `GET /assignments` items and `GET /assignments/:id` (staff view). */
+export interface MentorAssignment {
+  id: string;
+  title: string;
+  description: string | null;
+  instructions: string;
+  deadline: string;
+  points: number;
+  maximumMarks: number;
+  allowResubmission: boolean;
+  maxResubmissions: number;
+  allowLateSubmission: boolean;
+  status: AssignmentStatus;
+  publishedAt: string | null;
+  resultsPublishedAt: string | null;
+  closedAt: string | null;
+  archivedAt: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  submittedAt?: string | null;
+  rejectedAt?: string | null;
+  rejectionNote?: string | null;
+  courseId: string;
+  divisionId: string;
+  attachments: Attachment[];
+  academicYear: { id: string; name: string };
+  course: CourseRef;
+  division: DivisionRef;
+  createdBy: { id: string; username: string | null; firstName: string; lastName: string } | null;
+  approvedBy?: { id: string; firstName: string; lastName: string } | null;
+  _count?: { submissions: number };
+}
+
+/** `GET /assignments/:id/history`. */
+export interface AssignmentEvent {
+  id: string;
+  type: string;
+  fromStatus: AssignmentStatus | null;
+  toStatus: AssignmentStatus | null;
+  note: string | null;
+  changes: Record<string, { from: unknown; to: unknown }> | null;
+  createdAt: string;
+  actor: { id: string; username: string | null; firstName: string; lastName: string; role: Role } | null;
+}
+
+export type ReviewStatus = "ASSIGNED" | "IN_PROGRESS" | "MARKED" | "RETURNED" | "SENT_BACK" | "APPROVED" | "PUBLISHED" | "SUPERSEDED" | "CANCELLED" | "RESUBMISSION_REQUESTED";
+
+/** The current review cycle as embedded in a submission (`review`). */
+export interface CurrentReview {
+  id: string;
+  cycle: number;
+  status: ReviewStatus;
+  score: number | null;
+  percentage: number | null;
+  feedback: string | null;
+  attachments: Attachment[];
+  assignedAt: string | null;
+  startedAt: string | null;
+  markedAt: string | null;
+  returnedAt: string | null;
+  /** Admin's reason when a review is sent back. */
+  decisionNote: string | null;
+}
+
+/** `GET /mentor/reviews` items and `GET /submissions/:id` (mentor view). */
+export interface ReviewSubmission extends Omit<Submission, "displayStatus" | "result"> {
+  displayStatus?: StudentDisplayStatus;
+  student: { id: string; username: string | null; firstName: string; lastName: string; gradeLevel: GradeLevel | null };
+  review: CurrentReview | null;
+}
+
+/** `GET /submissions/:id/reviews`: every review cycle with its events. */
+export interface ReviewCycle {
+  id: string;
+  cycle: number;
+  status: ReviewStatus;
+  score: number | null;
+  percentage: number | null;
+  feedback: string | null;
+  assignedAt: string | null;
+  startedAt: string | null;
+  markedAt: string | null;
+  returnedAt: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  publishedAt: string | null;
+  mentor: { id: string; username: string | null; firstName: string; lastName: string } | null;
+  attachments: Attachment[];
+  events: { id: string; type: string; score: number | null; note: string | null; createdAt: string; actor: { firstName: string; lastName: string } | null }[];
+}
+
+/** `GET /analytics/courses/:courseId?divisionId=`. */
+export interface CourseAnalytics {
+  course: CourseRef;
+  division: DivisionRef;
+  generatedAt: string;
+  students: { total: number; unrolled: number; rolled: number; completed: number; completionRate: number };
+  assignments: {
+    id: string;
+    title: string;
+    deadline: string;
+    resultsPublishedAt: string | null;
+    submissions: number;
+    submissionRate: number;
+    lateSubmissions: number;
+    publishedResults: number;
+    averagePercentage: number | null;
+    medianPercentage: number | null;
+    highestPercentage: number | null;
+    lowestPercentage: number | null;
+    distribution: { range: string; count: number }[];
+    averageReviewHours: number | null;
+  }[];
+  reviewPipeline: Partial<Record<SubmissionStatus, number>>;
+  resources: {
+    published: number;
+    uniqueViewers: number;
+    totalViews: number;
+    mostViewed: { id: string; title: string; type: ResourceType; uniqueViewers: number }[];
+  };
 }
