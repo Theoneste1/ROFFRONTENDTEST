@@ -11,9 +11,15 @@ import type {
   AuditCategory,
   AuditLogEntry,
   GradeLevel,
+  MentorReportRow,
+  MentorRequest,
+  MentorRequestApproval,
+  MentorRequestStatus,
+  MentorScope,
   Page,
   ReportFilters,
   ReportsOverview,
+  ReportUserStatus,
   Role,
   SchoolDetail,
   SchoolRef,
@@ -158,4 +164,35 @@ export const schoolsApi = {
   get: (id: string, params: { page?: number; limit?: number } = {}) => api<SchoolDetail>(`/schools/${id}`, { query: params }),
   /** Public lookup (2–100 characters). */
   search: (q: string) => api<SchoolRef[]>("/schools/search", { query: { q } }),
+};
+
+// ─── Mentors ────────────────────────────────────────────────────────────────
+
+export interface UserReportFilters extends ReportFilters {
+  status?: ReportUserStatus;
+  /** Name, username or e-mail contains. */
+  q?: string;
+  page?: number;
+  limit?: number;
+  [key: string]: QueryValue;
+}
+
+export const mentorsApi = {
+  report: (filters: UserReportFilters = {}) =>
+    api<Page<MentorReportRow> & { filters: unknown }>("/admin/reports/mentors", { query: filters }),
+  scopes: (filters: { mentorId?: string; courseId?: string; divisionId?: string; isActive?: boolean; page?: number; limit?: number } = {}) =>
+    api<Page<MentorScope>>("/admin/mentor-assignments", { query: filters }),
+  /** Grant course × division access (re-activates an earlier one). */
+  addScope: (input: { mentorId: string; courseId: string; divisionId: string }) =>
+    api<MentorScope>("/admin/mentor-assignments", { method: "POST", body: input }),
+  /** Deactivate; reports open reviews that should be reassigned. */
+  removeScope: (id: string) => api<MentorScope & { openReviewsToReassign: number }>(`/admin/mentor-assignments/${id}`, { method: "DELETE" }),
+};
+
+export const mentorRequestsApi = {
+  list: (params: { status?: MentorRequestStatus; page?: number; limit?: number } = {}) =>
+    api<Page<MentorRequest>>("/mentor-requests", { query: params }),
+  /** Creates the mentor account (activation e-mail when verification is on). */
+  approve: (id: string) => api<MentorRequestApproval>(`/mentor-requests/${id}/approve`, { method: "PATCH" }),
+  reject: (id: string) => api<{ id: string; status: MentorRequestStatus }>(`/mentor-requests/${id}/reject`, { method: "PATCH" }),
 };

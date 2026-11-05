@@ -770,3 +770,58 @@ export interface SchoolDetail {
   createdAt: string;
   students: Page<{ id: string; username: string; firstName: string; lastName: string; gradeLevel: GradeLevel | null; isActive: boolean; points: number; division: { code: DivisionCode; name: string } | null }>;
 }
+
+/** Report row status (`/admin/reports/students|mentors`). */
+export type ReportUserStatus = "ACTIVE" | "INACTIVE" | "AWAITING_SETUP";
+
+export interface ScopeRef {
+  course: CourseRef;
+  division: DivisionRef;
+}
+
+/** `GET /admin/reports/mentors` items. */
+export interface MentorReportRow {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  status: ReportUserStatus;
+  teaching: ScopeRef[];
+  openReviews: number;
+  registeredAt: string;
+  activatedAt: string | null;
+  lastLoginAt: string | null;
+}
+
+/** `GET /admin/mentor-assignments` items: a mentor's course × division access. */
+export interface MentorScope {
+  id: string;
+  isActive: boolean;
+  course: CourseRef;
+  division: DivisionRef;
+  mentor: { id: string; username: string; firstName: string; lastName: string; email: string };
+  assignedBy: { id: string; username: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type MentorRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+/** `GET /mentor-requests` items (public application form). */
+export interface MentorRequest {
+  id: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  status: MentorRequestStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MentorRequestApproval {
+  request: { id: string; status: MentorRequestStatus };
+  mentor: { id: string; username: string; email: string; firstName: string; lastName: string; role: Role };
+  emailVerificationRequired: boolean;
+  next: string;
+}

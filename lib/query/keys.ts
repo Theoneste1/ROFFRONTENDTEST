@@ -9,7 +9,7 @@ import type { MyAssignmentFilters, MyResultFilters } from "@/lib/api/assessment"
 import type { ResourceFilters } from "@/lib/api/learning";
 import type { ThreadScope } from "@/lib/api/community";
 import type { AssignmentFilters, ReviewFilters } from "@/lib/api/mentor";
-import type { AuditFilters, UserFilters } from "@/lib/api/admin";
+import type { AuditFilters, UserFilters, UserReportFilters } from "@/lib/api/admin";
 import type { ReportFilters } from "@/lib/api/types";
 
 export const queryKeys = {
@@ -103,5 +103,8 @@ export const queryKeys = {
     divisions: () => [...queryKeys.admin.all, "divisions"] as const,
     schools: (params: { search?: string; page?: number; limit?: number } = {}) => [...queryKeys.admin.all, "schools", "list", params] as const,
     school: (id: string, page = 1) => [...queryKeys.admin.all, "schools", "detail", id, page] as const,
+    mentorReport: (filters: UserReportFilters = {}) => [...queryKeys.admin.all, "mentors", "report", filters] as const,
+    mentorScopes: (mentorId: string) => [...queryKeys.admin.all, "mentors", "scopes", mentorId] as const,
+    mentorRequests: (params: { status?: string; page?: number } = {}) => [...queryKeys.admin.all, "mentor-requests", params] as const,
   },
 };

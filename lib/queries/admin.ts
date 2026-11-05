@@ -11,6 +11,8 @@ import {
   adminDashboardApi,
   auditApi,
   divisionsApi,
+  mentorRequestsApi,
+  mentorsApi,
   schoolsApi,
   usersApi,
   type AuditFilters,
@@ -18,9 +20,10 @@ import {
   type InviteUserInput,
   type UpdateUserInput,
   type UserFilters,
+  type UserReportFilters,
 } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/query/keys";
-import type { ReportFilters } from "@/lib/api/types";
+import type { MentorRequestApproval, MentorRequestStatus, ReportFilters } from "@/lib/api/types";
 
 /** Invalidate every admin view (call after any admin mutation). */
 export function useInvalidateAdmin() {
@@ -163,5 +166,54 @@ export function useSchool(id: string | undefined, page = 1) {
     queryFn: () => schoolsApi.get(id!, { page, limit: 20 }),
     enabled: !!id,
     placeholderData: keepPreviousData,
+  });
+}
+
+// ─── Mentors & applications ─────────────────────────────────────────────────
+
+export function useMentorReport(filters: UserReportFilters = {}) {
+  return useQuery({
+    queryKey: queryKeys.admin.mentorReport(filters),
+    queryFn: () => mentorsApi.report(filters),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Active course × division access of one mentor. */
+export function useMentorScopes(mentorId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.admin.mentorScopes(mentorId ?? ""),
+    queryFn: () => mentorsApi.scopes({ mentorId, isActive: true, limit: 100 }),
+    enabled: !!mentorId,
+  });
+}
+
+export function useScopeAction() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: (a: { type: "add"; mentorId: string; courseId: string; divisionId: string } | { type: "remove"; scopeId: string }) =>
+      a.type === "add" ? mentorsApi.addScope({ mentorId: a.mentorId, courseId: a.courseId, divisionId: a.divisionId }) : mentorsApi.removeScope(a.scopeId),
+    // A mentor signed in on this browser sees new scopes too.
+    onSettled: () => invalidate(queryKeys.mentor.all),
+  });
+}
+
+export function useMentorRequests(params: { status?: MentorRequestStatus; page?: number; limit?: number } = {}) {
+  return useQuery({
+    queryKey: queryKeys.admin.mentorRequests(params),
+    queryFn: () => mentorRequestsApi.list(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useDecideMentorRequest() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: async ({ id, decision }: { id: string; decision: "approve" | "reject" }): Promise<MentorRequestApproval | null> => {
+      if (decision === "approve") return mentorRequestsApi.approve(id);
+      await mentorRequestsApi.reject(id);
+      return null;
+    },
+    onSettled: () => invalidate(),
   });
 }

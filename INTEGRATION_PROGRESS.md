@@ -557,7 +557,7 @@ Approved decisions:
 | 5.0 | Foundation: admin API module, query keys and hooks, shared admin UI, shell collapses on phones | ✅ | see Git (phase 5) |
 | 5.1 | Dashboard | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.2 | Users | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.3 | Mentors and applications | ☐ | |
+| 5.3 | Mentors and applications | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.4 | Students and schools (read-only) | ☐ | |
 | 5.5 | Divisions, courses, resources | ☐ | |
 | 5.6 | Assignment approval and management | ☐ | |
@@ -654,6 +654,37 @@ Tests:
 | `api-admin.mjs nonadmin`: user routes refused for student and mentor | ✅ (part of 74/74) |
 | `e2e-admin.mjs admin` (prepared, read-only): table rows equal the API; pills, search and dashboard link send the right query; empty and invalid create form shows field errors and **sends no request**; import offers no Invite before a dry run; detail page; edit with no change sends no PATCH; unknown id; own account has no suspend or delete; 390 px | ⏳ Waiting for admin credentials |
 | Creating, inviting, importing, suspending or deleting a real account | **Not run.** These need owner approval (D9: no new test users). The UI is ready |
+
+### 5.3 Mentors and applications
+
+`/admin/mentors` keeps the original table, pills and "Course access" button.
+
+**Mentors tab** (`GET /admin/reports/mentors`):
+- Shows each mentor's real course × division access, open reviews, status (active, inactive, awaiting setup) and last sign-in.
+- The ⚠ icon means no course access or not yet set up.
+- Filters: division pills, status select and search (`q=`), all kept in the URL. CSV export.
+- The mock's "one division plus a course string" model is replaced by the backend's list of scopes.
+
+**Course access** dialog (`?mentor=<id>`, also linked from the user page):
+- Lists the active scopes (`GET /admin/mentor-assignments?mentorId&isActive=true`).
+- Adds one (`POST`; re-activates an earlier grant) or removes one (`DELETE`).
+- When the removed scope had open reviews, it reports `openReviewsToReassign` with a pointer to reassignment.
+- A duplicate is caught before any request.
+
+**Applications tab** (`?tab=applications`; the pending count is shown on the tab):
+- `GET /mentor-requests?status=` with Pending, Approved, Rejected or All.
+- Approve (`PATCH …/approve` creates the mentor account; the result message notes e-mail verification) and reject, each behind a confirm dialog.
+
+The "More options" button with its `alert()` is removed; the row links to the user account page instead.
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint, routes compile | ✅ |
+| `api-admin.mjs nonadmin`: mentor-assignment and mentor-request routes refused | ✅ (part of 74/74) |
+| `e2e-admin.mjs admin` (prepared, read-only): rows equal the report; mentor.junior's 4 courses; division pill sends `divisionId`; dialog scopes equal the API; a duplicate add sends no request; `?tab=applications` sends `status=PENDING`; no mock names; 390 px | ⏳ Waiting for admin credentials |
+| Adding or removing a scope; approving or rejecting an application | **Not run.** These change data and need owner approval for a specific record |
 
 ### Tests that still need admin credentials or owner approval
 
