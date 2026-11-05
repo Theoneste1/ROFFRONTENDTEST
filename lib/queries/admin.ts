@@ -28,7 +28,7 @@ import {
   type UserFilters,
   type UserReportFilters,
 } from "@/lib/api/admin";
-import { mentorAssignmentsApi } from "@/lib/api/mentor";
+import { mentorAssignmentsApi, reviewsApi } from "@/lib/api/mentor";
 import { queryKeys } from "@/lib/query/keys";
 import type { AssignmentStatus, DistributionStrategy, MentorRequestApproval, MentorRequestStatus, ReportFilters } from "@/lib/api/types";
 
@@ -387,6 +387,34 @@ export function useAssignSubmission() {
   return useMutation({
     mutationFn: ({ submissionId, mentorId, reassign }: { submissionId: string; mentorId: string; reassign: boolean }) =>
       reassign ? submissionsAdminApi.reassign(submissionId, mentorId) : submissionsAdminApi.assign(submissionId, mentorId),
+    onSettled: invalidate,
+  });
+}
+
+// ─── Review approval ────────────────────────────────────────────────────────
+
+export function useAdminSubmission(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.admin.submission(id ?? ""),
+    queryFn: () => submissionsAdminApi.get(id!),
+    enabled: !!id,
+  });
+}
+
+export function useAdminReviewCycles(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.admin.submissionCycles(id ?? ""),
+    queryFn: () => reviewsApi.cycles(id!),
+    enabled: !!id,
+  });
+}
+
+export type ReviewDecision = { type: "approve"; note?: string } | { type: "sendBack"; reason: string };
+
+export function useReviewDecision(submissionId: string) {
+  const invalidate = useInvalidateReviews();
+  return useMutation({
+    mutationFn: (d: ReviewDecision) => (d.type === "approve" ? submissionsAdminApi.approve(submissionId, d.note) : submissionsAdminApi.sendBack(submissionId, d.reason)),
     onSettled: invalidate,
   });
 }

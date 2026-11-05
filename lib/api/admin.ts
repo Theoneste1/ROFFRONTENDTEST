@@ -294,6 +294,8 @@ export interface AdminSubmissionFilters {
 /** Submission states from which a submission can be moved to another mentor. */
 export const REASSIGNABLE: SubmissionStatus[] = ["ASSIGNED", "IN_REVIEW", "MARKED", "REJECTED"];
 
+export const REVIEW_ADMIN_RULES = { coordinationNote: { min: 2, max: 2000 }, rejectionReason: { min: 5, max: 2000 }, reopenNote: { min: 5, max: 2000 } };
+
 export const submissionsAdminApi = {
   list: (filters: AdminSubmissionFilters = {}) => api<Page<AdminSubmission>>("/submissions", { query: filters }),
   get: (id: string) => api<AdminSubmission>(`/submissions/${id}`),
@@ -305,4 +307,9 @@ export const submissionsAdminApi = {
   assign: (id: string, mentorId: string) => api<AdminSubmission>(`/submissions/${id}/assign`, { method: "PATCH", body: { mentorId } }),
   /** Open review → another mentor (a new review cycle starts). */
   reassign: (id: string, mentorId: string) => api<AdminSubmission>(`/submissions/${id}/reassign`, { method: "PATCH", body: { mentorId } }),
+  /** SUBMITTED_TO_ADMIN → APPROVED. The coordination note is internal (never shown to students). */
+  approve: (id: string, coordinationNote?: string) =>
+    api<AdminSubmission>(`/submissions/${id}/approve`, { method: "PATCH", body: coordinationNote ? { coordinationNote } : {} }),
+  /** SUBMITTED_TO_ADMIN / APPROVED → back to the mentor (SENT_BACK) with a reason. */
+  sendBack: (id: string, rejectionReason: string) => api<AdminSubmission>(`/submissions/${id}/reject`, { method: "PATCH", body: { rejectionReason } }),
 };

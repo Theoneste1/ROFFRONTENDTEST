@@ -562,7 +562,7 @@ Approved decisions:
 | 5.5 | Divisions, courses, resources | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.6 | Assignment approval and management | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.7 | Submissions and distribution | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.8 | Review approval and send-back | ☐ | |
+| 5.8 | Review approval and send-back | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.9 | Result publication | ☐ | |
 | 5.10 | Reports and audit log | ☐ | |
 | 5.11 | Moderation and platform settings | ☐ | |
@@ -801,6 +801,35 @@ Tests:
 | `api-admin.mjs nonadmin`: distribute and assign refused for student and mentor | ✅ (part of 78/78) |
 | `e2e-admin.mjs admin` (prepared, read-only): rows equal the API; s5 row unchanged (IN_REVIEW, mentor.junior); no Distribute button without waiting work; published rows offer no assign; reassign dialog excludes the current mentor; cancel sends nothing; s5 still IN_REVIEW afterwards; status pill sends `status=SUBMITTED` | ⏳ Waiting for admin credentials |
 | Distributing, assigning or reassigning real submissions | **Not run.** These are §5 workflow steps 5–6 and need owner approval |
+
+### 5.8 Review approval and send-back
+
+**`/admin/submissions/[id]`** (new; also the target of the backend's "review awaiting approval" notifications):
+
+- **Mentor review, read-only** (admins never grade, so there are no score or feedback inputs): mentor, score out of the maximum, percentage, cycle, timestamps, feedback and feedback files, an earlier send-back reason, and the internal coordination note.
+- **Student's work:** every attempt with time, late badge, the student's note, typed answer and files (authenticated downloads).
+- **Decision:**
+  - **Approve review**, only from SUBMITTED_TO_ADMIN (`PATCH /submissions/:id/approve`), with an optional internal coordination note of 2–2,000 characters.
+  - **Send back to mentor**, from SUBMITTED_TO_ADMIN or APPROVED (`PATCH /submissions/:id/reject`), with a required reason of 5–2,000 characters.
+  - Otherwise the card explains what the submission is waiting for.
+- **Review cycles** (`GET /submissions/:id/reviews`): each cycle with its mentor, status, score and events.
+
+**`/admin/results/[id]`** (the mock ignored `id`):
+- Real assignment header.
+- Callout with the not-yet-approved counts by stage.
+- Cards: submitted, reviewed (approved + published), pending and average score, from `/admin/reports/assignments`.
+- "Mentor reviews" table (`GET /submissions?assignmentId&status`) with pills and paging. Rows open the review page.
+
+The assignment page's submissions table now links each row to its review page ("Review" when awaiting approval).
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint, routes compile | ✅ |
+| `api-admin.mjs nonadmin`: approve and send back refused for student and mentor | ✅ (part of 78/78) |
+| `e2e-admin.mjs admin` (prepared, read-only): the s5 page shows review, cycles and work with no decision buttons (in review); no grading inputs anywhere; the published submission has no decision buttons; an empty send-back reason is refused without sending (when a review awaits approval); results cards equal the report; rows link to the review page | ⏳ Waiting for admin credentials |
+| Approving or sending back a real review | **Not run.** These are §5 workflow steps 9 and 11 and need owner approval |
 
 ### Tests that still need admin credentials or owner approval
 

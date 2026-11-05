@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Shuffle } from "lucide-react";
 import { REASSIGNABLE } from "@/lib/api/admin";
 import { errorMessage } from "@/lib/api/errors";
@@ -259,7 +260,9 @@ export default function SubmissionsSection({ assignment }: { assignment: MentorA
                             {canAssign ? "Assign" : "Reassign"}
                           </button>
                         )}
-{/* OPEN_LINK */}
+<Link href={`/admin/submissions/${s.id}`} className={linkBtn} aria-label={`Open ${personName(s.student)}'s submission`}>
+                          {s.status === "SUBMITTED_TO_ADMIN" ? "Review" : "Open"}
+                        </Link>
                       </div>
                     </td>
                   </tr>

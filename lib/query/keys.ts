@@ -114,6 +114,7 @@ export const queryKeys = {
     submissionsAll: ["admin", "submissions"] as const,
     submissions: (filters: AdminSubmissionFilters = {}) => [...queryKeys.admin.submissionsAll, "list", filters] as const,
     submission: (id: string) => [...queryKeys.admin.submissionsAll, "detail", id] as const,
+    submissionCycles: (id: string) => [...queryKeys.admin.submissionsAll, "cycles", id] as const,
     batches: (assignmentId: string) => [...queryKeys.admin.assignmentsAll, "batches", assignmentId] as const,
     scopeMentors: (courseId: string, divisionId: string) => [...queryKeys.admin.all, "mentors", "scope", courseId, divisionId] as const,
     mentorReport: (filters: UserReportFilters = {}) => [...queryKeys.admin.all, "mentors", "report", filters] as const,
