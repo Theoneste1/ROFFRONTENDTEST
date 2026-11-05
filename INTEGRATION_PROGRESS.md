@@ -252,18 +252,9 @@ Backend: the unchanged `node dist/main.js` on the local `rof` database. Accounts
 
 Browser suite totals: student **51/51**, auth **19/19**.
 
-### Test data created in the local database (real API calls, clearly labelled)
+### Test data and remaining issues
 
-- **Resource "[TEST] Algebra practice book".** Junior Algebra, BOOK, one PDF, published by `mentor.junior` (id `538a6567-3e98-41d2-9e38-8d26763ce4f9`). Publishing it also created the "New Algebra material" notification for Junior students. A mentor can remove it later (`DELETE /courses/:courseId/resources/:id`); the phase 4 resource UI will offer this.
-- **Discussion comments and replies titled "[TEST] comment …"** on the "Questions about this assignment" thread. The test deleted them again; they remain as "[deleted]" placeholders, which is backend behaviour.
-
-### Remaining issues
-
-1. **Successful submit and resubmit not yet exercised end to end.** This needs an admin to publish an open assignment (mentor drafts it, admin publishes). It will be re-tested when admin credentials are available, together with "resubmission requested" from a mentor in phase 4.
-2. **Notification items are not clickable yet.** Deep-link redirect routes come in phase 6.
-3. **Help and Settings sidebar buttons** are still placeholders (phase 6).
-4. **The status filter and sort on Assignments, and arrange-by on Results, work within the loaded page** (up to 50 and 20 items). The backend has no such parameters (B5, B6).
-5. **The backend rate-limits sign-in to 10 requests per minute per IP.** The login form shows "Too many requests" when hit. Normal use isn't affected, but test runs must pace their logins.
+See **Phase 3 review** below for the verified inventory of test records and the current list of remaining issues. It supersedes what was written here at the end of phase 3.
 
 ### Files
 
@@ -293,6 +284,131 @@ Deleted:
 - `app/student/live-sessions/page.tsx`
 - `app/student/assignments/[id]/components/StepCheckbox.tsx`
 - `app/student/courses/[course]/components/CourseTabs.tsx`
+
+---
+
+## Phase 3 review (2026-11-05): student portal verification
+
+This review re-checked the student portal against the running backend and the local `rof` database. No mentor-portal work was started.
+
+**No application code changed during the review.** The only changes are this documentation and two new labelled test records (see "Test data").
+
+### Status at a glance
+
+| Category | Items |
+|---|---|
+| ✅ **Implemented and tested** | <ul><li>Dashboard, courses, course detail (resources, completion, discussion), assignments list, assignment detail (brief, status, history, result, discussion), results list, leaderboard (students and schools).</li><li>Sign-in and session handling: refresh, expiry, revocation, rate limit.</li><li>Role and data isolation.</li><li>Phone layout.</li></ul> |
+| ⚠ **Implemented but not fully tested** | <ul><li>**Submitting and resubmitting work.** The UI, multipart request, client-side checks and the closed-assignment error are verified. A *successful* submission has not been made, because it needs an open assignment published by an admin.</li><li>**Resubmission-requested state.** The UI is built (mentor note and due date, resubmit form), but it needs a mentor request (phase 4).</li></ul> |
+| ⏳ **Waiting for manual verification** | <ul><li>Full submit → resubmit flow with a real published assignment (owner arranging admin credentials).</li><li>Activation and password-reset *success* paths with a real e-mailed token: the backend runs with SMTP in DRY_RUN, so no mail is delivered.</li></ul> |
+| ❌ **Not implemented (planned)** | <ul><li>Clickable notification items and deep-link routes (phase 6).</li><li>Help and Settings sidebar buttons (phase 6).</li><li>Notification inbox page (phase 6).</li></ul> |
+| 🚫 **Intentionally excluded (owner decisions / no backend support)** | <ul><li>Live sessions.</li><li>Study-group leaderboard.</li><li>Badges and streaks.</li><li>Assignment steps, deliverables and evaluation criteria.</li><li>Mentor office hours.</li><li>Server-side sort and status filter (the API has none).</li></ul> |
+
+### How each page gets and shows its data
+
+All requests go through `lib/api/client.ts` (`/api/v1/*`, proxied to the backend), via the TanStack Query hooks in `lib/queries/*`. Responses are cached under the keys in `lib/query/keys.ts`. Every page shows a spinner while loading, an error card with "Try again" and the backend `requestId` on failure, and an explicit empty state.
+
+| Page | Requests | What is shown | Mutations and invalidation |
+|---|---|---|---|
+| `/student/dashboard` | <ul><li>`GET /me` (session)</li><li>`GET /courses`</li><li>`GET /me/courses`</li><li>`GET /me/assignments?limit=50`</li><li>`GET /leaderboard/me`</li><li>`GET /leaderboard?page&limit=100` (the row above the student, only when rank > 1)</li><li>`GET /notifications?limit=5`</li></ul> | <ul><li>Name, points, problems solved.</li><li>4 course cards with progress label.</li><li>Open, not-yet-reviewed assignments sorted by deadline (status `PUBLISHED`, `displayStatus` ≠ Reviewed).</li><li>"#rank of N" in the student's division, and the points needed to pass the student above.</li><li>Calendar with deadline dots.</li><li>Latest 5 notifications.</li></ul> | — |
+| `/student/courses` | `GET /courses` | The 4 courses with description, `counts` (published content of the student's division), `displayStatus` | — |
+| `/student/courses/[id]` | <ul><li>`GET /courses/:id`</li><li>`GET /courses/:id/resources` (split by `type` into Books, Past Papers, Notes & Materials)</li><li>`GET …/attachments/:aid/file` (on click)</li><li>`GET /courses/:id/threads`, `GET /threads/:id/comments`, `GET /comments/:id/replies`</li></ul> | <ul><li>Overview: division, discipline, progress, counts, discussion on/off.</li><li>Resource cards (title, author, year, source, description, tags, files).</li><li>Discussion.</li></ul> | <ul><li>`POST /courses/:id/complete` → invalidates `courses.*`.</li><li>Thread and comment mutations → invalidate `discussions.*`.</li></ul> |
+| `/student/assignments` | `GET /me/assignments?q&courseId&page&limit=50` | Table: title, course and division, deadline (local time), `displayStatus` badge, Start/View link. Status filter and sort apply on the loaded page | — |
+| `/student/assignments/[id]` | <ul><li>`GET /assignments/:id`</li><li>`GET /submissions/:id`</li><li>`GET /submissions/:id/history`</li><li>`GET /me/results/:submissionId` (only when `displayStatus` = Reviewed)</li><li>file endpoints for brief, submission and feedback files</li><li>assignment threads</li></ul> | <ul><li>Instructions, rules, files.</li><li>The submission form when `canSubmit`, otherwise a status card.</li><li>Every attempt with its files.</li><li>Score, percentage, points, feedback, mentor, files, earlier versions.</li></ul> | `POST /submissions` (multipart) → invalidates `assignments.*`, `submissions.*`, `notifications.*` |
+| `/student/assignments/results` | `GET /me/results?courseId&page&limit=20` | Published results; rows link to the assignment's Results tab | — |
+| `/student/leaderboard` | <ul><li>`GET /leaderboard?page&limit=20`</li><li>`GET /leaderboard/me`</li><li>`GET /leaderboard/schools?page&limit=20`</li></ul> | Podium (top 3), your rank, total points, next milestone, rankings; schools tab | — |
+
+### Authentication and authorization (frontend side)
+
+- **Session:**
+  - The access token is kept in memory only.
+  - The refresh token is the backend's httpOnly cookie `rof_refresh`, which the browser sends through the same-origin proxy.
+  - On load, `POST /auth/refresh` restores the session.
+  - On any 401, the client refreshes once and retries. If that fails, every tab returns to `/login?next=…`.
+  - Refreshes are single-flight within a tab and serialised across tabs, because tokens rotate and a reused one revokes the session.
+- **Portal guard:** `RoleGate` in `app/student/layout.tsx` renders the portal only for `role === "STUDENT"`. Signed-out users go to `/login`; other roles go to their own portal.
+- **Hiding is not security.** Every rule is enforced again by the backend on every request. The student UI never calls mentor or admin endpoints; the review confirmed that a student who opens mentor or admin URLs triggers no such requests.
+
+### How student-specific data access is enforced
+
+| Layer | Mechanism | Verified by |
+|---|---|---|
+| **Backend (authoritative)** | Role guard (403) and scope or ownership checks (404 "not found or not yours") on every route. Students' division is taken from their account, not from query parameters | API suite (45/45): cross-student, cross-division, unpublished, unreleased, mentor and admin routes |
+| **Frontend: which endpoints** | The student pages use only "me"-scoped or division-scoped endpoints (`/me/*`, `/courses`, `/leaderboard`) and ids the API itself returned | Code review; API log during the browser runs |
+| **Frontend: how a 404 is shown** | Shown as "not found or not available to you", never revealing existence | Browser: DRAFT, other-division and unknown ids |
+| **Frontend: privacy** | Other students appear as the API sends them: first name + last initial, no username, no e-mail | API and browser leaderboard checks |
+
+### Loading, error, empty and success states
+
+| State | Implementation |
+|---|---|
+| **Loading** | `LoadingBlock` or `Spinner` for every query. Lists keep previous data while refetching (dimmed) |
+| **Error** | `ErrorState` with a readable message (`errorMessage`), the backend `requestId`, and Try again. Files show an inline error under the file button |
+| **Not found** | Course and assignment "not found" cards with a back link |
+| **Empty** | <ul><li>Dashboard: "You're all caught up" and "No notifications yet".</li><li>"No assignments yet" vs "No assignments match".</li><li>"No books / past papers / notes uploaded yet".</li><li>"No results yet".</li><li>"No rankings yet".</li><li>Discussion "No comments yet".</li></ul> |
+| **Success** | <ul><li>Submission confirm and success modals (original design).</li><li>"Mark course as completed" updates in place.</li><li>The comment appears at once.</li><li>Report: "Thanks — an administrator will review this comment."</li></ul> |
+| **Validation** | <ul><li>Client checks mirror the backend: file size and count, text lengths, password policy.</li><li>Backend `VALIDATION_FAILED` details map onto fields (`fieldErrors`) or show as the first message.</li><li>`409`/`413`/`415`/`429`/`5xx` have specific messages.</li></ul> |
+
+### Verification results (this review)
+
+| Suite | Result | Covers |
+|---|---|---|
+| API security and data access (`api-security.mjs`) | **45/45** | <ul><li>Own data and division.</li><li>Per-division, published-only counts.</li><li>DRAFT assignment and unpublished note → 404 and absent from lists.</li><li>Unreleased result → 404, no score in the in-review submission.</li><li>s5 → s2 submission, history, result, files → 404.</li><li>Other division's assignment and resource → 404.</li><li>Senior leaderboard and threads requested by a Junior → own division only.</li><li>16 mentor and admin routes → 403.</li><li>No token, tampered token, refresh without cookie → 401.</li></ul> |
+| Student browser suite (`e2e-student.mjs`) | **51/51** | Requirements 1–10 from the phase 3 brief, discussions, live-session removal, no 5xx, no console errors |
+| Review browser suite (`e2e-review.mjs`) | **22/22** | <ul><li>DRAFT and unpublished note not visible in the UI.</li><li>Published-only counts.</li><li>Student opening 4 mentor/admin URLs → own dashboard, with no mentor/admin API calls.</li><li>Dashboard numbers equal `/me` and `/leaderboard/me`.</li><li>**Revoked session** (sign out everywhere from another device) → 401, refresh 401 → `/login?next=…`.</li><li>**Rate limit:** 10 sign-ins accepted, the 11th shows "Too many requests…", normal sign-in works again after a minute.</li></ul> |
+| Access-token expiry (`e2e-expiry-sim.mjs`) | **6/6** | <ul><li>The next protected request is answered with the backend's own 401 body, which is exactly what an expired 15-minute token returns. Then **one** real `POST /auth/refresh` → 200, the original request is retried → 200, the page renders, and the user stays signed in.</li><li>If the refresh is also rejected → `/login?next=…`, with a single refresh attempt and no loop.</li><li>A real 15-minute wait (`e2e-expiry.mjs`) was tried twice. The headless tab is reported as hidden and throttled, and the DevTools session stalled, so the run could not finish. That's a harness limitation, not an app result.</li><li>That the backend rejects an invalid or expired token is covered by the API suite (tampered token → 401).</li></ul> |
+| Error handling with real backend errors (`validation-check.mts`) | **11/11** | `VALIDATION_FAILED` → field mapping and message; `ASSIGNMENT_CLOSED`; network, 429 and 5xx messages; `requestId` kept |
+| Auth suite (`e2e-auth.mjs`, phase 2) | **19/19** (last run) | Includes "no password or e-mail ever in a URL" |
+| Phone width 390 px | **9/9 pages** | No horizontal page scroll; content 310 px |
+| `tsc --noEmit` | ✅ | |
+| `next build` | ✅ | Production build compiles; the live-sessions route is gone |
+| `eslint` | ✅ for student, auth, shared and lib code | 9 problems remain, all in mentor pages not yet touched (baseline) |
+| Mock data scan | ✅ | No mock arrays or placeholder people in `app/student`, `app/components`, `app/(auth)`, `lib` |
+| Link scan | ✅ | Every student link targets an existing route. The only dead links are in the unused legacy `app/components/Sidebar.tsx` (not rendered anywhere; candidate for removal in the cleanup phase) |
+| Non-functional controls | ⚠ 2 known | Help and Settings in the student sidebar (phase 6) |
+| Backend untouched | ✅ | `ROFBACKENDTEST` git working tree clean. The only change from this work is the runtime upload `storage/resources/2026/11/…pdf` (the test files). The `.env` `APP_URL=http://localhost:3001` change and the backend's recent deployment commits are the owner's |
+
+The test scripts are kept outside the repository, in the session scratchpad, and can be added to the repo on request.
+
+### Remaining issues (not completed)
+
+1. **Submission workflow:** a successful submit and resubmit has not been verified end to end. The owner is arranging admin credentials to publish an assignment. The mentor-requested resubmission part will be tested after phase 4.
+2. **Notifications:** notification items on the dashboard are displayed but not clickable or linked. Deep links and the inbox are planned for phase 6.
+3. **Help and Settings:** these sidebar buttons are not implemented yet (phase 6).
+4. **Sign-in rate limit:** the backend allows 10 sign-in attempts per minute per address. **Verified:** normal sign-in works, the 11th attempt shows "Too many requests. Please wait a moment and try again." and the user stays on the login page, and sign-in works again after a minute. This is backend behaviour, not a defect.
+5. **Server-side limits:** the status filter and sort (Assignments) and arrange-by (Results) apply to the loaded page (up to 50 and 20 items), because the API has no such parameters (gaps B5, B6).
+6. **Data observation, not a defect:** `student.s5` (Senior) has an in-review submission for the Junior assignment "Sample set". The backend hides that assignment from s5 (404), so this submission does not appear anywhere in s5's portal. It looks like seed or test history (for example, a student moved between divisions). **Owner decision: investigate during the admin-portal phase (phase 5)** using the admin submission and enrolment views. Do not change the record before then.
+
+### Test data currently in the local database
+
+These were created by the frontend tests through the real API, all labelled `[TEST]`. None have been deleted or modified since creation; they are still useful for phases 4–5.
+
+| Record | Id | Created | Purpose and notes |
+|---|---|---|---|
+| Resource **"[TEST] Algebra practice book"**: Junior Algebra, BOOK, **published**, file `test-resource.pdf` | `538a6567-3e98-41d2-9e38-8d26763ce4f9` | 2026-11-05 16:24 UTC by `mentor.junior` | Verifies student resource listing and download. Its stored file is in `ROFBACKENDTEST/storage/resources/2026/11/` |
+| Notification **"New Algebra material"** (`resource.published`) to `student.s2`, unread | `cc578281-7bb4-4695-a9e6-ea9b5702ed27` | 16:24 UTC, created by the backend when the book was published | Shown in the dashboard's Recent Alerts. Only Junior students (s2) received it |
+| Resource **"[TEST] Unpublished note (not visible to students)"**: Junior Algebra, NOTE, **unpublished** | `90679339-20b4-4eab-98ba-d83e6eb8ac50` | 17:29 UTC by `mentor.junior` (this review) | Verifies unpublished resources are hidden. Useful for the phase 4 publish/unpublish UI |
+| Assignment **"[TEST] Draft assignment (not visible to students)"**: Junior Algebra, **DRAFT**, deadline 2026-12-31, 10 points / 10 marks | `f0b37379-fb90-4515-85b2-b9bdb2a05830` | 17:29 UTC by `mentor.junior` (this review) | Verifies drafts are hidden. **It can be used for the outstanding submission test:** mentor submits it for approval (phase 4) → admin publishes → student submits |
+| Discussion comments **"[TEST] comment …"** and their replies on "Questions about this assignment" | — | One comment and one reply per test run (about 7 runs) | The tests deleted each one. The backend soft-deletes them (status `DELETED`, content replaced with "[deleted]") and **excludes them from listings**: the thread now shows 0 comments to students. They can only be enumerated with an admin account. *(Correction: the end-of-phase-3 notes said they "remain as [deleted] placeholders"; they don't appear in the UI at all.)* |
+
+No other data was changed. The existing seed records ("Sample set", its submissions and result, and the "General discussion" thread with its 2 comments) were only read.
+
+### Git review
+
+| Commit | Content |
+|---|---|
+| `71f049d` Fix: never submit auth forms natively before hydration | `useHydrated`, `Button` disabled until hydration, `method="post"` on the 4 public forms, `suppressHydrationWarning` on `<html>` |
+| `8886a44` Student portal | The student pages (including the deletions of `live-sessions/page.tsx`, `StepCheckbox.tsx`, `CourseTabs.tsx`), shared discussion, file and pagination components, `lib/api/*`, `lib/queries/*`, `lib/format.ts`, `lib/hooks/useNow.ts`, types and query keys |
+| `7a9d99e` Docs | `INTEGRATION_PROGRESS.md`, `INTEGRATION_MAPPING.md` |
+
+**History regrouped (2026-11-05, owner-approved, not pushed).** The original commits `e76ca3b` / `d566848` / `1ab111f` had the three phase 3 deletions inside the security-fix commit. They were re-created as `71f049d` / `8886a44` / `7a9d99e`, reusing the original messages and authorship:
+- Before regrouping, the old history was saved as branch `backup/before-regroup`.
+- `git diff backup/before-regroup HEAD` is empty: the file tree is byte-identical, so no work was lost.
+- The backup branch can be deleted once the owner is satisfied.
+
+**Secrets check:**
+- The full history was scanned for env files, keys, tokens, JWTs, database URLs and passwords. The only env file ever committed is `.env.example`, which contains `API_PROXY_TARGET=http://localhost:3000` only.
+- `.env.local` is ignored.
+- The only password strings in the repo are the public demo-seed password `Demo1234`, which the backend's own README and API guide already document.
 
 ---
 
