@@ -561,7 +561,7 @@ Approved decisions:
 | 5.4 | Students and schools (read-only) | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.5 | Divisions, courses, resources | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.6 | Assignment approval and management | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.7 | Submissions and distribution | ☐ | |
+| 5.7 | Submissions and distribution | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.8 | Review approval and send-back | ☐ | |
 | 5.9 | Result publication | ☐ | |
 | 5.10 | Reports and audit log | ☐ | |
@@ -773,6 +773,34 @@ Tests:
 | `api-admin.mjs nonadmin`: publish, reject, close and archive refused for student and mentor | ✅ (part of 78/78) |
 | `e2e-admin.mjs admin` (prepared, read-only): rows equal the API; no create button; Drafts pill sends `status=DRAFT`; dashboard link; the `[TEST]` draft offers only Archive; the closed "Sample set" offers Reopen and Archive. The reopen dialog refuses a missing deadline without sending; the test submits only when the dialog marks the deadline as required, and "Sample set" is past its deadline with no late work. An empty return note is refused without sending; history; 390 px | ⏳ Waiting for admin credentials |
 | Publishing, returning, closing, reopening, unpublishing or archiving a real assignment | **Not run.** These are part of the §5 workflow and need owner approval |
+
+### 5.7 Submissions and distribution
+
+A **Submissions** section on `/admin/assignments/[id]` for published, closed and archived assignments.
+- **Table** (`GET /submissions?assignmentId&status&page`): student and grade; submission time, attempts and a late badge; mentor; status (admin labels); score out of the maximum marks.
+- **Status pills**, one backend status each: awaiting distribution, with mentor, in review, marked, awaiting approval, sent back, resubmission requested, approved, published.
+- **Distribute N submissions** (shown only when submissions are waiting): `POST /assignments/:id/distribute`.
+  - Strategy: the platform default, balanced or round robin.
+  - An optional subset of the mentors with access to the course × division (`/admin/mentor-assignments?courseId&divisionId&isActive=true`).
+  - The result reports the count per mentor.
+- **Assign** (status SUBMITTED, `PATCH /submissions/:id/assign`) and **Reassign** (ASSIGNED, IN_REVIEW, MARKED or REJECTED, `PATCH /submissions/:id/reassign`).
+  - The current mentor is excluded.
+  - The dialog explains that reassignment closes the current review and starts a new cycle.
+  - When no other mentor has access, it says so.
+- **Distribution history** (`GET /assignments/:id/distribution-batches`).
+- Nothing is offered on archived assignments.
+- The link to the review page is added in 5.8.
+
+The **legacy s5 submission** (D1) appears here as it is: IN_REVIEW, with mentor.junior. Reassign is offered because the backend allows it. **Nothing was done to it**, and the test only opens and cancels the dialog.
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint, route compiles | ✅ |
+| `api-admin.mjs nonadmin`: distribute and assign refused for student and mentor | ✅ (part of 78/78) |
+| `e2e-admin.mjs admin` (prepared, read-only): rows equal the API; s5 row unchanged (IN_REVIEW, mentor.junior); no Distribute button without waiting work; published rows offer no assign; reassign dialog excludes the current mentor; cancel sends nothing; s5 still IN_REVIEW afterwards; status pill sends `status=SUBMITTED` | ⏳ Waiting for admin credentials |
+| Distributing, assigning or reassigning real submissions | **Not run.** These are §5 workflow steps 5–6 and need owner approval |
 
 ### Tests that still need admin credentials or owner approval
 

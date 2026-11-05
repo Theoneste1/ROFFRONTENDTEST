@@ -14,6 +14,7 @@ import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/fe
 import FileButton from "@/app/components/ui/FileButton";
 import { ADMIN_ASSIGNMENT_STATUS, AdminPage, AssignmentBadge, Card, ConfirmDialog, Modal, Notice, btnPrimary, btnSecondary, type NoteRule } from "../../components/adminUi";
 import { humanizeAction } from "../../components/auditText";
+import SubmissionsSection from "./SubmissionsSection";
 
 function Info({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -245,6 +246,8 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
           )}
         </div>
       </div>
+
+      {(a.status === "PUBLISHED" || a.status === "CLOSED" || a.status === "ARCHIVED") && <SubmissionsSection assignment={a} />}
 
       <Card className="p-6 mt-6">
         <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">

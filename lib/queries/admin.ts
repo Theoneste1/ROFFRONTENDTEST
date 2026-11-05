@@ -16,9 +16,11 @@ import {
   mentorRequestsApi,
   mentorsApi,
   schoolsApi,
+  submissionsAdminApi,
   studentsApi,
   usersApi,
   type AdminAssignmentFilters,
+  type AdminSubmissionFilters,
   type AuditFilters,
   type CreateUserInput,
   type InviteUserInput,
@@ -28,7 +30,7 @@ import {
 } from "@/lib/api/admin";
 import { mentorAssignmentsApi } from "@/lib/api/mentor";
 import { queryKeys } from "@/lib/query/keys";
-import type { AssignmentStatus, MentorRequestApproval, MentorRequestStatus, ReportFilters } from "@/lib/api/types";
+import type { AssignmentStatus, DistributionStrategy, MentorRequestApproval, MentorRequestStatus, ReportFilters } from "@/lib/api/types";
 
 /** Invalidate every admin view (call after any admin mutation). */
 export function useInvalidateAdmin() {
@@ -335,5 +337,56 @@ export function useAssignmentAdminAction(id: string) {
     },
     // Mentor and student assignment views in the same browser change too.
     onSettled: () => invalidate(queryKeys.mentor.assignmentsAll, queryKeys.assignments.all, queryKeys.courses.all),
+  });
+}
+
+// ─── Submissions & distribution ─────────────────────────────────────────────
+
+export function useAdminSubmissions(filters: AdminSubmissionFilters = {}, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.admin.submissions(filters),
+    queryFn: () => submissionsAdminApi.list(filters),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+}
+
+export function useDistributionBatches(assignmentId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.admin.batches(assignmentId ?? ""),
+    queryFn: () => submissionsAdminApi.batches(assignmentId!),
+    enabled: !!assignmentId,
+  });
+}
+
+/** Mentors with active access to a course × division (candidates for distribution). */
+export function useScopeMentors(courseId: string | undefined, divisionId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.admin.scopeMentors(courseId ?? "", divisionId ?? ""),
+    queryFn: async () => (await mentorsApi.scopes({ courseId, divisionId, isActive: true, limit: 100 })).data.map((s) => s.mentor),
+    enabled: !!courseId && !!divisionId,
+  });
+}
+
+function useInvalidateReviews() {
+  const invalidate = useInvalidateAdmin();
+  // Mentor review queues in the same browser change too.
+  return () => invalidate(queryKeys.mentor.reviewsAll, queryKeys.mentor.analyticsAll);
+}
+
+export function useDistribute(assignmentId: string) {
+  const invalidate = useInvalidateReviews();
+  return useMutation({
+    mutationFn: (input: { strategy?: DistributionStrategy; mentorIds?: string[] }) => submissionsAdminApi.distribute(assignmentId, input),
+    onSettled: invalidate,
+  });
+}
+
+export function useAssignSubmission() {
+  const invalidate = useInvalidateReviews();
+  return useMutation({
+    mutationFn: ({ submissionId, mentorId, reassign }: { submissionId: string; mentorId: string; reassign: boolean }) =>
+      reassign ? submissionsAdminApi.reassign(submissionId, mentorId) : submissionsAdminApi.assign(submissionId, mentorId),
+    onSettled: invalidate,
   });
 }

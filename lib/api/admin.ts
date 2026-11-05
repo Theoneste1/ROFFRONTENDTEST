@@ -7,6 +7,7 @@ import { api, apiBlob, saveFile, type QueryValue } from "./client";
 import type {
   AdminDashboard,
   AdminDivision,
+  AdminSubmission,
   AdminUser,
   AssignmentReportRow,
   AssignmentStatus,
@@ -15,6 +16,9 @@ import type {
   AuditLogEntry,
   Course,
   CourseParticipationRow,
+  DistributionBatch,
+  DistributionResult,
+  DistributionStrategy,
   GradeLevel,
   MentorReportRow,
   MentorRequest,
@@ -30,6 +34,7 @@ import type {
   SchoolRef,
   SchoolSummary,
   StudentReportRow,
+  SubmissionStatus,
   UserImportResult,
 } from "./types";
 
@@ -270,4 +275,34 @@ export const assignmentsAdminApi = {
     api<MentorAssignment>(`/assignments/${id}/reopen`, { method: "PATCH", body: Object.fromEntries(Object.entries(input).filter(([, v]) => v)) }),
   /** Any state → ARCHIVED (read-only afterwards). */
   archive: (id: string) => api<MentorAssignment>(`/assignments/${id}/archive`, { method: "PATCH" }),
+};
+
+// ─── Submissions & distribution ─────────────────────────────────────────────
+
+export interface AdminSubmissionFilters {
+  assignmentId?: string;
+  courseId?: string;
+  divisionId?: string;
+  mentorId?: string;
+  studentId?: string;
+  status?: SubmissionStatus;
+  page?: number;
+  limit?: number;
+  [key: string]: QueryValue;
+}
+
+/** Submission states from which a submission can be moved to another mentor. */
+export const REASSIGNABLE: SubmissionStatus[] = ["ASSIGNED", "IN_REVIEW", "MARKED", "REJECTED"];
+
+export const submissionsAdminApi = {
+  list: (filters: AdminSubmissionFilters = {}) => api<Page<AdminSubmission>>("/submissions", { query: filters }),
+  get: (id: string) => api<AdminSubmission>(`/submissions/${id}`),
+  /** Every SUBMITTED submission of the assignment → eligible mentors of its course × division. */
+  distribute: (assignmentId: string, input: { strategy?: DistributionStrategy; mentorIds?: string[] } = {}) =>
+    api<DistributionResult>(`/assignments/${assignmentId}/distribute`, { method: "POST", body: input }),
+  batches: (assignmentId: string) => api<DistributionBatch[]>(`/assignments/${assignmentId}/distribution-batches`),
+  /** SUBMITTED → ASSIGNED to one mentor. */
+  assign: (id: string, mentorId: string) => api<AdminSubmission>(`/submissions/${id}/assign`, { method: "PATCH", body: { mentorId } }),
+  /** Open review → another mentor (a new review cycle starts). */
+  reassign: (id: string, mentorId: string) => api<AdminSubmission>(`/submissions/${id}/reassign`, { method: "PATCH", body: { mentorId } }),
 };

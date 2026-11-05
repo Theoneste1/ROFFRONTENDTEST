@@ -892,3 +892,42 @@ export interface AssignmentReportRow {
   averageScore: number | null;
   byStage: ReviewStageCounts;
 }
+
+/** The current review as the administrator sees it (includes the mentor and coordination fields). */
+export interface AdminReview extends CurrentReview {
+  mentor: PersonRef | null;
+  coordinationNote: string | null;
+  decidedAt: string | null;
+  publishedAt: string | null;
+}
+
+/** `GET /submissions` items and `GET /submissions/:id` (admin view). */
+export interface AdminSubmission extends Omit<ReviewSubmission, "review"> {
+  review: AdminReview | null;
+  publishedReview: AdminReview | null;
+  resultRelease: { id: string; publishedAt: string } | null;
+  pointsAwarded: number | null;
+  publishedAt: string | null;
+}
+
+export type DistributionStrategy = "BALANCED" | "ROUND_ROBIN";
+
+/** `POST /assignments/:id/distribute`. */
+export interface DistributionResult {
+  batchId: string;
+  strategy: DistributionStrategy;
+  distributed: number;
+  /** mentorId → number of submissions assigned. */
+  byMentor: Record<string, number>;
+}
+
+/** `GET /assignments/:id/distribution-batches`. */
+export interface DistributionBatch {
+  id: string;
+  assignmentId: string;
+  strategy: DistributionStrategy;
+  assignedCount: number;
+  createdAt: string;
+  createdBy: { id: string; username: string } | null;
+  reviews: { id: string; submissionId: string; status: ReviewStatus; mentor: { id: string; username: string } | null }[];
+}
