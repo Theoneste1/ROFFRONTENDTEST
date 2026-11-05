@@ -10,7 +10,7 @@ Last updated: 2026-11-05
 | 1 | Foundation and API integration | ✅ Done, tested against the running backend |
 | 2 | Authentication and application shell | ✅ Done (Help/Settings links and the notification bell come in phase 6) |
 | 3 | Student portal | ✅ Done, tested against the running backend (one flow pending admin; see Phase 3) |
-| 4 | Mentor portal | ⏸ Waiting for the owner's review of phase 3 |
+| 4 | Mentor portal | ✅ Done, tested against the running backend (grading end to end pending admin; see Phase 4). Waiting for owner review |
 | 5 | Admin portal | ⏸ (needs admin credentials for testing; see Issues) |
 | 6 | Notifications, discussions, other supported modules | ⏸ |
 | 7 | Testing and final QA | ⏸ (continuous) |
@@ -412,6 +412,112 @@ No other data was changed. The existing seed records ("Sample set", its submissi
 
 ---
 
+## Phase 4: Mentor portal
+
+### Status at a glance
+
+| Category | Items |
+|---|---|
+| ✅ **Implemented and tested** | <ul><li>Dashboard.</li><li>Assignments: list, create/edit wizard, detail, submit for approval, recall.</li><li>Course analytics (Overview, Reports).</li><li>Resources: upload, edit, publish, unpublish, archive, restore, delete, download.</li><li>Review queue and review list, grading page (view, validation, files).</li><li>Mentor scope isolation; role routing; phone layout.</li></ul> |
+| ⚠ **Implemented but not fully tested** | <ul><li>**Grading actions:** start review, save mark (score, feedback, files), send review to admin, request or withdraw resubmission.</li><li>The UI follows the backend pipeline. No submission was available to grade, because the only one assigned to a mentor is `student.s5`'s, reserved for the phase 5 investigation; it was viewed only.</li><li>These need an admin to publish an assignment and distribute student work.</li></ul> |
+| ⏳ **Waiting for manual verification** | Full assignment → result flow once admin credentials exist: mentor submits → admin publishes → student submits → admin distributes → mentor grades → admin approves and publishes → student sees the result; plus resubmission requested by a mentor |
+| 🚫 **Hidden / excluded (owner decisions)** | <ul><li>Mentor student list, student-list filter and messaging: moved to `app/mentor/_unsupported/` (not routable).</li><li>Assignment type, rubric, submission type, originality check.</li><li>Live sessions removed.</li></ul> |
+| ❌ **Not implemented (planned)** | <ul><li>Help and Settings (phase 6).</li><li>Clickable notifications (phase 6).</li><li>Deleting an assignment (no backend route; B10).</li></ul> |
+
+### Pages and how they use the backend
+
+| Page | Requests | Notes |
+|---|---|---|
+| `/mentor/dashboard` | <ul><li>`GET /me/teaching`</li><li>`GET /analytics/courses/:id?divisionId` (each scope)</li><li>`GET /assignments`</li><li>`GET /mentor/reviews`</li><li>`GET /notifications`</li></ul> | Students in scope, active assignments (due this week, awaiting approval), reviews to do, average published score, recent activity, upcoming deadlines, quick links |
+| `/mentor/assignments` | `GET /assignments?courseId&divisionId&status&q&page&limit`, `GET /mentor/reviews` (counts) | Tabs: All, Drafts (DRAFT + REJECTED), Pending Approval, Published, Closed (CLOSED + ARCHIVED). Grouped tabs filter the loaded page. Shows the admin's note on returned assignments |
+| `/mentor/assignments/create`, `/[id]/edit` | <ul><li>`POST /assignments` (multipart with brief files)</li><li>`PATCH /assignments/:id` (JSON)</li><li>`POST`/`DELETE …/attachments`</li><li>`PATCH …/submit`</li></ul> | One 5-step wizard, then the original success screen. Validation mirrors the backend rules (title 3–200, instructions 10–10,000, future deadline, marks 1–10,000, points 0–10,000, resubmissions 0–50). Editing is offered only in DRAFT/REJECTED. Course and division are fixed after creation |
+| `/mentor/assignments/[id]` | `GET /assignments/:id`, `…/history`, `GET /mentor/reviews?assignmentId`, analytics | Actions by state: Edit / Submit for approval (DRAFT/REJECTED), Recall (PENDING_APPROVAL), Review Submissions (PUBLISHED/CLOSED/ARCHIVED). Files, settings, history timeline |
+| `/mentor/assignments/[id]/assignmentReview` | `GET /mentor/reviews?assignmentId`, analytics | Engagement (division totals from analytics; review counts for work assigned to this mentor), search, status filter, sort, table |
+| `…/assignmentReview/[submissionId]` | <ul><li>`GET /submissions/:id`, `…/reviews`</li><li>`PATCH …/start-review`, `…/mark` (multipart: score, mentorFeedback, feedbackFiles), `…/submit-to-admin`, `…/request-resubmission`, `…/withdraw-resubmission-request`</li><li>`DELETE …/review/attachments/:id`</li><li>file downloads</li></ul> | Actions follow the review status: ASSIGNED/SENT_BACK → Start review; IN_PROGRESS/MARKED → Save mark, Send to admin, Return for revision (only if the assignment allows resubmission); RESUBMISSION_REQUESTED → Withdraw. Shows attempts, review cycles and events, and the admin's send-back note |
+| `/mentor/reviews`, `/mentor/reviews/[submissionId]` | `GET /mentor/reviews`, `GET /submissions/:id` | Queue across assignments (course and status filters, paging). The `[submissionId]` route forwards to the grading page; it is the backend notification link format |
+| `/mentor/courses` | analytics, `GET /courses/:id/resources?divisionId&includeArchived`, `GET /leaderboard?divisionId`, `GET /assignments` | Scope selector; Overview and Reports sub-tabs; Books / Past Papers / Notes & Materials (one shared table) with row actions |
+| `/mentor/courses/upload-book` | `POST /courses/:id/resources` (multipart), `PATCH …/:rid`, `POST`/`DELETE …/attachments`, `PATCH …/publish` | Create or edit any of the 5 resource types: author, source, year, tags, files (≤50 MB each), "publish now" |
+
+### Consolidated, removed or hidden
+
+| Item | Action | Useful parts kept |
+|---|---|---|
+| Three wizards: `create`, `create/instructions`, `create/resources` | Replaced by one `AssignmentWizard` (create and edit). The two extra routes were deleted | Stepper and controlled form from `create/resources`; success screen from `create` |
+| `[id]/submissions/**` (duplicate of `assignmentReview`) | Deleted | The `assignmentReview` tree was kept and wired. Its success popup (the only difference) was kept |
+| `BooksTab` + `PastPapersTab` | Replaced by one `ResourcesTab` | Books table design and search; Past Papers year and type filters; sort |
+| `OverviewTab` Students / Grades / Activity / Outcomes sub-tabs | Removed | Overview and Reports (cards, score distribution, top students) now use real analytics |
+| `live-sessions` and its sidebar link | Deleted | — (replaced in the sidebar by **Reviews**) |
+| `students`, `courses/studentlist/**` | Moved to `app/mentor/_unsupported/` (not routable, with a README) | Code kept for when the backend supports it |
+
+### Fixes found during testing
+
+1. **Sign-in robustness (affects every portal).** Each full page load restores the session with `POST /auth/refresh`, and the backend allows 30 per minute per IP. A `429` was treated as "signed out". `lib/api/client.ts` now retries transient failures (429, 5xx, network) with backoff, using `Retry-After` when present; only 401/403 sign the user out.
+2. **Mentor sidebar on phones** now starts collapsed, matching the student portal.
+
+### Tests run against the real backend
+
+| Suite | Result | Covers |
+|---|---|---|
+| API scope and role checks (`api-mentor.mjs`) | **26/26** | <ul><li>Each mentor teaches only their division.</li><li>Mentor permissions never include publish or approve.</li><li>The Senior mentor is refused the Junior draft, resources, analytics and another mentor's submission, and cannot create in the Junior scope (403 `NOT_ASSIGNED_TO_SCOPE`; nothing created) or start that review.</li><li>A mentor token gets 403 for publish, approve, publish result, distribute, the admin submission list, admin pages, and student-only routes.</li></ul> |
+| Mentor browser suite (`e2e-mentor.mjs`) | **54/57**, the 3 explained below | <ul><li>Dashboard (real figures; 1 review to do).</li><li>Removed routes return 404 (live sessions, students, studentlist, submissions duplicate, extra wizard).</li><li>Assignment tabs.</li><li>Wizard validation on each step, brief file, save draft (201), detail and history.</li><li>Edit (prefilled, PATCH 200, "Edited").</li><li>Course analytics (Sample set, avg 75%).</li><li>Resource upload validation, upload (201), hidden from students, publish (students then see it), unpublish, edit, archive, restore, delete (200).</li><li>Review queue, review list, deep link, grading page (view only), "Save Mark" with empty fields → client errors and no request, student file download (200).</li><li>Mentor opening student/admin URLs → own dashboard.</li><li>Senior mentor: own name, nothing to review, Junior assignment "not found", other mentor's submission "not available", Senior scope only.</li><li>No 5xx; no console errors.</li></ul> |
+| Step F re-test (submit for approval → recall) | ✅ | The 3 suite failures were a **test** bug: a case-insensitive wait matched the new title "(edited)" before navigation finished. Re-run along the identical path: `PATCH …/submit` 200 → "Pending approval" → `PATCH …/recall` 200 → Draft, history shows both. The suite's wait is now fixed |
+| Student suite (regression after the client change) | **51/51** | — |
+| Auth suite (regression) | **19/19** | — |
+| Phone width 390 px | **11/11 mentor pages** | No horizontal scroll; content 310 px |
+| `tsc` / `next build` | ✅ | — |
+| `eslint` | ✅ | 1 warning, in the hidden, non-routable `_unsupported/studentlist` mock page |
+
+### Test data created in phase 4
+
+| Record | Id | State | Notes |
+|---|---|---|---|
+| Assignment **"[TEST] Phase 4 wizard assignment 1793905775112 (edited)"**, Junior Algebra | `a7a543f0-7b81-499a-8f8c-781ca1c0dbc3` | **DRAFT** | Created and edited by the suite; submitted for approval and recalled 3 times (suite plus debugging). Has a brief file `test-resource.pdf`. Each submit sent the admins an "assignment submitted" notification |
+| Resource **"[TEST] Phase 4 book … (edited)"** | — | **Deleted** by the suite | Was published and unpublished once. Publishing notified Junior students ("New Algebra material") |
+
+No existing records were modified. `student.s5`'s in-review submission was only viewed.
+
+### Remaining issues
+
+1. **Grading and the full results workflow need admin credentials** (see the status table). The phase 3 submission test is waiting for the same thing.
+2. The grouped tabs (Drafts, Closed) and resource status filters work on the loaded page; the API filters one status at a time (B5).
+3. Mentors see only submissions distributed to them. "Not submitted" and totals come from course analytics (B3).
+4. No mentor CSV or grade export (B4), messaging (B2) or student list (B1): hidden.
+5. Help, Settings and clickable notifications are planned for phase 6.
+
+### Files
+
+New:
+- `lib/api/mentor.ts`, `lib/queries/mentor.ts`
+- `app/components/ui/FilePicker.tsx`
+- `app/mentor/components/mentorUi.tsx`
+- `app/mentor/assignments/components/AssignmentWizard.tsx`
+- `app/mentor/assignments/create/CreateAssignment.tsx`
+- `app/mentor/assignments/[id]/{AssignmentOverview.tsx,edit/*}`
+- `app/mentor/assignments/[id]/assignmentReview/{ReviewList.tsx,[submissionId]/GradingView.tsx}`
+- `app/mentor/reviews/**`
+- `app/mentor/courses/components/ResourcesTab.tsx`
+- `app/mentor/courses/upload-book/ResourceForm.tsx`
+- `app/mentor/_unsupported/README.md`
+
+Modified:
+- `lib/api/types.ts`, `lib/query/keys.ts`, `lib/api/client.ts` (refresh retry)
+- `app/mentor/layout.tsx`, `app/mentor/dashboard/{page.tsx,components/Sidebar.tsx}`
+- `app/mentor/assignments/{page.tsx,create/page.tsx,[id]/page.tsx}`
+- `app/mentor/assignments/[id]/assignmentReview/**`
+- `app/mentor/courses/{page.tsx,components/CoursesContent.tsx,components/OverviewTab.tsx,upload-book/page.tsx}`
+
+Deleted:
+- `app/mentor/assignments/create/{instructions,resources}/page.tsx`
+- `app/mentor/assignments/[id]/submissions/**`
+- `app/mentor/live-sessions/page.tsx`
+- `app/mentor/courses/components/{BooksTab,PastPapersTab}.tsx`
+
+Moved:
+- `app/mentor/students` → `app/mentor/_unsupported/students`
+- `app/mentor/courses/studentlist/**` → `app/mentor/_unsupported/studentlist/**`
+
+---
+
 ## Module tracker
 
 | Module | Wired to API | Tested against backend | Notes |
@@ -426,13 +532,13 @@ No other data was changed. The existing seed records ("Sample set", its submissi
 | Student: results | ✅ | ✅ | |
 | Student: leaderboard | ✅ | ✅ | Students / Schools (division) |
 | Student: live sessions | — | — | ✅ Removed |
-| Mentor: scope selector, dashboard | ☐ | ☐ | |
-| Mentor: assignments list, detail, wizard | ☐ | ☐ | Consolidate 3 wizards |
-| Mentor: review queue and grading | ☐ | ☐ | Consolidate 2 trees |
-| Mentor: course resources | ☐ | ☐ | |
-| Mentor: course analytics | ☐ | ☐ | |
-| Mentor: students, student list, messaging | — | — | Hidden (owner decision) |
-| Mentor: live sessions | — | — | To be removed |
+| Mentor: scope selector, dashboard | ✅ | ✅ | |
+| Mentor: assignments list, detail, wizard | ✅ | ✅ | 3 wizards consolidated into 1 |
+| Mentor: review queue and grading | ✅ | ⚠ | 2 trees consolidated; grading actions need admin-distributed work |
+| Mentor: course resources | ✅ | ✅ | Upload, edit, publish, unpublish, archive, restore, delete |
+| Mentor: course analytics | ✅ | ✅ | |
+| Mentor: students, student list, messaging | — | — | ✅ Hidden in `app/mentor/_unsupported/` |
+| Mentor: live sessions | — | — | ✅ Removed |
 | Admin: all modules | ☐ | ☐ | Needs admin credentials |
 | Notifications inbox and deep links | ☐ | ☐ | |
 | Discussions | ✅ (component) | ✅ | Course and assignment threads done; `/discussions/[threadId]` deep link in phase 6 |
@@ -443,3 +549,4 @@ No other data was changed. The existing seed records ("Sample set", its submissi
 - 2026-11-05: Audit documents created.
 - 2026-11-05: Phases 1–2 implemented and tested (foundation, authentication, shell).
 - 2026-11-05: Phase 3 (student portal) implemented and tested; auth forms hardened against pre-hydration submits.
+- 2026-11-05: Phase 4 (mentor portal) implemented and tested; session refresh now retries on 429/5xx.
