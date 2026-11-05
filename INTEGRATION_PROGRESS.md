@@ -560,7 +560,7 @@ Approved decisions:
 | 5.3 | Mentors and applications | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.4 | Students and schools (read-only) | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.5 | Divisions, courses, resources | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.6 | Assignment approval and management | ☐ | |
+| 5.6 | Assignment approval and management | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.7 | Submissions and distribution | ☐ | |
 | 5.8 | Review approval and send-back | ☐ | |
 | 5.9 | Result publication | ☐ | |
@@ -740,6 +740,39 @@ Tests:
 | `e2e-admin.mjs nonadmin`, now with a **mentor resources regression** (read-only): Books tab lists the `[TEST]` book; "Upload a Book" link; form renders with the mentor's scopes; back keeps scope and tab; row Edit opens the edit form (nothing saved); no Senior scopes for mentor.junior | ✅ 15/15 |
 | `e2e-admin.mjs admin` (prepared): division cards and descriptions equal the API; no "accepting" toggle; save without changes sends no PATCH; course rows; modal without division checkboxes; course save without changes sends no PATCH; 8 scopes; admin sees the unpublished `[TEST]` note; admin upload link; 390 px | ⏳ Waiting for admin credentials |
 | Editing a division or course, changing course visibility, uploading or changing a resource | **Not run.** These change shared data and need owner approval |
+
+### 5.6 Assignment approval and management
+
+**`/admin/assignments`** (`GET /assignments`; admins see every state):
+- Status pills map to the backend states: Awaiting approval (with count), Published, Closed, Returned to mentor, Drafts and Archived.
+- Course and division selects, search (`q=`) and paging, all kept in the URL.
+- Columns: submissions "submitted / expected" and review progress (approved + published of those submitted), joined by id from `GET /admin/reports/assignments`. CSV export.
+- The copy now says mentors prepare and admins approve. There is no "create" button: admins cannot create assignments.
+
+**`/admin/assignments/[id]`**:
+- Details, instructions, brief files (authenticated download), the rejection note when returned, submission figures from the report, and the history (`GET /assignments/:id/history`).
+- **Only the actions the backend allows in the current state** are offered, each confirmed:
+
+| State | Actions |
+|---|---|
+| PENDING_APPROVAL | **Approve & publish**, only while the deadline is in the future; otherwise a notice says to return it. **Return to mentor** with a required note of 5–1,000 characters |
+| PUBLISHED | **Close submissions** (optional note); **Unpublish**, only with 0 submissions |
+| CLOSED | **Reopen**, with a new deadline required when the old one passed and late work is not accepted (validated before sending) |
+| Every state except ARCHIVED | **Archive** |
+
+Endpoints:
+- `PATCH /assignments/:id/{publish,reject,unpublish,close,reopen,archive}`
+- `GET /assignments`, `GET /assignments/:id`, `GET /assignments/:id/history`
+- `GET /admin/reports/assignments` (+ `.csv`)
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint, routes compile | ✅ |
+| `api-admin.mjs nonadmin`: publish, reject, close and archive refused for student and mentor | ✅ (part of 78/78) |
+| `e2e-admin.mjs admin` (prepared, read-only): rows equal the API; no create button; Drafts pill sends `status=DRAFT`; dashboard link; the `[TEST]` draft offers only Archive; the closed "Sample set" offers Reopen and Archive. The reopen dialog refuses a missing deadline without sending; the test submits only when the dialog marks the deadline as required, and "Sample set" is past its deadline with no late work. An empty return note is refused without sending; history; 390 px | ⏳ Waiting for admin credentials |
+| Publishing, returning, closing, reopening, unpublishing or archiving a real assignment | **Not run.** These are part of the §5 workflow and need owner approval |
 
 ### Tests that still need admin credentials or owner approval
 

@@ -8,6 +8,9 @@ import type {
   AdminDashboard,
   AdminDivision,
   AdminUser,
+  AssignmentReportRow,
+  AssignmentStatus,
+  MentorAssignment,
   AuditCategory,
   AuditLogEntry,
   Course,
@@ -233,4 +236,38 @@ export const coursesAdminApi = {
     );
     return [first, ...rest].flatMap((p) => p.data);
   },
+};
+
+// ─── Assignments (approval and life cycle) ──────────────────────────────────
+
+export const ASSIGNMENT_ADMIN_RULES = { rejectionNote: { min: 5, max: 1000 }, note: { min: 1, max: 1000 } };
+
+export interface AdminAssignmentFilters {
+  status?: AssignmentStatus;
+  courseId?: string;
+  divisionId?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+  [key: string]: QueryValue;
+}
+
+export const assignmentsAdminApi = {
+  /** Admins see every assignment, in every state. */
+  list: (filters: AdminAssignmentFilters = {}) => api<Page<MentorAssignment>>("/assignments", { query: filters }),
+  report: (filters: ReportFilters & { status?: AssignmentStatus; page?: number; limit?: number } = {}) =>
+    api<Page<AssignmentReportRow> & { summary: unknown }>("/admin/reports/assignments", { query: { ...filters } }),
+  /** PENDING_APPROVAL → PUBLISHED (deadline must be in the future); students are notified. */
+  publish: (id: string) => api<MentorAssignment>(`/assignments/${id}/publish`, { method: "PATCH" }),
+  /** PENDING_APPROVAL → REJECTED: back to the mentor with a note. */
+  reject: (id: string, rejectionNote: string) => api<MentorAssignment>(`/assignments/${id}/reject`, { method: "PATCH", body: { rejectionNote } }),
+  /** PUBLISHED with no submissions → DRAFT. */
+  unpublish: (id: string) => api<MentorAssignment>(`/assignments/${id}/unpublish`, { method: "PATCH" }),
+  /** PUBLISHED → CLOSED: no more submissions. */
+  close: (id: string, note?: string) => api<MentorAssignment>(`/assignments/${id}/close`, { method: "PATCH", body: note ? { note } : {} }),
+  /** CLOSED → PUBLISHED; a new future deadline is needed when the old one passed (and late work is not accepted). */
+  reopen: (id: string, input: { note?: string; deadline?: string }) =>
+    api<MentorAssignment>(`/assignments/${id}/reopen`, { method: "PATCH", body: Object.fromEntries(Object.entries(input).filter(([, v]) => v)) }),
+  /** Any state → ARCHIVED (read-only afterwards). */
+  archive: (id: string) => api<MentorAssignment>(`/assignments/${id}/archive`, { method: "PATCH" }),
 };

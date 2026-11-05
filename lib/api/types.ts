@@ -861,3 +861,34 @@ export interface CourseParticipationRow {
   discussionThreads: number;
   discussionComments: number;
 }
+
+/** Review stage counts used by the assignment and results reports. */
+export interface ReviewStageCounts {
+  awaitingDistribution: number;
+  inReview: number;
+  awaitingApproval: number;
+  approved: number;
+  published: number;
+  resubmissionRequested: number;
+}
+
+/** `GET /admin/reports/assignments` items. */
+export interface AssignmentReportRow {
+  id: string;
+  title: string;
+  status: AssignmentStatus;
+  course: CourseRef;
+  division: DivisionRef;
+  academicYear: { id: string; name: string };
+  deadline: string;
+  publishedAt: string | null;
+  maximumMarks: number;
+  expectedStudents: number;
+  submitted: number;
+  onTime: number;
+  late: number;
+  notSubmitted: number;
+  submissionRate: number;
+  averageScore: number | null;
+  byStage: ReviewStageCounts;
+}

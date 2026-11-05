@@ -9,6 +9,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminDashboardApi,
+  assignmentsAdminApi,
   auditApi,
   coursesAdminApi,
   divisionsApi,
@@ -17,6 +18,7 @@ import {
   schoolsApi,
   studentsApi,
   usersApi,
+  type AdminAssignmentFilters,
   type AuditFilters,
   type CreateUserInput,
   type InviteUserInput,
@@ -24,8 +26,9 @@ import {
   type UserFilters,
   type UserReportFilters,
 } from "@/lib/api/admin";
+import { mentorAssignmentsApi } from "@/lib/api/mentor";
 import { queryKeys } from "@/lib/query/keys";
-import type { MentorRequestApproval, MentorRequestStatus, ReportFilters } from "@/lib/api/types";
+import type { AssignmentStatus, MentorRequestApproval, MentorRequestStatus, ReportFilters } from "@/lib/api/types";
 
 /** Invalidate every admin view (call after any admin mutation). */
 export function useInvalidateAdmin() {
@@ -264,5 +267,73 @@ export function useCourseAction() {
     ) => (a.type === "update" ? coursesAdminApi.update(a.id, a.input) : coursesAdminApi.setState(a.id, a.action)),
     // Course lists are shared with the student and mentor views.
     onSuccess: () => invalidate(queryKeys.courses.all),
+  });
+}
+
+// ─── Assignments ────────────────────────────────────────────────────────────
+
+export function useAdminAssignments(filters: AdminAssignmentFilters = {}) {
+  return useQuery({
+    queryKey: queryKeys.admin.assignments(filters),
+    queryFn: () => assignmentsAdminApi.list(filters),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Submission and review figures per assignment (first 100 matching the filters). */
+export function useAssignmentReport(filters: ReportFilters & { status?: AssignmentStatus } = {}) {
+  const f = { ...filters, limit: 100 };
+  return useQuery({
+    queryKey: queryKeys.admin.assignmentReport(f),
+    queryFn: () => assignmentsAdminApi.report(f),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAdminAssignment(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.admin.assignment(id ?? ""),
+    queryFn: () => mentorAssignmentsApi.get(id!),
+    enabled: !!id,
+  });
+}
+
+export function useAdminAssignmentHistory(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.admin.assignmentHistory(id ?? ""),
+    queryFn: () => mentorAssignmentsApi.history(id!),
+    enabled: !!id,
+  });
+}
+
+export type AssignmentAdminAction =
+  | { type: "publish" }
+  | { type: "reject"; note: string }
+  | { type: "unpublish" }
+  | { type: "close"; note?: string }
+  | { type: "reopen"; note?: string; deadline?: string }
+  | { type: "archive" };
+
+export function useAssignmentAdminAction(id: string) {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: (a: AssignmentAdminAction) => {
+      switch (a.type) {
+        case "publish":
+          return assignmentsAdminApi.publish(id);
+        case "reject":
+          return assignmentsAdminApi.reject(id, a.note);
+        case "unpublish":
+          return assignmentsAdminApi.unpublish(id);
+        case "close":
+          return assignmentsAdminApi.close(id, a.note);
+        case "reopen":
+          return assignmentsAdminApi.reopen(id, { note: a.note, deadline: a.deadline });
+        case "archive":
+          return assignmentsAdminApi.archive(id);
+      }
+    },
+    // Mentor and student assignment views in the same browser change too.
+    onSettled: () => invalidate(queryKeys.mentor.assignmentsAll, queryKeys.assignments.all, queryKeys.courses.all),
   });
 }

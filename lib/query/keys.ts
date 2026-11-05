@@ -9,7 +9,7 @@ import type { MyAssignmentFilters, MyResultFilters } from "@/lib/api/assessment"
 import type { ResourceFilters } from "@/lib/api/learning";
 import type { ThreadScope } from "@/lib/api/community";
 import type { AssignmentFilters, ReviewFilters } from "@/lib/api/mentor";
-import type { AuditFilters, UserFilters, UserReportFilters } from "@/lib/api/admin";
+import type { AdminAssignmentFilters, AuditFilters, UserFilters, UserReportFilters } from "@/lib/api/admin";
 import type { ReportFilters } from "@/lib/api/types";
 
 export const queryKeys = {
@@ -106,6 +106,11 @@ export const queryKeys = {
     studentReport: (filters: UserReportFilters = {}) => [...queryKeys.admin.all, "students", "report", filters] as const,
     participation: (filters: ReportFilters = {}) => [...queryKeys.admin.all, "courses", "participation", filters] as const,
     activeScopes: () => [...queryKeys.admin.all, "mentors", "scopes", "all-active"] as const,
+    assignmentsAll: ["admin", "assignments"] as const,
+    assignments: (filters: AdminAssignmentFilters = {}) => [...queryKeys.admin.assignmentsAll, "list", filters] as const,
+    assignmentReport: (filters: Record<string, unknown> = {}) => [...queryKeys.admin.assignmentsAll, "report", filters] as const,
+    assignment: (id: string) => [...queryKeys.admin.assignmentsAll, "detail", id] as const,
+    assignmentHistory: (id: string) => [...queryKeys.admin.assignmentsAll, "history", id] as const,
     mentorReport: (filters: UserReportFilters = {}) => [...queryKeys.admin.all, "mentors", "report", filters] as const,
     mentorScopes: (mentorId: string) => [...queryKeys.admin.all, "mentors", "scopes", mentorId] as const,
     mentorRequests: (params: { status?: string; page?: number } = {}) => [...queryKeys.admin.all, "mentor-requests", params] as const,
