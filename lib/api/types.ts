@@ -825,3 +825,22 @@ export interface MentorRequestApproval {
   emailVerificationRequired: boolean;
   next: string;
 }
+
+/** `GET /admin/reports/students` items. */
+export interface StudentReportRow {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  gradeLevel: GradeLevel | null;
+  division: DivisionRef | null;
+  school: { id: string; name: string } | null;
+  status: ReportUserStatus;
+  enrollmentStatus: string | null;
+  submissions: number;
+  resultsPublished: number;
+  points: number;
+  registeredAt: string;
+  activatedAt: string | null;
+  lastLoginAt: string | null;
+}

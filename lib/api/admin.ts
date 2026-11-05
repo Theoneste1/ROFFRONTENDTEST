@@ -24,6 +24,7 @@ import type {
   SchoolDetail,
   SchoolRef,
   SchoolSummary,
+  StudentReportRow,
   UserImportResult,
 } from "./types";
 
@@ -195,4 +196,17 @@ export const mentorRequestsApi = {
   /** Creates the mentor account (activation e-mail when verification is on). */
   approve: (id: string) => api<MentorRequestApproval>(`/mentor-requests/${id}/approve`, { method: "PATCH" }),
   reject: (id: string) => api<{ id: string; status: MentorRequestStatus }>(`/mentor-requests/${id}/reject`, { method: "PATCH" }),
+};
+
+// ─── Students ───────────────────────────────────────────────────────────────
+
+export const studentsApi = {
+  report: (filters: UserReportFilters = {}) =>
+    api<Page<StudentReportRow> & { filters: unknown }>("/admin/reports/students", { query: filters }),
+  exportCsv: (filters: UserReportFilters = {}) => {
+    const { page: _p, limit: _l, ...rest } = filters;
+    void _p;
+    void _l;
+    return downloadCsv("/admin/reports/students.csv", rest, "students.csv");
+  },
 };

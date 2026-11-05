@@ -558,7 +558,7 @@ Approved decisions:
 | 5.1 | Dashboard | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.2 | Users | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.3 | Mentors and applications | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.4 | Students and schools (read-only) | ☐ | |
+| 5.4 | Students and schools (read-only) | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.5 | Divisions, courses, resources | ☐ | |
 | 5.6 | Assignment approval and management | ☐ | |
 | 5.7 | Submissions and distribution | ☐ | |
@@ -583,7 +583,7 @@ Tests:
 | Check | Result |
 |---|---|
 | `tsc --noEmit`, ESLint (changed files), `next build` | ✅ |
-| API isolation (`api-admin.mjs nonadmin`): student and mentor tokens on 22 admin read routes (including 2 CSV exports) and 15 admin mutations (non-existent ids, empty settings body) | ✅ 74/74 refused with 403 |
+| API isolation (`api-admin.mjs nonadmin`): student and mentor tokens on 24 admin read routes (including 3 CSV exports and `/schools`) and 15 admin mutations (non-existent ids, empty settings body) | ✅ 78/78 refused with 403 (re-run after 5.4) |
 | Admin part of `api-admin.mjs`: permissions, every read route 200, admin refused for create, submit and grade, legacy s5 record read-only | ⏳ Waiting for admin credentials. It reads `ROF_ADMIN_USER` and `ROF_ADMIN_PASSWORD` from the environment and stores nothing |
 
 ### 5.1 Dashboard
@@ -685,6 +685,30 @@ Tests:
 | `api-admin.mjs nonadmin`: mentor-assignment and mentor-request routes refused | ✅ (part of 74/74) |
 | `e2e-admin.mjs admin` (prepared, read-only): rows equal the report; mentor.junior's 4 courses; division pill sends `divisionId`; dialog scopes equal the API; a duplicate add sends no request; `?tab=applications` sends `status=PENDING`; no mock names; 390 px | ⏳ Waiting for admin credentials |
 | Adding or removing a scope; approving or rejecting an application | **Not run.** These change data and need owner approval for a specific record |
+
+### 5.4 Students and schools
+
+**`/admin/students`** (`GET /admin/reports/students`):
+- Shows name, username, last sign-in, e-mail, division and grade, school and status.
+- "Assignment activity" shows the backend's real figures: submissions, published results and points. The mock progress bar had no backend total behind it.
+- Filters: division pills, status and search, kept in the URL. CSV export (`students.csv`).
+- Each row links to the user page, where grade, school and home location are edited (`PATCH /admin/users/:id`).
+- The `alert()` "more" menu is removed.
+
+**`/admin/schools`** and **`/admin/schools/[id]`** (read-only, D6):
+- `GET /schools` with search and paging.
+- `GET /schools/:id` with the school's students, paged, each linking to the user page.
+- No create, edit or delete controls, because the backend has no such endpoints.
+
+Not added (D7): academic-year and enrolment management.
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint, routes compile | ✅ |
+| `api-admin.mjs nonadmin`, extended with `/schools` and `mentors.csv` | ✅ 78/78 |
+| `e2e-admin.mjs admin` (prepared): rows equal the report; s2's activity figures; no mock names; schools equal `GET /schools` with no edit controls; school detail; 390 px | ⏳ Waiting for admin credentials |
 
 ### Tests that still need admin credentials or owner approval
 

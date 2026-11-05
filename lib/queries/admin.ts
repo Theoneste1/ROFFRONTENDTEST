@@ -14,6 +14,7 @@ import {
   mentorRequestsApi,
   mentorsApi,
   schoolsApi,
+  studentsApi,
   usersApi,
   type AuditFilters,
   type CreateUserInput,
@@ -215,5 +216,15 @@ export function useDecideMentorRequest() {
       return null;
     },
     onSettled: () => invalidate(),
+  });
+}
+
+// ─── Students ───────────────────────────────────────────────────────────────
+
+export function useStudentReport(filters: UserReportFilters = {}) {
+  return useQuery({
+    queryKey: queryKeys.admin.studentReport(filters),
+    queryFn: () => studentsApi.report(filters),
+    placeholderData: keepPreviousData,
   });
 }
