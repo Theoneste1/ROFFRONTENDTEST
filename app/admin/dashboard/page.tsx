@@ -152,6 +152,13 @@ export default function DashboardMain() {
           ) : (
             (() => {
               const items = attentionItems(overview.data.actionRequired);
+              const reported = d?.reportedContent.open ?? 0;
+              if (reported > 0)
+                items.push({
+                  title: 'Reported discussion content',
+                  description: `${plural(reported, 'open report')} to review.`,
+                  href: '/admin/moderation',
+                });
               return items.length ? (
                 <div className="space-y-3">
                   {items.map((item) => (

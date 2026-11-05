@@ -1001,3 +1001,77 @@ export interface ReviewsReport {
     medianTurnaroundHours: number | null;
   };
 }
+
+export type ReportStatus = "OPEN" | "RESOLVED" | "DISMISSED";
+
+export interface ModerationPerson extends PersonRef {
+  role: Role;
+  avatarUrl: string | null;
+}
+
+/** `GET /admin/moderation/reports` items. */
+export interface ModerationReport {
+  id: string;
+  targetType: "THREAD" | "COMMENT";
+  reason: ReportReason;
+  details: string | null;
+  status: ReportStatus;
+  /** The reported text as it was when reported. */
+  contentSnapshot: string;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolutionNote: string | null;
+  resolvedBy: PersonRef | null;
+  reporter: ModerationPerson | null;
+  comment: { id: string; content: string; status: string; deletedAt: string | null; editedAt: string | null; author: ModerationPerson | null } | null;
+  thread: { id: string; title: string; status: string; courseId: string | null; assignmentId: string | null; divisionId: string | null; deletedAt: string | null; createdBy: ModerationPerson | null } | null;
+}
+
+export interface ModerationReportDetail extends ModerationReport {
+  otherReports: { id: string; reason: ReportReason; details: string | null; status: ReportStatus; createdAt: string; reporter: ModerationPerson | null }[];
+  moderationHistory: { id?: string; action?: string; reason?: string | null; createdAt?: string }[];
+}
+
+/** `GET /admin/moderation/actions` items. */
+export interface ModerationAction {
+  id: string;
+  action: string;
+  reason: string | null;
+  createdAt: string;
+  moderator: ModerationPerson | null;
+  comment: { id: string; content: string; status: string } | null;
+  thread: { id: string; title: string; status: string } | null;
+  report: { id: string; reason: ReportReason } | null;
+}
+
+/** `GET /admin/comments/hidden` items. */
+export interface HiddenComment {
+  id: string;
+  content: string;
+  status: string;
+  createdAt: string;
+  author: ModerationPerson | null;
+  thread: { id: string; title: string };
+  _count: { replies: number };
+}
+
+export type SettingType = "boolean" | "string" | "enum" | "integer" | "email" | "url";
+export type SettingValue = boolean | number | string | null;
+
+/** `GET /admin/settings` items (registry metadata + current value). */
+export interface PlatformSetting {
+  key: string;
+  category: "REGISTRATION" | "ASSIGNMENTS" | "NOTIFICATIONS" | "PLATFORM" | "SUPPORT";
+  type: SettingType;
+  description: string;
+  value: SettingValue;
+  default: SettingValue;
+  options?: string[];
+  nullable?: boolean;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  unit?: string;
+  updatedAt: string | null;
+  updatedBy: PersonRef | null;
+}

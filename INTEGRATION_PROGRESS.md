@@ -565,7 +565,7 @@ Approved decisions:
 | 5.8 | Review approval and send-back | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.9 | Result publication | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.10 | Reports and audit log | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.11 | Moderation and platform settings | ☐ | |
+| 5.11 | Moderation and platform settings | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.12 | Final integration and regression | ☐ | |
 
 ### 5.0 Foundation
@@ -892,6 +892,38 @@ Tests:
 | `tsc`, ESLint, routes compile | ✅ |
 | `api-admin.mjs nonadmin`: reports, audit log and exports refused | ✅ (part of 82/82) |
 | `e2e-admin.mjs admin` (prepared): no sample text; 3 real filters; the course filter sends `courseId` to all four reports; "all time" sends no `from`; Students CSV returns 200; audit rows equal the API; the export appears in the log; category pill; details dialog; no mock entries; 390 px | ⏳ Waiting for admin credentials. **Note:** the CSV checks add `EXPORT_REPORT` audit entries; the audit log is append-only by design |
+
+### 5.11 Moderation and platform settings
+
+**`/admin/moderation`** (D5; new sidebar link "Moderation"). Tabs are kept in the URL:
+- **Reports** (`GET /admin/moderation/reports`): status pills (Open by default, with its count on the tab), reason and target selects. Shows the snapshot excerpt, the thread, the reporter and the date.
+- **Hidden comments** (`GET /admin/comments/hidden`), with **Restore** (`PATCH /comments/:id/restore`).
+- **Moderation log** (`GET /admin/moderation/actions`).
+
+**`/admin/moderation/reports/[id]`** (also the backend's "content reported" notification target):
+- Shows the reported snapshot, the current text when edited, author, thread and content status, other reports of the same content, and the resolution.
+- **Resolve** (`POST …/resolve`, only while the report is OPEN, optional note): Hide content, Delete content, Lock thread (when there is a thread), or Dismiss. When the content is already deleted, only Dismiss is offered, as the backend requires.
+- **Thread actions**, only those allowed from the thread's state (`PATCH /threads/:id/{lock,unlock,hide,restore,archive}`).
+- After resolution, a hide or restore of the comment is available.
+- Pin and unpin are not offered, because the report payload doesn't say whether a thread is pinned.
+
+**`/admin/settings`** (D3; the sidebar "Settings" button is now a link):
+- All backend settings (`GET /admin/settings`), grouped by category and **generated from the registry metadata**: switches, number fields with min, max and unit, selects for options, text, e-mail and URL fields with their length limits.
+- Shows each setting's default, a "Use default" button, and who changed it last and when.
+- Validated before sending. **Only changed keys are sent** (`PATCH /admin/settings`, `{ key: value }`). The backend audits every change.
+- **Maintenance:** Recompute leaderboard (`POST /admin/leaderboard/recompute`), behind a confirm dialog.
+- Profile and personal preferences stay in phase 6.
+
+The **dashboard** now shows "Reported discussion content" (`reportedContent.open`), linked to moderation.
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint, routes compile | ✅ |
+| `api-admin.mjs nonadmin`: moderation reports and actions, hidden comments and settings (GET and PATCH) refused | ✅ (part of 82/82) |
+| `e2e-admin.mjs admin` (prepared, read-only): open reports equal the API; hidden and log tabs; report detail (when a report exists); unknown report id; every setting rendered with API values; save without changes sends no PATCH; an out-of-range number is refused without sending; sidebar links; 390 px | ⏳ Waiting for admin credentials |
+| Resolving a report, hiding or restoring content, changing a setting, recomputing points | **Not run.** These change shared data and need owner approval |
 
 ### Tests that still need admin credentials or owner approval
 

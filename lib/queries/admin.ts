@@ -15,9 +15,11 @@ import {
   divisionsApi,
   mentorRequestsApi,
   mentorsApi,
+  moderationApi,
   reportsApi,
   resultsAdminApi,
   schoolsApi,
+  settingsApi,
   submissionsAdminApi,
   studentsApi,
   usersApi,
@@ -28,11 +30,13 @@ import {
   type InviteUserInput,
   type UpdateUserInput,
   type UserFilters,
+  type ResolveAction,
+  type ThreadOp,
   type UserReportFilters,
 } from "@/lib/api/admin";
 import { mentorAssignmentsApi, reviewsApi } from "@/lib/api/mentor";
 import { queryKeys } from "@/lib/query/keys";
-import type { AssignmentStatus, DistributionStrategy, MentorRequestApproval, MentorRequestStatus, ReportFilters } from "@/lib/api/types";
+import type { AssignmentStatus, DistributionStrategy, MentorRequestApproval, MentorRequestStatus, ReportFilters, ReportReason, ReportStatus, SettingValue } from "@/lib/api/types";
 
 /** Invalidate every admin view (call after any admin mutation). */
 export function useInvalidateAdmin() {
@@ -480,4 +484,72 @@ export function useReviewsReport(filters: ReportFilters = {}) {
     queryFn: () => reportsApi.reviews(filters),
     placeholderData: keepPreviousData,
   });
+}
+
+// ─── Moderation ─────────────────────────────────────────────────────────────
+
+export function useModerationReports(params: { status?: ReportStatus; reason?: ReportReason; targetType?: "THREAD" | "COMMENT"; page?: number; limit?: number } = {}) {
+  return useQuery({
+    queryKey: queryKeys.admin.moderationReports({ ...params }),
+    queryFn: () => moderationApi.reports(params),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useModerationReport(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.admin.moderationReport(id ?? ""),
+    queryFn: () => moderationApi.report(id!),
+    enabled: !!id,
+  });
+}
+
+export function useModerationActions(page = 1) {
+  return useQuery({
+    queryKey: queryKeys.admin.moderationActions(page),
+    queryFn: () => moderationApi.actions({ page, limit: 20 }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useHiddenComments(page = 1) {
+  return useQuery({
+    queryKey: queryKeys.admin.hiddenComments(page),
+    queryFn: () => moderationApi.hiddenComments({ page, limit: 20 }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export type ModerationMutation =
+  | { type: "resolve"; reportId: string; action: ResolveAction; note?: string }
+  | { type: "comment"; commentId: string; op: "hide" | "restore"; reason?: string }
+  | { type: "thread"; threadId: string; op: ThreadOp; reason?: string };
+
+export function useModerate() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: (m: ModerationMutation) =>
+      m.type === "resolve" ? moderationApi.resolve(m.reportId, m.action, m.note) : m.type === "comment" ? moderationApi.comment(m.commentId, m.op, m.reason) : moderationApi.thread(m.threadId, m.op, m.reason),
+    onSettled: () => invalidate(queryKeys.discussions.all),
+  });
+}
+
+// ─── Platform settings ──────────────────────────────────────────────────────
+
+export function usePlatformSettings() {
+  return useQuery({ queryKey: queryKeys.admin.settings(), queryFn: settingsApi.list });
+}
+
+export function useUpdateSettings() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: (changes: Record<string, SettingValue>) => settingsApi.update(changes),
+    // Support details are public (login page, help).
+    onSettled: () => invalidate(queryKeys.support),
+  });
+}
+
+export function useRecomputeLeaderboard() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({ mutationFn: settingsApi.recomputeLeaderboard, onSettled: () => invalidate(queryKeys.leaderboard.all) });
 }

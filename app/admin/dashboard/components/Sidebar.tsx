@@ -15,7 +15,8 @@ import {
   BarChart3,
   ScrollText,
   HelpCircle,
-  Settings
+  Settings,
+  ShieldAlert
 } from "lucide-react";
 import SignOutButton from "@/app/components/shell/SignOutButton";
 
@@ -185,6 +186,20 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           <ScrollText className="h-5 w-5 flex-shrink-0" />
           {isOpen && <span className="whitespace-nowrap">Audit Log</span>}
         </Link>
+
+        {/* Moderation Link */}
+        <Link
+          href="/admin/moderation"
+          title="Moderation"
+          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
+            } ${isActive("/admin/moderation")
+              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
+              : "hover:bg-white/5 text-slate-400 hover:text-white"
+            }`}
+        >
+          <ShieldAlert className="h-5 w-5 flex-shrink-0" />
+          {isOpen && <span className="whitespace-nowrap">Moderation</span>}
+        </Link>
       </div>
 
       {/* BOTTOM UTILITY LINKS */}
@@ -199,15 +214,16 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           {isOpen && <span className="whitespace-nowrap">Help</span>}
         </button>
 
-        {/* Settings Button */}
-        <button
+        {/* Settings Link (platform settings) */}
+        <Link
+          href="/admin/settings"
           title="Settings"
-          className={`flex items-center gap-3 w-full py-2.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all text-sm ${isOpen ? 'px-4' : 'justify-center px-0'
-            }`}
+          className={`flex items-center gap-3 w-full py-2.5 rounded-lg transition-all text-sm ${isOpen ? 'px-4' : 'justify-center px-0'
+            } ${isActive("/admin/settings") ? "bg-white/10 text-white" : "hover:bg-white/5 text-slate-400 hover:text-white"}`}
         >
           <Settings className="h-4 w-4 flex-shrink-0" />
           {isOpen && <span className="whitespace-nowrap">Settings</span>}
-        </button>
+        </Link>
 
         {/* Sign Out Button */}
         <SignOutButton isOpen={isOpen} />

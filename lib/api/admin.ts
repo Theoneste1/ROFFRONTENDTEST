@@ -20,13 +20,20 @@ import type {
   DistributionResult,
   DistributionStrategy,
   GradeLevel,
+  HiddenComment,
   MentorReportRow,
   MentorRequest,
   MentorRequestApproval,
   MentorRequestStatus,
   MentorScope,
+  ModerationAction,
+  ModerationReport,
+  ModerationReportDetail,
   Page,
+  PlatformSetting,
   ReportFilters,
+  ReportReason,
+  ReportStatus,
   ReportsOverview,
   ResultHistory,
   ResultRelease,
@@ -37,6 +44,7 @@ import type {
   SchoolDetail,
   SchoolRef,
   SchoolSummary,
+  SettingValue,
   StudentReportRow,
   SubmissionStatus,
   UserImportResult,
@@ -358,4 +366,34 @@ export const reportsApi = {
   reviews: (filters: ReportFilters = {}) => api<ReviewsReport>("/admin/reports/reviews", { query: { ...filters } }),
   /** Student progress needs a division. */
   studentProgressCsv: (divisionId: string) => downloadCsv("/admin/reports/student-progress.csv", { divisionId }, "student-progress.csv"),
+};
+
+// ─── Moderation ─────────────────────────────────────────────────────────────
+
+export const MODERATION_RULES = { note: { min: 1, max: 1000 } };
+export type ThreadOp = "lock" | "unlock" | "hide" | "restore" | "archive" | "pin" | "unpin";
+export type ResolveAction = "HIDE" | "DELETE" | "LOCK" | "NONE";
+
+export const moderationApi = {
+  reports: (params: { status?: ReportStatus; reason?: ReportReason; targetType?: "THREAD" | "COMMENT"; page?: number; limit?: number } = {}) =>
+    api<Page<ModerationReport>>("/admin/moderation/reports", { query: params }),
+  report: (id: string) => api<ModerationReportDetail>(`/admin/moderation/reports/${id}`),
+  /** HIDE / DELETE the reported content, LOCK the thread, or NONE (dismiss). */
+  resolve: (id: string, action: ResolveAction, note?: string) =>
+    api<unknown>(`/admin/moderation/reports/${id}/resolve`, { method: "POST", body: note ? { action, note } : { action } }),
+  actions: (params: { page?: number; limit?: number } = {}) => api<Page<ModerationAction>>("/admin/moderation/actions", { query: params }),
+  hiddenComments: (params: { page?: number; limit?: number } = {}) => api<Page<HiddenComment>>("/admin/comments/hidden", { query: params }),
+  comment: (id: string, op: "hide" | "restore", reason?: string) =>
+    api<unknown>(`/comments/${id}/${op}`, { method: "PATCH", body: reason ? { reason } : {} }),
+  thread: (id: string, op: ThreadOp, reason?: string) => api<unknown>(`/threads/${id}/${op}`, { method: "PATCH", body: reason ? { reason } : {} }),
+};
+
+// ─── Platform settings ──────────────────────────────────────────────────────
+
+export const settingsApi = {
+  list: () => api<PlatformSetting[]>("/admin/settings"),
+  /** `{ key: value, … }`; every change is audited. */
+  update: (changes: Record<string, SettingValue>) => api<PlatformSetting[]>("/admin/settings", { method: "PATCH", body: changes }),
+  /** Maintenance: recompute every student's points from published results. */
+  recomputeLeaderboard: () => api<{ recomputed: number }>("/admin/leaderboard/recompute", { method: "POST" }),
 };
