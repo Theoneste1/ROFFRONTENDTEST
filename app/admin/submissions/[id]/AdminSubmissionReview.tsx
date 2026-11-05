@@ -13,6 +13,7 @@ import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/fe
 import FileButton from "@/app/components/ui/FileButton";
 import { AdminPage, Badge, Card, ConfirmDialog, Notice, SubmissionBadge, btnPrimary, btnSecondary, type NoteRule } from "../../components/adminUi";
 import { humanizeAction } from "../../components/auditText";
+import ResultActions from "./ResultActions";
 
 function Info({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -185,6 +186,7 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
                     : "Waiting for the mentor. You can decide once the review is sent to you."}
               </p>
             )}
+            <ResultActions submission={s} onDone={setNotice} />
           </Card>
 
           <Card className="p-6">

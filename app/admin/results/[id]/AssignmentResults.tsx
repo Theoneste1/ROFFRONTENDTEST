@@ -10,6 +10,7 @@ import { personName } from "@/lib/format";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, SubmissionBadge } from "../../components/adminUi";
+import PublishPanel from "./PublishPanel";
 
 const TABS: { label: string; value: "" | SubmissionStatus }[] = [
   { label: "All", value: "" },
@@ -83,6 +84,8 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
           </div>
         ))}
       </div>
+
+      <PublishPanel assignmentId={assignmentId} />
 
       <div className="mb-4 overflow-x-auto pb-1">
         <FilterPills

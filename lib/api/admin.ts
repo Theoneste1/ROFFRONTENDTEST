@@ -28,6 +28,9 @@ import type {
   Page,
   ReportFilters,
   ReportsOverview,
+  ResultHistory,
+  ResultRelease,
+  ResultsPublicationRow,
   ReportUserStatus,
   Role,
   SchoolDetail,
@@ -312,4 +315,24 @@ export const submissionsAdminApi = {
     api<AdminSubmission>(`/submissions/${id}/approve`, { method: "PATCH", body: coordinationNote ? { coordinationNote } : {} }),
   /** SUBMITTED_TO_ADMIN / APPROVED → back to the mentor (SENT_BACK) with a reason. */
   sendBack: (id: string, rejectionReason: string) => api<AdminSubmission>(`/submissions/${id}/reject`, { method: "PATCH", body: { rejectionReason } }),
+  /** APPROVED → PUBLISHED: the student sees the result; points are recomputed. */
+  publish: (id: string) => api<AdminSubmission>(`/submissions/${id}/publish`, { method: "PATCH" }),
+  /** PUBLISHED → withdrawn from the student and back to the mentor (admins never edit scores). */
+  reopen: (id: string, reopenNote: string) => api<AdminSubmission>(`/submissions/${id}/reopen`, { method: "PATCH", body: { reopenNote } }),
+  resultHistory: (id: string) => api<ResultHistory>(`/submissions/${id}/result-history`),
+};
+
+export const resultsAdminApi = {
+  report: (filters: ReportFilters & { page?: number; limit?: number } = {}) =>
+    api<Page<ResultsPublicationRow> & { summary: { resultsPublished: number; awaitingPublication: number; releases: number; averagePublishedScore: number | null } }>(
+      "/admin/reports/results-publication",
+      { query: { ...filters } },
+    ),
+  /** Publish every APPROVED result of the assignment in one release. */
+  publishAll: (assignmentId: string, note?: string) =>
+    api<{ published: number; releaseId: string | null; notYetPublished: Partial<Record<SubmissionStatus, number>> }>(`/assignments/${assignmentId}/results/publish`, {
+      method: "POST",
+      body: note ? { note } : {},
+    }),
+  releases: (assignmentId: string) => api<ResultRelease[]>(`/assignments/${assignmentId}/result-releases`),
 };

@@ -563,7 +563,7 @@ Approved decisions:
 | 5.6 | Assignment approval and management | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.7 | Submissions and distribution | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.8 | Review approval and send-back | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.9 | Result publication | ☐ | |
+| 5.9 | Result publication | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.10 | Reports and audit log | ☐ | |
 | 5.11 | Moderation and platform settings | ☐ | |
 | 5.12 | Final integration and regression | ☐ | |
@@ -830,6 +830,34 @@ Tests:
 | `api-admin.mjs nonadmin`: approve and send back refused for student and mentor | ✅ (part of 78/78) |
 | `e2e-admin.mjs admin` (prepared, read-only): the s5 page shows review, cycles and work with no decision buttons (in review); no grading inputs anywhere; the published submission has no decision buttons; an empty send-back reason is refused without sending (when a review awaits approval); results cards equal the report; rows link to the review page | ⏳ Waiting for admin credentials |
 | Approving or sending back a real review | **Not run.** These are §5 workflow steps 9 and 11 and need owner approval |
+
+### 5.9 Result publication
+
+**`/admin/results`**: the original table on `GET /admin/reports/results-publication`.
+- Columns: reviewed out of submitted, "awaiting approval", ready (approved), and published status with the last publication date.
+- The summary line shows results published, releases, and results waiting. CSV export.
+- **The action follows the data:** "Review & Publish" (filled when approved results are waiting, outlined when reviews await approval), otherwise "View". The mock's `alert()` buttons are gone.
+
+**`/admin/results/[id]`**: a **Publication** panel.
+- **Publish N results** appears only when approved results exist (`POST /assignments/:id/results/publish`, optional internal note). The confirmation states that only approved results are released.
+- The result reports what was published and what is not yet ready.
+- Release history comes from `GET /assignments/:id/result-releases`.
+
+**`/admin/submissions/[id]`**:
+- **Publish result** when APPROVED (`PATCH /submissions/:id/publish`).
+- **Reopen result** when PUBLISHED (`PATCH /submissions/:id/reopen`, required reason of 5–2,000 characters). This withdraws the result and its points from the student and sends it back to the mentor; admins never edit scores.
+- **Result history** (`GET /submissions/:id/result-history`): every publication, and who withdrew it and why.
+
+Publishing or reopening refreshes the student results, leaderboard and mentor caches in the same browser.
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint, routes compile | ✅ |
+| `api-admin.mjs nonadmin`: publish and publish-all refused; now also `assignments.csv` and `results-publication.csv` | ✅ 82/82 |
+| `e2e-admin.mjs admin` (prepared, read-only): rows equal the report; action labels follow the data; Sample set published state; publish button only with approved results; release history; s2's published result offers Reopen with history; an empty reopen reason is refused without sending; s2 still PUBLISHED afterwards; 390 px | ⏳ Waiting for admin credentials |
+| Publishing or reopening a real result | **Not run.** These are §5 workflow steps 12–13 (and an optional reopen) and need owner approval |
 
 ### Tests that still need admin credentials or owner approval
 

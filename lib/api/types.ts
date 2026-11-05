@@ -931,3 +931,53 @@ export interface DistributionBatch {
   createdBy: { id: string; username: string } | null;
   reviews: { id: string; submissionId: string; status: ReviewStatus; mentor: { id: string; username: string } | null }[];
 }
+
+/** `GET /admin/reports/results-publication` items. */
+export interface ResultsPublicationRow {
+  id: string;
+  title: string;
+  status: AssignmentStatus;
+  course: CourseRef;
+  division: DivisionRef;
+  academicYear: { id: string; name: string };
+  deadline: string;
+  maximumMarks: number;
+  submissions: number;
+  awaitingApproval: number;
+  awaitingPublication: number;
+  published: number;
+  releases: number;
+  averageScore: number | null;
+  publishedAt: string | null;
+  lastPublishedAt: string | null;
+  lastPublishedBy: PersonRef | null;
+}
+
+/** `GET /assignments/:id/result-releases`. */
+export interface ResultRelease {
+  id: string;
+  assignmentId: string;
+  note: string | null;
+  publishedAt: string;
+  publishedBy: { id: string; username: string } | null;
+  resultCount: number;
+  submissions: { id: string; status: SubmissionStatus; studentId: string }[];
+}
+
+/** `GET /submissions/:id/result-history`. */
+export interface ResultHistory {
+  submissionId: string;
+  status: SubmissionStatus;
+  currentRelease: { id: string; note: string | null; publishedAt: string; publishedBy: PersonRef | null } | null;
+  publications: {
+    reviewId: string;
+    cycle: number;
+    score: number;
+    percentage: number;
+    mentor: PersonRef | null;
+    reviewedAt: string | null;
+    publishedAt: string;
+    publishedBy: PersonRef | null;
+    withdrawn: { at: string; by: PersonRef | null; note: string } | null;
+  }[];
+}

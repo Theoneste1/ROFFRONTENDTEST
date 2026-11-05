@@ -15,6 +15,7 @@ import {
   divisionsApi,
   mentorRequestsApi,
   mentorsApi,
+  resultsAdminApi,
   schoolsApi,
   submissionsAdminApi,
   studentsApi,
@@ -415,6 +416,55 @@ export function useReviewDecision(submissionId: string) {
   const invalidate = useInvalidateReviews();
   return useMutation({
     mutationFn: (d: ReviewDecision) => (d.type === "approve" ? submissionsAdminApi.approve(submissionId, d.note) : submissionsAdminApi.sendBack(submissionId, d.reason)),
+    onSettled: invalidate,
+  });
+}
+
+// ─── Result publication ─────────────────────────────────────────────────────
+
+export function useResultsReport(filters: ReportFilters & { page?: number; limit?: number } = {}) {
+  return useQuery({
+    queryKey: queryKeys.admin.resultsReport({ ...filters }),
+    queryFn: () => resultsAdminApi.report(filters),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useResultReleases(assignmentId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.admin.releases(assignmentId ?? ""),
+    queryFn: () => resultsAdminApi.releases(assignmentId!),
+    enabled: !!assignmentId,
+  });
+}
+
+export function useResultHistory(submissionId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.admin.resultHistory(submissionId ?? ""),
+    queryFn: () => submissionsAdminApi.resultHistory(submissionId!),
+    enabled: !!submissionId && enabled,
+  });
+}
+
+/** Publishing changes students' results, points and the leaderboard. */
+function useInvalidateResults() {
+  const invalidate = useInvalidateAdmin();
+  return () => invalidate(queryKeys.results.all, queryKeys.leaderboard.all, queryKeys.mentor.reviewsAll, queryKeys.mentor.analyticsAll);
+}
+
+export function usePublishAll(assignmentId: string) {
+  const invalidate = useInvalidateResults();
+  return useMutation({
+    mutationFn: (note?: string) => resultsAdminApi.publishAll(assignmentId, note),
+    onSettled: invalidate,
+  });
+}
+
+export function useResultAction(submissionId: string) {
+  const invalidate = useInvalidateResults();
+  return useMutation({
+    mutationFn: (a: { type: "publish" } | { type: "reopen"; note: string }) =>
+      a.type === "publish" ? submissionsAdminApi.publish(submissionId) : submissionsAdminApi.reopen(submissionId, a.note),
     onSettled: invalidate,
   });
 }
