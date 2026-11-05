@@ -42,7 +42,7 @@ export default function ForgotPasswordForm() {
             "If an account exists for that address, a reset link is on its way. The link is valid for 30 minutes; only the newest link works."}
         </Alert>
       ) : (
-        <form onSubmit={onSubmit} noValidate className="space-y-5">
+        <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
           {mutation.isError && !emailError && <Alert tone="error">{errorMessage(mutation.error)}</Alert>}
           <TextField
             label="E-mail address"

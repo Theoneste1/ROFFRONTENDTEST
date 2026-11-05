@@ -62,7 +62,7 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
+    <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Choose a new password</h1>
         <p className="mt-1 text-sm text-slate-500">You&apos;ll be signed out everywhere and can sign in with the new password.</p>

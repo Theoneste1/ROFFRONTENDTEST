@@ -80,7 +80,7 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
+    <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome, {info.firstName}</h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -136,7 +136,7 @@ function ResendActivation({ invalidLink = false }: { invalidLink?: boolean }) {
           {mutation.data.message || "If an account is waiting for activation at that address, a new link has been sent."}
         </Alert>
       ) : (
-        <form onSubmit={onSubmit} noValidate className="space-y-5">
+        <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
           {mutation.isError && !emailError && <Alert tone="error">{errorMessage(mutation.error)}</Alert>}
           <TextField
             label="E-mail address"

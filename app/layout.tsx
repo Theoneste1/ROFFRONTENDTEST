@@ -26,6 +26,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // Browsers and extensions add attributes to <html> (e.g. Edge's
+      // data-js-focus-visible). This only silences attribute mismatches on
+      // this one element, not on its children.
+      suppressHydrationWarning
     >
       <body className="min-h-full">
         <Providers>{children}</Providers>

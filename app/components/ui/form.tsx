@@ -4,6 +4,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import { forwardRef, useId, useState, type InputHTMLAttributes, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Spinner } from "./feedback";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 
 const inputBase =
   "w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all disabled:bg-slate-50 disabled:text-slate-500";
@@ -102,15 +103,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary";
 }
 
-/** Primary action button; disabled and shows a spinner while `loading`. */
+/**
+ * Primary action button; disabled and shows a spinner while `loading`.
+ * Stays disabled until hydration so it can never trigger a native submit.
+ */
 export function Button({ loading, variant = "primary", disabled, children, className = "", ...props }: ButtonProps) {
+  const hydrated = useHydrated();
   const styles =
     variant === "primary"
       ? "bg-[#2B2BB2] hover:bg-[#232c94] text-white shadow-md hover:shadow-lg"
       : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50";
   return (
     <button
-      disabled={disabled || loading}
+      disabled={disabled || loading || !hydrated}
       aria-busy={loading || undefined}
       className={`inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed ${styles} ${className}`}
       {...props}
