@@ -8,12 +8,10 @@ import {
   Trophy,
   BookOpen,
   FileText,
-  Video,
   HelpCircle,
   Settings,
   ChevronDown,
-  ChevronRight,
-  Award
+  ChevronRight
 } from "lucide-react";
 import SignOutButton from "@/app/components/shell/SignOutButton";
 
@@ -56,7 +54,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             }`}
         >
           <LayoutGrid className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Menu</span>}
+          {isOpen && <span className="whitespace-nowrap">Dashboard</span>}
         </Link>
 
         {/* Leaderboard Link */}
@@ -136,20 +134,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             </div>
           )}
         </div>
-
-        {/* Live Sessions Link */}
-        <Link
-          href="/student/live-sessions"
-          title="Live Sessions"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/student/live-sessions")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <Video className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Live Sessions</span>}
-        </Link>
       </div>
 
       {/* BOTTOM UTILITY LINKS */}

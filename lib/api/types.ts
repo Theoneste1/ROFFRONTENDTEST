@@ -131,3 +131,345 @@ export interface SupportInfo {
   helpUrl?: string | null;
   message?: string | null;
 }
+
+// ─── Learning: courses and resources ────────────────────────────────────────
+
+export type CourseCode = "ALGEBRA" | "GEOMETRY" | "NUMBER_THEORY" | "COMBINATORICS";
+export type CourseStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type CourseEnrollmentStatus = "UNROLLED" | "ROLLED" | "COMPLETED";
+export type ResourceType = "BOOK" | "EBOOK" | "NOTE" | "PAST_PAPER" | "ATTACHMENT";
+
+export interface CourseRef {
+  id: string;
+  code: CourseCode;
+  title: string;
+}
+
+/** `GET /courses` (array) and `GET /courses/:id`. */
+export interface Course extends CourseRef {
+  description: string | null;
+  status: CourseStatus;
+  sortOrder: number;
+  discussionsEnabled: boolean;
+  publishedAt: string | null;
+  archivedAt: string | null;
+  discipline: { id: string; code: string; name: string };
+  /** Student view only. */
+  enrollmentStatus?: CourseEnrollmentStatus;
+  displayStatus?: string;
+  completedAt?: string | null;
+  counts: { resources: number; assignments: number };
+}
+
+/** `GET /me/courses`. */
+export interface MyCourse {
+  course: CourseRef;
+  status: CourseEnrollmentStatus;
+  displayStatus: string;
+  firstOpenedAt: string | null;
+  lastOpenedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface CourseCompletion {
+  courseId: string;
+  alreadyCompleted: boolean;
+  completedAt: string;
+  enrollmentStatus: CourseEnrollmentStatus;
+  displayStatus: string;
+}
+
+export interface FileRef {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+}
+
+export interface Attachment {
+  id: string;
+  sortOrder: number;
+  file: FileRef;
+  /** Present on result feedback files. */
+  downloadPath?: string;
+}
+
+/** `GET /courses/:courseId/resources` (array) and `…/:resourceId`. */
+export interface CourseResource {
+  id: string;
+  courseId: string;
+  divisionId: string;
+  division: DivisionRef;
+  type: ResourceType;
+  title: string;
+  description: string | null;
+  author: string | null;
+  source: string | null;
+  year: number | null;
+  tags: string[];
+  sortOrder: number;
+  isPublished: boolean;
+  publishedAt: string | null;
+  archivedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  attachments: Attachment[];
+}
+
+// ─── Assessment ─────────────────────────────────────────────────────────────
+
+export type AssignmentStatus = "DRAFT" | "PENDING_APPROVAL" | "PUBLISHED" | "REJECTED" | "CLOSED" | "ARCHIVED";
+
+export type SubmissionStatus =
+  | "SUBMITTED" | "ASSIGNED" | "IN_REVIEW" | "MARKED" | "SUBMITTED_TO_ADMIN"
+  | "APPROVED" | "PUBLISHED" | "REJECTED" | "RESUBMISSION_REQUESTED";
+
+/** The labels the backend gives students (`displayStatus`). */
+export type StudentDisplayStatus = "Not Started" | "Submitted" | "Pending Review" | "Resubmission Requested" | "Reviewed";
+
+/** `GET /me/assignments` items and `GET /assignments/:id` (student view). */
+export interface StudentAssignment {
+  id: string;
+  title: string;
+  description: string | null;
+  instructions: string;
+  deadline: string;
+  points: number;
+  maximumMarks: number;
+  allowResubmission: boolean;
+  maxResubmissions: number;
+  allowLateSubmission: boolean;
+  status: AssignmentStatus;
+  publishedAt: string | null;
+  resultsPublishedAt: string | null;
+  closedAt: string | null;
+  archivedAt: string | null;
+  createdAt: string;
+  courseId: string;
+  divisionId: string;
+  attachments: Attachment[];
+  academicYear: { id: string; name: string };
+  course: CourseRef;
+  division: DivisionRef;
+  createdBy: { id: string; username: string | null; firstName: string; lastName: string } | null;
+  displayStatus: StudentDisplayStatus;
+  submission: {
+    id: string;
+    revisionCount: number;
+    submittedAt: string;
+    isLate: boolean;
+    resubmissionDueAt: string | null;
+  } | null;
+  viewedAt?: string | null;
+  canSubmit: boolean;
+}
+
+export interface SubmissionRevision {
+  id: string;
+  revisionNumber: number;
+  note: string | null;
+  answerText: string | null;
+  isLate: boolean;
+  submittedAt: string;
+  attachments: Attachment[];
+}
+
+/** `GET /submissions/:id`, `GET /me/submissions` items, `POST /submissions`. */
+export interface Submission {
+  id: string;
+  status: SubmissionStatus;
+  displayStatus: StudentDisplayStatus;
+  assignment: {
+    id: string;
+    title: string;
+    maximumMarks: number;
+    points: number;
+    deadline: string;
+    allowResubmission: boolean;
+    maxResubmissions: number;
+    courseId: string;
+    divisionId: string;
+    status: AssignmentStatus;
+    course: CourseRef;
+    division: DivisionRef;
+  };
+  answerText: string | null;
+  files: Attachment[];
+  revisionCount: number;
+  isLate: boolean;
+  submittedAt: string;
+  revisions: SubmissionRevision[];
+  resubmissionRequest: { note: string; dueAt: string; requestedAt?: string } | null;
+  createdAt: string;
+  result?: {
+    score: number;
+    maximumMarks: number;
+    percentage: number;
+    pointsAwarded: number;
+    mentorFeedback: string | null;
+    feedbackFiles: Attachment[];
+  } | null;
+}
+
+/** An event in the resubmission-request log (`requested`, `withdrawn`, …). */
+export interface ResubmissionRequestEvent {
+  type: string;
+  note: string;
+  at: string;
+  by?: { id: string; firstName: string; lastName: string; username: string | null };
+}
+
+/** `GET /submissions/:id/history`. */
+export interface SubmissionHistory {
+  submissionId: string;
+  status: SubmissionStatus;
+  displayStatus: StudentDisplayStatus;
+  attempts: SubmissionRevision[];
+  resubmissionRequests: ResubmissionRequestEvent[];
+  /** The request the student must answer now, if any. */
+  openRequest: { note: string; dueAt: string; requestedAt?: string } | null;
+}
+
+/** `GET /me/results` items. */
+export interface ResultSummary {
+  submissionId: string;
+  assignment: {
+    id: string;
+    title: string;
+    description: string | null;
+    deadline: string;
+    maximumMarks: number;
+    points: number;
+    course: CourseRef;
+    division: DivisionRef;
+    academicYear: { id: string; name: string };
+  };
+  score: number;
+  maximumMarks: number;
+  percentage: number;
+  pointsAwarded: number;
+  reviewedAt: string | null;
+  publishedAt: string;
+}
+
+/** `GET /me/results/:submissionId`. */
+export interface ResultDetail extends ResultSummary {
+  submission: {
+    submittedAt: string;
+    isLate: boolean;
+    attempts: number;
+    answerText: string | null;
+    note: string | null;
+    files: Attachment[];
+  };
+  feedback: {
+    text: string | null;
+    mentor: { firstName: string; lastName: string } | null;
+    files: Attachment[];
+  };
+  previousVersions: Array<{ score: number; maximumMarks: number; percentage: number; publishedAt: string; supersededAt?: string }>;
+  repliesAllowed: boolean;
+}
+
+// ─── Leaderboard ────────────────────────────────────────────────────────────
+
+export interface LeaderboardEntry {
+  rank: number;
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
+  points: number;
+  problemsSolved: number;
+  school: { id: string; name: string } | null;
+  isMe: boolean;
+}
+
+export interface LeaderboardPage extends Page<LeaderboardEntry> {
+  divisionId: string;
+}
+
+export interface MyRank {
+  divisionId: string;
+  rank: number;
+  outOf: number;
+  points: number;
+  problemsSolved: number;
+}
+
+export interface SchoolRankEntry {
+  rank: number;
+  schoolId: string;
+  schoolName: string;
+  schoolLocation: string;
+  totalPoints: number;
+  studentCount: number;
+  averagePoints: number;
+}
+
+export interface SchoolLeaderboardPage extends Page<SchoolRankEntry> {
+  divisionId: string;
+}
+
+// ─── Discussions ────────────────────────────────────────────────────────────
+
+export type ThreadStatus = "OPEN" | "LOCKED" | "HIDDEN" | "ARCHIVED" | "DELETED";
+export type CommentStatus = "ACTIVE" | "HIDDEN" | "DELETED";
+export type ReactionType = "LIKE" | "HELPFUL" | "CONFUSED";
+export type ReportReason = "SPAM" | "ABUSE" | "INAPPROPRIATE" | "OFF_TOPIC" | "ACADEMIC_DISHONESTY" | "OTHER";
+
+export interface DiscussionAuthor {
+  id: string;
+  username: string | null;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+  role: Role;
+}
+
+/** The opening post is the thread's first comment. */
+export interface DiscussionThread {
+  id: string;
+  title: string;
+  status: ThreadStatus;
+  isPinned: boolean;
+  courseId: string | null;
+  assignmentId: string | null;
+  divisionId: string;
+  lastActivityAt: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: DiscussionAuthor | null;
+  _count: { comments: number };
+}
+
+export interface DiscussionComment {
+  id: string;
+  threadId: string;
+  parentId: string | null;
+  content: string;
+  status: CommentStatus;
+  author: DiscussionAuthor | null;
+  createdAt: string;
+  updatedAt: string;
+  editedAt: string | null;
+  reactions: Partial<Record<ReactionType, number>>;
+  myReactions: ReactionType[];
+  replyCount: number;
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+
+export type NotificationCategory = "ASSIGNMENTS" | "SUBMISSIONS" | "REVIEWS" | "RESULTS" | "RESOURCES" | "ACCOUNT" | "DISCUSSIONS";
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  category: NotificationCategory;
+  title: string;
+  body: string;
+  data: Record<string, string | undefined>;
+  link: string;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+}

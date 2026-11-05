@@ -8,8 +8,14 @@ interface StudentShellProps {
     children: ReactNode;
 }
 
+/** Sidebar starts collapsed on phones so the content keeps the screen. */
+function initialSidebarOpen(): boolean {
+    return typeof window === "undefined" || window.matchMedia("(min-width: 768px)").matches;
+}
+
 export default function StudentShell({ children }: StudentShellProps) {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    // The shell renders only on the client (after the session check in RoleGate).
+    const [isSidebarOpen, setIsSidebarOpen] = useState(initialSidebarOpen);
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
