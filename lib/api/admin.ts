@@ -31,6 +31,7 @@ import type {
   ResultHistory,
   ResultRelease,
   ResultsPublicationRow,
+  ReviewsReport,
   ReportUserStatus,
   Role,
   SchoolDetail,
@@ -335,4 +336,26 @@ export const resultsAdminApi = {
       body: note ? { note } : {},
     }),
   releases: (assignmentId: string) => api<ResultRelease[]>(`/assignments/${assignmentId}/result-releases`),
+};
+
+// ─── Reports ────────────────────────────────────────────────────────────────
+
+/** CSV exports (each download is recorded in the audit log by the backend). */
+export const REPORT_EXPORTS = [
+  { key: "students", label: "Students", path: "/admin/reports/students.csv" },
+  { key: "mentors", label: "Mentors", path: "/admin/reports/mentors.csv" },
+  { key: "enrollment", label: "Enrolment (read-only)", path: "/admin/reports/enrollment.csv" },
+  { key: "course-participation", label: "Course participation", path: "/admin/reports/course-participation.csv" },
+  { key: "assignments", label: "Assignments", path: "/admin/reports/assignments.csv" },
+  { key: "reviews", label: "Reviews", path: "/admin/reports/reviews.csv" },
+  { key: "results-publication", label: "Results publication", path: "/admin/reports/results-publication.csv" },
+  { key: "results", label: "Results (one row per submission)", path: "/admin/reports/results.csv" },
+  { key: "mentor-activity", label: "Mentor activity", path: "/admin/reports/mentor-activity.csv" },
+  { key: "mentor-workload", label: "Mentor workload", path: "/admin/reports/mentor-workload.csv", noFilters: true },
+] as const;
+
+export const reportsApi = {
+  reviews: (filters: ReportFilters = {}) => api<ReviewsReport>("/admin/reports/reviews", { query: { ...filters } }),
+  /** Student progress needs a division. */
+  studentProgressCsv: (divisionId: string) => downloadCsv("/admin/reports/student-progress.csv", { divisionId }, "student-progress.csv"),
 };

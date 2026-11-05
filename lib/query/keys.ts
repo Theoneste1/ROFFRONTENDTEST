@@ -120,6 +120,7 @@ export const queryKeys = {
     releases: (assignmentId: string) => [...queryKeys.admin.assignmentsAll, "releases", assignmentId] as const,
     batches: (assignmentId: string) => [...queryKeys.admin.assignmentsAll, "batches", assignmentId] as const,
     scopeMentors: (courseId: string, divisionId: string) => [...queryKeys.admin.all, "mentors", "scope", courseId, divisionId] as const,
+    reviewsReport: (filters: Record<string, unknown> = {}) => [...queryKeys.admin.all, "reports", "reviews", filters] as const,
     mentorReport: (filters: UserReportFilters = {}) => [...queryKeys.admin.all, "mentors", "report", filters] as const,
     mentorScopes: (mentorId: string) => [...queryKeys.admin.all, "mentors", "scopes", mentorId] as const,
     mentorRequests: (params: { status?: string; page?: number } = {}) => [...queryKeys.admin.all, "mentor-requests", params] as const,

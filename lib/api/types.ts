@@ -981,3 +981,23 @@ export interface ResultHistory {
     withdrawn: { at: string; by: PersonRef | null; note: string } | null;
   }[];
 }
+
+/** `GET /admin/reports/reviews`. */
+export interface ReviewsReport {
+  pending: {
+    total: number;
+    awaitingDistribution: number;
+    awaitingAdminApproval: number;
+    byStatus: Partial<Record<ReviewStatus, number>>;
+    byAge: { underTwoDays: number; twoToSevenDays: number; overSevenDays: number };
+    oldestAssignedAt: string | null;
+  };
+  completed: {
+    total: number;
+    approvedByAdmin: number;
+    sentBackByAdmin: number;
+    published: number;
+    averageTurnaroundHours: number | null;
+    medianTurnaroundHours: number | null;
+  };
+}

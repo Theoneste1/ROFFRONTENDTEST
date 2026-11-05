@@ -15,6 +15,7 @@ import {
   divisionsApi,
   mentorRequestsApi,
   mentorsApi,
+  reportsApi,
   resultsAdminApi,
   schoolsApi,
   submissionsAdminApi,
@@ -48,6 +49,7 @@ export function useAdminDashboard(filters: ReportFilters = {}) {
   return useQuery({
     queryKey: queryKeys.admin.dashboard(filters),
     queryFn: () => adminDashboardApi.dashboard(filters),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -250,6 +252,7 @@ export function useCourseParticipation(filters: ReportFilters = {}) {
   return useQuery({
     queryKey: queryKeys.admin.participation(filters),
     queryFn: () => coursesAdminApi.participation(filters),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -466,5 +469,15 @@ export function useResultAction(submissionId: string) {
     mutationFn: (a: { type: "publish" } | { type: "reopen"; note: string }) =>
       a.type === "publish" ? submissionsAdminApi.publish(submissionId) : submissionsAdminApi.reopen(submissionId, a.note),
     onSettled: invalidate,
+  });
+}
+
+// ─── Reports ────────────────────────────────────────────────────────────────
+
+export function useReviewsReport(filters: ReportFilters = {}) {
+  return useQuery({
+    queryKey: queryKeys.admin.reviewsReport({ ...filters }),
+    queryFn: () => reportsApi.reviews(filters),
+    placeholderData: keepPreviousData,
   });
 }

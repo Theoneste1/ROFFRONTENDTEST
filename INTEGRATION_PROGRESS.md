@@ -564,7 +564,7 @@ Approved decisions:
 | 5.7 | Submissions and distribution | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.8 | Review approval and send-back | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.9 | Result publication | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.10 | Reports and audit log | ☐ | |
+| 5.10 | Reports and audit log | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.11 | Moderation and platform settings | ☐ | |
 | 5.12 | Final integration and regression | ☐ | |
 
@@ -858,6 +858,40 @@ Tests:
 | `api-admin.mjs nonadmin`: publish and publish-all refused; now also `assignments.csv` and `results-publication.csv` | ✅ 82/82 |
 | `e2e-admin.mjs admin` (prepared, read-only): rows equal the report; action labels follow the data; Sample set published state; publish button only with approved results; release history; s2's published result offers Reopen with history; an empty reopen reason is refused without sending; s2 still PUBLISHED afterwards; 390 px | ⏳ Waiting for admin credentials |
 | Publishing or reopening a real result | **Not run.** These are §5 workflow steps 12–13 (and an optional reopen) and need owner approval |
+
+### 5.10 Reports and audit log
+
+**`/admin/reports`**: the original filter bar and four cards on real data.
+
+Filters:
+- Course → `courseId`.
+- Division → `divisionId`.
+- Period (last 30 days, last 7 days, all time) → `from=` as a plain date. The backend reads a date as the whole day.
+- **Removed:** the mock's "assignment" select, because the reports have no assignment parameter. Per-assignment figures are on `/admin/results/[id]`.
+
+| Card | Figures | Source |
+|---|---|---|
+| Student Activity | Active out of total students; submissions; late submissions | `/admin/dashboard` |
+| Assignment Performance | Submission rate (submitted out of expected); review completion (approved + published out of submissions); average published score | `/admin/reports/assignments`, `/admin/reports/results-publication` |
+| Mentor Review Activity | With mentors; awaiting your approval; completed; average review time | `/admin/dashboard`, `/admin/reports/reviews` |
+| Division Overview | Participation per division, averaged across the four courses, with student counts | `/admin/reports/course-participation` |
+
+The mock's "resource views" figure has no admin report behind it, so it was replaced by late submissions.
+
+**Exports card:** every backend CSV (students, mentors, enrolment as a read-only report, course participation, assignments, reviews, results publication, results per submission, mentor activity, mentor workload, and student progress per division), using the current filters. The backend **records every export in the audit log** (`EXPORT_REPORT`), and the page says so.
+
+**`/admin/audit-log`**: the original table (When, Actor, Role, Action, Target, Category) on `GET /admin/audit-logs`, newest first, 25 per page.
+- **Filters:** the backend categories (the main ones as pills, the rest in "Other categories…"; the mock's "Access" and "System" categories don't exist in the backend); action search (`action=`, contains); actor role; from and to dates. All kept in the URL.
+- **Details** dialog (`GET /admin/audit-logs/:id`) with the recorded metadata.
+- **CSV export** (`/admin/audit-logs/export.csv`) with the same filters.
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint, routes compile | ✅ |
+| `api-admin.mjs nonadmin`: reports, audit log and exports refused | ✅ (part of 82/82) |
+| `e2e-admin.mjs admin` (prepared): no sample text; 3 real filters; the course filter sends `courseId` to all four reports; "all time" sends no `from`; Students CSV returns 200; audit rows equal the API; the export appears in the log; category pill; details dialog; no mock entries; 390 px | ⏳ Waiting for admin credentials. **Note:** the CSV checks add `EXPORT_REPORT` audit entries; the audit log is append-only by design |
 
 ### Tests that still need admin credentials or owner approval
 
