@@ -10,7 +10,7 @@ Last updated: 2026-11-05
 | 1 | Foundation and API integration | ✅ Done, tested against the running backend |
 | 2 | Authentication and application shell | ✅ Done (Help/Settings links and the notification bell come in phase 6) |
 | 3 | Student portal | ✅ Done, tested against the running backend (one flow pending admin; see Phase 3) |
-| 4 | Mentor portal | ✅ Done, tested against the running backend (grading end to end pending admin; see Phase 4). Waiting for owner review |
+| 4 | Mentor portal | ✅ Approved by the owner. Final mentor suite 57/57; grading end to end **pending manual verification** (needs admin) |
 | 5 | Admin portal | ⏸ (needs admin credentials for testing; see Issues) |
 | 6 | Notifications, discussions, other supported modules | ⏸ |
 | 7 | Testing and final QA | ⏸ (continuous) |
@@ -459,8 +459,8 @@ No other data was changed. The existing seed records ("Sample set", its submissi
 | Suite | Result | Covers |
 |---|---|---|
 | API scope and role checks (`api-mentor.mjs`) | **26/26** | <ul><li>Each mentor teaches only their division.</li><li>Mentor permissions never include publish or approve.</li><li>The Senior mentor is refused the Junior draft, resources, analytics and another mentor's submission, and cannot create in the Junior scope (403 `NOT_ASSIGNED_TO_SCOPE`; nothing created) or start that review.</li><li>A mentor token gets 403 for publish, approve, publish result, distribute, the admin submission list, admin pages, and student-only routes.</li></ul> |
-| Mentor browser suite (`e2e-mentor.mjs`) | **54/57**, the 3 explained below | <ul><li>Dashboard (real figures; 1 review to do).</li><li>Removed routes return 404 (live sessions, students, studentlist, submissions duplicate, extra wizard).</li><li>Assignment tabs.</li><li>Wizard validation on each step, brief file, save draft (201), detail and history.</li><li>Edit (prefilled, PATCH 200, "Edited").</li><li>Course analytics (Sample set, avg 75%).</li><li>Resource upload validation, upload (201), hidden from students, publish (students then see it), unpublish, edit, archive, restore, delete (200).</li><li>Review queue, review list, deep link, grading page (view only), "Save Mark" with empty fields → client errors and no request, student file download (200).</li><li>Mentor opening student/admin URLs → own dashboard.</li><li>Senior mentor: own name, nothing to review, Junior assignment "not found", other mentor's submission "not available", Senior scope only.</li><li>No 5xx; no console errors.</li></ul> |
-| Step F re-test (submit for approval → recall) | ✅ | The 3 suite failures were a **test** bug: a case-insensitive wait matched the new title "(edited)" before navigation finished. Re-run along the identical path: `PATCH …/submit` 200 → "Pending approval" → `PATCH …/recall` 200 → Draft, history shows both. The suite's wait is now fixed |
+| Mentor browser suite (`e2e-mentor.mjs`), final run with the corrected test | **57/57** | First run: 54/57; the 3 failures are explained in the next row. <ul><li>Dashboard (real figures; 1 review to do).</li><li>Removed routes return 404 (live sessions, students, studentlist, submissions duplicate, extra wizard).</li><li>Assignment tabs.</li><li>Wizard validation on each step, brief file, save draft (201), detail and history.</li><li>Edit (prefilled, PATCH 200, "Edited").</li><li>Course analytics (Sample set, avg 75%).</li><li>Resource upload validation, upload (201), hidden from students, publish (students then see it), unpublish, edit, archive, restore, delete (200).</li><li>Review queue, review list, deep link, grading page (view only), "Save Mark" with empty fields → client errors and no request, student file download (200).</li><li>Mentor opening student/admin URLs → own dashboard.</li><li>Senior mentor: own name, nothing to review, Junior assignment "not found", other mentor's submission "not available", Senior scope only.</li><li>No 5xx; no console errors.</li></ul> |
+| Step F (submit for approval → recall) | ✅ | The 3 first-run failures were a **test** bug: a case-insensitive wait matched the new title "(edited)" while the page was still on the wizard's success screen, so the test clicked before the detail page was shown. The wait now checks the detail page's URL. Confirmed by a separate replay of the identical path (`PATCH …/submit` 200 → "Pending approval" → `PATCH …/recall` 200 → Draft) and by the full **57/57** re-run |
 | Student suite (regression after the client change) | **51/51** | — |
 | Auth suite (regression) | **19/19** | — |
 | Phone width 390 px | **11/11 mentor pages** | No horizontal scroll; content 310 px |
@@ -471,14 +471,30 @@ No other data was changed. The existing seed records ("Sample set", its submissi
 
 | Record | Id | State | Notes |
 |---|---|---|---|
-| Assignment **"[TEST] Phase 4 wizard assignment 1793905775112 (edited)"**, Junior Algebra | `a7a543f0-7b81-499a-8f8c-781ca1c0dbc3` | **DRAFT** | Created and edited by the suite; submitted for approval and recalled 3 times (suite plus debugging). Has a brief file `test-resource.pdf`. Each submit sent the admins an "assignment submitted" notification |
-| Resource **"[TEST] Phase 4 book … (edited)"** | — | **Deleted** by the suite | Was published and unpublished once. Publishing notified Junior students ("New Algebra material") |
+| Assignment **"[TEST] Phase 4 wizard assignment 1793905775112 (edited)"**, Junior Algebra | `a7a543f0-7b81-499a-8f8c-781ca1c0dbc3` | **DRAFT** | Created and edited by the first suite run. Submitted for approval and recalled 3 times (debugging the step F failure). Has a brief file `test-resource.pdf`. Each submit sent the admins an "assignment submitted" notification |
+| Assignment **"[TEST] Phase 4 wizard assignment 1793912390610 (edited)"**, Junior Algebra | `a266c16c-4f68-4b32-9d59-f225cacd6fcc` | **DRAFT** | Created and edited by the final 57/57 run. Submitted for approval and recalled once (one admin notification). Has a brief file `test-resource.pdf` |
+| Resources **"[TEST] Phase 4 book … (edited)"** (one per suite run) | — | **Deleted** by the suite | Each was published and unpublished once, and publishing notified Junior students ("New Algebra material"). They no longer appear in any resource list |
+
+Either draft assignment can be used for the outstanding end-to-end test (submit for approval → admin publishes → student submits → admin distributes → mentor grades).
 
 No existing records were modified. `student.s5`'s in-review submission was only viewed.
 
+### Git (phase 4)
+
+| Commit | Content |
+|---|---|
+| `5cb150e` Fix: retry session refresh on rate limit or server error instead of signing out | `lib/api/client.ts` only |
+| `ed300bd` Mentor portal: integrate assignments, reviews, resources and analytics | 55 files: all mentor pages and components, `lib/api/mentor.ts`, `lib/queries/mentor.ts`, `FilePicker`, types and query keys, and the deletions and moves (duplicate trees, extra wizards, live sessions, Books/Past Papers tabs, `_unsupported/`) |
+| `278f3a7` Docs: phase 4 mentor portal progress and test results | `INTEGRATION_PROGRESS.md` |
+
+- **Regrouped (2026-11-05, not pushed).** The first commits (`d60096a` / `8532850` / `d1ab4cb`) had the staged mentor deletions and moves inside the sign-in fix commit. They were re-created with the original messages and authorship. The old history is saved as branch `backup/before-phase4-regroup`, and `git diff backup/before-phase4-regroup HEAD` is empty (identical tree).
+- **Working tree clean after committing.**
+- **Secrets check:** the full history was scanned for env files, keys, tokens, JWTs, database URLs and passwords. The only env file ever committed is `.env.example` (`API_PROXY_TARGET` only), and `.env.local` is git-ignored.
+- **Backend:** `ROFBACKENDTEST` was not modified.
+
 ### Remaining issues
 
-1. **Grading and the full results workflow need admin credentials** (see the status table). The phase 3 submission test is waiting for the same thing.
+1. **Grading and the full results workflow are pending manual verification. They have not been tested end to end.** Start review, save mark, send to admin, request or withdraw resubmission, then admin approval and publication, need an admin-published assignment and student work distributed to a mentor (see the status table). The phase 3 submission and resubmission test is waiting for the same thing.
 2. The grouped tabs (Drafts, Closed) and resource status filters work on the loaded page; the API filters one status at a time (B5).
 3. Mentors see only submissions distributed to them. "Not submitted" and totals come from course analytics (B3).
 4. No mentor CSV or grade export (B4), messaging (B2) or student list (B1): hidden.
@@ -549,4 +565,4 @@ Moved:
 - 2026-11-05: Audit documents created.
 - 2026-11-05: Phases 1–2 implemented and tested (foundation, authentication, shell).
 - 2026-11-05: Phase 3 (student portal) implemented and tested; auth forms hardened against pre-hydration submits.
-- 2026-11-05: Phase 4 (mentor portal) implemented and tested; session refresh now retries on 429/5xx.
+- 2026-11-05: Phase 4 (mentor portal) implemented and tested; session refresh now retries on 429/5xx. Final mentor suite 57/57; commits regrouped (5cb150e, ed300bd, 278f3a7).
