@@ -1,186 +1,192 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { MailPlus, Upload, UserPlus } from "lucide-react";
+import type { CreateUserInput, InviteUserInput, UserFilters } from "@/lib/api/admin";
+import type { Role } from "@/lib/api/types";
+import { useAdminDivisions, useAdminUsers, useCreateUser } from "@/lib/queries/admin";
+import { formatDate } from "@/lib/format";
+import { ErrorState } from "@/app/components/ui/feedback";
+import Pagination from "@/app/components/ui/Pagination";
+import { FilterPills, Modal, Notice, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
+import { AccountStatusBadge, UserForm } from "./userUi";
+import ImportUsersDialog from "./ImportUsersDialog";
 
-// User Data Type Definition
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "Admin" | "Mentor" | "Student";
-  division: "Junior" | "Senior" | "—";
-  status: "Active" | "Pending" | "Inactive";
-}
-
-const FILTER_TABS = [
-  { label: "All", value: "All" },
-  { label: "Students", value: "Student" },
-  { label: "Mentors", value: "Mentor" },
-  { label: "Admins", value: "Admin" },
-  { label: "Active", value: "Active" },
-  { label: "Inactive", value: "Inactive" },
+const ROLE_TABS: { label: string; value: "" | Role }[] = [
+  { label: "All", value: "" },
+  { label: "Students", value: "STUDENT" },
+  { label: "Mentors", value: "MENTOR" },
+  { label: "Admins", value: "ADMIN" },
 ];
 
-interface UsersTableClientProps {
-  initialUsers: User[];
-}
+/** URL value → backend flags. */
+const STATUS_FILTERS: Record<string, { label: string; flags: Partial<UserFilters> }> = {
+  "": { label: "Any status", flags: {} },
+  active: { label: "Active", flags: { isActive: true, isActivated: true, isApproved: true } },
+  suspended: { label: "Suspended", flags: { isActive: false } },
+  "awaiting-setup": { label: "Awaiting setup", flags: { isActive: true, isActivated: false } },
+  "awaiting-approval": { label: "Awaiting approval", flags: { isActive: true, isApproved: false } },
+};
 
-export default function UsersTableClient({ initialUsers }: UsersTableClientProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
+const PAGE_SIZE = 20;
 
-  // Filtering Logic
-  const filteredUsers = initialUsers.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+export default function UsersTableClient() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const role = (params.get("role") ?? "") as "" | Role;
+  const status = STATUS_FILTERS[params.get("status") ?? ""] ? (params.get("status") ?? "") : "";
+  const divisionId = params.get("divisionId") ?? "";
+  const search = params.get("q") ?? "";
+  const page = Math.max(1, Number(params.get("page")) || 1);
 
-    if (!matchesSearch) return false;
+  const [dialog, setDialog] = useState<"create" | "invite" | "import" | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-    if (activeFilter === "All") return true;
+  const filters: UserFilters = {
+    role: role || undefined,
+    divisionId: divisionId || undefined,
+    search: search || undefined,
+    ...STATUS_FILTERS[status].flags,
+    page,
+    limit: PAGE_SIZE,
+  };
+  const users = useAdminUsers(filters);
+  const divisions = useAdminDivisions();
+  const createUser = useCreateUser();
 
-    if (["Student", "Mentor", "Admin"].includes(activeFilter)) {
-      return user.role === activeFilter;
-    }
-
-    if (["Active", "Pending", "Inactive"].includes(activeFilter)) {
-      return user.status === activeFilter;
-    }
-
-    return true;
-  });
+  /** Update one URL filter; any filter change returns to page 1. */
+  function setParam(key: string, value: string) {
+    const next = new URLSearchParams(params);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    if (key !== "page") next.delete("page");
+    router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
+  }
 
   return (
     <>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Users</h1>
+          <p className="text-sm text-gray-500 mt-1 font-medium">Every account on the platform — students, mentors and administrators.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setDialog("create")} className={btnPrimary}>
+            <UserPlus className="h-3.5 w-3.5" aria-hidden="true" /> Add user
+          </button>
+          <button type="button" onClick={() => setDialog("invite")} className={btnSecondary}>
+            <MailPlus className="h-3.5 w-3.5" aria-hidden="true" /> Invite
+          </button>
+          <button type="button" onClick={() => setDialog("import")} className={btnSecondary}>
+            <Upload className="h-3.5 w-3.5" aria-hidden="true" /> Import CSV
+          </button>
+        </div>
+      </div>
+
+      {notice && (
+        <Notice onClose={() => setNotice(null)}>
+          {notice}
+        </Notice>
+      )}
+
       {/* Controls Bar: Search & Pill Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        {/* Search Input */}
-        <div className="relative flex-1 min-w-[240px] max-w-xs">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white text-xs pl-10 pr-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-400 shadow-2xs"
-          />
-        </div>
-
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          {FILTER_TABS.map((tab) => {
-            const isActive = activeFilter === tab.value;
-            return (
-              <button
-                key={tab.value}
-                onClick={() => setActiveFilter(tab.value)}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  isActive
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        <SearchInput value={search} onChange={(v) => setParam("q", v)} placeholder="Search name, username or e-mail…" label="Search users" />
+        <FilterPills label="Role" options={ROLE_TABS} value={role} onChange={(v) => setParam("role", v)} />
+        <SelectFilter label="Status" value={status} onChange={(v) => setParam("status", v)} options={Object.entries(STATUS_FILTERS).map(([value, s]) => ({ value, label: s.label }))} />
+        <SelectFilter
+          label="Division"
+          value={divisionId}
+          onChange={(v) => setParam("divisionId", v)}
+          options={[{ label: "All", value: "" }, ...(divisions.data ?? []).map((d) => ({ label: d.name, value: d.id }))]}
+        />
       </div>
 
-      {/* Table Card Container */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                  Name
-                </th>
-                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                  Email
-                </th>
-                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                  Role
-                </th>
-                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                  Division
-                </th>
-                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                  Status
-                </th>
-                <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100/70">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="hover:bg-gray-50/60 transition-colors text-xs"
-                  >
-                    {/* Name */}
-                    <td className="px-6 py-3.5 font-semibold text-gray-800">
-                      {user.name}
-                    </td>
-
-                    {/* Email */}
-                    <td className="px-6 py-3.5 text-gray-500 font-medium">
-                      {user.email}
-                    </td>
-
-                    {/* Role */}
-                    <td className="px-6 py-3.5 text-gray-600 font-medium">
-                      {user.role}
-                    </td>
-
-                    {/* Division */}
-                    <td className="px-6 py-3.5 text-gray-600 font-medium">
-                      {user.division}
-                    </td>
-
-                    {/* Status Badge */}
-                    <td className="px-6 py-3.5">
-                      <span
-                        className={`inline-flex items-center px-3 py-0.5 rounded-full text-[11px] font-semibold ${
-                          user.status === "Active"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : user.status === "Pending"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {user.status}
-                      </span>
-                    </td>
-
-                    {/* Action */}
-                    <td className="px-6 py-3.5">
-                      <button
-                        onClick={() => alert(`Viewing user ${user.name}`)}
-                        className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-6 py-8 text-center text-xs text-gray-400 font-medium"
-                  >
-                    No users found matching your criteria.
+      {users.isError ? (
+        <ErrorState error={users.error} title="Couldn't load users" onRetry={() => users.refetch()} />
+      ) : (
+        <TableCard
+          footer={
+            users.data && (
+              <div className="px-4 pb-4">
+                <Pagination page={page} totalPages={users.data.meta.totalPages} total={users.data.meta.total} onPage={(p) => setParam("page", String(p))} disabled={users.isFetching} />
+              </div>
+            )
+          }
+        >
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className={th}>Name</th>
+              <th className={th}>Email</th>
+              <th className={th}>Role</th>
+              <th className={th}>Division</th>
+              <th className={th}>Status</th>
+              <th className={th}>Last sign-in</th>
+              <th className={th}>
+                <span className="sr-only">Action</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className={`divide-y divide-gray-100/70 ${users.isFetching && users.data ? "opacity-60" : ""}`}>
+            {users.isPending ? (
+              <TableMessage colSpan={7}>Loading users…</TableMessage>
+            ) : users.data.data.length === 0 ? (
+              <TableMessage colSpan={7}>No users found matching your criteria.</TableMessage>
+            ) : (
+              users.data.data.map((u) => (
+                <tr key={u.id} className="hover:bg-gray-50/60 transition-colors text-xs">
+                  <td className={`${td} font-semibold text-gray-800 whitespace-nowrap`}>
+                    {u.firstName} {u.lastName}
+                    <span className="block text-[11px] font-normal text-gray-400">@{u.username}</span>
+                  </td>
+                  <td className={`${td} text-gray-500 font-medium`}>{u.email}</td>
+                  <td className={`${td} text-gray-600 font-medium`}>{u.role === "ADMIN" ? "Admin" : u.role === "MENTOR" ? "Mentor" : "Student"}</td>
+                  <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>
+                    {u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}
+                  </td>
+                  <td className={td}>
+                    <AccountStatusBadge user={u} />
+                  </td>
+                  <td className={`${td} text-gray-500 whitespace-nowrap`}>{u.lastLoginAt ? formatDate(u.lastLoginAt) : "Never"}</td>
+                  <td className={td}>
+                    <Link href={`/admin/users/${u.id}`} className={linkBtn} aria-label={`View ${u.firstName} ${u.lastName}`}>
+                      View
+                    </Link>
                   </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              ))
+            )}
+          </tbody>
+        </TableCard>
+      )}
+
+      {(dialog === "create" || dialog === "invite") && (
+        <Modal wide title={dialog === "create" ? "Add a user" : "Invite a user"} onClose={() => setDialog(null)}>
+          <p className="text-xs text-gray-500 mb-4">
+            {dialog === "create"
+              ? "The account is active immediately with the password you set. Share it securely; the user can change it later."
+              : "The account is created without a password and an activation link (valid 7 days) is e-mailed to the person."}
+          </p>
+          <UserForm
+            mode={dialog}
+            submitLabel={dialog === "create" ? "Create account" : "Send invitation"}
+            onCancel={() => setDialog(null)}
+            onSubmit={async (input) => {
+              const mode = dialog;
+              const user = await createUser.mutateAsync(
+                mode === "create" ? { mode, input: input as CreateUserInput } : { mode, input: input as InviteUserInput },
+              );
+              setDialog(null);
+              setNotice(mode === "create" ? `Account @${user.username} created.` : `Invitation sent to ${user.email}.`);
+            }}
+          />
+        </Modal>
+      )}
+
+      {dialog === "import" && <ImportUsersDialog onClose={() => setDialog(null)} onImported={(n) => setNotice(`${n} account${n === 1 ? "" : "s"} invited from the CSV file.`)} />}
     </>
   );
 }

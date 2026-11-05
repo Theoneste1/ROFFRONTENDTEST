@@ -705,3 +705,68 @@ export interface AuditLogEntry {
   metadata: Record<string, unknown> | null;
   createdAt: string;
 }
+
+/** `GET /admin/users` items, `GET /admin/users/:id`. Admins see e-mail addresses. */
+export interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
+  isActive: boolean;
+  isApproved: boolean;
+  /** null until the account is activated (invited accounts). */
+  activatedAt: string | null;
+  avatarUrl: string | null;
+  division: DivisionRef | null;
+  gradeLevel: GradeLevel | null;
+  school: SchoolRef | null;
+  homeLocation: string | null;
+  points: number;
+  problemsSolved: number;
+  provider?: string;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/** `POST /admin/users/import` (multipart CSV, `?dryRun=`). */
+export interface UserImportResult {
+  dryRun: boolean;
+  totalRows: number;
+  valid: number;
+  created: number;
+  failed: number;
+  errors: { row: number; email: string; errors: string[] }[];
+  users: { row: number; id: string; email: string; username: string; role: Role }[];
+}
+
+/** `GET /admin/divisions`. */
+export interface AdminDivision {
+  id: string;
+  code: DivisionCode;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  gradeLevels: GradeLevel[];
+  _count: { students: number; mentorAssignments: number };
+}
+
+/** `GET /schools` items (admin). */
+export interface SchoolSummary {
+  id: string;
+  name: string;
+  location: string;
+  createdAt: string;
+  _count: { students: number };
+}
+
+/** `GET /schools/:id` (admin): the school and a page of its students. */
+export interface SchoolDetail {
+  id: string;
+  name: string;
+  location: string;
+  createdAt: string;
+  students: Page<{ id: string; username: string; firstName: string; lastName: string; gradeLevel: GradeLevel | null; isActive: boolean; points: number; division: { code: DivisionCode; name: string } | null }>;
+}

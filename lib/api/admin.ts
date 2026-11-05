@@ -4,7 +4,22 @@
  * and publish — they never grade and never create assignments.
  */
 import { api, apiBlob, saveFile, type QueryValue } from "./client";
-import type { AdminDashboard, AuditCategory, AuditLogEntry, Page, ReportFilters, ReportsOverview, Role } from "./types";
+import type {
+  AdminDashboard,
+  AdminDivision,
+  AdminUser,
+  AuditCategory,
+  AuditLogEntry,
+  GradeLevel,
+  Page,
+  ReportFilters,
+  ReportsOverview,
+  Role,
+  SchoolDetail,
+  SchoolRef,
+  SchoolSummary,
+  UserImportResult,
+} from "./types";
 
 type Query = Record<string, QueryValue>;
 
@@ -47,4 +62,100 @@ export const auditApi = {
     void _l;
     return downloadCsv("/admin/audit-logs/export.csv", rest, "audit-log.csv");
   },
+};
+
+// ─── Users ──────────────────────────────────────────────────────────────────
+
+export interface UserFilters {
+  role?: Role;
+  divisionId?: string;
+  gradeLevel?: GradeLevel;
+  schoolId?: string;
+  isActive?: boolean;
+  isApproved?: boolean;
+  isActivated?: boolean;
+  search?: string;
+  page?: number;
+  limit?: number;
+  [key: string]: QueryValue;
+}
+
+/** Shared by create, invite and edit (backend CreateUserDto / InviteUserDto / UpdateUserDto). */
+export const USER_RULES = {
+  name: { min: 1, max: 100 },
+  username: { min: 3, max: 30, pattern: /^[a-z0-9._-]+$/ },
+  homeLocation: { min: 2, max: 200 },
+  school: { min: 2, max: 200 },
+  importMaxBytes: 1024 * 1024,
+  importMaxRows: 1000,
+};
+
+export interface CreateUserInput {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+  role: Role;
+  gradeLevel?: GradeLevel;
+  schoolId?: string;
+  homeLocation?: string;
+}
+
+export interface InviteUserInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  username?: string;
+  role: Role;
+  gradeLevel?: GradeLevel;
+  schoolId?: string;
+  schoolName?: string;
+  schoolLocation?: string;
+  homeLocation?: string;
+}
+
+export type UpdateUserInput = Partial<Omit<CreateUserInput, "password">>;
+
+/** Drop empty strings so optional fields are omitted, not sent as "". */
+function compact<T extends object>(input: T): Partial<T> {
+  return Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined && v !== "")) as Partial<T>;
+}
+
+export const usersApi = {
+  list: (filters: UserFilters = {}) => api<Page<AdminUser>>("/admin/users", { query: filters }),
+  get: (id: string) => api<AdminUser>(`/admin/users/${id}`),
+  /** Active immediately with the given password. */
+  create: (input: CreateUserInput) => api<AdminUser>("/admin/users", { method: "POST", body: compact(input) }),
+  /** No password; an activation link is e-mailed (valid 7 days). */
+  invite: (input: InviteUserInput) =>
+    api<{ user: AdminUser; invitation: { purpose: string; expiresAt: string } }>("/admin/users/invite", { method: "POST", body: compact(input) }),
+  importCsv: (file: File, dryRun: boolean) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api<UserImportResult>("/admin/users/import", { method: "POST", body: form, query: { dryRun } });
+  },
+  update: (id: string, input: UpdateUserInput) => api<AdminUser>(`/admin/users/${id}`, { method: "PATCH", body: input }),
+  /** isActive=false suspends (all sessions end); isApproved approves a pending account. */
+  setStatus: (id: string, status: { isActive?: boolean; isApproved?: boolean }) =>
+    api<AdminUser>(`/admin/users/${id}/status`, { method: "PATCH", body: status }),
+  resendInvitation: (id: string) => api<{ purpose: string; expiresAt: string }>(`/admin/users/${id}/resend-invitation`, { method: "POST" }),
+  sendPasswordReset: (id: string) => api<{ message: string }>(`/admin/users/${id}/send-password-reset`, { method: "POST" }),
+  /** Only accounts without academic history (409 USER_HAS_HISTORY otherwise). */
+  remove: (id: string) => api<{ message: string }>(`/admin/users/${id}`, { method: "DELETE" }),
+};
+
+// ─── Divisions & schools (lookups) ──────────────────────────────────────────
+
+export const divisionsApi = {
+  list: () => api<AdminDivision[]>("/admin/divisions"),
+  update: (id: string, input: { name?: string; description?: string; isActive?: boolean }) =>
+    api<AdminDivision>(`/admin/divisions/${id}`, { method: "PATCH", body: input }),
+};
+
+export const schoolsApi = {
+  list: (params: { search?: string; page?: number; limit?: number } = {}) => api<Page<SchoolSummary>>("/schools", { query: params }),
+  get: (id: string, params: { page?: number; limit?: number } = {}) => api<SchoolDetail>(`/schools/${id}`, { query: params }),
+  /** Public lookup (2–100 characters). */
+  search: (q: string) => api<SchoolRef[]>("/schools/search", { query: { q } }),
 };

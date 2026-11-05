@@ -556,7 +556,7 @@ Approved decisions:
 |---|---|---|---|
 | 5.0 | Foundation: admin API module, query keys and hooks, shared admin UI, shell collapses on phones | ✅ | see Git (phase 5) |
 | 5.1 | Dashboard | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.2 | Users | ☐ | |
+| 5.2 | Users | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.3 | Mentors and applications | ☐ | |
 | 5.4 | Students and schools (read-only) | ☐ | |
 | 5.5 | Divisions, courses, resources | ☐ | |
@@ -610,6 +610,50 @@ Tests:
 | `tsc`, ESLint | ✅ |
 | `e2e-admin.mjs nonadmin`: signed-out redirect to `/login?next=`; mentor on `/admin/*` lands on the mentor dashboard and sends no admin API request; student lands on the student dashboard | ✅ 9/9 |
 | `e2e-admin.mjs admin` (prepared): each card equals the API; attention items match the non-zero `actionRequired`; links stay inside `/admin`; no mock strings; 390 px layout | ⏳ Waiting for admin credentials |
+
+### 5.2 Users
+
+Pages:
+- `/admin/users`: the original table and pills, now on real data.
+  - Filters are kept in the URL: role pills; status (active, suspended, awaiting setup, awaiting approval, mapped to `isActive`, `isActivated` and `isApproved`); division; search (`search=`, debounced); paging.
+  - Actions: **Add user** (with password), **Invite** (activation e-mail) and **Import CSV**.
+- `/admin/users/[id]`: account details and **Edit details**, which sends only the changed fields. Actions depend on the account's state:
+  - approve;
+  - resend invitation (not yet activated);
+  - send password-reset link (activated);
+  - suspend or reactivate;
+  - delete. The backend allows deletion only without academic history (409 `USER_HAS_HISTORY` is shown).
+  - The admin's own account cannot be suspended or deleted and its role cannot be changed, as the backend enforces.
+- **CSV import** always runs a dry run first (`?dryRun=true`, creates nothing) and lists the errors by row. The **Invite N users** button appears only after a successful check.
+
+Rules applied on the form (from the DTOs):
+- Name 1–100 characters.
+- Username 3–30 characters, `[a-z0-9._-]`.
+- A valid e-mail.
+- Password: the backend policy, create only. Admins never set another user's password later; they send a reset link.
+- Grade is required for students.
+- Home location and school name 2–200 characters.
+- Backend validation messages are shown beside the fields.
+- Schools are chosen from `GET /schools/search`. An invitation may name a new school, which the backend creates.
+
+Endpoints:
+- `GET`/`POST /admin/users`
+- `POST /admin/users/invite`
+- `POST /admin/users/import`
+- `GET`/`PATCH`/`DELETE /admin/users/:id`
+- `PATCH /admin/users/:id/status`
+- `POST /admin/users/:id/{resend-invitation,send-password-reset}`
+- `GET /admin/divisions`
+- `GET /schools/search`
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint, routes compile on the dev server | ✅ |
+| `api-admin.mjs nonadmin`: user routes refused for student and mentor | ✅ (part of 74/74) |
+| `e2e-admin.mjs admin` (prepared, read-only): table rows equal the API; pills, search and dashboard link send the right query; empty and invalid create form shows field errors and **sends no request**; import offers no Invite before a dry run; detail page; edit with no change sends no PATCH; unknown id; own account has no suspend or delete; 390 px | ⏳ Waiting for admin credentials |
+| Creating, inviting, importing, suspending or deleting a real account | **Not run.** These need owner approval (D9: no new test users). The UI is ready |
 
 ### Tests that still need admin credentials or owner approval
 
