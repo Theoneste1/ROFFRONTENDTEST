@@ -1,10 +1,14 @@
 import StudentShell from "./components/StudentShell";
+import RoleGate from "@/app/components/auth/RoleGate";
 
-// Server Component Layout
 export default function StudentLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    return <StudentShell>{children}</StudentShell>;
+    return (
+        <RoleGate role="STUDENT">
+            <StudentShell>{children}</StudentShell>
+        </RoleGate>
+    );
 }

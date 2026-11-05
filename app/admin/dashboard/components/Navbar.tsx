@@ -1,6 +1,7 @@
 'use client';
 
-import { Menu, Bell, User } from "lucide-react";
+import { Menu, Bell } from "lucide-react";
+import NavbarUser from "@/app/components/shell/NavbarUser";
 import Image from "next/image";
 
 interface NavbarProps {
@@ -51,20 +52,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
       <div className="flex items-center gap-3 md:gap-6">
         <Bell className="h-5 w-5 text-gray-700 cursor-pointer hidden sm:block" />
 
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-blue-600 flex items-center justify-center">
-            <User className="h-4 w-4 md:h-5 md:w-5 text-white" />
-          </div>
-
-          <div className="hidden lg:flex flex-col">
-            <span className="text-sm font-semibold text-gray-800">
-              Admin User
-            </span>
-            <span className="text-xs text-gray-500">
-              admin@rof.com
-            </span>
-          </div>
-        </div>
+        <NavbarUser avatarClassName="bg-blue-600" />
       </div>
     </div>
   );

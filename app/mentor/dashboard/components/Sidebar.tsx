@@ -9,9 +9,9 @@ import {
     FileText,
     Video,
     HelpCircle,
-    Settings,
-    LogOut
+    Settings
 } from "lucide-react";
+import SignOutButton from "@/app/components/shell/SignOutButton";
 
 interface SidebarProps {
     isOpen: boolean;
@@ -120,14 +120,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                 </button>
 
                 {/* Sign Out Button */}
-                <button
-                    title="Sign Out"
-                    className={`flex items-center gap-3 w-full py-2.5 rounded-lg hover:bg-red-500/10 text-red-400 hover:text-red-500 transition-all text-sm font-medium mt-2 ${isOpen ? 'px-4' : 'justify-center px-0'
-                        }`}
-                >
-                    <LogOut className="h-4 w-4 flex-shrink-0" />
-                    {isOpen && <span className="whitespace-nowrap">Sign Out</span>}
-                </button>
+        <SignOutButton isOpen={isOpen} />
             </div>
         </aside>
     );

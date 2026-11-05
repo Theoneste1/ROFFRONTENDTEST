@@ -1,10 +1,14 @@
 import AdminShell from "./components/AdminShell";
+import RoleGate from "@/app/components/auth/RoleGate";
 
-// Server Component Layout
 export default function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    return <AdminShell>{children}</AdminShell>;
+    return (
+        <RoleGate role="ADMIN">
+            <AdminShell>{children}</AdminShell>
+        </RoleGate>
+    );
 }
