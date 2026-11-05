@@ -23,9 +23,14 @@ const TYPES: ResourceType[] = ["BOOK", "EBOOK", "PAST_PAPER", "NOTE", "ATTACHMEN
 const inputCls =
   "w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm";
 
-export default function ResourceForm() {
+/**
+ * Mentors pick from their own scopes (`/me/teaching`). Admins pass every
+ * course × division as `scopeList` and their own `basePath`.
+ */
+export default function ResourceForm({ scopeList, basePath = "/mentor/courses" }: { scopeList?: TeachingScope[]; basePath?: string } = {}) {
   const params = useSearchParams();
-  const scopes = useTeachingScopes();
+  const teaching = useTeachingScopes(!scopeList);
+  const scopes = scopeList ? { data: scopeList, isPending: false, isError: false as const, error: null, refetch: () => undefined } : teaching;
   const resourceId = params.get("resourceId") ?? undefined;
   const list = scopes.data ?? [];
   const scope = list.find((s) => scopeKey(s) === params.get("scope")) ?? list[0];
@@ -48,16 +53,18 @@ export default function ResourceForm() {
     );
   }
 
-  return <Form key={resourceId ?? "new"} scopes={list} initialScope={scope} existing={existing.data} defaultType={(params.get("type") as ResourceType) ?? "BOOK"} backTab={params.get("tab") ?? "books"} />;
+  return <Form key={resourceId ?? "new"} basePath={basePath} scopes={list} initialScope={scope} existing={existing.data} defaultType={(params.get("type") as ResourceType) ?? "BOOK"} backTab={params.get("tab") ?? "books"} />;
 }
 
 function Form({
+  basePath,
   scopes,
   initialScope,
   existing,
   defaultType,
   backTab,
 }: {
+  basePath: string;
   scopes: TeachingScope[];
   initialScope: TeachingScope;
   existing?: CourseResource;
@@ -85,7 +92,7 @@ function Form({
   const save = useSaveResource(sc.courseId);
   const server = fieldErrors(save.error, ["title", "description", "author", "source", "year", "tags", "type"]);
   const kept = (existing?.attachments ?? []).filter((a) => !removed.includes(a.id));
-  const back = () => router.push(`/mentor/courses?scope=${encodeURIComponent(scopeValue)}&tab=${backTab}`);
+  const back = () => router.push(`${basePath}?scope=${encodeURIComponent(scopeValue)}&tab=${backTab}`);
   const set = (k: keyof typeof form, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
   function validate() {

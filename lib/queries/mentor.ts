@@ -22,8 +22,9 @@ import type { TeachingScope } from "@/lib/api/types";
 // ─── Scopes & analytics ─────────────────────────────────────────────────────
 
 /** The course × division pairs this mentor teaches (`GET /me/teaching`). */
-export function useTeachingScopes() {
+export function useTeachingScopes(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: queryKeys.mentor.scopes(),
     queryFn: async () =>
       (await teachingApi.scopes()).slice().sort((a, b) => a.division.code.localeCompare(b.division.code) || a.course.title.localeCompare(b.course.title)),

@@ -40,7 +40,24 @@ const STATE_BADGE = {
   archived: "bg-gray-200 text-gray-600",
 };
 
-export default function ResourcesTab({ kind, courseId, divisionId, scopeKeyValue }: { kind: ResourceKind; courseId: string; divisionId: string; scopeKeyValue: string }) {
+/**
+ * `basePath` is the page that hosts the tabs; the upload/edit form lives at
+ * `${basePath}/upload-book`. Mentors use the default; admins reuse the
+ * component under /admin/courses/resources.
+ */
+export default function ResourcesTab({
+  kind,
+  courseId,
+  divisionId,
+  scopeKeyValue,
+  basePath = "/mentor/courses",
+}: {
+  kind: ResourceKind;
+  courseId: string;
+  divisionId: string;
+  scopeKeyValue: string;
+  basePath?: string;
+}) {
   const router = useRouter();
   const cfg = KIND[kind];
   const resources = useMentorResources(courseId, divisionId);
@@ -62,7 +79,7 @@ export default function ResourcesTab({ kind, courseId, divisionId, scopeKeyValue
       .sort((a, b) => (sortOrder === "Newest" ? -1 : 1) * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
   }, [all, searchQuery, status, year, sortOrder]);
 
-  const addHref = `/mentor/courses/upload-book?scope=${encodeURIComponent(scopeKeyValue)}&type=${cfg.defaultType}&tab=${kind}`;
+  const addHref = `${basePath}/upload-book?scope=${encodeURIComponent(scopeKeyValue)}&type=${cfg.defaultType}&tab=${kind}`;
 
   function run(r: CourseResource, act: "publish" | "unpublish" | "archive" | "restore" | "delete") {
     if (act === "delete" && !window.confirm(`Delete “${r.title}”? This cannot be undone.`)) return;
@@ -202,7 +219,7 @@ export default function ResourcesTab({ kind, courseId, divisionId, scopeKeyValue
                           <RowMenu
                             resource={r}
                             state={st}
-                            onEdit={() => router.push(`/mentor/courses/upload-book?scope=${encodeURIComponent(scopeKeyValue)}&resourceId=${r.id}&tab=${kind}`)}
+                            onEdit={() => router.push(`${basePath}/upload-book?scope=${encodeURIComponent(scopeKeyValue)}&resourceId=${r.id}&tab=${kind}`)}
                             onDownload={async () => {
                               for (const a of r.attachments) saveFile(await mentorResourcesApi.file(courseId, r.id, a.id, a.file.originalName));
                             }}

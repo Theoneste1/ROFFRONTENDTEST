@@ -104,6 +104,8 @@ export const queryKeys = {
     schools: (params: { search?: string; page?: number; limit?: number } = {}) => [...queryKeys.admin.all, "schools", "list", params] as const,
     school: (id: string, page = 1) => [...queryKeys.admin.all, "schools", "detail", id, page] as const,
     studentReport: (filters: UserReportFilters = {}) => [...queryKeys.admin.all, "students", "report", filters] as const,
+    participation: (filters: ReportFilters = {}) => [...queryKeys.admin.all, "courses", "participation", filters] as const,
+    activeScopes: () => [...queryKeys.admin.all, "mentors", "scopes", "all-active"] as const,
     mentorReport: (filters: UserReportFilters = {}) => [...queryKeys.admin.all, "mentors", "report", filters] as const,
     mentorScopes: (mentorId: string) => [...queryKeys.admin.all, "mentors", "scopes", mentorId] as const,
     mentorRequests: (params: { status?: string; page?: number } = {}) => [...queryKeys.admin.all, "mentor-requests", params] as const,

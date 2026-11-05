@@ -10,6 +10,8 @@ import type {
   AdminUser,
   AuditCategory,
   AuditLogEntry,
+  Course,
+  CourseParticipationRow,
   GradeLevel,
   MentorReportRow,
   MentorRequest,
@@ -208,5 +210,27 @@ export const studentsApi = {
     void _p;
     void _l;
     return downloadCsv("/admin/reports/students.csv", rest, "students.csv");
+  },
+};
+
+// ─── Courses ────────────────────────────────────────────────────────────────
+
+export const COURSE_RULES = { title: { min: 3, max: 200 }, description: { min: 10, max: 2000 }, sortOrder: { min: 0, max: 1000 } };
+export const DIVISION_RULES = { name: { min: 2, max: 100 }, description: { max: 1000 } };
+
+export const coursesAdminApi = {
+  update: (id: string, input: { title?: string; description?: string; sortOrder?: number; discussionsEnabled?: boolean }) =>
+    api<Course>(`/admin/courses/${id}`, { method: "PATCH", body: input }),
+  /** publish: DRAFT/ARCHIVED → PUBLISHED; unpublish hides all content from students; archive keeps history. */
+  setState: (id: string, action: "publish" | "unpublish" | "archive") => api<Course>(`/admin/courses/${id}/${action}`, { method: "PATCH" }),
+  participation: (filters: ReportFilters = {}) =>
+    api<{ rows: CourseParticipationRow[]; filters: unknown }>("/admin/reports/course-participation", { query: { ...filters } }),
+  /** Every active mentor scope (all pages). */
+  allActiveScopes: async () => {
+    const first = await mentorsApi.scopes({ isActive: true, limit: 100, page: 1 });
+    const rest = await Promise.all(
+      Array.from({ length: Math.max(0, first.meta.totalPages - 1) }, (_, i) => mentorsApi.scopes({ isActive: true, limit: 100, page: i + 2 })),
+    );
+    return [first, ...rest].flatMap((p) => p.data);
   },
 };

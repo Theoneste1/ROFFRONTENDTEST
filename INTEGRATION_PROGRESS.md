@@ -559,7 +559,7 @@ Approved decisions:
 | 5.2 | Users | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.3 | Mentors and applications | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.4 | Students and schools (read-only) | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.5 | Divisions, courses, resources | ☐ | |
+| 5.5 | Divisions, courses, resources | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.6 | Assignment approval and management | ☐ | |
 | 5.7 | Submissions and distribution | ☐ | |
 | 5.8 | Review approval and send-back | ☐ | |
@@ -709,6 +709,37 @@ Tests:
 | `tsc`, ESLint, routes compile | ✅ |
 | `api-admin.mjs nonadmin`, extended with `/schools` and `mentors.csv` | ✅ 78/78 |
 | `e2e-admin.mjs admin` (prepared): rows equal the report; s2's activity figures; no mock names; schools equal `GET /schools` with no edit controls; school detail; 390 px | ⏳ Waiting for admin credentials |
+
+### 5.5 Divisions, courses and learning resources
+
+**`/admin/divisions`**: the original two cards on `GET /admin/divisions`.
+- Grades, student count, and the number of mentors with access in that division (distinct mentors from the active scopes).
+- The four courses, with links to the division's students and mentors.
+- **Name and description** are editable (`PATCH /admin/divisions/:id`; 2–100 and ≤ 1,000 characters). Only changed fields are sent.
+- **Removed** (D8): "Accepting new students", which has no backend field.
+- **Not offered:** the backend `isActive` flag. It is accepted by the DTO but nothing in the backend acts on it, so a switch would do nothing. An inactive division would show "Marked inactive".
+- Fixed: the copy-pasted Senior description now comes from the API.
+
+**`/admin/courses`**: cards, table and edit modal on real data.
+- Cards: published courses (`/courses`), students and open assignments (`/admin/dashboard`), and mentors with access (active scopes).
+- Table: students per course (`/admin/reports/course-participation`), mentors per course, and status.
+- **Edit modal:** title (3–200 characters), description (10–2,000 characters) and **course discussions** (`discussionsEnabled`, a real setting), via `PATCH /admin/courses/:id`.
+- **Visibility actions**, each confirmed, replace the fake "Course active" switch: Publish, Unpublish (hides all content from students) and Archive (`PATCH /admin/courses/:id/{publish,unpublish,archive}`).
+- **Removed** (D8): the course × division checkboxes. Both divisions always study all four courses.
+
+**`/admin/courses/resources`** and **`…/upload-book`**: admins manage resources in **any** course × division (all 8 scopes), using the **phase 4 mentor components** (`ResourcesTab`, `ResourceForm`).
+- To make them reusable, they gained an optional `basePath`, and `ResourceForm` gained an optional `scopeList`.
+- `useTeachingScopes(enabled)` can now be switched off.
+- Mentor behaviour is unchanged (defaults), and the read-only regression below confirms it.
+
+Tests:
+
+| Check | Result |
+|---|---|
+| `tsc`, ESLint (only the known `_unsupported` warning), all routes compile (admin and mentor) | ✅ |
+| `e2e-admin.mjs nonadmin`, now with a **mentor resources regression** (read-only): Books tab lists the `[TEST]` book; "Upload a Book" link; form renders with the mentor's scopes; back keeps scope and tab; row Edit opens the edit form (nothing saved); no Senior scopes for mentor.junior | ✅ 15/15 |
+| `e2e-admin.mjs admin` (prepared): division cards and descriptions equal the API; no "accepting" toggle; save without changes sends no PATCH; course rows; modal without division checkboxes; course save without changes sends no PATCH; 8 scopes; admin sees the unpublished `[TEST]` note; admin upload link; 390 px | ⏳ Waiting for admin credentials |
+| Editing a division or course, changing course visibility, uploading or changing a resource | **Not run.** These change shared data and need owner approval |
 
 ### Tests that still need admin credentials or owner approval
 

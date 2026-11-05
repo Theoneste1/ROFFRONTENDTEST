@@ -10,6 +10,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   adminDashboardApi,
   auditApi,
+  coursesAdminApi,
   divisionsApi,
   mentorRequestsApi,
   mentorsApi,
@@ -226,5 +227,42 @@ export function useStudentReport(filters: UserReportFilters = {}) {
     queryKey: queryKeys.admin.studentReport(filters),
     queryFn: () => studentsApi.report(filters),
     placeholderData: keepPreviousData,
+  });
+}
+
+// ─── Divisions & courses (edit) ─────────────────────────────────────────────
+
+export function useUpdateDivision() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: { name?: string; description?: string } }) => divisionsApi.update(id, input),
+    onSuccess: () => invalidate(),
+  });
+}
+
+export function useCourseParticipation(filters: ReportFilters = {}) {
+  return useQuery({
+    queryKey: queryKeys.admin.participation(filters),
+    queryFn: () => coursesAdminApi.participation(filters),
+  });
+}
+
+export function useActiveScopes() {
+  return useQuery({
+    queryKey: queryKeys.admin.activeScopes(),
+    queryFn: coursesAdminApi.allActiveScopes,
+  });
+}
+
+export function useCourseAction() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: (
+      a:
+        | { type: "update"; id: string; input: { title?: string; description?: string; sortOrder?: number; discussionsEnabled?: boolean } }
+        | { type: "state"; id: string; action: "publish" | "unpublish" | "archive" },
+    ) => (a.type === "update" ? coursesAdminApi.update(a.id, a.input) : coursesAdminApi.setState(a.id, a.action)),
+    // Course lists are shared with the student and mentor views.
+    onSuccess: () => invalidate(queryKeys.courses.all),
   });
 }

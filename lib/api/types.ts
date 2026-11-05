@@ -844,3 +844,20 @@ export interface StudentReportRow {
   activatedAt: string | null;
   lastLoginAt: string | null;
 }
+
+/** `GET /admin/reports/course-participation` rows (course × division). */
+export interface CourseParticipationRow {
+  course: CourseRef;
+  division: DivisionRef;
+  students: number;
+  opened: number;
+  completed: number;
+  participationRate: number;
+  assignmentsPublished: number;
+  submissions: number;
+  studentsSubmitted: number;
+  submissionRate: number;
+  averageScore: number | null;
+  discussionThreads: number;
+  discussionComments: number;
+}
