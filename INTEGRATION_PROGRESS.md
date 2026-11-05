@@ -566,7 +566,7 @@ Approved decisions:
 | 5.9 | Result publication | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.10 | Reports and audit log | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
 | 5.11 | Moderation and platform settings | ✅ code; ⏳ admin-authenticated test | see Git (phase 5) |
-| 5.12 | Final integration and regression | ☐ | |
+| 5.12 | Final integration and regression | ✅ everything possible without admin credentials; ⏳ admin suites and approved workflow | see Git (phase 5) |
 
 ### 5.0 Foundation
 
@@ -925,10 +925,76 @@ Tests:
 | `e2e-admin.mjs admin` (prepared, read-only): open reports equal the API; hidden and log tabs; report detail (when a report exists); unknown report id; every setting rendered with API values; save without changes sends no PATCH; an out-of-range number is refused without sending; sidebar links; 390 px | ⏳ Waiting for admin credentials |
 | Resolving a report, hiding or restoring content, changing a setting, recomputing points | **Not run.** These change shared data and need owner approval |
 
+### 5.12 Final integration and regression (2026-11-06)
+
+| Check | Result |
+|---|---|
+| `tsc --noEmit` (whole project) | ✅ |
+| ESLint (whole project) | ✅ 0 errors; 1 known warning in the hidden `app/mentor/_unsupported/studentlist` |
+| `next build` | ✅ All 22 admin routes are built |
+| Static sweep of `app/admin` | ✅ No `alert()`, no `href="#"`, no mock names or figures. Every linked `/admin/...` route exists |
+| `api-security.mjs` (student role) | ✅ 45/45 |
+| `api-mentor.mjs` (mentor scopes) | ✅ 26/26 |
+| `api-admin.mjs nonadmin` (student and mentor on 26 admin read routes and 15 admin mutations) | ✅ 82/82 |
+| `e2e-auth.mjs` | ✅ 19/19 |
+| `e2e-admin.mjs nonadmin`: portal isolation and the mentor resources regression | ✅ 15/15 |
+| `e2e-workflow.mjs` (plan §5) | Prepared. **Dry run only**: it prints the 14 steps and sends nothing. It runs only with `--execute`, `ROF_WORKFLOW_APPROVED=yes` and the admin credentials |
+| `api-admin.mjs admin`, `e2e-admin.mjs admin` | ⏳ Waiting for admin credentials |
+| `e2e-student.mjs`, `e2e-mentor.mjs` | Not re-run: they create `[TEST]` records, which needs approval |
+
+The backend is unchanged. The `[TEST]` records and the legacy s5 submission are untouched: every check above is read-only, or a refused write.
+
+### Git (phase 5)
+
+Phase 5 has one commit per step on `main`, not pushed:
+
+| Step | Commit |
+|---|---|
+| 5.0 | `d918668` |
+| 5.1 | `3eb879e` |
+| 5.2 | `85204f7` |
+| 5.3 | `084d1a4` |
+| 5.4 | `1c2b3da` |
+| 5.5 | `97d7445` |
+| 5.6 | `0576ca0` |
+| 5.7 | `f86a803` |
+| 5.8 | `82870bf` |
+| 5.9 | `ac3e3a8` |
+| 5.10 | `26d8d78` |
+| 5.11 | `5e6a85d` |
+
+Step 5.12 (this documentation) follows. No secrets, `.env` files or credentials were committed. The only password string in the repository is still the public demo-seed one.
+
 ### Tests that still need admin credentials or owner approval
 
-- **All admin-authenticated browser and API tests (plan §10, A–J).**
-- **Needs owner approval before running:** the end-to-end workflow (§5), test-user creation, and a real CSV import.
+**How the prepared suites receive the credentials.** They read `ROF_ADMIN_USER` and `ROF_ADMIN_PASSWORD` from the environment of the shell that runs them. Nothing is written to files, the repository or the logs, and each suite signs in **once**.
+
+| Suite (scratchpad) | Needs | What it does |
+|---|---|---|
+| `api-admin.mjs admin` | Admin credentials | Read-only. Admin permissions, including the absence of `reviews.grade`, `assignments.prepare` and `submissions.submit`. Every admin read route returns 200, and CSVs arrive as attachments. Admin gets 403 for creating an assignment, submitting and grading. The legacy s5 record is read-only and still IN_REVIEW |
+| `e2e-admin.mjs <edge> admin` | Admin credentials | Read-only browser checks for steps 5.1–5.11 (listed in each step above). Dialogs are opened and refused client-side or cancelled. **CSV checks add `EXPORT_REPORT` audit entries** |
+| `e2e-workflow.mjs --execute` | Admin credentials **and owner approval** (D2); it also needs `ROF_WORKFLOW_APPROVED=yes` | **Changes data:** the plan §5 workflow on `[TEST] …2390610`, with isolation checks at each step. A dry run (the default) only prints the steps and sends nothing |
+
+Needs owner approval before running:
+- the end-to-end workflow (§5);
+- test-user creation (D9);
+- a real CSV import;
+- editing a division or course;
+- course visibility;
+- resource changes;
+- scope changes;
+- application decisions;
+- moderation actions;
+- settings changes;
+- leaderboard recompute.
+
+The UI for all of these is implemented and validated client-side, but none has been executed.
+
+Regression suites that create test records were not re-run, because new test data needs approval:
+- `e2e-student.mjs` creates and soft-deletes a `[TEST]` comment;
+- `e2e-mentor.mjs` creates a `[TEST]` assignment and resource.
+
+The read-only mentor regression in `e2e-admin.mjs nonadmin` covers the shared mentor components changed in 5.5.
 
 ---
 
@@ -953,7 +1019,12 @@ Tests:
 | Mentor: course analytics | ✅ | ✅ | |
 | Mentor: students, student list, messaging | — | — | ✅ Hidden in `app/mentor/_unsupported/` |
 | Mentor: live sessions | — | — | ✅ Removed |
-| Admin: all modules | ☐ | ☐ | Needs admin credentials |
+| Admin: dashboard, users, mentors, students, schools | ✅ | ⏳ | Non-admin isolation tested; admin-authenticated suites prepared, waiting for credentials |
+| Admin: divisions, courses, resources | ✅ | ⏳ | Mentor components reused; mentor regression ✅ |
+| Admin: assignments, submissions, distribution, review approval, results | ✅ | ⏳ | Workflow script prepared; run needs approval (D2) |
+| Admin: reports, audit log, moderation, settings | ✅ | ⏳ | |
+| Admin: academic years and enrolments | — | — | Excluded (D7); read-only enrolment CSV only |
+| Admin: bulk e-mail | — | — | Excluded (D4) |
 | Notifications inbox and deep links | ☐ | ☐ | |
 | Discussions | ✅ (component) | ✅ | Course and assignment threads done; `/discussions/[threadId]` deep link in phase 6 |
 | Settings / profile / help | ☐ | ☐ | |
@@ -964,3 +1035,4 @@ Tests:
 - 2026-11-05: Phases 1–2 implemented and tested (foundation, authentication, shell).
 - 2026-11-05: Phase 3 (student portal) implemented and tested; auth forms hardened against pre-hydration submits.
 - 2026-11-05: Phase 4 (mentor portal) implemented and tested; session refresh now retries on 429/5xx. Final mentor suite 57/57; commits regrouped (5cb150e, ed300bd, 278f3a7).
+- 2026-11-05/06: Phase 5 (admin portal) steps 5.0–5.11 implemented, one commit per step (d918668 … 5e6a85d). Non-admin isolation and mentor regression pass. Admin-authenticated tests are prepared and waiting for credentials; the data-changing workflow is waiting for owner approval.

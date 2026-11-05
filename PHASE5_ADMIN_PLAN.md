@@ -467,4 +467,23 @@ All are run against the running backend with real data. API suites go through th
 - **D9:** no new test users without approval.
 - **D10:** clean up the legacy sidebar in phase 7.
 
-Implementation is in progress; see the Phase 5 section of `INTEGRATION_PROGRESS.md`.
+## 11. Implementation status (2026-11-06)
+
+Steps **5.0–5.11 are implemented**, one commit each. Step **5.12** (final integration and regression) has been run as far as possible without admin credentials. Details, endpoints and test results per step are in `INTEGRATION_PROGRESS.md` → Phase 5.
+
+**Deviations from this plan,** each verified against the backend:
+
+| Plan item | What was done | Why |
+|---|---|---|
+| Division `isActive` (§3.5) | Shown read-only, not offered as a switch | The DTO accepts it, but nothing in the backend acts on it, so a switch would do nothing |
+| Reports "assignment" filter (§3.11) | Removed | The reports have no assignment parameter; per-assignment figures are on `/admin/results/[id]` |
+| Reports "resource views" | Replaced by "late submissions" | No admin report provides resource views |
+| Thread pin and unpin (§3.12) | Not offered | The report payload doesn't say whether a thread is pinned, so the right action can't be chosen |
+| Dashboard "Needs attention" | Also shows "Reported discussion content" | From `/admin/dashboard` → `reportedContent.open` |
+
+**Test status (§10):**
+- **Done:** the non-admin parts of A4 and A5, the static parts of J33 and J34 (tsc, ESLint, build; no mocks, no `alert()`, no `href="#"`, every linked route exists), and the read-only regression.
+- **Waiting for admin credentials:** A1–A3 and B–J (`api-admin.mjs admin`, `e2e-admin.mjs admin`).
+- **Waiting for owner approval:** the data-changing parts, namely the §5 workflow (`e2e-workflow.mjs`, dry run by default) and C9–C13, D15–D17, E18–E20, F21–F23, G24–G26 and H27–H28.
+
+**Phase 5 is not marked complete** until those tests have run or their limits are accepted by the owner.
