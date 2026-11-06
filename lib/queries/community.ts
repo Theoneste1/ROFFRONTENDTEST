@@ -1,9 +1,9 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { discussionsApi, leaderboardApi, notificationsApi, type ThreadScope } from "@/lib/api/community";
+import { discussionsApi, leaderboardApi, notificationsApi, reportThread, type ThreadScope } from "@/lib/api/community";
 import { queryKeys } from "@/lib/query/keys";
-import type { ReactionType, ReportReason } from "@/lib/api/types";
+import type { NotificationCategory, NotificationFilters, NotificationSetting, ReactionType, ReportReason } from "@/lib/api/types";
 
 // ─── Leaderboard ────────────────────────────────────────────────────────────
 
@@ -46,8 +46,76 @@ export function useEntryAbove(myRank: number | undefined) {
 
 // ─── Notifications ──────────────────────────────────────────────────────────
 
-export function useNotifications(params: { page?: number; limit?: number } = {}) {
-  return useQuery({ queryKey: queryKeys.notifications.list(params), queryFn: () => notificationsApi.list(params) });
+/** How often the unread badge is refreshed. The backend has no push channel. */
+const UNREAD_POLL_MS = 60_000;
+
+export function useNotifications(params: NotificationFilters = {}, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.notifications.list(params),
+    queryFn: () => notificationsApi.list(params),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+}
+
+/** Unread badge: polled while the tab is visible (TanStack pauses in the background). */
+export function useUnreadCount() {
+  return useQuery({
+    queryKey: queryKeys.notifications.unreadCount(),
+    queryFn: notificationsApi.unreadCount,
+    refetchInterval: UNREAD_POLL_MS,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
+  });
+}
+
+/** Read / unread / read-all. Each refreshes every inbox list and the badge. */
+export function useNotificationActions() {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.notifications.all });
+  return {
+    markRead: useMutation({ mutationFn: (id: string) => notificationsApi.markRead(id), onSettled: refresh }),
+    markUnread: useMutation({ mutationFn: (id: string) => notificationsApi.markUnread(id), onSettled: refresh }),
+    markAllRead: useMutation({ mutationFn: () => notificationsApi.markAllRead(), onSettled: refresh }),
+  };
+}
+
+export function useNotificationPreferences() {
+  return useQuery({ queryKey: queryKeys.notifications.preferences(), queryFn: notificationsApi.preferences });
+}
+
+export function useUpdateNotificationPreferences() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (prefs: { category: NotificationCategory; emailEnabled: boolean }[]) => notificationsApi.updatePreferences(prefs),
+    onSuccess: (data) => {
+      qc.setQueryData(queryKeys.notifications.preferences(), data);
+      // Per-type settings show the category e-mail switch too.
+      void qc.invalidateQueries({ queryKey: queryKeys.notifications.settings() });
+    },
+  });
+}
+
+/** Mentors and admins only (`enabled` false for students: the backend answers 403). */
+export function useNotificationSettings(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.notifications.settings(),
+    queryFn: notificationsApi.settings,
+    select: (res) => res.settings,
+    enabled,
+  });
+}
+
+export function useNotificationSettingActions() {
+  const qc = useQueryClient();
+  const store = (data: { settings: NotificationSetting[] }) => qc.setQueryData(queryKeys.notifications.settings(), data);
+  return {
+    update: useMutation({
+      mutationFn: (changes: { type: string; inAppEnabled?: boolean; emailEnabled?: boolean }[]) => notificationsApi.updateSettings(changes),
+      onSuccess: store,
+    }),
+    reset: useMutation({ mutationFn: () => notificationsApi.resetSettings(), onSuccess: store }),
+  };
 }
 
 // ─── Discussions ────────────────────────────────────────────────────────────
@@ -57,6 +125,21 @@ export function useThreads(scope: ThreadScope | null) {
     queryKey: scope ? queryKeys.discussions.threads(scope) : ["discussions", "none"],
     queryFn: () => discussionsApi.threads(scope!, { limit: 50 }),
     enabled: !!scope,
+  });
+}
+
+/** One thread by id (the `/discussions/[threadId]` deep link). 404 when out of scope; no retry. */
+export function useThread(threadId: string) {
+  return useQuery({
+    queryKey: queryKeys.discussions.thread(threadId),
+    queryFn: () => discussionsApi.thread(threadId),
+    retry: false,
+  });
+}
+
+export function useReportThread(threadId: string) {
+  return useMutation({
+    mutationFn: ({ reason, details }: { reason: ReportReason; details?: string }) => reportThread(threadId, reason, details),
   });
 }
 
@@ -92,6 +175,7 @@ export function useCommentActions(threadId: string) {
     void qc.invalidateQueries({ queryKey: queryKeys.discussions.comments(threadId) });
     if (parentId) void qc.invalidateQueries({ queryKey: queryKeys.discussions.replies(parentId) });
     void qc.invalidateQueries({ queryKey: [...queryKeys.discussions.all, "threads"] });
+    void qc.invalidateQueries({ queryKey: queryKeys.discussions.thread(threadId) });
   };
 
   const add = useMutation({

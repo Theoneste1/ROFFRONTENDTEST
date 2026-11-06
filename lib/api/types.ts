@@ -469,11 +469,54 @@ export interface AppNotification {
   category: NotificationCategory;
   title: string;
   body: string;
-  data: Record<string, string | undefined>;
-  link: string;
+  /** Ids for deep links (assignmentId, submissionId, threadId, …); may be null. */
+  data: Record<string, string | undefined> | null;
+  /** Role-neutral or role-prefixed frontend path; null when there is nothing to open. */
+  link: string | null;
   isRead: boolean;
   readAt: string | null;
   createdAt: string;
+}
+
+export interface NotificationFilters {
+  page?: number;
+  limit?: number;
+  unreadOnly?: boolean;
+  category?: NotificationCategory;
+}
+
+/** `GET /notifications/unread-count`. */
+export interface UnreadCount {
+  unread: number;
+  byCategory: Record<NotificationCategory, number>;
+}
+
+/** `GET /me/notification-preferences`: e-mail on or off per category (ACCOUNT is locked on). */
+export interface NotificationPreference {
+  category: NotificationCategory;
+  emailEnabled: boolean;
+  locked: boolean;
+}
+
+/** One switchable notification type (`GET /me/notification-settings`, mentors and admins). */
+export interface NotificationSetting {
+  type: string;
+  category: NotificationCategory;
+  label: string;
+  description: string;
+  inAppEnabled: boolean;
+  /** false: in-app only, never e-mailed (no e-mail switch). */
+  emailAvailable: boolean;
+  emailEnabled: boolean;
+  /** The category e-mail preference, which also gates this type's e-mail. */
+  categoryEmailEnabled: boolean;
+}
+
+/** `PATCH /me`: the only profile fields a user may change. */
+export interface UpdateMeInput {
+  firstName?: string;
+  lastName?: string;
+  homeLocation?: string;
 }
 
 // ─── Mentor ─────────────────────────────────────────────────────────────────

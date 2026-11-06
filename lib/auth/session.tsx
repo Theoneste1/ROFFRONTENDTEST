@@ -29,6 +29,11 @@ interface SessionValue {
   login: (username: string, password: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
   logoutEverywhere: () => Promise<void>;
+  /**
+   * Ends the session in this browser without calling the API, for when the
+   * backend has already revoked it (e.g. after a password change).
+   */
+  endSession: () => void;
   /** Retry loading the session after an error. */
   retry: () => void;
 }
@@ -128,6 +133,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
   }, [signOutLocally]);
 
+  const endSession = useCallback(() => {
+    signOutLocally();
+    channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
+  }, [signOutLocally]);
+
   const retry = useCallback(() => {
     void meQuery.refetch();
     void permissionsQuery.refetch();
@@ -153,9 +163,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       logoutEverywhere,
+      endSession,
       retry,
     };
-  }, [phase, signedIn, meQuery.data, meQuery.isError, permissionsQuery.data, login, logout, logoutEverywhere, retry]);
+  }, [phase, signedIn, meQuery.data, meQuery.isError, permissionsQuery.data, login, logout, logoutEverywhere, endSession, retry]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

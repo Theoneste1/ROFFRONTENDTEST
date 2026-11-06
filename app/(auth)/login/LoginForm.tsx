@@ -8,6 +8,7 @@ import { postLoginPath } from "@/lib/auth/roles";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { Button, PasswordField, TextField } from "@/app/components/ui/form";
+import { LOGIN_NOTICE_TEXT, clearLoginNotice, peekLoginNotice } from "@/lib/auth/notice";
 
 export default function LoginForm() {
   const session = useSession();
@@ -20,6 +21,9 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [failures, setFailures] = useState(0);
+  // A one-time message from the previous page (e.g. after a password change).
+  const [notice] = useState(peekLoginNotice);
+  useEffect(() => clearLoginNotice(), []);
 
   // Already signed in → straight to the right portal.
   useEffect(() => {
@@ -56,6 +60,8 @@ export default function LoginForm() {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Sign in</h1>
         <p className="mt-1 text-sm text-slate-500">Use your ROF username or e-mail address.</p>
       </div>
+
+      {notice && error == null && <Alert tone="success">{LOGIN_NOTICE_TEXT[notice]}</Alert>}
 
       {error != null && (
         <Alert tone="error">
@@ -118,6 +124,13 @@ export default function LoginForm() {
       <Button type="submit" loading={submitting} disabled={username.trim().length < 3 || password.length === 0} className="w-full">
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
+
+      <p className="text-center text-xs text-slate-500">
+        Need help?{" "}
+        <Link href="/support" className="font-medium text-[#2B2BB2] hover:underline">
+          Help and support
+        </Link>
+      </p>
     </form>
   );
 }

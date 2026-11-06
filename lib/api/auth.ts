@@ -8,6 +8,7 @@ import type {
   MePermissions,
   MessageResponse,
   SupportInfo,
+  UpdateMeInput,
 } from "./types";
 
 export const authApi = {
@@ -64,6 +65,8 @@ export const authApi = {
 
 export const meApi = {
   get: () => api<CurrentUser>("/me"),
+  /** Only firstName, lastName and homeLocation can be changed. */
+  update: (input: UpdateMeInput) => api<CurrentUser>("/me", { method: "PATCH", body: input }),
   permissions: () => api<MePermissions>("/me/permissions"),
 };
 

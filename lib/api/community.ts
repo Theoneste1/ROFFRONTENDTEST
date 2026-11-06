@@ -6,10 +6,15 @@ import type {
   DiscussionThread,
   LeaderboardPage,
   MyRank,
+  NotificationCategory,
+  NotificationFilters,
+  NotificationPreference,
+  NotificationSetting,
   Page,
   ReactionType,
   ReportReason,
   SchoolLeaderboardPage,
+  UnreadCount,
 } from "./types";
 
 export const leaderboardApi = {
@@ -57,7 +62,26 @@ export const discussionsApi = {
     api<unknown>(`/comments/${commentId}/report`, { method: "POST", body: details?.trim() ? { reason, details: details.trim() } : { reason } }),
 };
 
+/** Discussion topic report (`POST /threads/:id/report`). */
+export const reportThread = (threadId: string, reason: ReportReason, details?: string) =>
+  api<unknown>(`/threads/${threadId}/report`, { method: "POST", body: details?.trim() ? { reason, details: details.trim() } : { reason } });
+
+/** The caller's own notifications. Every endpoint is scoped to the caller by the backend. */
 export const notificationsApi = {
-  list: (params: { page?: number; limit?: number; unreadOnly?: boolean } = {}) =>
-    api<Page<AppNotification>>("/notifications", { query: params }),
+  list: (params: NotificationFilters = {}) => api<Page<AppNotification>>("/notifications", { query: { ...params } }),
+  unreadCount: () => api<UnreadCount>("/notifications/unread-count"),
+  markRead: (id: string) => api<{ updated: number }>(`/notifications/${id}/read`, { method: "PATCH" }),
+  markUnread: (id: string) => api<{ updated: number }>(`/notifications/${id}/unread`, { method: "PATCH" }),
+  markAllRead: () => api<{ updated: number }>("/notifications/read-all", { method: "POST" }),
+
+  /** E-mail on/off per category (all roles). */
+  preferences: () => api<NotificationPreference[]>("/me/notification-preferences"),
+  updatePreferences: (preferences: { category: NotificationCategory; emailEnabled: boolean }[]) =>
+    api<NotificationPreference[]>("/me/notification-preferences", { method: "PUT", body: { preferences } }),
+
+  /** Per-type switches (mentors and admins only; students get 403). */
+  settings: () => api<{ settings: NotificationSetting[] }>("/me/notification-settings"),
+  updateSettings: (settings: { type: string; inAppEnabled?: boolean; emailEnabled?: boolean }[]) =>
+    api<{ settings: NotificationSetting[] }>("/me/notification-settings", { method: "PATCH", body: { settings } }),
+  resetSettings: () => api<{ settings: NotificationSetting[] }>("/me/notification-settings/reset", { method: "POST" }),
 };

@@ -10,7 +10,7 @@ import type { ResourceFilters } from "@/lib/api/learning";
 import type { ThreadScope } from "@/lib/api/community";
 import type { AssignmentFilters, ReviewFilters } from "@/lib/api/mentor";
 import type { AdminAssignmentFilters, AdminSubmissionFilters, AuditFilters, UserFilters, UserReportFilters } from "@/lib/api/admin";
-import type { ReportFilters } from "@/lib/api/types";
+import type { NotificationFilters, ReportFilters } from "@/lib/api/types";
 
 export const queryKeys = {
   me: {
@@ -62,9 +62,13 @@ export const queryKeys = {
     replies: (commentId: string) => [...queryKeys.discussions.all, "replies", commentId] as const,
   },
 
+  /** The caller's inbox. Read-state mutations invalidate `notifications.all` (lists and the badge). */
   notifications: {
     all: ["notifications"] as const,
-    list: (params: { page?: number; limit?: number } = {}) => [...queryKeys.notifications.all, "list", params] as const,
+    list: (params: NotificationFilters = {}) => [...queryKeys.notifications.all, "list", params] as const,
+    unreadCount: () => [...queryKeys.notifications.all, "unread-count"] as const,
+    preferences: () => ["notification-preferences"] as const,
+    settings: () => ["notification-settings"] as const,
   },
 
   mentor: {
