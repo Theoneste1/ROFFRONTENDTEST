@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Geist, Geist_Mono } from "next/font/google";
 import Providers from "./providers";
 import "./globals.css";
@@ -21,7 +22,10 @@ export const metadata: Metadata = {
   description: "Rwanda Olympiad Foundation — Mathematics learning platform",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Render per request: the CSP nonce from proxy.ts exists only at request
+  // time, and pages pre-rendered at build time would carry no nonce.
+  await connection();
   return (
     <html
       lang="en"

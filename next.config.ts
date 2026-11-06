@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { STATIC_SECURITY_HEADERS } from "./lib/security/headers";
 
 /**
  * The browser talks only to this Next.js server. Every `/api/*` request is
@@ -29,6 +30,11 @@ if (process.env.NETLIFY === "true") {
 }
 
 const nextConfig: NextConfig = {
+  // Same for every response (also set by netlify.toml when hosted on Netlify).
+  // The per-request CSP and HSTS are set in proxy.ts.
+  async headers() {
+    return [{ source: "/:path*", headers: STATIC_SECURITY_HEADERS }];
+  },
   async rewrites() {
     return [
       {
