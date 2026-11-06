@@ -67,7 +67,7 @@ All against the running, unchanged backend, through the `:3001` proxy. Browser t
 - Browser: bell count equals `unread-count`; dropdown and inbox rows equal `GET /notifications`; filters send the right query; every item's `href` resolves to an existing role page; each redirect route for each role (signed out, wrong role, right role); the thread deep link `/discussions/:threadId` for the mentor (real notification) and the out-of-scope mentor and student (not available); profile values equal `/me`; profile and password forms refuse invalid input **without sending a request**; `/support` shows `GET /support`; Help and Settings links in all sidebars; 390 px layouts; no console errors, no 5xx.
 - Regression: the read-only parts of the student, mentor and admin non-admin suites; `tsc`, ESLint, `next build`.
 
-**Data-changing (prepared, run only with the owner's approval):**
+**Data-changing (prepared, run only with the owner's approval):** superseded by `VERIFICATION_PLAN.md` §2 (D2's replier changed to admin, required/optional split).
 
 | Test | What it changes | Reversible? |
 |---|---|---|

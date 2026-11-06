@@ -297,6 +297,8 @@ Investigated **read-only**: GET requests as `student.s5` and `mentor.junior`, an
 
 ## 5. Admin actions needed for the outstanding end-to-end tests
 
+> **Superseded (2026-11-06) by `VERIFICATION_PLAN.md` §1.** The assignment below has since been published by the admin, and no mentor currently has Algebra · Junior access. The table is kept for reference.
+
 Uses the existing `[TEST]` records. Each step **changes data**, so the owner confirms before it starts. Recommended assignment: **`a266c16c-4f68-4b32-9d59-f225cacd6fcc`** ("[TEST] Phase 4 wizard assignment 1793912390610 (edited)"). It **allows resubmission** (up to 2), so the mentor's "return for revision" path can be tested too. `f0b37379…` does *not* allow resubmission.
 
 | # | Actor | Action | Endpoint | Verifies |
