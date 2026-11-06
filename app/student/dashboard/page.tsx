@@ -11,6 +11,7 @@ import type { AppNotification, NotificationCategory, StudentAssignment } from "@
 import { EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import { StatusBadge, courseStyle } from "../components/studentUi";
 import DeadlineCalendar from "./components/DeadlineCalendar";
+import { NotificationLink } from "@/app/components/notifications/notificationUi";
 import { useNow } from "@/lib/hooks/useNow";
 
 export default function StudentDashboard() {
@@ -263,7 +264,12 @@ function RecentAlerts() {
 
   return (
     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-      <h3 className="text-base font-bold text-slate-800">Recent Alerts</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-base font-bold text-slate-800">Recent Alerts</h3>
+        <Link href="/student/notifications" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+          View all
+        </Link>
+      </div>
       {query.isPending ? (
         <Spinner />
       ) : query.isError ? (
@@ -275,7 +281,7 @@ function RecentAlerts() {
           {query.data.data.map((n: AppNotification) => {
             const { icon: Icon, tone } = ALERT_ICON[n.category] ?? ALERT_ICON.ACCOUNT;
             return (
-              <div key={n.id} className="flex items-start gap-3">
+              <NotificationLink key={n.id} notification={n} className="flex items-start gap-3 rounded-xl -m-1.5 p-1.5 hover:bg-slate-50 transition-colors">
                 <div className={`p-2 rounded-xl shrink-0 ${tone}`}>
                   <Icon className="w-4 h-4" />
                 </div>
@@ -284,7 +290,7 @@ function RecentAlerts() {
                   {n.body && <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>}
                   <p className="text-[10px] text-slate-400 mt-0.5">{formatRelative(n.createdAt, now)}</p>
                 </div>
-              </div>
+              </NotificationLink>
             );
           })}
         </div>

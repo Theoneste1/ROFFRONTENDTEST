@@ -12,6 +12,7 @@ import { Users, FileText, BookOpen, TrendingUp, Clock, CheckCircle2, AlertCircle
 import { useSession } from '@/lib/auth/session';
 import { useMentorAssignments, useReviewQueue, useScopesAnalytics, useTeachingScopes } from '@/lib/queries/mentor';
 import { useNotifications } from '@/lib/queries/community';
+import { NotificationLink } from '@/app/components/notifications/notificationUi';
 import { useNow } from '@/lib/hooks/useNow';
 import { formatDate, formatRelative } from '@/lib/format';
 import { ErrorState, Spinner } from '@/app/components/ui/feedback';
@@ -108,7 +109,9 @@ export default function MentorDashboard() {
           <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-200/80">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
-              <Activity className="w-5 h-5 text-gray-400" />
+              <Link href="/mentor/notifications" className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+                View all <Activity className="w-4 h-4" />
+              </Link>
             </div>
             {notifications.isPending ? (
               <Spinner />
@@ -122,7 +125,7 @@ export default function MentorDashboard() {
                   const tone = n.category === 'REVIEWS' ? 'bg-blue-100 text-blue-600' : n.category === 'ASSIGNMENTS' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600';
                   const Icon = n.category === 'REVIEWS' ? FileText : n.category === 'ASSIGNMENTS' ? CheckCircle2 : AlertCircle;
                   return (
-                    <div key={n.id} className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
+                    <NotificationLink key={n.id} notification={n} className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tone}`}>
                         <Icon className="w-5 h-5" />
                       </div>
@@ -131,7 +134,7 @@ export default function MentorDashboard() {
                         {n.body && <p className="text-sm text-gray-600 line-clamp-2">{n.body}</p>}
                         <p className="text-xs text-gray-400 mt-1">{formatRelative(n.createdAt, now)}</p>
                       </div>
-                    </div>
+                    </NotificationLink>
                   );
                 })}
               </div>

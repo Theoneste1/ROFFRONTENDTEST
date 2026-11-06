@@ -24,6 +24,11 @@ export function portalHome(role: Role): string {
   return PORTAL_HOME[role];
 }
 
+/** A page inside the role's portal, e.g. portalPath("MENTOR", "notifications") → "/mentor/notifications". */
+export function portalPath(role: Role, page: string): string {
+  return `${PORTAL_PREFIX[role]}/${page.replace(/^\/+/, "")}`;
+}
+
 /**
  * Where to go after signing in. A `next` path is honoured only when it is an
  * internal path inside the user's own portal (no open redirects, no landing a
