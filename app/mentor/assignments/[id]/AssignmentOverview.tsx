@@ -10,6 +10,7 @@ import { errorMessage, isApiError } from "@/lib/api/errors";
 import { formatDateTime, personName } from "@/lib/format";
 import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import FileButton from "@/app/components/ui/FileButton";
+import DiscussionPanel from "@/app/components/discussions/DiscussionPanel";
 import { ASSIGNMENT_STATUS, AssignmentStatusBadge, DONE_REVIEW_STATUSES, OPEN_REVIEW_STATUSES } from "../../components/mentorUi";
 
 const EVENT_LABEL: Record<string, string> = {
@@ -202,6 +203,12 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
                   ))}
                 </div>
               </div>
+            )}
+            {reviewable && (
+              <section className="space-y-4" aria-labelledby="assignment-discussion">
+                <h2 id="assignment-discussion" className="text-xl font-bold text-gray-900">Discussion</h2>
+                <DiscussionPanel scope={{ kind: "assignment", assignmentId: a.id }} banner="Questions from students about this assignment. Don't share answers." />
+              </section>
             )}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200/80">
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">

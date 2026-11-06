@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Flag, HelpCircle, Info, Lightbulb, Lock, MessageSquare, MoreVertical, Pencil, Plus, ThumbsUp, Trash2 } from "lucide-react";
 import type { ThreadScope } from "@/lib/api/community";
 import type { DiscussionComment, DiscussionThread, ReactionType, ReportReason } from "@/lib/api/types";
-import { useCommentActions, useCreateThread, useReplies, useThreadComments, useThreads } from "@/lib/queries/community";
+import { useCommentActions, useCreateThread, useReplies, useReportThread, useThreadComments, useThreads } from "@/lib/queries/community";
 import { useSession } from "@/lib/auth/session";
 import { errorMessage } from "@/lib/api/errors";
 import { formatDateTime, formatRelative, personName } from "@/lib/format";
@@ -185,8 +185,12 @@ function NewThreadForm({
   );
 }
 
-function ThreadView({ thread, postingDisabled }: { thread: DiscussionThread; postingDisabled: boolean }) {
+/** One topic: opening post and comments, replies, reactions, edit/delete own, report. Also used by the thread page. */
+export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThread; postingDisabled: boolean }) {
   const { user } = useSession();
+  const [reportingTopic, setReportingTopic] = useState(false);
+  const [topicNotice, setTopicNotice] = useState<string | null>(null);
+  const canReportTopic = !!user && !!thread.createdBy && thread.createdBy.id !== user.id && thread.status !== "DELETED";
   const [limit, setLimit] = useState(20);
   const comments = useThreadComments(thread.id, limit);
   const actions = useCommentActions(thread.id);
@@ -212,12 +216,37 @@ function ThreadView({ thread, postingDisabled }: { thread: DiscussionThread; pos
             Started by {personName(thread.createdBy, "a former member")} · {formatRelative(thread.createdAt)}
           </p>
         </div>
-        {locked && (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
-            <Lock className="w-3 h-3" /> Locked
-          </span>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {locked && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+              <Lock className="w-3 h-3" /> {thread.status === "LOCKED" ? "Locked" : thread.status === "HIDDEN" ? "Hidden by moderators" : "Closed"}
+            </span>
+          )}
+          {canReportTopic && !reportingTopic && (
+            <button
+              type="button"
+              onClick={() => {
+                setReportingTopic(true);
+                setTopicNotice(null);
+              }}
+              className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-red-600 px-2 py-1 rounded-lg"
+              title="Report this topic"
+            >
+              <Flag className="w-3.5 h-3.5" /> Report topic
+            </button>
+          )}
+        </div>
       </div>
+      {reportingTopic && (
+        <ReportForm
+          target={{ kind: "thread", threadId: thread.id }}
+          onDone={(msg) => {
+            setReportingTopic(false);
+            if (msg) setTopicNotice(msg);
+          }}
+        />
+      )}
+      {topicNotice && <p className="px-1 text-xs text-green-700">{topicNotice}</p>}
 
       {/* Comment bar */}
       {canPost && (
@@ -437,8 +466,7 @@ function CommentCard({
 
       {reporting && (
         <ReportForm
-          threadId={threadId}
-          commentId={comment.id}
+          target={{ kind: "comment", threadId, commentId: comment.id }}
           onDone={(msg) => {
             setReporting(false);
             if (msg) setNotice(msg);
@@ -525,20 +553,27 @@ function CommentMenu({ mine, onEdit, onDelete, onReport }: { mine: boolean; onEd
   );
 }
 
-function ReportForm({ threadId, commentId, onDone }: { threadId: string; commentId: string; onDone: (msg?: string) => void }) {
-  const { report } = useCommentActions(threadId);
+type ReportTarget = { kind: "comment"; threadId: string; commentId: string } | { kind: "thread"; threadId: string };
+
+function ReportForm({ target, onDone }: { target: ReportTarget; onDone: (msg?: string) => void }) {
+  const { report: reportComment } = useCommentActions(target.threadId);
+  const reportTopic = useReportThread(target.threadId);
+  const report = target.kind === "comment" ? reportComment : reportTopic;
+  const what = target.kind === "comment" ? "comment" : "topic";
   const [reason, setReason] = useState<ReportReason>("INAPPROPRIATE");
   const [details, setDetails] = useState("");
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (report.isPending) return;
-    report.mutate({ commentId, reason, details }, { onSuccess: () => onDone("Thanks — an administrator will review this comment.") });
+    const done = { onSuccess: () => onDone(`Thanks — an administrator will review this ${what}.`) };
+    if (target.kind === "comment") reportComment.mutate({ commentId: target.commentId, reason, details }, done);
+    else reportTopic.mutate({ reason, details }, done);
   }
 
   return (
     <form onSubmit={onSubmit} className="mt-4 bg-[#F8FAFC] border border-gray-200 rounded-xl p-3 space-y-2">
-      <p className="text-xs font-semibold text-gray-800">Report this comment</p>
+      <p className="text-xs font-semibold text-gray-800">Report this {what}</p>
       <select
         value={reason}
         onChange={(e) => setReason(e.target.value as ReportReason)}

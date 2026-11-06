@@ -109,7 +109,20 @@ export default function ReportDetail({ reportId }: { reportId: string }) {
             {r.details && <Info label="Reporter's details">{r.details}</Info>}
             <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Info label="Author">{personName(r.comment?.author ?? r.thread?.createdBy, "—")}</Info>
-              <Info label="Thread">{r.thread ? `“${r.thread.title}” (${r.thread.status.toLowerCase()})` : "—"}</Info>
+              <Info label="Thread">
+                {r.thread ? (
+                  <>
+                    “{r.thread.title}” ({r.thread.status.toLowerCase()})
+                    {r.thread.status !== "DELETED" && (
+                      <Link href={`/admin/discussions/${r.thread.id}`} className="block mt-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                        View discussion
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  "—"
+                )}
+              </Info>
               <Info label="Content status">{contentStatus ? contentStatus.toLowerCase() : "—"}</Info>
             </dl>
             {!open && (

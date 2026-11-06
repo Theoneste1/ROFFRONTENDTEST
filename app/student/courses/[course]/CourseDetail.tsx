@@ -31,6 +31,10 @@ const TAB_TYPES: Record<"books" | "papers" | "notes", ResourceType[]> = {
   notes: ["NOTE", "ATTACHMENT"],
 };
 
+function tabForType(type: ResourceType): Tab {
+  return (Object.keys(TAB_TYPES) as (keyof typeof TAB_TYPES)[]).find((k) => TAB_TYPES[k].includes(type)) ?? "overview";
+}
+
 function parseTab(value: string | null): Tab {
   if (value === "practice") return "papers"; // older links
   return TABS.some((t) => t.id === value) ? (value as Tab) : "overview";
@@ -39,11 +43,16 @@ function parseTab(value: string | null): Tab {
 export default function CourseDetail({ courseId }: { courseId: string }) {
   const router = useRouter();
   const params = useSearchParams();
-  const tab = parseTab(params.get("tab"));
   const { user } = useSession();
 
   const course = useCourse(courseId);
   const resources = useCourseResources(courseId);
+
+  // `?resource=<id>` (from a "new material" notification): open that resource's tab and highlight it.
+  const focusId = params.get("resource");
+  const focused = focusId ? (resources.data ?? []).find((r) => r.id === focusId) : undefined;
+  const focusMissing = !!focusId && resources.isSuccess && !focused;
+  const tab = params.get("tab") ? parseTab(params.get("tab")) : focused ? tabForType(focused.type) : "overview";
   const complete = useCompleteCourse(courseId);
 
   const setTab = (t: Tab) => router.replace(`/student/courses/${courseId}?tab=${t}`, { scroll: false });
@@ -84,6 +93,12 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
         <h1 className="text-4xl font-bold tracking-tight">{c.title}</h1>
         <p className="mt-2 text-lg text-gray-600 max-w-2xl">{c.description}</p>
       </div>
+
+      {focusMissing && (
+        <div className="mt-6 max-w-2xl">
+          <Alert tone="info">The material from your notification is no longer available. It may have been unpublished or archived.</Alert>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="mt-6 flex gap-6 md:gap-8 border-b border-gray-200 text-sm font-medium overflow-x-auto" role="tablist">
@@ -161,6 +176,7 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
               query={resources}
               items={byType(TAB_TYPES[tab])}
               courseId={courseId}
+              highlightId={focused?.id}
             />
           )}
 
@@ -222,6 +238,7 @@ function ResourceList({
   query,
   items,
   courseId,
+  highlightId,
 }: {
   title: string;
   empty: string;
@@ -229,6 +246,7 @@ function ResourceList({
   query: ReturnType<typeof useCourseResources>;
   items: CourseResource[];
   courseId: string;
+  highlightId?: string;
 }) {
   return (
     <div className="space-y-4">
@@ -241,7 +259,13 @@ function ResourceList({
         <p className="text-sm text-gray-500">{empty}</p>
       ) : (
         items.map((r) => (
-          <div key={r.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+          <div
+            key={r.id}
+            id={`resource-${r.id}`}
+            ref={r.id === highlightId ? (el) => el?.scrollIntoView({ block: "center" }) : undefined}
+            aria-current={r.id === highlightId ? "true" : undefined}
+            className={`rounded-xl border bg-white p-4 shadow-sm ${r.id === highlightId ? "border-indigo-400 ring-2 ring-indigo-200" : "border-gray-100"}`}
+          >
             <div className="flex items-start gap-4">
               <Icon className="h-6 w-6 text-indigo-600 shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">

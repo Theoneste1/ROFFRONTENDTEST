@@ -11,13 +11,16 @@ import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedba
 import { ScopeSelect, parseScopeKey } from "../../components/mentorUi";
 import OverviewTab from "./OverviewTab";
 import ResourcesTab, { type ResourceKind } from "./ResourcesTab";
+import DiscussionPanel from "@/app/components/discussions/DiscussionPanel";
+import { useCourse } from "@/lib/queries/learning";
 
-type Tab = "overview" | ResourceKind;
+type Tab = "overview" | ResourceKind | "discussion";
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "books", label: "Books" },
   { id: "papers", label: "Past Papers" },
   { id: "notes", label: "Notes & Materials" },
+  { id: "discussion", label: "Discussion" },
 ];
 
 export default function CoursesContent() {
@@ -85,9 +88,23 @@ export default function CoursesContent() {
 
       {activeTab === "overview" ? (
         <OverviewTab scope={scope} onOpenTab={(t) => go({ tab: t })} />
+      ) : activeTab === "discussion" ? (
+        <CourseDiscussion key={scopeKey(scope)} courseId={sc.courseId} divisionId={sc.divisionId} title={scope.course.title} division={scope.division.name} />
       ) : (
         <ResourcesTab key={`${scopeKey(scope)}:${activeTab}`} kind={activeTab} courseId={sc.courseId} divisionId={sc.divisionId} scopeKeyValue={scopeKey(scope)} />
       )}
     </div>
+  );
+}
+
+/** The course × division discussion (mentors pass the division; the backend checks the scope). */
+function CourseDiscussion({ courseId, divisionId, title, division }: { courseId: string; divisionId: string; title: string; division: string }) {
+  const course = useCourse(courseId);
+  return (
+    <DiscussionPanel
+      scope={{ kind: "course", courseId, divisionId }}
+      banner={`Discussion for ${title} (${division} division). Students in this division can read and reply.`}
+      disabledReason={course.data && !course.data.discussionsEnabled ? "Discussions are turned off for this course. You can still read earlier topics." : null}
+    />
   );
 }
