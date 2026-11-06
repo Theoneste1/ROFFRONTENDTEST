@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { RefreshCw } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
@@ -195,7 +196,18 @@ function SettingsForm({ settings }: { settings: PlatformSetting[] }) {
 export default function SettingsPage() {
   const settings = usePlatformSettings();
   return (
-    <AdminPage title="Settings" description="Platform-wide settings. Profile and notification preferences are managed separately.">
+    <AdminPage
+      title="Settings"
+      description={
+        <>
+          Platform-wide settings. Your own profile, password and notification preferences are under{" "}
+          <Link href="/admin/profile" className="font-semibold text-indigo-600 hover:text-indigo-800">
+            My profile
+          </Link>
+          .
+        </>
+      }
+    >
       {settings.isPending ? (
         <LoadingBlock />
       ) : settings.isError ? (

@@ -7,11 +7,9 @@ import {
     LayoutGrid,
     BookOpen,
     FileText,
-    ClipboardCheck,
-    HelpCircle,
-    Settings
+    ClipboardCheck
 } from "lucide-react";
-import SignOutButton from "@/app/components/shell/SignOutButton";
+import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 
 interface SidebarProps {
     isOpen: boolean;
@@ -97,30 +95,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             </div>
 
             {/* BOTTOM UTILITY LINKS */}
-            <div className="flex flex-col gap-2 pt-6 border-t border-blue-900/40">
-                {/* Help Button */}
-                <button
-                    title="Help"
-                    className={`flex items-center gap-3 w-full py-2.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all text-sm ${isOpen ? 'px-4' : 'justify-center px-0'
-                        }`}
-                >
-                    <HelpCircle className="h-4 w-4 flex-shrink-0" />
-                    {isOpen && <span className="whitespace-nowrap">Help</span>}
-                </button>
-
-                {/* Settings Button */}
-                <button
-                    title="Settings"
-                    className={`flex items-center gap-3 w-full py-2.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all text-sm ${isOpen ? 'px-4' : 'justify-center px-0'
-                        }`}
-                >
-                    <Settings className="h-4 w-4 flex-shrink-0" />
-                    {isOpen && <span className="whitespace-nowrap">Settings</span>}
-                </button>
-
-                {/* Sign Out Button */}
-        <SignOutButton isOpen={isOpen} />
-            </div>
+            <SidebarUtilities isOpen={isOpen} settingsHref="/mentor/profile" />
         </aside>
     );
 }

@@ -1,17 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { User } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
-import { ROLE_LABEL } from "@/lib/auth/roles";
+import { ROLE_LABEL, portalPath } from "@/lib/auth/roles";
 
-/** The signed-in user in a portal navbar (same look as the original block). */
+/** The signed-in user in a portal navbar (same look as the original block); opens "My profile". */
 export default function NavbarUser({ avatarClassName = "bg-blue-600" }: { avatarClassName?: string }) {
   const { user } = useSession();
   if (!user) return null;
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
 
   return (
-    <div className="flex items-center gap-2 md:gap-3" title={`${fullName} · ${ROLE_LABEL[user.role]}`}>
+    <Link
+      href={portalPath(user.role, "profile")}
+      className="flex items-center gap-2 md:gap-3 rounded-xl p-1 -m-1 hover:bg-gray-200/50 transition-colors"
+      title={`${fullName} · ${ROLE_LABEL[user.role]} — My profile`}
+      aria-label={`My profile (${fullName})`}
+    >
       <div className={`h-8 w-8 md:h-10 md:w-10 rounded-full ${avatarClassName} flex items-center justify-center`} aria-hidden="true">
         {user.firstName ? (
           <span className="text-sm md:text-base font-semibold text-white">{user.firstName.charAt(0).toUpperCase()}</span>
@@ -24,6 +30,6 @@ export default function NavbarUser({ avatarClassName = "bg-blue-600" }: { avatar
         <span className="text-sm font-semibold text-gray-800">{fullName}</span>
         <span className="text-xs text-gray-500">{user.email || ROLE_LABEL[user.role]}</span>
       </div>
-    </div>
+    </Link>
   );
 }
