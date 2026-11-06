@@ -1,22 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { Spinner } from "@/app/components/ui/feedback";
 
-/** Sidebar "Sign Out": `POST /auth/logout`, then the sign-in page. */
+/** Sidebar "Sign Out": `POST /auth/logout`; RoleGate then opens the sign-in page. */
 export default function SignOutButton({ isOpen }: { isOpen: boolean }) {
   const { logout } = useSession();
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   async function onClick() {
     if (pending) return;
     setPending(true);
     await logout();
-    router.replace("/login");
   }
 
   return (

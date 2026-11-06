@@ -24,6 +24,8 @@ interface SessionValue {
   status: SessionStatus;
   user: CurrentUser | null;
   role: Role | null;
+  /** True after the user signed out themselves (sign out, sign out everywhere): go to plain /login. */
+  signedOutByUser: boolean;
   permissions: ReadonlySet<Permission>;
   can: (permission: Permission) => boolean;
   login: (username: string, password: string) => Promise<CurrentUser>;
@@ -48,6 +50,7 @@ type AuthMessage = { type: "login" } | { type: "logout" };
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("checking");
+  const [signedOutByUser, setSignedOutByUser] = useState(false);
   const channel = useRef<BroadcastChannel | null>(null);
 
   const signOutLocally = useCallback(() => {
@@ -110,6 +113,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const res = await authApi.login(username, password);
       queryClient.clear();
       queryClient.setQueryData(queryKeys.me.profile(), res.user);
+      setSignedOutByUser(false);
       setPhase("signed-in");
       channel.current?.postMessage({ type: "login" } satisfies AuthMessage);
       return res.user;
@@ -123,12 +127,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } catch {
       // The session ends locally even if the server could not be reached.
     }
+    setSignedOutByUser(true);
     signOutLocally();
     channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
   }, [signOutLocally]);
 
   const logoutEverywhere = useCallback(async () => {
     await authApi.logoutAll();
+    setSignedOutByUser(true);
     signOutLocally();
     channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
   }, [signOutLocally]);
@@ -158,6 +164,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       status,
       user,
       role: user?.role ?? null,
+      signedOutByUser,
       permissions,
       can: (p) => permissions.has(p),
       login,
@@ -166,7 +173,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       endSession,
       retry,
     };
-  }, [phase, signedIn, meQuery.data, meQuery.isError, permissionsQuery.data, login, logout, logoutEverywhere, endSession, retry]);
+  }, [phase, signedIn, signedOutByUser, meQuery.data, meQuery.isError, permissionsQuery.data, login, logout, logoutEverywhere, endSession, retry]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

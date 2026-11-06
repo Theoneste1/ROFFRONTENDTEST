@@ -9,7 +9,7 @@ import { ErrorState, FullPageLoader } from "@/app/components/ui/feedback";
 
 /**
  * Renders a portal only for its role.
- * - Not signed in → /login?next=<current path>
+ * - Not signed in → /login?next=<current path> (plain /login after the user signed out)
  * - Signed in with another role → that role's own portal
  *
  * This is navigation, not security: the API refuses anything the role may not do.
@@ -21,11 +21,12 @@ export default function RoleGate({ role, children }: { role: Role; children: Rea
 
   useEffect(() => {
     if (session.status === "unauthenticated") {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      // The only redirect after a sign-out, so two navigations never race.
+      router.replace(session.signedOutByUser ? "/login" : `/login?next=${encodeURIComponent(pathname)}`);
     } else if (session.status === "authenticated" && session.role !== role) {
       router.replace(portalHome(session.role!));
     }
-  }, [session.status, session.role, role, pathname, router]);
+  }, [session.status, session.role, session.signedOutByUser, role, pathname, router]);
 
   if (session.status === "error") {
     return (
