@@ -487,3 +487,15 @@ Steps **5.0–5.11 are implemented**, one commit each. Step **5.12** (final inte
 - **Waiting for owner approval:** the data-changing parts, namely the §5 workflow (`e2e-workflow.mjs`, dry run by default) and C9–C13, D15–D17, E18–E20, F21–F23, G24–G26 and H27–H28.
 
 **Phase 5 is not marked complete** until those tests have run or their limits are accepted by the owner.
+
+### Final status (2026-11-06)
+
+| | Status |
+|---|---|
+| Implementation (5.0–5.11) | ✅ Complete, one commit per step (`d918668` … `5e6a85d`) |
+| Integration and regression without admin credentials (5.12) | ✅ Complete (`5411caf`) |
+| Admin-authenticated verification (§10 A1–A3, B–J) | ⏳ **Pending**: needs admin credentials |
+| Data-changing verification (§5 workflow; C9–C13, D15–D17, E18–E20, F21–F23, G24–G26, H27–H28) | ⏳ **Pending**: needs owner approval |
+| Overall | **Implemented, not verified.** Phase 6 proceeds in parallel, as approved by the owner on 2026-11-06 |
+
+No admin workflow was run, no test users were created and no database records were changed when this status was written.

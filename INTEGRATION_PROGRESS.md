@@ -1,6 +1,6 @@
 # ROF LMS — Integration Progress
 
-Last updated: 2026-11-05
+Last updated: 2026-11-06
 
 ## Phase status
 
@@ -11,8 +11,8 @@ Last updated: 2026-11-05
 | 2 | Authentication and application shell | ✅ Done (Help/Settings links and the notification bell come in phase 6) |
 | 3 | Student portal | ✅ Done, tested against the running backend (one flow pending admin; see Phase 3) |
 | 4 | Mentor portal | ✅ Approved by the owner. Final mentor suite 57/57; grading end to end **pending manual verification** (needs admin) |
-| 5 | Admin portal | 🔄 In progress (plan approved 2026-11-05; see Phase 5). Admin-authenticated tests wait for credentials |
-| 6 | Notifications, discussions, other supported modules | ⏸ |
+| 5 | Admin portal | 🟡 **Implementation complete** (steps 5.0–5.12). **Verification pending:** the admin-authenticated suites wait for credentials, and the data-changing workflow waits for owner approval. **Not marked verified** (see "Phase 5 completion status") |
+| 6 | Notifications, discussions, settings, profile, help | 🔄 In progress (approved 2026-11-06; see Phase 6 and `PHASE6_PLAN.md`) |
 | 7 | Testing and final QA | ⏸ (continuous) |
 
 ## Owner decisions (2026-11-05)
@@ -962,8 +962,33 @@ Phase 5 has one commit per step on `main`, not pushed:
 | 5.9 | `ac3e3a8` |
 | 5.10 | `26d8d78` |
 | 5.11 | `5e6a85d` |
+| 5.12 (documentation) | `5411caf` |
+| Deployment configuration (Netlify; outside phase 5 scope) | `2fe38a3` |
 
-Step 5.12 (this documentation) follows. No secrets, `.env` files or credentials were committed. The only password string in the repository is still the public demo-seed one.
+Nothing has been pushed. No secrets, `.env` files or credentials were committed. The only password string in the repository is still the public demo-seed one.
+
+### Phase 5 completion status (2026-11-06)
+
+Implementation and verification are tracked separately. **Phase 5 is not verified.** Passing the non-admin suites does not show that the admin pages work for an administrator.
+
+| Area | Implementation | Verified without admin | Admin-authenticated verification | Data-changing verification |
+|---|---|---|---|---|
+| 5.1 Dashboard | ✅ | ✅ non-admin refused (API, browser) | ⏳ credentials | — (read-only page) |
+| 5.2 Users | ✅ | ✅ non-admin refused | ⏳ credentials | ⏳ approval (create, edit, suspend, import, reset link) |
+| 5.3 Mentors and applications | ✅ | ✅ non-admin refused | ⏳ credentials | ⏳ approval (scopes, application decisions) |
+| 5.4 Students and schools | ✅ | ✅ non-admin refused | ⏳ credentials | — (read-only) |
+| 5.5 Divisions, courses, resources | ✅ | ✅ non-admin refused; mentor resource regression ✅ | ⏳ credentials | ⏳ approval (edits, visibility, resources) |
+| 5.6–5.9 Assignment approval to result publication | ✅ | ✅ non-admin refused | ⏳ credentials | ⏳ approval (plan §5 workflow, `e2e-workflow.mjs --execute`) |
+| 5.10 Reports and audit log | ✅ | ✅ non-admin refused | ⏳ credentials (the CSV checks add audit entries) | — |
+| 5.11 Moderation and settings | ✅ | ✅ non-admin refused | ⏳ credentials | ⏳ approval (resolve, hide, restore, settings, recompute) |
+| 5.12 Static checks and regression | ✅ | ✅ tsc, ESLint, build, static sweep; 45 + 26 + 82 + 19 + 15 checks | — | The student and mentor suites that create `[TEST]` records were not re-run (approval) |
+
+What closes phase 5:
+1. The owner provides admin credentials. The suites read them from the environment variables `ROF_ADMIN_USER` and `ROF_ADMIN_PASSWORD` and never write them to files. Then `api-admin.mjs admin` and `e2e-admin.mjs admin` run; both are read-only.
+2. The owner approves the plan §5 workflow (D2). Then `e2e-workflow.mjs --execute` runs.
+3. Alternatively, the owner accepts the remaining items as known limits.
+
+As instructed by the owner on 2026-11-06, no admin workflow was run, no test users were created and no records were changed while this documentation was finalized.
 
 ### Tests that still need admin credentials or owner approval
 
@@ -1035,4 +1060,5 @@ The read-only mentor regression in `e2e-admin.mjs nonadmin` covers the shared me
 - 2026-11-05: Phases 1–2 implemented and tested (foundation, authentication, shell).
 - 2026-11-05: Phase 3 (student portal) implemented and tested; auth forms hardened against pre-hydration submits.
 - 2026-11-05: Phase 4 (mentor portal) implemented and tested; session refresh now retries on 429/5xx. Final mentor suite 57/57; commits regrouped (5cb150e, ed300bd, 278f3a7).
+- 2026-11-06: Phase 5 documentation finalized: implementation complete, verification pending (admin credentials, owner approval). Phase 6 approved and started.
 - 2026-11-05/06: Phase 5 (admin portal) steps 5.0–5.11 implemented, one commit per step (d918668 … 5e6a85d). Non-admin isolation and mentor regression pass. Admin-authenticated tests are prepared and waiting for credentials; the data-changing workflow is waiting for owner approval.
