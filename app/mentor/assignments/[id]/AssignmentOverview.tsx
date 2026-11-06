@@ -272,7 +272,7 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
               <h3 className="text-lg font-bold text-gray-900 mb-2">Workflow</h3>
               <p className="text-xs text-gray-500 leading-relaxed">
                 Draft → Submit for approval → an administrator publishes (or returns it with a note) → students submit → an administrator distributes the work to
-                mentors → you review and submit each review to the administrator, who approves and publishes the results.
+                coaches → you review and submit each review to the administrator, who approves and publishes the results.
               </p>
             </div>
           </div>

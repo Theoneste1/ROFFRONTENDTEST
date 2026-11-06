@@ -16,7 +16,7 @@ const TABS: { label: string; value: "" | AssignmentStatus }[] = [
   { label: "Awaiting approval", value: "PENDING_APPROVAL" },
   { label: "Published", value: "PUBLISHED" },
   { label: "Closed", value: "CLOSED" },
-  { label: "Returned to mentor", value: "REJECTED" },
+  { label: "Returned to coach", value: "REJECTED" },
   { label: "Drafts", value: "DRAFT" },
   { label: "Archived", value: "ARCHIVED" },
 ];
@@ -74,7 +74,7 @@ export default function AssignmentsClient() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Assignments</h1>
           <p className="text-sm text-gray-500 mt-1 font-medium">
-            Mentors prepare assignments; administrators approve and publish them, then follow submissions and reviews.
+            Coaches prepare assignments; administrators approve and publish them, then follow submissions and reviews.
           </p>
         </div>
         <CsvButton onDownload={() => downloadCsv("/admin/reports/assignments.csv", { status: filters.status, courseId: filters.courseId, divisionId: filters.divisionId }, "assignments.csv")} />
@@ -135,7 +135,7 @@ export default function AssignmentsClient() {
                       <Link href={`/admin/assignments/${a.id}`} className="hover:text-indigo-700">
                         {a.title}
                       </Link>
-                      <span className="block text-[11px] font-normal text-gray-400">by {personName(a.createdBy, "a mentor")}</span>
+                      <span className="block text-[11px] font-normal text-gray-400">by {personName(a.createdBy, "a coach")}</span>
                     </td>
                     <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>{a.course.title}</td>
                     <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>{a.division.name.replace(/ division$/i, "")}</td>

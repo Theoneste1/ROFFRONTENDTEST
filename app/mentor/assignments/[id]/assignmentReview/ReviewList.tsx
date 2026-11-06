@@ -150,7 +150,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
             <div className="bg-white rounded-2xl border border-slate-200">
               <EmptyState
                 title="No submissions assigned to you yet"
-                description="An administrator distributes submitted work to mentors. Assigned work appears here."
+                description="An administrator distributes submitted work to coaches. Assigned work appears here."
               />
             </div>
           ) : rows.length === 0 ? (

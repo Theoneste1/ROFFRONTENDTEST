@@ -63,14 +63,14 @@ export default function ResultActions({ submission, onDone }: { submission: Admi
       {confirm === "reopen" && (
         <ConfirmDialog
           title="Reopen this published result?"
-          body="The result is withdrawn from the student (and its points removed) and sent back to the mentor for correction. You approve and publish it again afterwards."
+          body="The result is withdrawn from the student (and its points removed) and sent back to the coach for correction. You approve and publish it again afterwards."
           confirmLabel="Reopen result"
           tone="danger"
-          note={{ label: "Reason (shown to the mentor)", required: true, min: REVIEW_ADMIN_RULES.reopenNote.min, max: REVIEW_ADMIN_RULES.reopenNote.max }}
+          note={{ label: "Reason (shown to the coach)", required: true, min: REVIEW_ADMIN_RULES.reopenNote.min, max: REVIEW_ADMIN_RULES.reopenNote.max }}
           onClose={() => setConfirm(null)}
           onConfirm={async (note) => {
             await action.mutateAsync({ type: "reopen", note });
-            onDone("Result reopened and sent back to the mentor.");
+            onDone("Result reopened and sent back to the coach.");
           }}
         />
       )}

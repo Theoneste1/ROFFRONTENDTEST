@@ -24,7 +24,7 @@ export function describeAudit(e: AuditLogEntry): string {
 export const AUDIT_CATEGORY_LABEL: Record<AuditCategory, string> = {
   USERS: "Users",
   ENROLLMENT: "Enrolment",
-  MENTOR_ASSIGNMENTS: "Mentor access",
+  MENTOR_ASSIGNMENTS: "Coach access",
   ASSIGNMENTS: "Assignments",
   SUBMISSIONS: "Submissions",
   DISTRIBUTION: "Distribution",

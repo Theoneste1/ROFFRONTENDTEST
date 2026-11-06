@@ -16,7 +16,7 @@ const PORTAL_PREFIX: Record<Role, string> = {
 
 export const ROLE_LABEL: Record<Role, string> = {
   ADMIN: "Administrator",
-  MENTOR: "Mentor",
+  MENTOR: "Coach",
   STUDENT: "Student",
 };
 

@@ -23,7 +23,7 @@ export default function ResultPanel({ assignment: a, onAsk }: { assignment: Stud
       a.displayStatus === 'Not Started'
         ? 'Submit your work to receive a result.'
         : a.displayStatus === 'Resubmission Requested'
-          ? 'Your mentor asked for a new attempt. Resubmit from the Assignment tab.'
+          ? 'Your coach asked for a new attempt. Resubmit from the Assignment tab.'
           : 'Your work is being reviewed. The result appears here once it is published.';
     return (
       <div className="max-w-4xl mx-auto bg-white rounded-2xl border border-gray-200/80">
@@ -60,12 +60,12 @@ export default function ResultPanel({ assignment: a, onAsk }: { assignment: Stud
 
       {/* Feedback */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200/80">
-        <h2 className="text-lg font-bold text-gray-900 mb-3">Mentor Feedback</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-3">Coach Feedback</h2>
         {r.feedback.text ? (
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{r.feedback.text}</p>
             <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-              <span className="font-semibold">{personName(r.feedback.mentor, 'Your mentor')}</span>
+              <span className="font-semibold">{personName(r.feedback.mentor, 'Your coach')}</span>
               {r.reviewedAt && (
                 <>
                   <span>•</span>

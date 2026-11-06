@@ -45,7 +45,7 @@ export default function StudentsClient() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Students</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Academic scores are managed by mentors and are not editable here.</p>
+          <p className="text-sm text-gray-500 mt-1 font-medium">Academic scores are managed by coaches and are not editable here.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/admin/schools" className={btnSecondary}>

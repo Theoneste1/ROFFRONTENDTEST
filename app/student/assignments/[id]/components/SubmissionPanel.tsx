@@ -99,8 +99,8 @@ function SubmissionStatusCard({ assignment: a, submission, onShowResults }: { as
           ) : (
             <p className="text-[11px] text-gray-500">
               {a.displayStatus === 'Pending Review'
-                ? 'A mentor is reviewing your work. Your result appears here once it is published.'
-                : 'Your work has been received and will be reviewed by a mentor.'}
+                ? 'A coach is reviewing your work. Your result appears here once it is published.'
+                : 'Your work has been received and will be reviewed by a coach.'}
             </p>
           )}
         </>
@@ -247,7 +247,7 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
 
           <div>
             <label htmlFor="note" className="block text-[11px] font-semibold text-gray-600 mb-1">
-              Note for your mentor (optional)
+              Note for your coach (optional)
             </label>
             <input
               id="note"
@@ -267,7 +267,7 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
             {isResubmission ? 'Resubmit' : 'Submit'}
           </button>
 
-          <p className="text-[11px] text-gray-400 text-center">Your assignment will be reviewed by a mentor.</p>
+          <p className="text-[11px] text-gray-400 text-center">Your assignment will be reviewed by a coach.</p>
         </div>
       </div>
 
@@ -285,7 +285,7 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
                 </h3>
                 <p className="text-sm text-gray-500 mt-2 leading-snug">
                   {canResubmitAgain
-                    ? `You can still replace this work until a mentor starts reviewing it or the deadline passes${remaining !== null ? ` (${remaining} resubmission${remaining === 1 ? '' : 's'} left after this one)` : ''}.`
+                    ? `You can still replace this work until a coach starts reviewing it or the deadline passes${remaining !== null ? ` (${remaining} resubmission${remaining === 1 ? '' : 's'} left after this one)` : ''}.`
                     : 'You are about to submit this work. No changes can be made after submitting.'}
                 </p>
                 <p className="text-xs text-gray-400 mt-2">

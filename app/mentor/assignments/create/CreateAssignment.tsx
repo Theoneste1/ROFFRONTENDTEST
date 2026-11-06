@@ -23,7 +23,7 @@ export default function CreateAssignment() {
         <div className="bg-white rounded-2xl border border-slate-200">
           <EmptyState
             title="You are not assigned to a course yet"
-            description="An administrator assigns mentors to a course and division. You can create assignments once you have one."
+            description="An administrator assigns coaches to a course and division. You can create assignments once you have one."
             action={
               <Link href="/mentor/dashboard" className="text-sm font-semibold text-indigo-700 hover:underline">
                 Back to dashboard

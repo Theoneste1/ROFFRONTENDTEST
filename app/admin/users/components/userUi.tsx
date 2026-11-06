@@ -289,7 +289,7 @@ export function UserForm({
 
   const roleOptions = [
     { label: "Student", value: "STUDENT" },
-    { label: "Mentor", value: "MENTOR" },
+    { label: "Coach", value: "MENTOR" },
     { label: "Administrator", value: "ADMIN" },
   ];
 

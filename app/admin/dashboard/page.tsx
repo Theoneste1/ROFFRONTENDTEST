@@ -51,19 +51,19 @@ function attentionItems(a: ReportsOverview['actionRequired']): AttentionItemProp
     {
       count: a.assignmentsAwaitingApproval,
       title: 'Assignments awaiting approval',
-      description: `${plural(a.assignmentsAwaitingApproval, 'assignment')} submitted by mentors to publish or return.`,
+      description: `${plural(a.assignmentsAwaitingApproval, 'assignment')} submitted by coaches to publish or return.`,
       href: '/admin/assignments?status=PENDING_APPROVAL',
     },
     {
       count: a.submissionsToDistribute,
       title: 'Submissions to distribute',
-      description: `${plural(a.submissionsToDistribute, 'submission')} not yet assigned to a mentor.`,
+      description: `${plural(a.submissionsToDistribute, 'submission')} not yet assigned to a coach.`,
       href: '/admin/assignments?status=PUBLISHED',
     },
     {
       count: a.reviewsAwaitingApproval,
       title: 'Reviews awaiting approval',
-      description: `${plural(a.reviewsAwaitingApproval, 'review')} sent by mentors for approval.`,
+      description: `${plural(a.reviewsAwaitingApproval, 'review')} sent by coaches for approval.`,
       href: '/admin/results',
     },
     {
@@ -74,7 +74,7 @@ function attentionItems(a: ReportsOverview['actionRequired']): AttentionItemProp
     },
     {
       count: a.mentorApplications,
-      title: 'Mentor applications',
+      title: 'Coach applications',
       description: `${plural(a.mentorApplications, 'application')} waiting for a decision.`,
       href: '/admin/mentors?tab=applications',
     },
@@ -128,7 +128,7 @@ export default function DashboardMain() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <MetricCard label="Total students" value={formatNumber(d!.students.total)} subtext={`${formatNumber(d!.students.active)} active · ${formatNumber(d!.students.awaitingSetup)} awaiting setup`} />
-          <MetricCard label="Total mentors" value={formatNumber(d!.mentors.total)} subtext={`${formatNumber(d!.mentors.active)} active · ${formatNumber(d!.mentors.awaitingSetup)} awaiting setup`} />
+          <MetricCard label="Total coaches" value={formatNumber(d!.mentors.total)} subtext={`${formatNumber(d!.mentors.active)} active · ${formatNumber(d!.mentors.awaitingSetup)} awaiting setup`} />
           <MetricCard label="Junior students" value={formatNumber(junior?.students ?? 0)} subtext="S1–S3" />
           <MetricCard label="Senior students" value={formatNumber(senior?.students ?? 0)} subtext="S4–S6" />
           <MetricCard
@@ -171,7 +171,7 @@ export default function DashboardMain() {
             })()
           )}
           {d && d.reviews.pendingMentorReview > 0 && (
-            <p className="text-xs text-gray-400 mt-4">{plural(d.reviews.pendingMentorReview, 'submission is', 'submissions are')} currently with mentors.</p>
+            <p className="text-xs text-gray-400 mt-4">{plural(d.reviews.pendingMentorReview, 'submission is', 'submissions are')} currently with coaches.</p>
           )}
         </section>
 

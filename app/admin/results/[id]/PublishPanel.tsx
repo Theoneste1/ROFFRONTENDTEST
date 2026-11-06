@@ -44,7 +44,7 @@ export default function PublishPanel({ assignmentId }: { assignmentId: string })
       {confirm && (
         <ConfirmDialog
           title={`Publish ${count} result${count === 1 ? "" : "s"}?`}
-          body="Every approved result of this assignment is released to its student now (score, feedback and files). Results still with mentors or awaiting approval stay unpublished."
+          body="Every approved result of this assignment is released to its student now (score, feedback and files). Results still with coaches or awaiting approval stay unpublished."
           confirmLabel="Publish results"
           note={{ label: "Release note (internal)", required: false, min: 1, max: 1000 }}
           onClose={() => setConfirm(false)}

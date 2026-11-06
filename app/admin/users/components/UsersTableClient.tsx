@@ -17,7 +17,7 @@ import ImportUsersDialog from "./ImportUsersDialog";
 const ROLE_TABS: { label: string; value: "" | Role }[] = [
   { label: "All", value: "" },
   { label: "Students", value: "STUDENT" },
-  { label: "Mentors", value: "MENTOR" },
+  { label: "Coaches", value: "MENTOR" },
   { label: "Admins", value: "ADMIN" },
 ];
 
@@ -71,7 +71,7 @@ export default function UsersTableClient() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Users</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Every account on the platform — students, mentors and administrators.</p>
+          <p className="text-sm text-gray-500 mt-1 font-medium">Every account on the platform — students, coaches and administrators.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setDialog("create")} className={btnPrimary}>
@@ -143,7 +143,7 @@ export default function UsersTableClient() {
                     <span className="block text-[11px] font-normal text-gray-400">@{u.username}</span>
                   </td>
                   <td className={`${td} text-gray-500 font-medium`}>{u.email}</td>
-                  <td className={`${td} text-gray-600 font-medium`}>{u.role === "ADMIN" ? "Admin" : u.role === "MENTOR" ? "Mentor" : "Student"}</td>
+                  <td className={`${td} text-gray-600 font-medium`}>{u.role === "ADMIN" ? "Admin" : u.role === "MENTOR" ? "Coach" : "Student"}</td>
                   <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>
                     {u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}
                   </td>

@@ -24,7 +24,7 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
   const [message, setMessage] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
 
-  const name = mentorName ?? (mentor.data ? `${mentor.data.firstName} ${mentor.data.lastName}` : "this mentor");
+  const name = mentorName ?? (mentor.data ? `${mentor.data.firstName} ${mentor.data.lastName}` : "this coach");
   const isMentor = mentorName !== undefined || !mentor.data || mentor.data.role === "MENTOR";
   const active = scopes.data?.data ?? [];
   const has = (c: string, d: string) => active.some((s) => s.course.id === c && s.division.id === d);
@@ -32,7 +32,7 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
   async function add(e: FormEvent) {
     e.preventDefault();
     if (!courseId || !divisionId) return setMessage({ tone: "error", text: "Choose a course and a division." });
-    if (has(courseId, divisionId)) return setMessage({ tone: "info", text: "This mentor already has that access." });
+    if (has(courseId, divisionId)) return setMessage({ tone: "info", text: "This coach already has that access." });
     setMessage(null);
     try {
       const s = await action.mutateAsync({ type: "add", mentorId, courseId, divisionId });
@@ -51,7 +51,7 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
       const open = (r as { openReviewsToReassign?: number }).openReviewsToReassign ?? 0;
       setMessage(
         open > 0
-          ? { tone: "info", text: `Access to ${label} removed. ${open} open review${open === 1 ? "" : "s"} in this course should be reassigned to another mentor (assignment page → submissions).` }
+          ? { tone: "info", text: `Access to ${label} removed. ${open} open review${open === 1 ? "" : "s"} in this course should be reassigned to another coach (assignment page → submissions).` }
           : { tone: "success", text: `Access to ${label} removed.` },
       );
     } catch (err) {
@@ -63,9 +63,9 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
 
   return (
     <Modal wide title={`Course access — ${name}`} onClose={action.isPending ? () => undefined : onClose}>
-      <p className="text-xs text-gray-500 mb-4">A mentor prepares assignments, reviews submissions and manages resources only in the courses and divisions listed here.</p>
+      <p className="text-xs text-gray-500 mb-4">A coach prepares assignments, reviews submissions and manages resources only in the courses and divisions listed here.</p>
       {!isMentor ? (
-        <Alert tone="error">This account is not a mentor. Change its role on the user page first.</Alert>
+        <Alert tone="error">This account is not a coach. Change its role on the user page first.</Alert>
       ) : scopes.isPending ? (
         <LoadingBlock />
       ) : scopes.isError ? (

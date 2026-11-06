@@ -42,7 +42,7 @@ export default function ResultsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Results</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Review your published results and your mentors&apos; feedback</p>
+          <p className="text-sm text-gray-500 mt-0.5">Review your published results and your coaches&apos; feedback</p>
         </div>
 
         {/* Filters */}
@@ -112,7 +112,7 @@ export default function ResultsPage() {
           ) : rows.length === 0 ? (
             <EmptyState
               title="No results yet"
-              description={applied.courseId === "all" ? "Results appear here once your mentors' reviews are published." : "No published results for this course."}
+              description={applied.courseId === "all" ? "Results appear here once your coaches' reviews are published." : "No published results for this course."}
             />
           ) : (
             <div className={`overflow-x-auto ${query.isFetching ? "opacity-70" : ""}`}>

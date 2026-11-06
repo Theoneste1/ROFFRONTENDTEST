@@ -106,7 +106,7 @@ export default function ApplicationsPanel() {
           title={decide.decision === "approve" ? "Approve this application?" : "Reject this application?"}
           body={
             decide.decision === "approve"
-              ? `A mentor account is created for ${decide.request.firstName} ${decide.request.lastName} (${decide.request.email}). Give them course access afterwards on the Mentors tab.`
+              ? `A coach account is created for ${decide.request.firstName} ${decide.request.lastName} (${decide.request.email}). Give them course access afterwards on the Coaches tab.`
               : `${decide.request.firstName} ${decide.request.lastName} can apply again later.`
           }
           confirmLabel={decide.decision === "approve" ? "Approve" : "Reject"}
@@ -116,7 +116,7 @@ export default function ApplicationsPanel() {
             const r = await decision.mutateAsync({ id: decide.request.id, decision: decide.decision });
             setNotice(
               r
-                ? `Mentor account @${r.mentor.username} created${r.emailVerificationRequired ? "; they must confirm their e-mail before the first sign-in" : ""}. Add their course access on the Mentors tab.`
+                ? `Coach account @${r.mentor.username} created${r.emailVerificationRequired ? "; they must confirm their e-mail before the first sign-in" : ""}. Add their course access on the Coaches tab.`
                 : "Application rejected.",
             );
           }}

@@ -11,7 +11,7 @@ import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/fe
 import { AdminPage, Card, ConfirmDialog, btnPrimary, btnSecondary } from "../components/adminUi";
 
 const CATEGORY: Record<PlatformSetting["category"], { title: string; description: string }> = {
-  REGISTRATION: { title: "Registration", description: "How students and mentors join the platform." },
+  REGISTRATION: { title: "Registration", description: "How students and coaches join the platform." },
   ASSIGNMENTS: { title: "Assignments and reviews", description: "Defaults for new assignments, resubmissions and distribution." },
   NOTIFICATIONS: { title: "Notifications", description: "E-mail delivery and what students can see." },
   PLATFORM: { title: "Platform", description: "Name and contact address of the platform." },

@@ -422,7 +422,7 @@ export default function AssignmentWizard({
                   />
                   <div>
                     <p className="text-sm font-medium text-slate-900">Allow resubmission</p>
-                    <p className="text-xs text-slate-400">Students can replace their work before the deadline, until a mentor starts reviewing it. Needed if you may ask for a new attempt.</p>
+                    <p className="text-xs text-slate-400">Students can replace their work before the deadline, until a coach starts reviewing it. Needed if you may ask for a new attempt.</p>
                   </div>
                 </label>
                 {form.allowResubmission && (

@@ -31,7 +31,7 @@ export default function FeedbackEditor({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100/50 overflow-hidden">
       <div className="p-6 pb-3 flex items-center justify-between">
-        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Mentor Feedback</h2>
+        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Coach Feedback</h2>
         <span className="text-[11px] text-gray-400">
           {value.length}/{REVIEW_RULES.feedback.max}
         </span>
@@ -43,7 +43,7 @@ export default function FeedbackEditor({
           rows={7}
           maxLength={REVIEW_RULES.feedback.max}
           disabled={disabled}
-          aria-label="Mentor feedback"
+          aria-label="Coach feedback"
           className="w-full text-sm text-gray-700 focus:outline-none resize-y bg-transparent disabled:text-gray-500"
           placeholder={disabled ? 'Start the review to write feedback.' : 'Write feedback for the student (they see it once the result is published)...'}
         />

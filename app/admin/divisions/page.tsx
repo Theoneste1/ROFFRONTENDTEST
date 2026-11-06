@@ -50,7 +50,7 @@ function DivisionCard({ division, courses, mentors }: { division: AdminDivision;
         {/* Title & Subtitle */}
         <h2 className="text-lg font-bold text-gray-900">{division.name}</h2>
         <p className="text-xs text-gray-400 mt-0.5 font-medium mb-6">
-          {grades} · {formatNumber(division._count.students)} students · {mentors === undefined ? "…" : formatNumber(mentors)} mentor{mentors === 1 ? "" : "s"}
+          {grades} · {formatNumber(division._count.students)} students · {mentors === undefined ? "…" : formatNumber(mentors)} coach{mentors === 1 ? "" : "s"}
           {!division.isActive && <span className="ml-2 text-amber-600 font-semibold">Marked inactive</span>}
         </p>
 
@@ -72,7 +72,7 @@ function DivisionCard({ division, courses, mentors }: { division: AdminDivision;
             View students
           </Link>
           <Link href={`/admin/mentors?divisionId=${division.id}`} className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-colors shadow-2xs">
-            View mentors
+            View coaches
           </Link>
         </div>
 

@@ -111,7 +111,7 @@ export default function AuditLogClient() {
       {/* Controls Bar: Search & Pill Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <SearchInput value={action} onChange={(v) => setParam("action", v)} placeholder="Search actions (e.g. publish)…" label="Search actions" />
-        <SelectFilter label="Role" value={actorRole} onChange={(v) => setParam("actorRole", v)} options={[{ label: "Any", value: "" }, { label: "Administrator", value: "ADMIN" }, { label: "Mentor", value: "MENTOR" }, { label: "Student", value: "STUDENT" }]} />
+        <SelectFilter label="Role" value={actorRole} onChange={(v) => setParam("actorRole", v)} options={[{ label: "Any", value: "" }, { label: "Administrator", value: "ADMIN" }, { label: "Coach", value: "MENTOR" }, { label: "Student", value: "STUDENT" }]} />
         <label className="flex items-center gap-2 text-xs text-gray-500">
           <span className="font-semibold">From</span>
           <input type="date" value={from} onChange={(e) => setParam("from", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />

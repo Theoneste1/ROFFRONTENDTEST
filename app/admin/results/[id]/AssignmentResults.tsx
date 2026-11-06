@@ -65,7 +65,7 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
       {row && pending! > 0 && (
         <div className="bg-gray-100/80 border border-gray-200/80 rounded-2xl px-5 py-3.5 mb-6">
           <p className="text-xs text-gray-600 font-medium">
-            {pending} submission{pending === 1 ? " is" : "s are"} not yet approved ({row.byStage.awaitingDistribution} to distribute, {row.byStage.inReview} with mentors, {row.byStage.awaitingApproval} awaiting your approval). Approved results can be published at any time.
+            {pending} submission{pending === 1 ? " is" : "s are"} not yet approved ({row.byStage.awaitingDistribution} to distribute, {row.byStage.inReview} with coaches, {row.byStage.awaitingApproval} awaiting your approval). Approved results can be published at any time.
           </p>
         </div>
       )}
@@ -105,13 +105,13 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-xs font-bold text-gray-900">Mentor reviews</h2>
+            <h2 className="text-xs font-bold text-gray-900">Coach reviews</h2>
           </div>
           <div className="relative overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100">
-                  {["Student", "Score", "Mentor", "Feedback", "Status", ""].map((h) => (
+                  {["Student", "Score", "Coach", "Feedback", "Status", ""].map((h) => (
                     <th key={h} className="px-4 sm:px-6 py-3.5 text-xs font-semibold text-gray-500">
                       {h || <span className="sr-only">Action</span>}
                     </th>

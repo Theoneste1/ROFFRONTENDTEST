@@ -130,7 +130,7 @@ function DetailsForm({ user }: { user: CurrentUser }) {
   }
 
   return (
-    <Section title="Personal details" icon={<UserRound className="w-5 h-5" />} description="The name shown to mentors, administrators and in discussions.">
+    <Section title="Personal details" icon={<UserRound className="w-5 h-5" />} description="The name shown to coaches, administrators and in discussions.">
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         {saved && <Alert tone="success">Your details were saved.</Alert>}
         {nothing && <Alert tone="info">Nothing to save: no field was changed.</Alert>}

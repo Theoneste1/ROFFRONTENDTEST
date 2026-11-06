@@ -44,12 +44,12 @@ function actionsFor(a: MentorAssignment, now: number): Confirm[] {
       out.push({ action: "publish", title: "Publish this assignment?", body: `Students of the ${a.division.name} see it and can submit until ${formatDateTime(a.deadline)}. They are notified.`, label: "Approve & publish", done: "Assignment published. Students have been notified." });
     out.push({
       action: "reject",
-      title: "Return this assignment to the mentor?",
-      body: "The mentor sees your note, can change the assignment and submit it again.",
-      label: "Return to mentor",
+      title: "Return this assignment to the coach?",
+      body: "The coach sees your note, can change the assignment and submit it again.",
+      label: "Return to coach",
       tone: "danger",
-      note: { label: "Note for the mentor", required: true, min: ASSIGNMENT_ADMIN_RULES.rejectionNote.min, max: ASSIGNMENT_ADMIN_RULES.rejectionNote.max, placeholder: "What should be changed?" },
-      done: "Assignment returned to the mentor.",
+      note: { label: "Note for the coach", required: true, min: ASSIGNMENT_ADMIN_RULES.rejectionNote.min, max: ASSIGNMENT_ADMIN_RULES.rejectionNote.max, placeholder: "What should be changed?" },
+      done: "Assignment returned to the coach.",
     });
   }
   if (a.status === "PUBLISHED") {
@@ -166,7 +166,7 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
       title={a.title}
       description={
         <span className="inline-flex flex-wrap items-center gap-2">
-          {a.course.title} · {a.division.name} · prepared by {personName(a.createdBy, "a mentor")} <AssignmentBadge status={a.status} />
+          {a.course.title} · {a.division.name} · prepared by {personName(a.createdBy, "a coach")} <AssignmentBadge status={a.status} />
         </span>
       }
     >
@@ -174,12 +174,12 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
       {notice && <Notice onClose={() => setNotice(null)}>{notice}</Notice>}
       {a.status === "PENDING_APPROVAL" && deadlinePassed && (
         <div className="mb-4">
-          <Alert tone="info">The deadline has passed, so this assignment cannot be published. Return it to the mentor to set a new deadline.</Alert>
+          <Alert tone="info">The deadline has passed, so this assignment cannot be published. Return it to the coach to set a new deadline.</Alert>
         </div>
       )}
       {a.status === "REJECTED" && a.rejectionNote && (
         <div className="mb-4">
-          <Alert tone="info">Returned to the mentor: “{a.rejectionNote}”</Alert>
+          <Alert tone="info">Returned to the coach: “{a.rejectionNote}”</Alert>
         </div>
       )}
 
@@ -216,7 +216,7 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
         <div className="space-y-6">
           <Card className="p-6">
             <h2 className="text-base font-bold text-gray-900 mb-1">Actions</h2>
-            <p className="text-xs text-gray-500 mb-4">Administrators approve, publish and close assignments. Only the mentor can change their content.</p>
+            <p className="text-xs text-gray-500 mb-4">Administrators approve, publish and close assignments. Only the coach can change their content.</p>
             <div className="flex flex-col gap-2">
               {actions.map((c) => (
                 <button key={c.action} type="button" onClick={() => setConfirm(c)} className={c.action === "publish" ? btnPrimary : btnSecondary}>
@@ -238,7 +238,7 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
                 <Info label="Submitted">{`${row.submitted} / ${row.expectedStudents}`}</Info>
                 <Info label="Late">{row.late}</Info>
                 <Info label="To distribute">{row.byStage.awaitingDistribution}</Info>
-                <Info label="With mentors">{row.byStage.inReview}</Info>
+                <Info label="With coaches">{row.byStage.inReview}</Info>
                 <Info label="Awaiting approval">{row.byStage.awaitingApproval}</Info>
                 <Info label="Published">{row.byStage.published}</Info>
               </dl>

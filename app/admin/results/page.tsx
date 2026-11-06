@@ -24,7 +24,7 @@ export default function ResultsTable() {
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Results</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Mentors score and give feedback. You check completed reviews and publish results.</p>
+          <p className="text-sm text-gray-500 mt-1 font-medium">Coaches score and give feedback. You check completed reviews and publish results.</p>
         </div>
         <CsvButton onDownload={() => downloadCsv("/admin/reports/results-publication.csv", {}, "results-publication.csv")} />
       </div>

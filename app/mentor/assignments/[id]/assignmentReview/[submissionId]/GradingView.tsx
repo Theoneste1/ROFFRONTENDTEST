@@ -42,7 +42,7 @@ export default function GradingView({ assignmentId, submissionId }: { assignment
           <div className="bg-white rounded-2xl border border-gray-200">
             <EmptyState
               title="Submission not available"
-              description={isApiError(sub.error) && sub.error.code === "NOT_ASSIGNED_MENTOR" ? "This submission is assigned to another mentor." : "It doesn't exist or isn't assigned to you."}
+              description={isApiError(sub.error) && sub.error.code === "NOT_ASSIGNED_MENTOR" ? "This submission is assigned to another coach." : "It doesn't exist or isn't assigned to you."}
             />
           </div>
         ) : (

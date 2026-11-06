@@ -100,7 +100,7 @@ export default function SupportInfo() {
               (support e-mail, phone, hours, help link and message).
             </>
           ) : (
-            " Please ask your mentor or your school's Olympiad contact."
+            " Please ask your coach or your school's Olympiad contact."
           )}
         </div>
       )}
@@ -110,7 +110,7 @@ export default function SupportInfo() {
           <MessageSquare className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
           <p>
             Questions about a course or an assignment? Ask in its <span className="font-semibold">Discussion</span> tab, where{" "}
-            {role === "STUDENT" ? "your mentors and classmates" : "your students"} can answer.
+            {role === "STUDENT" ? "your coaches and classmates" : "your students"} can answer.
           </p>
         </div>
       )}

@@ -21,7 +21,7 @@ interface Pending {
 }
 
 const RESOLVE: Record<ResolveAction, { label: string; body: string; danger?: boolean; done: string }> = {
-  HIDE: { label: "Hide content", body: "The reported content is hidden from students and mentors. It can be restored later.", danger: true, done: "Content hidden; report resolved." },
+  HIDE: { label: "Hide content", body: "The reported content is hidden from students and coaches. It can be restored later.", danger: true, done: "Content hidden; report resolved." },
   DELETE: { label: "Delete content", body: "The reported content is removed. It is kept only for the moderation record.", danger: true, done: "Content deleted; report resolved." },
   LOCK: { label: "Lock thread", body: "Nobody can post in the thread any more. Existing posts stay visible.", done: "Thread locked; report resolved." },
   NONE: { label: "Dismiss report", body: "Nothing is changed; the report is closed as not needing action.", done: "Report dismissed." },

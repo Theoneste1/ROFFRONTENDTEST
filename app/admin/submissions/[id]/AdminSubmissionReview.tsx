@@ -45,12 +45,12 @@ const APPROVE: Decision = {
 
 const SEND_BACK: Decision = {
   type: "sendBack",
-  title: "Send this review back to the mentor?",
-  body: "The mentor sees your reason, can change the score or feedback and send it again. The student sees nothing yet.",
-  label: "Send back to mentor",
+  title: "Send this review back to the coach?",
+  body: "The coach sees your reason, can change the score or feedback and send it again. The student sees nothing yet.",
+  label: "Send back to coach",
   tone: "danger",
-  note: { label: "Reason for the mentor", required: true, min: REVIEW_ADMIN_RULES.rejectionReason.min, max: REVIEW_ADMIN_RULES.rejectionReason.max, placeholder: "What should the mentor check or change?" },
-  done: "Review sent back to the mentor.",
+  note: { label: "Reason for the coach", required: true, min: REVIEW_ADMIN_RULES.rejectionReason.min, max: REVIEW_ADMIN_RULES.rejectionReason.max, placeholder: "What should the coach check or change?" },
+  done: "Review sent back to the coach.",
 };
 
 /**
@@ -101,14 +101,14 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
         <div className="lg:col-span-2 space-y-6">
           {/* Mentor review (read-only) */}
           <Card className="p-6">
-            <h2 className="text-base font-bold text-gray-900 mb-1">Mentor review</h2>
-            <p className="text-xs text-gray-500 mb-4">Administrators approve or send back reviews; only the mentor can change the score or feedback.</p>
+            <h2 className="text-base font-bold text-gray-900 mb-1">Coach review</h2>
+            <p className="text-xs text-gray-500 mb-4">Administrators approve or send back reviews; only the coach can change the score or feedback.</p>
             {!r ? (
-              <p className="text-sm text-gray-500">Not assigned to a mentor yet.</p>
+              <p className="text-sm text-gray-500">Not assigned to a coach yet.</p>
             ) : (
               <div className="space-y-4">
                 <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <Info label="Mentor">{personName(r.mentor, "—")}</Info>
+                  <Info label="Coach">{personName(r.mentor, "—")}</Info>
                   <Info label="Score">{r.score != null ? `${r.score} / ${max}` : "Not marked"}</Info>
                   <Info label="Percentage">{r.percentage != null ? `${r.percentage}%` : "—"}</Info>
                   <Info label="Review cycle">{r.cycle}</Info>
@@ -173,7 +173,7 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
                 )}
                 {canSendBack && (
                   <button type="button" onClick={() => setConfirm(SEND_BACK)} className={btnSecondary}>
-                    <Undo2 className="h-3.5 w-3.5" aria-hidden="true" /> Send back to mentor
+                    <Undo2 className="h-3.5 w-3.5" aria-hidden="true" /> Send back to coach
                   </button>
                 )}
               </div>
@@ -182,8 +182,8 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
                 {s.status === "PUBLISHED"
                   ? "The result is published to the student."
                   : s.status === "SUBMITTED"
-                    ? "Waiting to be distributed to a mentor."
-                    : "Waiting for the mentor. You can decide once the review is sent to you."}
+                    ? "Waiting to be distributed to a coach."
+                    : "Waiting for the coach. You can decide once the review is sent to you."}
               </p>
             )}
             <ResultActions submission={s} onDone={setNotice} />

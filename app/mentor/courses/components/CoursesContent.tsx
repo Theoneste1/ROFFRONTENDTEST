@@ -52,7 +52,7 @@ export default function CoursesContent() {
     return (
       <div className="p-6 lg:p-10">
         <div className="bg-white rounded-2xl border border-slate-200">
-          <EmptyState title="You are not assigned to a course yet" description="An administrator assigns mentors to a course and division." />
+          <EmptyState title="You are not assigned to a course yet" description="An administrator assigns coaches to a course and division." />
         </div>
       </div>
     );

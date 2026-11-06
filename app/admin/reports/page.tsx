@@ -167,10 +167,10 @@ export default function ReportsContent() {
 
         <section className={card} aria-labelledby="r-reviews">
           <h2 id="r-reviews" className="text-sm font-bold text-gray-900 mb-4">
-            Mentor Review Activity
+            Coach Review Activity
           </h2>
           <div className="divide-y divide-gray-100">
-            <ReportItem label="With mentors" value={d?.reviews.pendingMentorReview} />
+            <ReportItem label="With coaches" value={d?.reviews.pendingMentorReview} />
             <ReportItem label="Awaiting your approval" value={reviews.data?.pending.awaitingAdminApproval} />
             <ReportItem label="Completed reviews" value={reviews.data?.completed.total} />
             <ReportItem

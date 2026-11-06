@@ -74,7 +74,7 @@ export default function SubmissionHistoryCard({ submissionId, query }: { submiss
 
           {query.data.resubmissionRequests.length > 0 && (
             <li className="pt-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Mentor requests</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Coach requests</p>
               <ul className="space-y-2">
                 {query.data.resubmissionRequests.map((r, i) => (
                   <li key={`${r.at}-${i}`} className="text-xs text-gray-700 bg-red-50/50 border border-red-100 rounded-xl px-3 py-2">

@@ -98,7 +98,7 @@ function EditCourseModal({ course, onClose }: { course: Course; onClose: () => v
           <div className="bg-gray-50/70 rounded-2xl p-4 flex items-center justify-between border border-gray-100">
             <div>
               <h3 className="text-xs font-semibold text-gray-900">Course discussions</h3>
-              <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Students and mentors can post in this course&apos;s discussion threads.</p>
+              <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Students and coaches can post in this course&apos;s discussion threads.</p>
             </div>
             <button
               type="button"
@@ -183,7 +183,7 @@ export default function CoursesWithEditModal() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard label="Published courses" value={courses.data ? list.filter((c) => c.status === "PUBLISHED").length : "…"} subtext={`Of ${list.length || 4} curriculum areas`} />
         <MetricCard label="Students" value={dash(dashboard.data?.students.total)} subtext="Across both divisions" />
-        <MetricCard label="Assigned mentors" value={dash(allMentors)} subtext="With course access" />
+        <MetricCard label="Assigned coaches" value={dash(allMentors)} subtext="With course access" />
         <MetricCard label="Open assignments" value={dash(dashboard.data?.assignments.published)} subtext="Currently accepting submissions" />
       </div>
 
@@ -201,7 +201,7 @@ export default function CoursesWithEditModal() {
                   <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Course</th>
                   <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Division</th>
                   <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Students</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Mentors</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Coaches</th>
                   <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Status</th>
                   <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500 text-right sm:pr-10">Action</th>
                 </tr>

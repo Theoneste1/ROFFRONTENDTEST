@@ -15,7 +15,7 @@ import { Badge, Card, FilterPills, Modal, Notice, SubmissionBadge, TableCard, Ta
 const STATUS_TABS: { label: string; value: "" | SubmissionStatus }[] = [
   { label: "All", value: "" },
   { label: "Awaiting distribution", value: "SUBMITTED" },
-  { label: "With mentor", value: "ASSIGNED" },
+  { label: "With coach", value: "ASSIGNED" },
   { label: "In review", value: "IN_REVIEW" },
   { label: "Marked", value: "MARKED" },
   { label: "Awaiting approval", value: "SUBMITTED_TO_ADMIN" },
@@ -37,7 +37,7 @@ function AssignDialog({ submission, assignment, onClose, onDone }: { submission:
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!mentorId) return setError("Choose a mentor.");
+    if (!mentorId) return setError("Choose a coach.");
     setError(null);
     try {
       await assign.mutateAsync({ submissionId: submission.id, mentorId, reassign });
@@ -50,23 +50,23 @@ function AssignDialog({ submission, assignment, onClose, onDone }: { submission:
   }
 
   return (
-    <Modal title={reassign ? "Reassign to another mentor" : "Assign to a mentor"} onClose={assign.isPending ? () => undefined : onClose}>
+    <Modal title={reassign ? "Reassign to another coach" : "Assign to a coach"} onClose={assign.isPending ? () => undefined : onClose}>
       <form onSubmit={submit} className="space-y-4">
         <p className="text-sm text-gray-600">
           {personName(submission.student)}&apos;s submission.{" "}
-          {reassign ? `Currently with ${personName(submission.review?.mentor, "no mentor")}. The current review is closed and a new review cycle starts with the new mentor.` : "The mentor is notified and can start the review."}
+          {reassign ? `Currently with ${personName(submission.review?.mentor, "no coach")}. The current review is closed and a new review cycle starts with the new coach.` : "The coach is notified and can start the review."}
         </p>
         {mentors.isPending ? (
           <Spinner />
         ) : mentors.isError ? (
           <Alert tone="error">{errorMessage(mentors.error)}</Alert>
         ) : options.length === 0 ? (
-          <Alert tone="info">No other mentor has access to {assignment.course.title} · {assignment.division.name}. Add course access on the Mentors page first.</Alert>
+          <Alert tone="info">No other coach has access to {assignment.course.title} · {assignment.division.name}. Add course access on the Coaches page first.</Alert>
         ) : (
           <label className="block text-xs font-semibold text-gray-600">
-            Mentor
+            Coach
             <select value={mentorId} onChange={(e) => setMentorId(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-normal">
-              <option value="">Choose a mentor…</option>
+              <option value="">Choose a coach…</option>
               {options.map((m) => (
                 <option key={m.id} value={m.id}>
                   {personName(m)} (@{m.username})
@@ -115,7 +115,7 @@ function DistributeDialog({ assignment, waiting, onClose, onDone }: { assignment
     <Modal title="Distribute submissions" onClose={distribute.isPending ? () => undefined : onClose}>
       <form onSubmit={submit} className="space-y-4">
         <p className="text-sm text-gray-600">
-          {waiting} submission{waiting === 1 ? "" : "s"} awaiting distribution will be assigned to mentors of {assignment.course.title} · {assignment.division.name}.
+          {waiting} submission{waiting === 1 ? "" : "s"} awaiting distribution will be assigned to coaches of {assignment.course.title} · {assignment.division.name}.
         </p>
         <label className="block text-xs font-semibold text-gray-600">
           Strategy
@@ -126,13 +126,13 @@ function DistributeDialog({ assignment, waiting, onClose, onDone }: { assignment
           </select>
         </label>
         <fieldset>
-          <legend className="text-xs font-semibold text-gray-600 mb-1">Mentors (optional — all eligible mentors when none is ticked)</legend>
+          <legend className="text-xs font-semibold text-gray-600 mb-1">Coaches (optional — all eligible coaches when none is ticked)</legend>
           {mentors.isPending ? (
             <Spinner />
           ) : mentors.isError ? (
             <Alert tone="error">{errorMessage(mentors.error)}</Alert>
           ) : (mentors.data ?? []).length === 0 ? (
-            <Alert tone="info">No mentor has access to this course and division yet.</Alert>
+            <Alert tone="info">No coach has access to this course and division yet.</Alert>
           ) : (
             <div className="space-y-1.5 max-h-48 overflow-y-auto">
               {mentors.data!.map((m) => (
@@ -179,7 +179,7 @@ export default function SubmissionsSection({ assignment }: { assignment: MentorA
           <h2 id="subs-title" className="text-xl font-bold text-gray-900">
             Submissions
           </h2>
-          <p className="text-xs text-gray-500">Distribute student work to mentors, follow reviews and open a review to approve it.</p>
+          <p className="text-xs text-gray-500">Distribute student work to coaches, follow reviews and open a review to approve it.</p>
         </div>
         {!archived && waiting > 0 && (
           <button type="button" onClick={() => setDistributing(true)} className={btnPrimary}>
@@ -215,7 +215,7 @@ export default function SubmissionsSection({ assignment }: { assignment: MentorA
             <tr className="border-b border-gray-100">
               <th className={th}>Student</th>
               <th className={th}>Submitted</th>
-              <th className={th}>Mentor</th>
+              <th className={th}>Coach</th>
               <th className={th}>Status</th>
               <th className={th}>Score</th>
               <th className={th}>

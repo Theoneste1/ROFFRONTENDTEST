@@ -107,7 +107,7 @@ function OverviewPanel({ scope, data, onOpenTab }: { scope: TeachingScope; data:
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
             <h3 className="text-base font-bold text-gray-900 mb-4">Key Information</h3>
             <div className="space-y-4">
-              <InfoRow icon={<User className="w-4 h-4" />} label="Mentor" value={personName(user)} />
+              <InfoRow icon={<User className="w-4 h-4" />} label="Coach" value={personName(user)} />
               <InfoRow icon={<Users className="w-4 h-4" />} label="Students" value={formatNumber(data.students.total)} />
               <InfoRow icon={<Award className="w-4 h-4" />} label="Division" value={`${scope.division.name} division`} />
             </div>
@@ -135,7 +135,7 @@ function OverviewPanel({ scope, data, onOpenTab }: { scope: TeachingScope; data:
           )}
           {pipeline.length > 0 && (
             <div className="mt-6 pt-4 border-t border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 mb-2">Review pipeline (all mentors)</p>
+              <p className="text-xs font-semibold text-gray-500 mb-2">Review pipeline (all coaches)</p>
               <div className="flex flex-wrap gap-2">
                 {pipeline.map(([status, n]) => (
                   <span key={status} className="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full">

@@ -58,8 +58,8 @@ export default function MentorsClient() {
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Mentors</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Mentors review submissions, give scores and formal feedback.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Coaches</h1>
+          <p className="text-sm text-gray-500 mt-1 font-medium">Coaches review submissions, give scores and formal feedback.</p>
         </div>
         {tab === "mentors" && <CsvButton onDownload={() => downloadCsv("/admin/reports/mentors.csv", { divisionId: filters.divisionId, status: filters.status, q: filters.q }, "mentors.csv")} />}
       </div>
@@ -74,7 +74,7 @@ export default function MentorsClient() {
             onClick={() => setParam("tab", t === "applications" ? "applications" : null)}
             className={`pb-3 text-sm font-semibold -mb-px border-b-2 transition-colors ${tab === t ? "border-indigo-600 text-indigo-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
           >
-            {t === "mentors" ? "Mentors" : "Applications"}
+            {t === "mentors" ? "Coaches" : "Applications"}
             {t === "applications" && !!pendingCount && <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px]">{pendingCount}</span>}
           </button>
         ))}
@@ -86,7 +86,7 @@ export default function MentorsClient() {
         <>
           {/* Controls Bar: Search & Pill Filters */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
-            <SearchInput value={q} onChange={(v) => setParam("q", v)} placeholder="Search mentor…" label="Search mentors" />
+            <SearchInput value={q} onChange={(v) => setParam("q", v)} placeholder="Search coach…" label="Search coaches" />
             <FilterPills label="Division" options={divisionTabs} value={divisionId} onChange={(v) => setParam("divisionId", v)} />
             <SelectFilter
               label="Status"
@@ -97,7 +97,7 @@ export default function MentorsClient() {
           </div>
 
           {mentors.isError ? (
-            <ErrorState error={mentors.error} title="Couldn't load mentors" onRetry={() => mentors.refetch()} />
+            <ErrorState error={mentors.error} title="Couldn't load coaches" onRetry={() => mentors.refetch()} />
           ) : (
             <TableCard
               footer={
@@ -110,7 +110,7 @@ export default function MentorsClient() {
             >
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className={th}>Mentor</th>
+                  <th className={th}>Coach</th>
                   <th className={th}>Email</th>
                   <th className={th}>Division</th>
                   <th className={th}>Courses</th>
@@ -121,9 +121,9 @@ export default function MentorsClient() {
               </thead>
               <tbody className={`divide-y divide-gray-100/80 ${mentors.isFetching && mentors.data ? "opacity-60" : ""}`}>
                 {mentors.isPending ? (
-                  <TableMessage colSpan={7}>Loading mentors…</TableMessage>
+                  <TableMessage colSpan={7}>Loading coaches…</TableMessage>
                 ) : mentors.data.data.length === 0 ? (
-                  <TableMessage colSpan={7}>No mentors found matching your criteria.</TableMessage>
+                  <TableMessage colSpan={7}>No coaches found matching your criteria.</TableMessage>
                 ) : (
                   mentors.data.data.map((m) => {
                     const divs = [...new Set(m.teaching.map((t) => t.division.name.replace(/ division$/i, "")))];

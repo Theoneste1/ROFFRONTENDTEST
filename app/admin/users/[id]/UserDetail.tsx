@@ -100,9 +100,9 @@ export default function UserDetail({ userId }: { userId: string }) {
           </dl>
           {u.role === "MENTOR" && (
             <p className="mt-4 text-xs text-gray-500">
-              Course access for this mentor is managed on the{" "}
+              Course access for this coach is managed on the{" "}
               <Link href={`/admin/mentors?mentor=${u.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
-                Mentors page
+                Coaches page
               </Link>
               .
             </p>
