@@ -125,6 +125,21 @@ export default function LoginForm() {
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
 
+      <div className="text-center text-sm text-slate-600" data-testid="signup-links">
+        <p>
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="font-semibold text-[#2B2BB2] hover:underline">
+            Sign up
+          </Link>
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          Want to mentor ROF students?{" "}
+          <Link href="/apply" className="font-medium text-[#2B2BB2] hover:underline">
+            Apply as a coach
+          </Link>
+        </p>
+      </div>
+
       <p className="text-center text-xs text-slate-500">
         Need help?{" "}
         <Link href="/support" className="font-medium text-[#2B2BB2] hover:underline">

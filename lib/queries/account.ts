@@ -2,7 +2,7 @@
 
 /** The signed-in user's own account (profile details, password) and the public support details. */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { authApi, meApi, publicApi } from "@/lib/api/auth";
+import { authApi, meApi, publicApi, type ContactInput } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/query/keys";
 import type { UpdateMeInput } from "@/lib/api/types";
 
@@ -24,6 +24,16 @@ export function useChangePassword() {
     mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
       authApi.changePassword(currentPassword, newPassword),
   });
+}
+
+/** `GET /public/statistics` (public). The backend caches it for 5 minutes. */
+export function usePublicStatistics() {
+  return useQuery({ queryKey: ["public", "statistics"], queryFn: publicApi.statistics, staleTime: 5 * 60_000, retry: 1 });
+}
+
+/** `POST /public/contact` (public). */
+export function useSendContact() {
+  return useMutation({ mutationFn: (input: ContactInput) => publicApi.contact(input) });
 }
 
 /** `GET /support` (public): contact details configured by the administrators. */

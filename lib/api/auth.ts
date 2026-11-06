@@ -4,6 +4,7 @@ import type {
   ActivateResponse,
   ActivationInfo,
   CurrentUser,
+  GradeLevel,
   LoginResponse,
   MePermissions,
   MessageResponse,
@@ -70,8 +71,71 @@ export const meApi = {
   permissions: () => api<MePermissions>("/me/permissions"),
 };
 
+export interface RegisterStudentInput {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+  gradeLevel: GradeLevel;
+  schoolName: string;
+  schoolLocation: string;
+  /** Student's home district or city (required, 2–200 characters). */
+  homeLocation: string;
+}
+
+/** `POST /auth/register/student` response (the created profile plus what happens next). */
+export interface RegisterStudentResult {
+  id: string;
+  username: string;
+  requiresApproval: boolean;
+  requiresEmailVerification: boolean;
+}
+
+export interface MentorApplicationInput {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+}
+
+/** `GET /public/statistics`: aggregate counts of active members (teachers: null — not on the platform yet). */
+export interface PublicStatistics {
+  students: number;
+  coaches: number;
+  teachers: number | null;
+  schools: number;
+  members: number;
+  generatedAt: string;
+}
+
+export interface ContactInput {
+  fullName: string;
+  email: string;
+  subject: string;
+  message: string;
+  /** Honeypot: always empty for people. */
+  website?: string;
+}
+
+/** `POST /public/contact`: the message is stored; `notification` says whether an e-mail notice was queued to ROF support. */
+export interface ContactResult {
+  received: true;
+  id?: string;
+  notification: "QUEUED" | "NOT_CONFIGURED";
+}
+
 export const publicApi = {
   support: () => api<SupportInfo>("/support", { auth: false }),
+  statistics: () => api<PublicStatistics>("/public/statistics", { auth: false }),
+  contact: (input: ContactInput) => api<ContactResult>("/public/contact", { method: "POST", body: input, auth: false }),
+  /** Student self-registration (may be closed by the administrators: 403 REGISTRATION_CLOSED). */
+  registerStudent: (input: RegisterStudentInput) => api<RegisterStudentResult>("/auth/register/student", { method: "POST", body: input, auth: false }),
+  /** Teacher / coach application: a mentor request that an administrator approves or rejects. */
+  applyAsMentor: (input: MentorApplicationInput) => api<{ id: string; status: string }>("/mentor-requests", { method: "POST", body: input, auth: false }),
+  /** School name suggestions (at least 2 characters; up to 10 results). */
+  searchSchools: (q: string) => api<{ id: string; name: string; location: string }[]>("/schools/search", { query: { q }, auth: false }),
 };
 
 /** Backend password policy (src/auth/dto/password.rules.ts). */
