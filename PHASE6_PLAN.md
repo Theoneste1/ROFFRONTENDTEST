@@ -96,3 +96,17 @@ All against the running, unchanged backend, through the `:3001` proxy. Browser t
 - No support submission form and no placeholder support backend.
 - No thread rename or delete UI (the backend allows authors to do this; the original design has no control for it). Can be added on request.
 - No admin thread moderation on the thread page: moderation stays on `/admin/moderation` (phase 5).
+
+## 6. Implementation status (2026-11-06)
+
+All steps 6.0–6.7 are implemented, one commit each (see `INTEGRATION_PROGRESS.md` → Phase 6). Read-only verification is done for students and mentors. Data-changing checks wait for the owner's approval, and admin checks wait for credentials.
+
+Deviations from this plan:
+
+| Plan item | What was done | Why |
+|---|---|---|
+| A link that does not fit the role → the role's inbox with a message | A "This link isn't available" card, with links to the dashboard and the notifications | Clearer than landing on the inbox with nothing selected; still never another portal |
+| Bell placement | Visible on phones too (the original hid it below 640 px) | Otherwise phones have no way to reach notifications |
+| Mentor discussions | Also on published assignments, not only the course workspace | Assignment discussion notifications need a place to land; drafts have none |
+| Sign-out | Fixed a double redirect found by the 6.5 suite (`3736d06`) | Two simultaneous navigations; Next logged an aborted fetch |
+| Consolidation | `PortalNavbar`, `SidebarUtilities`, shared `PageFrame` / `FilterPills`, `PublicCard` | Owner rule: consolidate duplicates (three identical navbars and sidebar footers) |

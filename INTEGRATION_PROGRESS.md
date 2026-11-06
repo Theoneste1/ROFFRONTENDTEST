@@ -8,11 +8,11 @@ Last updated: 2026-11-06
 |---|---|---|
 | — | Audit (frontend, backend, mapping, gaps, roadmap) | ✅ Done |
 | 1 | Foundation and API integration | ✅ Done, tested against the running backend |
-| 2 | Authentication and application shell | ✅ Done (Help/Settings links and the notification bell come in phase 6) |
+| 2 | Authentication and application shell | ✅ Done (Help/Settings links and the notification bell added in phase 6) |
 | 3 | Student portal | ✅ Done, tested against the running backend (one flow pending admin; see Phase 3) |
 | 4 | Mentor portal | ✅ Approved by the owner. Final mentor suite 57/57; grading end to end **pending manual verification** (needs admin) |
 | 5 | Admin portal | 🟡 **Implementation complete** (steps 5.0–5.12). **Verification pending:** the admin-authenticated suites wait for credentials, and the data-changing workflow waits for owner approval. **Not marked verified** (see "Phase 5 completion status") |
-| 6 | Notifications, discussions, settings, profile, help | 🔄 In progress (approved 2026-11-06; see Phase 6 and `PHASE6_PLAN.md`) |
+| 6 | Notifications, discussions, settings, profile, help | 🟡 **Implementation complete** (6.0–6.7). Read-only verification done for students and mentors. **Pending:** data-changing checks (owner approval) and admin checks (credentials). See Phase 6 |
 | 7 | Testing and final QA | ⏸ (continuous) |
 
 ## Owner decisions (2026-11-05)
@@ -1023,13 +1023,143 @@ The read-only mentor regression in `e2e-admin.mjs nonadmin` covers the shared me
 
 ---
 
+## Phase 6: Notifications, discussions, profile, settings and help
+
+Plan: `PHASE6_PLAN.md` (owner approval 2026-11-06, with the instruction to continue after presenting the plan). The backend is unchanged.
+
+### Steps
+
+| Step | Scope | Implementation | Verification | Commit |
+|---|---|---|---|---|
+| 6.0 | Phase 5 documentation finalized; phase 6 plan | ✅ | — | `2d3fd5a`, `6a5bdc5` |
+| 6.1–6.2 | Notification API foundation; deep-link redirect routes | ✅ | ✅ read-only (`e2e-p6-redirects` 17/17) | `2704e26` |
+| 6.3 | Bell, inbox, clickable dashboard alerts | ✅ | ✅ read-only (`e2e-p6-notifications`); mark read/unread ⏳ approval | `ee445c2` |
+| 6.4 | Thread pages, mentor discussions, topic report | ✅ | ✅ read-only (`e2e-p6-discussions`); posting/replying/reporting ⏳ approval | `51aa49f` |
+| — | Fix: one redirect after signing out (found by the 6.5 suite) | ✅ | ✅ | `3736d06` |
+| 6.5–6.6 | Profile, password, sessions, notification preferences; Help and `/support`; Settings links | ✅ | ✅ read-only (`e2e-p6-profile`); saving ⏳ approval | `7e29602` |
+| 6.7 | Final regression and this documentation | ✅ | see "Regression" | this commit |
+
+### What was implemented
+
+**Notifications (all roles)**
+- **Bell** in the shared `PortalNavbar` (the three identical navbars were consolidated). It shows the unread badge from `GET /notifications/unread-count`, polled every 60 s while the tab is visible (the backend has no push channel). The dropdown lists the latest 6, with "Mark all read" and "View all". The bell is now visible on phones too; the original hid it below 640 px, which would have left phones without any way to reach notifications.
+- **Inbox** `/student|mentor|admin/notifications`: All / Unread, category filter (with unread counts per category), paging (20), mark read or unread per item, mark all read. Unread items are highlighted and labelled "New".
+- **Opening a notification** marks it read and follows its link for the signed-in role (`lib/notifications/links.ts`). A link meant for another portal is never followed. Items with nothing to open (for example "your report was reviewed") are not clickable.
+- The student "Recent Alerts" and mentor "Recent Activity" dashboard widgets are clickable and have "View all".
+
+**Deep links** (owner decision Q5): the backend's role-neutral links are real routes, so e-mailed links (`APP_URL` + link) work too.
+
+| Backend link | Student | Mentor | Admin |
+|---|---|---|---|
+| `/assignments/:id` | `/student/assignments/:id` | `/mentor/assignments/:id` | `/admin/assignments/:id` |
+| `/results/:submissionId` | `/student/assignments/:assignmentId?tab=results` (looked up with `GET /me/results/:id` when the id is not in `data`) | not available | not available |
+| `/courses/:c/resources/:r` | `/student/courses/:c?resource=:r` (opens that resource's tab and highlights it) | `/mentor/courses` | `/admin/courses/resources?scope=:c` |
+| `/discussions/:threadId` | `/student/discussions/:id` | `/mentor/discussions/:id` | `/admin/discussions/:id` |
+| `/mentor/…`, `/admin/…` | — | used as is, own portal only | used as is, own portal only |
+
+Signed out → `/login?next=<link>` → after sign-in the link continues (`postLoginPath` accepts these paths). A link with nothing for the role shows "This link isn't available", with links to the user's dashboard and notifications.
+
+**Discussions**
+- `/student|mentor|admin/discussions/[threadId]` (shared `ThreadPage`, reusing `DiscussionPanel`'s thread view): topic, comments, one level of replies, reactions, edit and delete of own comments, report a comment, and **report a topic** (new; `POST /threads/:id/report`, non-authors only). Locked or hidden topics are read-only. A link back to the course or assignment discussion in the user's own portal.
+- Access is decided by the backend. A topic in another division or scope, or a hidden or deleted topic for non-admins, shows "This discussion isn't available" and nothing else.
+- Mentors gained a **Discussion** tab on the course workspace (course × division) and the assignment discussion on published or closed assignments (drafts have none, since students can't see them).
+- The admin report detail links to the reported discussion.
+
+**Profile and personal settings** — `/student|mentor|admin/profile` (shared `ProfilePage`):
+- Account details from `GET /me`; students also see division, grade, school and points.
+- **Editable: first name, last name and home location only** (`PATCH /me`, only changed fields are sent). Username, e-mail, role, division, grade and school are read-only, because the backend does not let users change them. A home location can be changed but not removed (the backend has no way to clear it).
+- **Change password** (`PATCH /auth/password`): the backend signs out every session, this one included, so the user is taken to the sign-in page with an explanation (a one-time notice kept in `sessionStorage`). A wrong current password shows beside the field.
+- **Sign out of all devices** (`POST /auth/logout-all`), with confirmation.
+- **E-mail notifications** per category for every role (`GET/PUT /me/notification-preferences`); account e-mails are locked on.
+- **Notifications I receive** (mentors and admins; `GET/PATCH /me/notification-settings`, `POST …/reset`): in-app and e-mail switch per type; app-only types say so; reset to defaults with confirmation. Students have no per-type switches in the backend, so none are shown.
+- Navigation: sidebar **Settings** opens the profile for students and mentors; for admins it stays the platform settings page, which links to "My profile". The navbar user block opens "My profile" in every portal.
+
+**Help and support**
+- Sidebar **Help** in every portal opens the public `/support` page (same card layout as sign-in), also linked from the sign-in page. It shows only the contact details configured in platform settings (`GET /support`). Locally none are configured, so it says so; admins get a link to platform settings, and students and mentors are pointed to the course and assignment discussions.
+- **No support form**: the backend has no support-request endpoint (owner instruction: no placeholder functionality).
+
+**Consolidation**
+- `PortalNavbar` replaces three identical navbars; `SidebarUtilities` replaces three copies of Help / Settings / Sign Out; `PageFrame` and `FilterPills` moved from the admin UI to shared UI (admin re-exports them); `PublicCard` is shared by the sign-in pages, `/support` and the redirect pages.
+
+### Fix found during testing
+
+Signing out ran two navigations at once (the button's own redirect and `RoleGate`'s), and Next logged "Failed to fetch RSC payload". The session now records a user-initiated sign-out, and `RoleGate` performs the only redirect, to plain `/login`. The pre-existing auth suite was re-run after the fix (see "Regression").
+
+### Endpoints integrated
+
+`GET /notifications`, `GET /notifications/unread-count`, `PATCH /notifications/:id/read`, `PATCH /notifications/:id/unread`, `POST /notifications/read-all`, `GET/PUT /me/notification-preferences`, `GET/PATCH /me/notification-settings`, `POST /me/notification-settings/reset`, `GET /threads/:id`, `POST /threads/:id/report`, `PATCH /me`, `PATCH /auth/password`, `POST /auth/logout-all`, `GET /support`. Already integrated before phase 6 and reused: thread lists, comments, replies, reactions, comment reports, `GET /me/results/:id`, `GET /courses/:id`.
+
+Not used, on purpose: `GET /notifications/:id` (the list carries everything), `POST /notifications/read` (bulk by ids; the UI has per-item and all).
+
+### Tests (read-only, against the running backend)
+
+| Suite (scratchpad) | Result | Covers |
+|---|---|---|
+| `e2e-p6-redirects.mjs` | ✅ 17/17 | Signed out → sign-in → continues to the link; every link type for student and mentor; result lookup; unknown result and wrong-role links → "not available"; only GET requests |
+| `e2e-p6-notifications.mjs` | ✅ 35/35 | Badge = API; dropdown and inbox rows = API (titles, order); every link is role-correct; filters send `unreadOnly` / `category`; empty states; polling (a new unread-count request within ~60 s); 390 px (bell visible, dropdown fits, no horizontal scroll); s5 cannot see s2's notifications (404); students get 403 on per-type settings; **no read-state request is sent** |
+| `e2e-p6-discussions.mjs` | ✅ 38/38 | Thread page = API (title, comments, order); context links; "Report topic" for non-authors only; an empty comment sends nothing; mentor Discussion tab and assignment discussion (drafts have none); `?resource=` tab and highlight; out-of-scope mentor and other-division student → "not available"; 390 px; **no write request** |
+| `e2e-p6-profile.mjs` | ✅ 46/46 | Profile = `/me`; only the three editable fields; unchanged, empty, too-short and cleared values refused with **no request**; password form validation with no request; a wrong current password is refused by the backend (400) and the user stays signed in; sessions confirmation; e-mail preferences = API, account locked, Discard; mentor per-type switches = API ("App only"), Discard; `/support` signed out and signed in; Help and Settings links; 390 px |
+
+### Regression (final run, 2026-11-06, read-only)
+
+| Check | Result |
+|---|---|
+| `tsc --noEmit` | ✅ |
+| ESLint | ✅ 0 errors; the 1 known warning in the hidden `app/mentor/_unsupported/studentlist` |
+| `next build` | ✅ All routes built, including the 15 new phase 6 routes |
+| Static sweep | ✅ No `alert()`, no `href="#"`, no Help/Settings/Bell control without a destination, no live-session or study-group features |
+| `api-security.mjs` (student role) | ⚠ 44/45. The one failure is a **stale expectation, not a regression**: the check expects 0 Senior Algebra resources, but a resource "Combinatoric by Theoneste" was published to Senior Algebra on 2026-11-05 at 22:33 (before this session; no write was sent in phase 6). The rule being tested (per division, published only) still holds. The expected count should be updated |
+| `api-mentor.mjs` | ✅ 26/26 |
+| `api-admin.mjs nonadmin` | ✅ 82/82 |
+| `e2e-auth.mjs` (re-run after the sign-out fix) | ✅ 19/19 |
+| `e2e-admin.mjs nonadmin` (incl. mentor resources regression) | ✅ 15/15 |
+| Phase 6 suites | ✅ 17/17, 35/35, 38/38, 46/46 |
+| `e2e-student.mjs`, `e2e-mentor.mjs` | Not re-run: they create `[TEST]` records (approval). The shared shell they depend on is covered by the phase 6 suites in both portals |
+
+Earlier development runs logged a dev-mode React hydration warning twice ("attributes … didn't match"). It could not be reproduced in four targeted attempts, and the final run had no browser errors. The suites now print the full diff if it recurs.
+
+### Data-changing tests (prepared, not run)
+
+`api-p6-writes.mjs` runs only with `--execute` and `ROF_P6_WRITES_APPROVED=yes`; by default it prints the plan and sends nothing.
+
+| Step | Account | Action | What changes |
+|---|---|---|---|
+| N1 | mentor.junior | Mark its discussion notification read, then unread | `readAt`, restored |
+| N2 | student.s2 | Mark all read, then mark the same ids unread | `readAt` on 3 notifications, restored |
+| P1 | student.s2 | Home location → "Kigali [TEST]", then back | restored |
+| P2 | student.s2 | E-mail for RESOURCES off, then on; ACCOUNT stays locked | a preference row (left on) |
+| P3 | mentor.junior | One per-type switch off; e-mail switch refused for an app-only type; reset | setting rows deleted by reset |
+| D1–D4 | student.s2, mentor.junior | `[TEST]` comment, reply (checks s2's notification links to `/discussions/:id`), reaction on/off, edit own, edit other's → 403, delete both | soft-deleted comments stay in the database; notifications to the thread author and s2 |
+| R1 (optional, `--with-report`) | mentor.junior | Report the `[TEST]` comment | an open report that an admin must dismiss |
+| W1 (optional, `--with-password`) | student.s5 | Change the password and back | every s5 session signed out twice; 2 audit entries |
+
+### Known limitations
+
+| Item | Effect |
+|---|---|
+| No push channel in the backend | The badge updates every 60 s, or immediately when the bell is opened |
+| No support-request endpoint | `/support` shows contact details only |
+| Support contact details are empty locally | `/support` shows the "not published yet" state until an admin fills `support.*` / `platform.supportEmail` in platform settings |
+| E-mail is DRY_RUN locally | E-mail preferences save, but nothing is delivered |
+| No avatar upload; username, e-mail, grade and school not changeable through `/me` | Read-only on the profile |
+| Home location cannot be cleared | The form explains this |
+| Thread rename and delete (author) | Supported by the backend, not offered (no control in the original design). Can be added on request |
+| Admin thread moderation | Stays on `/admin/moderation` (phase 5); the thread page is for reading and posting |
+
+### Outstanding (needs the owner)
+
+- **Admin credentials:** admin bell, inbox, profile, per-type settings and admin thread page are implemented, but not yet verified signed in as an admin.
+- **Approval for `api-p6-writes.mjs`** (all steps, or a subset). Until then, mark read/unread, posting and replying, reporting, saving the profile, changing a password and saving preferences are implemented and validated client-side, but have not been executed.
+
+---
+
 ## Module tracker
 
 | Module | Wired to API | Tested against backend | Notes |
 |---|---|---|---|
 | Foundation (API client, Query, errors, UI states) | ✅ | ✅ | |
 | Auth pages (login, activate, forgot/reset) | ✅ | ✅ (success paths of activate/reset pending a real token) | |
-| Shell (user, sign out) | ✅ | ✅ | Bell, Help, Settings in phase 6 |
+| Shell (user, sign out, bell, Help, Settings) | ✅ | ✅ (admin shell ⏳ credentials) | Bell, Help, Settings and the profile link added in phase 6 |
 | Student: dashboard | ✅ | ✅ | |
 | Student: courses and course detail | ✅ | ✅ | Includes resources, completion, course discussion |
 | Student: assignments list | ✅ | ✅ | |
@@ -1050,9 +1180,10 @@ The read-only mentor regression in `e2e-admin.mjs nonadmin` covers the shared me
 | Admin: reports, audit log, moderation, settings | ✅ | ⏳ | |
 | Admin: academic years and enrolments | — | — | Excluded (D7); read-only enrolment CSV only |
 | Admin: bulk e-mail | — | — | Excluded (D4) |
-| Notifications inbox and deep links | ☐ | ☐ | |
-| Discussions | ✅ (component) | ✅ | Course and assignment threads done; `/discussions/[threadId]` deep link in phase 6 |
-| Settings / profile / help | ☐ | ☐ | |
+| Notifications: bell, inbox, deep links | ✅ | ✅ read-only (student, mentor); ⏳ admin credentials; ⏳ read-state changes need approval | Phase 6 |
+| Discussions | ✅ | ✅ read-only; ⏳ posting needs approval | Course and assignment threads (phase 3); thread pages, mentor tabs, topic report (phase 6) |
+| Profile, password, preferences | ✅ | ✅ read-only and validation; ⏳ saving needs approval | Phase 6 |
+| Help and support | ✅ | ✅ | `/support` shows `GET /support`; no form (no backend endpoint) |
 
 ## Change log
 
@@ -1060,5 +1191,6 @@ The read-only mentor regression in `e2e-admin.mjs nonadmin` covers the shared me
 - 2026-11-05: Phases 1–2 implemented and tested (foundation, authentication, shell).
 - 2026-11-05: Phase 3 (student portal) implemented and tested; auth forms hardened against pre-hydration submits.
 - 2026-11-05: Phase 4 (mentor portal) implemented and tested; session refresh now retries on 429/5xx. Final mentor suite 57/57; commits regrouped (5cb150e, ed300bd, 278f3a7).
+- 2026-11-06: Phase 6 implemented (notifications, deep links, discussions, profile, preferences, help), one commit per step; sign-out double-redirect fixed. Read-only verification done; data-changing checks prepared and waiting for approval; admin checks waiting for credentials.
 - 2026-11-06: Phase 5 documentation finalized: implementation complete, verification pending (admin credentials, owner approval). Phase 6 approved and started.
 - 2026-11-05/06: Phase 5 (admin portal) steps 5.0–5.11 implemented, one commit per step (d918668 … 5e6a85d). Non-admin isolation and mentor regression pass. Admin-authenticated tests are prepared and waiting for credentials; the data-changing workflow is waiting for owner approval.

@@ -50,16 +50,21 @@ APP_URL=http://localhost:3001
 
 ```
 app/
-  (auth)/            public pages: login, activate, forgot-password, reset-password
+  (auth)/            public pages: login, activate, forgot-password, reset-password, support
   admin/ mentor/ student/   the three portals (each wrapped in RoleGate)
+  assignments/ results/ courses/ discussions/   role-neutral notification links → redirect per role
   components/
+    account/         profile, password, notification preferences
     auth/            RoleGate, password fields
-    shell/           NavbarUser, SignOutButton (shared by the portal shells)
-    ui/              loading / error / empty states, form controls
+    discussions/     discussion panel and thread page
+    notifications/   bell, inbox, deep-link redirect
+    shell/           PortalNavbar, NavbarUser, SidebarUtilities, SignOutButton, PublicCard
+    ui/              loading / error / empty states, form controls, page frame
   providers.tsx      TanStack Query + session provider
 lib/
   api/               HTTP client, error type, endpoint modules, API types
   auth/              session provider, role → portal routing
+  notifications/     notification link → role page
   query/             QueryClient defaults, query keys
 ```
 
@@ -70,4 +75,4 @@ lib/
 - **Branch on `error.code`, never on `message`.**
 - **Hiding UI by role or permission is a courtesy.** The backend enforces every rule.
 
-Project documents: `FRONTEND_AUDIT.md`, `BACKEND_AUDIT.md`, `INTEGRATION_MAPPING.md`, `IMPLEMENTATION_ROADMAP.md`, `INTEGRATION_PROGRESS.md`.
+Project documents: `FRONTEND_AUDIT.md`, `BACKEND_AUDIT.md`, `INTEGRATION_MAPPING.md`, `IMPLEMENTATION_ROADMAP.md`, `INTEGRATION_PROGRESS.md`, `PHASE5_ADMIN_PLAN.md`, `PHASE6_PLAN.md`.
