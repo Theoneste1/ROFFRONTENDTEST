@@ -11,6 +11,8 @@ import {
   adminDashboardApi,
   assignmentsAdminApi,
   auditApi,
+  contactMessagesApi,
+  type ContactMessageStatus,
   coursesAdminApi,
   divisionsApi,
   mentorRequestsApi,
@@ -531,6 +533,20 @@ export function useModerate() {
     mutationFn: (m: ModerationMutation) =>
       m.type === "resolve" ? moderationApi.resolve(m.reportId, m.action, m.note) : m.type === "comment" ? moderationApi.comment(m.commentId, m.op, m.reason) : moderationApi.thread(m.threadId, m.op, m.reason),
     onSettled: () => invalidate(queryKeys.discussions.all),
+  });
+}
+
+// ─── Contact messages ───────────────────────────────────────────────────────
+
+export function useContactMessages(params: { status?: ContactMessageStatus; page?: number; limit?: number } = {}) {
+  return useQuery({ queryKey: queryKeys.admin.contactMessages({ ...params }), queryFn: () => contactMessagesApi.list(params), placeholderData: keepPreviousData });
+}
+
+export function useSetContactMessageStatus() {
+  const invalidate = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: ContactMessageStatus }) => contactMessagesApi.setStatus(id, status),
+    onSettled: () => invalidate(),
   });
 }
 

@@ -14,7 +14,8 @@ import {
   Award,
   BarChart3,
   ScrollText,
-  ShieldAlert
+  ShieldAlert,
+  Inbox
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 
@@ -76,7 +77,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         {/* Mentors Link */}
         <Link
           href="/admin/mentors"
-          title="Mentors"
+          title="Coaches"
           className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
             } ${isActive("/admin/mentors")
               ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
@@ -84,7 +85,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             }`}
         >
           <GraduationCap className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Mentors</span>}
+          {isOpen && <span className="whitespace-nowrap">Coaches</span>}
         </Link>
 
         {/* Students Link */}
@@ -197,6 +198,20 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         >
           <ShieldAlert className="h-5 w-5 flex-shrink-0" />
           {isOpen && <span className="whitespace-nowrap">Moderation</span>}
+        </Link>
+
+        {/* Contact messages Link */}
+        <Link
+          href="/admin/messages"
+          title="Messages"
+          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
+            } ${isActive("/admin/messages")
+              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
+              : "hover:bg-white/5 text-slate-400 hover:text-white"
+            }`}
+        >
+          <Inbox className="h-5 w-5 flex-shrink-0" />
+          {isOpen && <span className="whitespace-nowrap">Messages</span>}
         </Link>
       </div>
 

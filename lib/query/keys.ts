@@ -125,6 +125,7 @@ export const queryKeys = {
     batches: (assignmentId: string) => [...queryKeys.admin.assignmentsAll, "batches", assignmentId] as const,
     scopeMentors: (courseId: string, divisionId: string) => [...queryKeys.admin.all, "mentors", "scope", courseId, divisionId] as const,
     reviewsReport: (filters: Record<string, unknown> = {}) => [...queryKeys.admin.all, "reports", "reviews", filters] as const,
+    contactMessages: (params: Record<string, unknown> = {}) => [...queryKeys.admin.all, "contact-messages", params] as const,
     moderationAll: ["admin", "moderation"] as const,
     moderationReports: (params: Record<string, unknown> = {}) => [...queryKeys.admin.moderationAll, "reports", params] as const,
     moderationReport: (id: string) => [...queryKeys.admin.moderationAll, "report", id] as const,

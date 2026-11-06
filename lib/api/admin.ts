@@ -351,15 +351,15 @@ export const resultsAdminApi = {
 /** CSV exports (each download is recorded in the audit log by the backend). */
 export const REPORT_EXPORTS = [
   { key: "students", label: "Students", path: "/admin/reports/students.csv" },
-  { key: "mentors", label: "Mentors", path: "/admin/reports/mentors.csv" },
+  { key: "mentors", label: "Coaches", path: "/admin/reports/mentors.csv" },
   { key: "enrollment", label: "Enrolment (read-only)", path: "/admin/reports/enrollment.csv" },
   { key: "course-participation", label: "Course participation", path: "/admin/reports/course-participation.csv" },
   { key: "assignments", label: "Assignments", path: "/admin/reports/assignments.csv" },
   { key: "reviews", label: "Reviews", path: "/admin/reports/reviews.csv" },
   { key: "results-publication", label: "Results publication", path: "/admin/reports/results-publication.csv" },
   { key: "results", label: "Results (one row per submission)", path: "/admin/reports/results.csv" },
-  { key: "mentor-activity", label: "Mentor activity", path: "/admin/reports/mentor-activity.csv" },
-  { key: "mentor-workload", label: "Mentor workload", path: "/admin/reports/mentor-workload.csv", noFilters: true },
+  { key: "mentor-activity", label: "Coach activity", path: "/admin/reports/mentor-activity.csv" },
+  { key: "mentor-workload", label: "Coach workload", path: "/admin/reports/mentor-workload.csv", noFilters: true },
 ] as const;
 
 export const reportsApi = {
@@ -386,6 +386,29 @@ export const moderationApi = {
   comment: (id: string, op: "hide" | "restore", reason?: string) =>
     api<unknown>(`/comments/${id}/${op}`, { method: "PATCH", body: reason ? { reason } : {} }),
   thread: (id: string, op: ThreadOp, reason?: string) => api<unknown>(`/threads/${id}/${op}`, { method: "PATCH", body: reason ? { reason } : {} }),
+};
+
+// ─── Contact messages (public contact form) ─────────────────────────────────
+
+export type ContactMessageStatus = "NEW" | "HANDLED";
+export interface ContactMessage {
+  id: string;
+  fullName: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: ContactMessageStatus;
+  /** QUEUED: an e-mail to the support address was queued; NOT_CONFIGURED: no support e-mail was set. */
+  notification: "QUEUED" | "NOT_CONFIGURED";
+  handledAt: string | null;
+  handledById: string | null;
+  createdAt: string;
+}
+
+export const contactMessagesApi = {
+  list: (params: { status?: ContactMessageStatus; page?: number; limit?: number } = {}) =>
+    api<Page<ContactMessage> & { newCount: number }>("/admin/contact-messages", { query: params }),
+  setStatus: (id: string, status: ContactMessageStatus) => api<ContactMessage>(`/admin/contact-messages/${id}`, { method: "PATCH", body: { status } }),
 };
 
 // ─── Platform settings ──────────────────────────────────────────────────────
