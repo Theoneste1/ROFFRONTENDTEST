@@ -13,6 +13,7 @@
  *   across tabs with the Web Locks API.
  */
 import { ApiError } from "./errors";
+import { UPLOAD_ORIGIN } from "./upload-origin";
 import type { TokenResponse } from "./types";
 
 export const API_BASE = "/api/v1";
@@ -141,8 +142,13 @@ async function send(path: string, opts: RequestOptions): Promise<Response> {
     payload = JSON.stringify(body);
   }
 
+  // Uploads go straight to the backend when configured (see upload-origin.ts);
+  // no cookies are sent across origins.
+  const direct = body instanceof FormData && UPLOAD_ORIGIN !== "";
+  const url = direct ? `${UPLOAD_ORIGIN}${buildUrl(path, query)}` : buildUrl(path, query);
+
   try {
-    return await fetch(buildUrl(path, query), { ...init, headers, body: payload, credentials: "include" });
+    return await fetch(url, { ...init, headers, body: payload, credentials: direct ? "omit" : "include" });
   } catch {
     throw new ApiError(0, "NETWORK_ERROR", "Cannot reach the server.");
   }

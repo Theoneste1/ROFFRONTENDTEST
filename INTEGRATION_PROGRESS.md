@@ -116,3 +116,20 @@ No push notifications (60 s polling); no teacher accounts (teachers use the cont
 
 ## Environment
 Backend `node dist/main.js` on `:3000` with the local `prisma dev` database `rof`; frontend on `:3001` (`/api` proxy). `APP_URL=http://localhost:3001` ✅. Admin credentials are read from the user environment variables `ROF_ADMIN_USER` / `ROF_ADMIN_PASSWORD`, never stored in files. Test scripts are kept outside the repository, in the session scratchpads.
+
+## Final audit before production (2026-11-07)
+
+Production backend: `https://rofbackendtest.onrender.com` (health: database up, storage up).
+
+| Area | Result | Status |
+|---|---|---|
+| Lint / type-check / production build (Netlify settings, real backend URL) | 0 errors (1 known warning in the private `_unsupported` folder) / clean / builds 66 routes | Completed and tested |
+| API compatibility | All 83 distinct endpoints the frontend calls exist in the backend with the same method and path (scripted comparison with the backend's `docs/api/routes.json`, ambiguous matches checked by hand) | Completed and tested |
+| Journeys through the `/api` proxy (both apps local) | 39/39: public pages, error shape, login → refresh cookie → silent refresh with rotation → logout, 403 for other roles, coach upload → publish → student download byte-for-byte, disguised executable refused, admin dashboard/reports/CSV | Completed and tested |
+| Large uploads on Netlify | **Fixed**: uploads go straight to the backend (`NEXT_PUBLIC_API_UPLOAD_ORIGIN`, CSP `connect-src`); 12 MB cross-origin upload with CORS preflight tested locally; foreign origins refused | Completed, not yet tested on Netlify |
+| `netlify.toml` | Backend URL pinned (`API_PROXY_TARGET`, upload origin); `/api/*` CDN proxy rule added (no function cold start, large downloads stream) | Completed, not yet tested on Netlify |
+| CI | **Added** `.github/workflows/ci.yml` (lint, type-check, build with Netlify settings) — the repository had none | Completed, runs on the first push |
+| Quizzes, online exams, automatic marking | Not part of either application (assessment = uploaded solutions marked by coaches) | Not completed — product decision |
+| Admin pages for academic years, bulk e-mail, activity log | Backend APIs exist; no frontend pages (planned as optional in `INTEGRATION_MAPPING.md`). An academic year is active in production until 2027-07 | Not completed |
+
+Changes: `lib/api/upload-origin.ts` (new), `lib/api/client.ts`, `lib/security/headers.ts`, `netlify.toml`, `.env.example`, `.github/workflows/ci.yml` (new), `DEPLOYMENT.md`, `INTEGRATION.md` (new), `README.md`.

@@ -3,10 +3,11 @@
 # Netlify detects Next.js and applies its Next.js runtime automatically
 # (no plugin needs to be installed or listed here).
 #
-# Required environment variable (Site configuration → Environment variables),
-# set BEFORE the first build — it is read at build time:
-#   API_PROXY_TARGET = https://<your-backend-host>   (no trailing slash, no /api)
-# See DEPLOYMENT.md for the full checklist, including the backend settings.
+# The production backend (ROFBACKENDTEST on Render) is set below; both values
+# are public addresses, not secrets, and are read at BUILD time — after
+# changing them, trigger a new deploy. See DEPLOYMENT.md for the full
+# checklist, including the backend settings (CORS_ORIGINS and APP_URL must be
+# this site's address).
 
 [build]
   command = "npm run build"
@@ -16,6 +17,23 @@
   # Next.js 16 needs Node.js 20.9 or newer.
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
+  # Every /api/* request is proxied here (no trailing slash, without /api).
+  API_PROXY_TARGET = "https://rofbackendtest.onrender.com"
+  # File uploads go straight to the backend: Netlify's proxy limits request
+  # bodies (about 8 MB) and time (~26 s); the backend accepts up to 50 MB.
+  # Requires the backend's CORS_ORIGINS to contain this site's address.
+  NEXT_PUBLIC_API_UPLOAD_ORIGIN = "https://rofbackendtest.onrender.com"
+
+# Netlify's CDN proxies /api/* straight to the backend (same origin for the
+# browser, so the SameSite=Strict refresh cookie keeps working). This bypasses
+# the Next.js server function for API calls: no function cold start, and large
+# downloads (resources up to 50 MB) stream instead of hitting function limits.
+# Locally, next.config.ts's rewrite does the same job.
+[[redirects]]
+  from = "/api/*"
+  to = "https://rofbackendtest.onrender.com/api/:splat"
+  status = 200
+  force = true
 
 # Security headers for every page (the API responses keep the backend's own headers).
 [[headers]]

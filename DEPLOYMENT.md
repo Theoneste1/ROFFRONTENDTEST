@@ -2,13 +2,18 @@
 
 The frontend is a Next.js 16 app. Netlify builds it and runs it with its built-in Next.js runtime: there is no plugin to install.
 
-The browser talks **only** to the Netlify site. Every `/api/*` request is proxied to the backend (`next.config.ts` → `API_PROXY_TARGET`). The frontend and the API therefore share one origin, and the backend's `SameSite=Strict` refresh cookie works.
+Production backend: **`https://rofbackendtest.onrender.com`** (ROFBACKENDTEST on Render). It is set in `netlify.toml`, so no Netlify variable is needed.
+
+How the browser reaches the API:
+
+- **Every `/api/*` request** goes to the Netlify site, and Netlify's CDN proxies it to the backend (`[[redirects]]` in `netlify.toml`; locally, the rewrite in `next.config.ts`). The frontend and the API share one origin, so the backend's `SameSite=Strict` refresh cookie works.
+- **File uploads only** go straight to the backend (`NEXT_PUBLIC_API_UPLOAD_ORIGIN`), because Netlify's proxy limits request bodies (about 8 MB) and time (about 26 s), while the backend accepts files up to 50 MB. Uploads carry the access token, never cookies; the backend allows them through `CORS_ORIGINS`.
 
 ## 1. Before you start
 
 You need:
 
-1. **The backend (ROFBACKENDTEST) running somewhere public over HTTPS**, for example `https://api.example.org`. Netlify only hosts the frontend; it cannot reach `localhost`.
+1. **The backend (ROFBACKENDTEST) running publicly over HTTPS**: `https://rofbackendtest.onrender.com`, check `/health`. Netlify only hosts the frontend; it cannot reach `localhost`.
 2. The frontend in a Git repository that Netlify can read (GitHub, GitLab or Bitbucket), or the Netlify CLI for manual deploys.
 3. The build passing locally: `npm ci && npm run typecheck && npm run lint && npm run build`.
 
@@ -23,13 +28,7 @@ You need:
    | Publish directory | `.next` |
    | Node.js | 22 (`NODE_VERSION`); Next.js 16 needs 20.9 or newer |
 
-3. Under **Site configuration → Environment variables**, add this **before the first build**:
-
-   | Variable | Value | Notes |
-   |---|---|---|
-   | `API_PROXY_TARGET` | `https://api.example.org` | The backend's public address. No trailing slash and no `/api`. It is read **at build time**, so trigger a new deploy after changing it |
-
-   The build stops with a clear error if this variable is missing or points to `localhost`, so a broken site is never published.
+3. The backend address is already in `netlify.toml` (`[build.environment]`): `API_PROXY_TARGET` and `NEXT_PUBLIC_API_UPLOAD_ORIGIN` = `https://rofbackendtest.onrender.com`, plus the `/api/*` proxy rule. **Nothing needs to be set in the Netlify dashboard.** To use another backend, change all three in `netlify.toml` and redeploy (they are read at build time). The build stops with a clear error if `API_PROXY_TARGET` points to `localhost`.
 
 4. Deploy. Note the site address, for example `https://rof-lms.netlify.app`, or your custom domain.
 
@@ -43,9 +42,9 @@ The frontend's address must be known to the backend. Set these in the **backend'
 |---|---|---|
 | `NODE_ENV` | `production` | Makes the refresh cookie `Secure` (HTTPS only) and enables the production checks |
 | `APP_URL` | `https://rof-lms.netlify.app` | The links in activation, password-reset and notification e-mails point here |
-| `CORS_ORIGINS` | `https://rof-lms.netlify.app` | Required by the backend in production. Browsers don't make cross-origin calls in this setup (everything goes through the proxy), but the backend refuses to start without it |
-| `TRUST_PROXY` | the number of proxies in front of the backend | The backend limits sign-ins **per client IP** (10 per minute). Behind Netlify, requests arrive from Netlify's servers, so the backend must read the client's address from `X-Forwarded-For`. Use the number of proxy hops; if this is wrong, all users may share one rate-limit bucket |
-| `SMTP_*` | the mail server | Required in production. Without it, invitations and reset e-mails are not delivered |
+| `CORS_ORIGINS` | `https://rof-lms.netlify.app` | **Must be exactly this site's address** (scheme + host, no trailing slash; several separated by commas, e.g. with a custom domain). File uploads go straight to the backend and are refused by the browser if this is wrong |
+| `TRUST_PROXY` | the number of proxies in front of the backend | The backend limits sign-ins **per client IP** (10 per minute). Requests arrive through Netlify's CDN and Render's proxy, so the backend must read the client's address from `X-Forwarded-For`. Start with `1` (Render's default in `render.yaml`); if everyone shares one rate-limit bucket after go-live, use `2` (see the backend's `deploy/render/README.md` §6) |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Resend key; `Rwanda Olympiad Foundation <info@rwandaolympiadfoundation.org>` (no quotes) | Required in production. Without them, invitations and reset e-mails are not delivered (backend `docs/EMAIL.md`) |
 
 ## 4. Check the deployed site
 
@@ -53,23 +52,14 @@ The frontend's address must be known to the backend. Set these in the **backend'
 2. Sign in with a demo account. The browser's Network tab should show `/api/v1/auth/login` → 200 on the **Netlify** domain, not the backend's.
 3. Reload the page: you stay signed in, which means the refresh cookie works.
 4. Download a file (a course resource): it opens or saves.
-5. Sign out: you return to `/login`, and a reload keeps you signed out.
-6. Open an activation or reset link from a backend e-mail: it should point to the Netlify site, which confirms `APP_URL` is right.
+5. As a coach, upload a resource larger than 8 MB: it succeeds. In the Network tab, the upload request goes to `rofbackendtest.onrender.com` (all other calls stay on the Netlify domain). A CORS error here means the backend's `CORS_ORIGINS` doesn't match this site's address.
+6. Sign out: you return to `/login`, and a reload keeps you signed out.
+7. Open an activation or reset link from a backend e-mail: it should point to the Netlify site, which confirms `APP_URL` is right.
 
 ## 5. Known limits on Netlify
 
-- **Large uploads.** The proxy runs inside Netlify's serverless functions. Netlify limits the request size and duration of functions, and the backend accepts resources up to 50 MB. Uploads larger than Netlify's request limit (a few MB) may fail with a 413 or 5xx error even though the backend would accept them.
-  - **Fix:** let Netlify's CDN proxy `/api/*` directly, which bypasses the functions. Add this to `netlify.toml`, with your backend address:
-
-    ```toml
-    [[redirects]]
-      from = "/api/*"
-      to = "https://api.example.org/api/:splat"
-      status = 200
-      force = true
-    ```
-
-  - Then test an upload over 6 MB. Keep `API_PROXY_TARGET` set, because the build still needs it.
+- **Large uploads and downloads.** Netlify's proxy limits request bodies (about 8 MB) and time (about 26 s); its serverless functions have stricter limits still. That is why API calls use the CDN proxy rule (not the Next.js function) and uploads go straight to the backend. If you change the backend address, update `API_PROXY_TARGET`, `NEXT_PUBLIC_API_UPLOAD_ORIGIN` **and** the `[[redirects]]` target together.
+- **Render free plan wakes slowly.** After about 15 idle minutes the backend sleeps and the next request takes about a minute — longer than Netlify's proxy waits. The first request after a quiet period can therefore fail with a 502/504; a reload a minute later works. An uptime monitor pinging `/health` every 5–10 minutes, or Render's paid plan, avoids this.
 - **Next.js 16 support.** Netlify's Next.js runtime is Netlify's own integration, not a Next.js-verified adapter (see the Next.js deployment docs). If a build fails because of the runtime, check Netlify's Next.js documentation for the supported versions.
 - **Previews.** Deploy previews use the same `API_PROXY_TARGET`, so they talk to the same backend. For a separate test backend, set a different value for the "Deploy Previews" context in the Netlify variables. The backend's `APP_URL` can only point to one site.
 

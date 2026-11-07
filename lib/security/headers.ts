@@ -9,18 +9,33 @@
  * - `STATIC_SECURITY_HEADERS` are the same for every response and are set in
  *   `next.config.ts` (identical to the values in `netlify.toml`).
  *
- * The browser only talks to this origin: the API is proxied under `/api`, fonts
- * are self-hosted by next/font, and images are local. Downloads use `blob:` URLs.
+ * The browser talks to this origin — the API is proxied under `/api`, fonts
+ * are self-hosted by next/font, images are local, downloads use `blob:` URLs —
+ * plus, for file uploads only, the backend origin in NEXT_PUBLIC_API_UPLOAD_ORIGIN.
+ *
+ * No imports: next.config.ts loads this file at build time, and its loader
+ * cannot follow further TypeScript imports.
  */
 
+/** Same rule as lib/api/upload-origin.ts: only an http(s) origin, else none. */
+function uploadOriginForCsp(): string {
+  try {
+    const url = new URL((process.env.NEXT_PUBLIC_API_UPLOAD_ORIGIN ?? "").trim());
+    return url.protocol === "https:" || url.protocol === "http:" ? url.origin : "";
+  } catch {
+    return "";
+  }
+}
+
 export function contentSecurityPolicy({ nonce, isDev, https }: { nonce: string; isDev: boolean; https: boolean }): string {
+  const UPLOAD_ORIGIN = uploadOriginForCsp();
   const directives = [
     `default-src 'self'`,
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src 'self' 'nonce-${nonce}'`,
     `img-src 'self' blob: data:`,
     `font-src 'self'`,
-    `connect-src 'self'`,
+    `connect-src 'self'${UPLOAD_ORIGIN ? ` ${UPLOAD_ORIGIN}` : ""}`,
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,

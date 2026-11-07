@@ -1,0 +1,41 @@
+name: CI
+
+# Lint, type-check and the production build with the same settings as Netlify
+# (netlify.toml): a broken build is caught on the pull request, not on deploy.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      # NETLIFY=true runs next.config.ts's hosted-build check (API_PROXY_TARGET
+      # must be a public backend), exactly as on Netlify.
+      - name: Production build (Netlify settings)
+        run: npm run build
+        env:
+          NETLIFY: "true"
+          NEXT_TELEMETRY_DISABLED: "1"
+          API_PROXY_TARGET: https://rofbackendtest.onrender.com
+          NEXT_PUBLIC_API_UPLOAD_ORIGIN: https://rofbackendtest.onrender.com
+
+      - name: The browser code sends uploads straight to the backend
+        run: grep -rq "rofbackendtest.onrender.com" .next/static/chunks
