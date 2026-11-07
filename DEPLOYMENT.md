@@ -30,7 +30,7 @@ You need:
 
 3. The backend address is already in `netlify.toml` (`[build.environment]`): `API_PROXY_TARGET` and `NEXT_PUBLIC_API_UPLOAD_ORIGIN` = `https://rofbackendtest.onrender.com`, plus the `/api/*` proxy rule. **Nothing needs to be set in the Netlify dashboard.** To use another backend, change all three in `netlify.toml` and redeploy (they are read at build time). The build stops with a clear error if `API_PROXY_TARGET` points to `localhost`.
 
-4. Deploy. Note the site address, for example `https://rof-lms.netlify.app`, or your custom domain.
+4. Deploy. Note the site address, for example `https://roflms.netlify.app`, or your custom domain.
 
 No other secrets are needed by the frontend. Do not put passwords, tokens or admin credentials in Netlify variables, `netlify.toml` or the repository.
 
@@ -41,8 +41,8 @@ The frontend's address must be known to the backend. Set these in the **backend'
 | Backend variable | Value | Why |
 |---|---|---|
 | `NODE_ENV` | `production` | Makes the refresh cookie `Secure` (HTTPS only) and enables the production checks |
-| `APP_URL` | `https://rof-lms.netlify.app` | The links in activation, password-reset and notification e-mails point here |
-| `CORS_ORIGINS` | `https://rof-lms.netlify.app` | **Must be exactly this site's address** (scheme + host, no trailing slash; several separated by commas, e.g. with a custom domain). File uploads go straight to the backend and are refused by the browser if this is wrong |
+| `APP_URL` | `https://roflms.netlify.app` | The links in activation, password-reset and notification e-mails point here |
+| `CORS_ORIGINS` | `https://roflms.netlify.app` | **Must be exactly this site's address** (scheme + host, no trailing slash; several separated by commas, e.g. with a custom domain). File uploads go straight to the backend and are refused by the browser if this is wrong |
 | `TRUST_PROXY` | the number of proxies in front of the backend | The backend limits sign-ins **per client IP** (10 per minute). Requests arrive through Netlify's CDN and Render's proxy, so the backend must read the client's address from `X-Forwarded-For`. Start with `1` (Render's default in `render.yaml`); if everyone shares one rate-limit bucket after go-live, use `2` (see the backend's `deploy/render/README.md` §6) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Resend key; `Rwanda Olympiad Foundation <info@rwandaolympiadfoundation.org>` (no quotes) | Required in production. Without them, invitations and reset e-mails are not delivered (backend `docs/EMAIL.md`) |
 
