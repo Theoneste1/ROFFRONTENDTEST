@@ -26,8 +26,14 @@ Backend ──► Resend (e-mail) · Neon (database) · R2 (files)
   about 8 MB and the backend accepts up to 50 MB. They send the bearer token
   only (no cookies). The backend allows them through `CORS_ORIGINS`, and the
   frontend's CSP allows that one origin in `connect-src`.
+  Multipart requests are sent with `XMLHttpRequest` (fetch cannot report upload
+  progress); one progress box (`app/components/ui/UploadProgress.tsx`) shows the
+  percentage for every upload and warns before the tab is closed mid-upload.
+  Pickers check the file type (extension), size and count before sending; the
+  backend checks the real type from the content.
 - **Downloads** (`/file` endpoints, CSV exports) go through the proxy with the
-  bearer token and are saved from a `blob:` URL.
+  bearer token and are saved from a `blob:` URL. No storage (R2) address or
+  credential ever reaches the browser: files are streamed by the backend.
 
 ## Authentication
 
@@ -82,3 +88,12 @@ as `/assignments/:id`. The frontend serves each of these routes.
 - **Frontend: `https://roflms.netlify.app` serves Netlify's "Page not found" on every path.** A clean build of frontend `main` stops with "API_PROXY_TARGET must be set…" (reproduced); the `feature/production-readiness` branch sets it in `netlify.toml` and builds cleanly from a fresh clone.
 
 Not yet possible: browser tests on the live site (needs the fixed frontend deployed), and a live upload to R2 (needs a production coach or admin login).
+
+**Production build in a real browser (2026-11-07, headless Microsoft Edge; local `next start` of the Netlify build, API → live Render backend): 39/39**
+
+- 8 public pages × phone (375 px), tablet (768 px), desktop (1366 px): no horizontal overflow, no broken images, every image has `alt`, every form field labelled, no script errors, **no CSP violations** (after the fix below).
+- Signed-out visits to student, coach and admin pages redirect to `/login?next=…`.
+- `/api` proxy: live statistics 200; session check without a cookie 401 (handled, no error shown).
+- Wrong credentials: "Invalid username or password." shown, page stays on `/login`. Invalid activation link: "Link not valid" with a resend form.
+- Uploads as the Netlify site sends them: CORS preflight from `https://roflms.netlify.app` → 204; a 9 MB multipart POST to Render → 401 with the CORS header (≈ 9 s, nothing stored); a foreign origin is refused. The CSP `connect-src` allows exactly the backend.
+- Fixed: next/image's inline `style="color:transparent"` violated the strict CSP on every page (console errors); images now use `app/components/ui/Image.tsx`, which omits it.

@@ -45,6 +45,7 @@ APP_URL=http://localhost:3001
 | `npm run build` / `npm start` | Production build / server on port 3001 |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript, no emit |
+| `npm test` | Unit tests (Node test runner, `tests/`) |
 
 ## Code layout
 

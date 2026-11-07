@@ -2,7 +2,7 @@
 
 import { useRef, useState, type DragEvent } from "react";
 import { FileText, UploadCloud, X } from "lucide-react";
-import { formatFileSize } from "@/lib/format";
+import { formatFileSize, hasAcceptedExtension } from "@/lib/format";
 
 export interface FileRules {
   maxFiles: number;
@@ -41,6 +41,10 @@ export default function FilePicker({
     setError(null);
     const next = [...files];
     for (const f of Array.from(list)) {
+      if (!hasAcceptedExtension(f.name, rules.accept)) {
+        setError(`"${f.name}" is not an accepted file type (${rules.label}).`);
+        continue;
+      }
       if (f.size > rules.maxFileBytes) {
         setError(`"${f.name}" is larger than ${formatFileSize(rules.maxFileBytes)}.`);
         continue;

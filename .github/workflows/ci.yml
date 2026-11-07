@@ -27,6 +27,9 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
+      - name: Unit tests
+        run: npm test
+
       # NETLIFY=true runs next.config.ts's hosted-build check (API_PROXY_TARGET
       # must be a public backend), exactly as on Netlify.
       - name: Production build (Netlify settings)

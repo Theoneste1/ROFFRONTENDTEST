@@ -14,6 +14,7 @@
  */
 import { ApiError } from "./errors";
 import { UPLOAD_ORIGIN } from "./upload-origin";
+import { trackUpload } from "./upload-progress";
 import type { TokenResponse } from "./types";
 
 export const API_BASE = "/api/v1";
@@ -147,11 +148,77 @@ async function send(path: string, opts: RequestOptions): Promise<Response> {
   const direct = body instanceof FormData && UPLOAD_ORIGIN !== "";
   const url = direct ? `${UPLOAD_ORIGIN}${buildUrl(path, query)}` : buildUrl(path, query);
 
+  if (body instanceof FormData && typeof XMLHttpRequest !== "undefined") {
+    return sendMultipart(url, init.method ?? "POST", headers, body, !direct, init.signal ?? undefined);
+  }
+
   try {
     return await fetch(url, { ...init, headers, body: payload, credentials: direct ? "omit" : "include" });
   } catch {
     throw new ApiError(0, "NETWORK_ERROR", "Cannot reach the server.");
   }
+}
+
+function formSize(form: FormData): number {
+  let size = 0;
+  form.forEach((value) => {
+    size += typeof value === "string" ? value.length : value.size;
+  });
+  return size;
+}
+
+/**
+ * Multipart uploads use XMLHttpRequest (fetch cannot report upload progress)
+ * and resolve to an ordinary `Response`, so callers handle them like any other.
+ */
+function sendMultipart(
+  url: string,
+  method: string,
+  headers: Headers,
+  form: FormData,
+  withCredentials: boolean,
+  signal?: AbortSignal,
+): Promise<Response> {
+  const tracker = trackUpload(formSize(form));
+  return new Promise<Response>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url);
+    xhr.withCredentials = withCredentials;
+    xhr.responseType = "blob";
+    headers.forEach((value, key) => xhr.setRequestHeader(key, value));
+    xhr.upload.onprogress = (e) => tracker.progress(e.loaded, e.lengthComputable ? e.total : 0);
+
+    const fail = () => {
+      tracker.done();
+      reject(new ApiError(0, "NETWORK_ERROR", "Cannot reach the server."));
+    };
+    xhr.onerror = fail;
+    xhr.ontimeout = fail;
+    xhr.onabort = () => {
+      tracker.done();
+      reject(new DOMException("The upload was cancelled.", "AbortError"));
+    };
+    xhr.onload = () => {
+      tracker.done();
+      const responseHeaders = new Headers();
+      for (const line of xhr.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
+        const i = line.indexOf(":");
+        if (i > 0) responseHeaders.append(line.slice(0, i).trim(), line.slice(i + 1).trim());
+      }
+      const noBody = xhr.status === 204 || xhr.status === 205 || xhr.status === 304;
+      resolve(new Response(noBody ? null : (xhr.response as Blob), { status: xhr.status, statusText: xhr.statusText, headers: responseHeaders }));
+    };
+
+    if (signal) {
+      if (signal.aborted) {
+        tracker.done();
+        reject(new DOMException("The upload was cancelled.", "AbortError"));
+        return;
+      }
+      signal.addEventListener("abort", () => xhr.abort(), { once: true });
+    }
+    xhr.send(form);
+  });
 }
 
 async function toError(res: Response): Promise<ApiError> {

@@ -133,3 +133,15 @@ Production backend: `https://rofbackendtest.onrender.com` (health: database up, 
 | Admin pages for academic years, bulk e-mail, activity log | Backend APIs exist; no frontend pages (planned as optional in `INTEGRATION_MAPPING.md`). An academic year is active in production until 2027-07 | Not completed |
 
 Changes: `lib/api/upload-origin.ts` (new), `lib/api/client.ts`, `lib/security/headers.ts`, `netlify.toml`, `.env.example`, `.github/workflows/ci.yml` (new), `DEPLOYMENT.md`, `INTEGRATION.md` (new), `README.md`.
+
+### Finalization, second pass (2026-11-07)
+
+| Area | Result | Status |
+|---|---|---|
+| Upload progress | Multipart requests use XHR; one progress box for all uploads, leave-page warning | Completed but not fully tested (no signed-in browser upload) |
+| File-type check before upload | Pickers refuse extensions outside the accepted list (drag-and-drop skipped the browser filter) | Completed and tested (unit) |
+| CSP violations on every page | next/image inline style; fixed with `app/components/ui/Image.tsx` | Failed and fixed |
+| Unit tests | `npm test` 5/5; added to CI | Completed and tested |
+| Real-browser checks on the production build against the live backend | 39/39 (see `INTEGRATION.md`) | Completed and tested |
+
+Full report: `FINALIZATION-REPORT.md`.

@@ -15,7 +15,7 @@ You need:
 
 1. **The backend (ROFBACKENDTEST) running publicly over HTTPS**: `https://rofbackendtest.onrender.com`, check `/health`. Netlify only hosts the frontend; it cannot reach `localhost`.
 2. The frontend in a Git repository that Netlify can read (GitHub, GitLab or Bitbucket), or the Netlify CLI for manual deploys.
-3. The build passing locally: `npm ci && npm run typecheck && npm run lint && npm run build`.
+3. The build passing locally: `npm ci && npm run typecheck && npm run lint && npm test && npm run build` (CI runs the same on every pull request).
 
 ## 2. Create the site
 
@@ -48,11 +48,11 @@ The frontend's address must be known to the backend. Set these in the **backend'
 
 ## 4. Check the deployed site
 
-1. Open the site: `/` redirects to `/login`.
+1. Open the site: `/` shows the public homepage with live community numbers (`/api/v1/public/statistics` → 200 JSON); `/login` shows the sign-in page.
 2. Sign in with a demo account. The browser's Network tab should show `/api/v1/auth/login` → 200 on the **Netlify** domain, not the backend's.
 3. Reload the page: you stay signed in, which means the refresh cookie works.
 4. Download a file (a course resource): it opens or saves.
-5. As a coach, upload a resource larger than 8 MB: it succeeds. In the Network tab, the upload request goes to `rofbackendtest.onrender.com` (all other calls stay on the Netlify domain). A CORS error here means the backend's `CORS_ORIGINS` doesn't match this site's address.
+5. As a coach, upload a resource larger than 8 MB: a progress box shows the percentage, then "saving the files…", and the upload succeeds. In the Network tab, the upload request goes to `rofbackendtest.onrender.com` (all other calls stay on the Netlify domain). A CORS error here means the backend's `CORS_ORIGINS` doesn't match this site's address.
 6. Sign out: you return to `/login`, and a reload keeps you signed out.
 7. Open an activation or reset link from a backend e-mail: it should point to the Netlify site, which confirms `APP_URL` is right.
 
@@ -61,7 +61,7 @@ The frontend's address must be known to the backend. Set these in the **backend'
 - **Large uploads and downloads.** Netlify's proxy limits request bodies (about 8 MB) and time (about 26 s); its serverless functions have stricter limits still. That is why API calls use the CDN proxy rule (not the Next.js function) and uploads go straight to the backend. If you change the backend address, update `API_PROXY_TARGET`, `NEXT_PUBLIC_API_UPLOAD_ORIGIN` **and** the `[[redirects]]` target together.
 - **Render free plan wakes slowly.** After about 15 idle minutes the backend sleeps and the next request takes about a minute — longer than Netlify's proxy waits. The first request after a quiet period can therefore fail with a 502/504; a reload a minute later works. An uptime monitor pinging `/health` every 5–10 minutes, or Render's paid plan, avoids this.
 - **Next.js 16 support.** Netlify's Next.js runtime is Netlify's own integration, not a Next.js-verified adapter (see the Next.js deployment docs). If a build fails because of the runtime, check Netlify's Next.js documentation for the supported versions.
-- **Previews.** Deploy previews use the same `API_PROXY_TARGET`, so they talk to the same backend. For a separate test backend, set a different value for the "Deploy Previews" context in the Netlify variables. The backend's `APP_URL` can only point to one site.
+- **Previews.** Deploy previews (`https://deploy-preview-N--roflms.netlify.app`) talk to the same production backend (the values in `netlify.toml` apply to every context). Sign-in and browsing work there, but **file uploads fail with a CORS error** because the preview address is not in the backend's `CORS_ORIGINS`; test uploads on the production site. The backend's `APP_URL` can only point to one site, so e-mail links always open production.
 
 ## 6. Deploying from the command line (optional)
 
