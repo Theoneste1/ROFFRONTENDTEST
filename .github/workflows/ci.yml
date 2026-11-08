@@ -36,6 +36,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # PageProps / LayoutProps are global types that Next.js generates into
+      # .next/types (gitignored). A fresh checkout has none, so generate them
+      # before tsc runs. See `next typegen` in node_modules/next/dist/docs.
+      - name: Generate Next.js route types
+        run: npx next typegen
+
       - name: Type-check
         run: npm run typecheck
 
