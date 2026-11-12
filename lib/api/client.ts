@@ -15,7 +15,7 @@
  *   across tabs with the Web Locks API.
  */
 import { ApiError } from "./errors";
-import { attemptRefresh, createRefresher, sendWithSessionRefresh, type RefreshOutcome } from "./refresh-outcome";
+import { attemptRefresh, createRefresher, sendWithSessionRefresh, type RefreshOutcome, type SharedCooldown } from "./refresh-outcome";
 import { UPLOAD_ORIGIN } from "./upload-origin";
 import { trackUpload } from "./upload-progress";
 import type { TokenResponse } from "./types";
@@ -85,7 +85,24 @@ function withCrossTabLock<T>(fn: () => Promise<T>): Promise<T> {
   return fn();
 }
 
-const refresher = createRefresher({ run: runRefresh, lock: withCrossTabLock });
+/**
+ * The cross-tab refresh cooldown: only a timestamp ("unavailable until"),
+ * never a token. Read and written inside the Web Lock (refresh-outcome.ts).
+ * Every call may throw (no window, storage disabled); the refresher then
+ * keeps the per-tab cooldown only.
+ */
+const REFRESH_COOLDOWN_KEY = "rof-refresh-unavailable-until";
+
+const sharedRefreshCooldown: SharedCooldown = {
+  get: () => {
+    const raw = window.localStorage.getItem(REFRESH_COOLDOWN_KEY);
+    return raw === null ? null : Number(raw);
+  },
+  set: (until) => window.localStorage.setItem(REFRESH_COOLDOWN_KEY, String(until)),
+  clear: () => window.localStorage.removeItem(REFRESH_COOLDOWN_KEY),
+};
+
+const refresher = createRefresher({ run: runRefresh, lock: withCrossTabLock, shared: sharedRefreshCooldown });
 
 /**
  * Exchange the refresh cookie for a new access token: `ok`, `rejected` (no
@@ -96,7 +113,11 @@ export function refreshSession(): Promise<RefreshOutcome> {
   return refresher.refresh();
 }
 
-/** Allow an immediate refresh again, e.g. when the user presses "Try again". */
+/**
+ * Allow an immediate refresh again, e.g. when the user presses "Try again":
+ * ends this tab's cooldown and the shared one (other tabs keep their own
+ * in-memory cooldown, at most 15 s).
+ */
 export function clearRefreshCooldown(): void {
   refresher.clearCooldown();
 }

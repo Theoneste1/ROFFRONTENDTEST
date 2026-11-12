@@ -279,3 +279,214 @@ test("parallel 401s during an outage share one refresh, then the cooldown answer
   assert.equal(runs, 1);
   assert.equal(expired, 0, "nobody was signed out");
 });
+
+// ─── Shared (cross-tab) cooldown ────────────────────────────────────────────
+// Several createRefresher instances stand for several tabs of one browser:
+// they share one lock (Web Locks: one holder at a time, FIFO) and one storage
+// (localStorage); each keeps its own in-memory state, as real tabs do.
+
+/** A FIFO mutex like navigator.locks.request, logging acquire/release. */
+function sharedLock(log = []) {
+  let tail = Promise.resolve();
+  return (tab) => (fn) => {
+    const result = tail.then(async () => {
+      log.push(`${tab}:lock`);
+      try {
+        return await fn();
+      } finally {
+        log.push(`${tab}:unlock`);
+      }
+    });
+    tail = result.catch(() => {});
+    return result;
+  };
+}
+
+/** localStorage stand-in holding the "unavailable until" timestamp. */
+function memoryStorage(log = []) {
+  let value = null;
+  return {
+    get: () => value,
+    set: (until) => {
+      log.push("storage:set");
+      value = until;
+    },
+    clear: () => {
+      log.push("storage:clear");
+      value = null;
+    },
+    peek: () => value,
+  };
+}
+
+/** Storage that throws on every call (disabled storage, private mode). */
+const brokenStorage = {
+  get: () => {
+    throw new Error("SecurityError");
+  },
+  set: () => {
+    throw new Error("QuotaExceededError");
+  },
+  clear: () => {
+    throw new Error("SecurityError");
+  },
+};
+
+/** N tabs. Each `run` is one full refresh cycle (its 3 attempts); `network.cycles` counts them. */
+function tabs(n, { outcome = "unavailable", storage, clock = () => 0, log = [] } = {}) {
+  const network = { cycles: 0 };
+  const lockFor = sharedLock(log);
+  const list = Array.from({ length: n }, (_, i) =>
+    createRefresher({
+      run: async () => {
+        network.cycles++;
+        log.push(`tab${i}:network`);
+        return typeof outcome === "function" ? outcome(network.cycles) : outcome;
+      },
+      lock: lockFor(`tab${i}`),
+      shared: storage,
+      now: clock,
+    }),
+  );
+  return { list, network, log };
+}
+
+test("three tabs hitting 401 during an outage: only ONE refresh cycle reaches the network", async () => {
+  const storage = memoryStorage();
+  const { list, network } = tabs(3, { storage });
+  const outcomes = await Promise.all(list.map((t) => t.refresh()));
+  assert.deepEqual(outcomes, ["unavailable", "unavailable", "unavailable"]);
+  assert.equal(network.cycles, 1, "tabs 2 and 3 learned the outcome from the shared cooldown");
+  assert.equal(typeof storage.peek(), "number");
+});
+
+test("five tabs: still one cycle; each tab then has its own cooldown too (no request on retry)", async () => {
+  const storage = memoryStorage();
+  const { list, network } = tabs(5, { storage });
+  await Promise.all(list.map((t) => t.refresh()));
+  await Promise.all(list.map((t) => t.refresh()));
+  assert.equal(network.cycles, 1);
+});
+
+test("the shared timestamp is written before the lock is released, and read inside it", async () => {
+  const log = [];
+  const storage = memoryStorage(log);
+  const { list } = tabs(2, { storage, log });
+  await Promise.all(list.map((t) => t.refresh()));
+  assert.deepEqual(log, ["tab0:lock", "tab0:network", "storage:set", "tab0:unlock", "tab1:lock", "tab1:unlock"]);
+});
+
+test("a tab joining after the shared cooldown ends makes a new request", async () => {
+  let clock = 1_000;
+  const storage = memoryStorage();
+  const { list, network } = tabs(2, { storage, clock: () => clock });
+  assert.equal(await list[0].refresh(), "unavailable");
+  clock += UNAVAILABLE_COOLDOWN_MS;
+  assert.equal(await list[1].refresh(), "unavailable");
+  assert.equal(network.cycles, 2);
+});
+
+test("ok clears the shared cooldown; queued tabs still refresh for their own token", async () => {
+  const storage = memoryStorage();
+  storage.set(5_000); // left over from an earlier outage…
+  const clock = 10_000; // …that is over
+  const { list, network } = tabs(3, { storage, outcome: "ok", clock: () => clock });
+  const outcomes = await Promise.all(list.map((t) => t.refresh()));
+  assert.deepEqual(outcomes, ["ok", "ok", "ok"]);
+  assert.equal(network.cycles, 3, "access tokens are per tab: each tab needs its own refresh");
+  assert.equal(storage.peek(), null, "cleared");
+});
+
+test("a definite rejection clears the shared cooldown", async () => {
+  const storage = memoryStorage();
+  storage.set(0);
+  const { list } = tabs(1, { storage, outcome: "rejected" });
+  assert.equal(await list[0].refresh(), "rejected");
+  assert.equal(storage.peek(), null);
+});
+
+test("recovery: after an outage, the first tab past the cooldown refreshes ok and clears it for all", async () => {
+  let clock = 0;
+  const storage = memoryStorage();
+  const { list, network } = tabs(3, {
+    storage,
+    clock: () => clock,
+    outcome: (cycle) => (cycle === 1 ? "unavailable" : "ok"),
+  });
+  await Promise.all(list.map((t) => t.refresh()));
+  assert.equal(network.cycles, 1);
+  clock += UNAVAILABLE_COOLDOWN_MS;
+  assert.equal(await list[2].refresh(), "ok");
+  assert.equal(storage.peek(), null);
+  assert.equal(await list[0].refresh(), "ok", "other tabs refresh normally again");
+});
+
+test("'Try again' (clearCooldown) clears the shared cooldown, so the next tab refreshes at once", async () => {
+  const storage = memoryStorage();
+  const { list, network } = tabs(2, { storage, outcome: (cycle) => (cycle === 1 ? "unavailable" : "ok") });
+  assert.equal(await list[0].refresh(), "unavailable");
+  list[0].clearCooldown();
+  assert.equal(storage.peek(), null);
+  assert.equal(await list[1].refresh(), "ok");
+  assert.equal(network.cycles, 2);
+});
+
+test("an exception inside the refresh is recorded as unavailable for the other tabs", async () => {
+  const storage = memoryStorage();
+  const lockFor = sharedLock();
+  let calls = 0;
+  const failing = createRefresher({
+    run: async () => {
+      calls++;
+      throw new Error("boom");
+    },
+    lock: lockFor("a"),
+    shared: storage,
+    now: () => 0,
+  });
+  const other = createRefresher({ run: async () => (calls++, "ok"), lock: lockFor("b"), shared: storage, now: () => 0 });
+  const [a, b] = await Promise.all([failing.refresh(), other.refresh()]);
+  assert.deepEqual([a, b], ["unavailable", "unavailable"]);
+  assert.equal(calls, 1);
+});
+
+test("storage that throws: each tab falls back to its own cooldown (no crash, never 'rejected')", async () => {
+  const { list, network } = tabs(3, { storage: brokenStorage });
+  const outcomes = await Promise.all(list.map((t) => t.refresh()));
+  assert.deepEqual(outcomes, ["unavailable", "unavailable", "unavailable"]);
+  assert.equal(network.cycles, 3, "the per-tab behaviour from before");
+  await Promise.all(list.map((t) => t.refresh()));
+  assert.equal(network.cycles, 3, "the per-tab cooldown still applies");
+  assert.doesNotThrow(() => list[0].clearCooldown());
+});
+
+test("no shared storage at all: identical to the per-tab behaviour", async () => {
+  const { list, network } = tabs(3, { storage: undefined });
+  await Promise.all(list.map((t) => t.refresh()));
+  assert.equal(network.cycles, 3);
+});
+
+test("implausible or invalid shared values are ignored, never block refreshing", async () => {
+  for (const bad of [Number.NaN, 0, -1, 10_000 + UNAVAILABLE_COOLDOWN_MS + 1, 1e15, "soon"]) {
+    let calls = 0;
+    const r = createRefresher({
+      run: async () => (calls++, "ok"),
+      shared: { get: () => bad, set: () => {}, clear: () => {} },
+      now: () => 10_000,
+    });
+    assert.equal(await r.refresh(), "ok", `value ${String(bad)}`);
+    assert.equal(calls, 1);
+  }
+});
+
+test("only a timestamp is stored: no token reaches the shared storage", async () => {
+  const written = [];
+  const r = createRefresher({
+    run: async () => "unavailable",
+    shared: { get: () => null, set: (v) => written.push(v), clear: () => {} },
+    now: () => 1_000,
+  });
+  await r.refresh();
+  assert.deepEqual(written, [1_000 + UNAVAILABLE_COOLDOWN_MS]);
+  assert.equal(typeof written[0], "number");
+});

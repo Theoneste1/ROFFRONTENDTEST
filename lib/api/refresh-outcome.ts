@@ -101,8 +101,21 @@ export async function attemptRefresh({ post, delay, attempts = REFRESH_ATTEMPTS 
 export interface Refresher {
   /** Concurrent callers share one refresh. Answers `unavailable` immediately during the cooldown. */
   refresh: () => Promise<RefreshOutcome>;
-  /** Ends the cooldown, e.g. when the user presses "Try again". */
+  /** Ends the cooldown (this tab's and the shared one), e.g. when the user presses "Try again". */
   clearCooldown: () => void;
+}
+
+/**
+ * A cooldown shared by every tab of the browser (localStorage in the app). It
+ * holds only a timestamp — never a token. Any of these may throw (storage
+ * disabled, private mode, quota); the refresher then falls back to the
+ * per-tab cooldown.
+ */
+export interface SharedCooldown {
+  /** The shared "unavailable until" time (ms), or null when none is set. */
+  get: () => number | null;
+  set: (until: number) => void;
+  clear: () => void;
 }
 
 export interface RefresherOptions {
@@ -110,32 +123,83 @@ export interface RefresherOptions {
   run: () => Promise<RefreshOutcome>;
   /** Serialises refreshes across tabs (Web Locks); identity when unavailable. */
   lock?: <T>(fn: () => Promise<T>) => Promise<T>;
+  /** The cross-tab cooldown; without it each tab only has its own. */
+  shared?: SharedCooldown;
   now?: () => number;
   cooldownMs?: number;
+}
+
+/** Calls a storage operation; a failure means "no shared cooldown" (per-tab fallback). */
+function tryStorage<T>(op: () => T): T | null {
+  try {
+    return op();
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Single-flight refresh with a cooldown after `unavailable`, so a page full of
  * failing queries cannot start a storm of refresh requests. A thrown error
  * inside `run` counts as `unavailable` (never as a rejection).
+ *
+ * Across tabs, the refresh runs inside the lock. The holder first reads the
+ * shared cooldown and, while it is active, answers `unavailable` without a
+ * request; after a refresh it writes (unavailable) or clears (ok, rejected)
+ * the shared cooldown before releasing the lock. So when several tabs queue
+ * during an outage, only the first makes the retry cycle and the others learn
+ * the outcome from it — deterministically, without messages.
  */
 export function createRefresher({
   run,
   lock = (fn) => fn(),
+  shared,
   now = () => Date.now(),
   cooldownMs = UNAVAILABLE_COOLDOWN_MS,
 }: RefresherOptions): Refresher {
   let inflight: Promise<RefreshOutcome> | null = null;
   let unavailableUntil = 0;
 
+  /** The active shared cooldown's end, ignoring missing, expired or implausible values. */
+  function sharedUntil(): number {
+    if (!shared) return 0;
+    const until = tryStorage(shared.get);
+    const t = now();
+    // A value further ahead than one cooldown was not written by this code
+    // (edited storage, clock change): ignore it rather than block refreshing.
+    if (typeof until !== "number" || !Number.isFinite(until) || until <= t || until > t + cooldownMs) return 0;
+    return until;
+  }
+
+  /** Inside the lock: shared cooldown check, the refresh, then record the outcome for other tabs. */
+  async function lockedRefresh(): Promise<{ outcome: RefreshOutcome; until?: number }> {
+    const until = sharedUntil();
+    if (until) return { outcome: "unavailable", until };
+    let outcome: RefreshOutcome;
+    try {
+      outcome = await run();
+    } catch {
+      outcome = "unavailable";
+    }
+    if (shared) {
+      if (outcome === "unavailable") {
+        const end = now() + cooldownMs;
+        tryStorage(() => shared.set(end));
+        return { outcome, until: end };
+      }
+      tryStorage(shared.clear);
+    }
+    return { outcome };
+  }
+
   return {
     refresh() {
       if (inflight) return inflight;
       if (now() < unavailableUntil) return Promise.resolve<RefreshOutcome>("unavailable");
-      inflight = lock(run)
-        .catch((): RefreshOutcome => "unavailable")
-        .then((outcome) => {
-          unavailableUntil = outcome === "unavailable" ? now() + cooldownMs : 0;
+      inflight = lock(lockedRefresh)
+        .catch((): { outcome: RefreshOutcome; until?: number } => ({ outcome: "unavailable" }))
+        .then(({ outcome, until }) => {
+          unavailableUntil = outcome === "unavailable" ? (until ?? now() + cooldownMs) : 0;
           return outcome;
         })
         .finally(() => {
@@ -145,6 +209,7 @@ export function createRefresher({
     },
     clearCooldown() {
       unavailableUntil = 0;
+      if (shared) tryStorage(shared.clear);
     },
   };
 }
