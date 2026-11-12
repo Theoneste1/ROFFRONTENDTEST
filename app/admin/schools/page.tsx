@@ -4,10 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useSchools } from "@/lib/queries/admin";
+import { hasFeature } from "@/lib/api/capabilities";
+import { useSession } from "@/lib/auth/session";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { formatNumber } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { AdminPage, SearchInput, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { AdminPage, SearchInput, TableCard, TableMessage, btnSecondary, linkBtn, td, th } from "../components/adminUi";
 
 /**
  * Read-only list of schools (`GET /schools`). The backend has no endpoint to
@@ -18,9 +21,22 @@ export default function SchoolsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const schools = useSchools({ search: search || undefined, page, limit: 20 });
+  const { can } = useSession();
+  // Students' school claims: on a backend with school affiliations, for holders of schools.manage.
+  const review = hasFeature(useBackendCapabilities().detection, "schoolAffiliations") && can("schools.manage");
 
   return (
-    <AdminPage title="Schools" description="Schools are added automatically when students register or are invited. They cannot be edited here.">
+    <AdminPage
+      title="Schools"
+      description="Schools are added automatically when students register or are invited. They cannot be edited here."
+      actions={
+        review ? (
+          <Link href="/admin/schools/affiliations" className={btnSecondary}>
+            School verification
+          </Link>
+        ) : undefined
+      }
+    >
       <Link href="/admin/students" className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800 mb-4">
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Students
       </Link>

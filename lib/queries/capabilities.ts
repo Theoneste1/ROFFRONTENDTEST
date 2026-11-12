@@ -32,6 +32,8 @@ export function useBackendCapabilities() {
   return {
     detection: query.data,
     loading: query.isPending,
+    /** A request is in flight: the first one, a scheduled UNKNOWN retry, or `retry()`. */
+    fetching: query.isFetching,
     retry: () => void query.refetch(),
   };
 }

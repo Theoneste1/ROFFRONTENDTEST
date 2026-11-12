@@ -5,21 +5,50 @@
  * the backend DTO. What happens next comes from the response: e-mail activation
  * and/or administrator approval, or signing in straight away. Administrators can
  * close self-registration (403 REGISTRATION_CLOSED).
+ *
+ * School: a backend advertising `schoolAffiliations` (GET /api/v1) takes a school
+ * from the official directory, a Rwandan school that isn't listed, or a school
+ * abroad (SchoolClaimFields); every other backend — and an unknown one — gets the
+ * legacy name + location fields, which both accept.
+ *
+ * Until the backend has been detected the form is not shown (its school fields
+ * and validation depend on it). If detection fails the page says so, offers a
+ * retry, and lets the student continue with the legacy fields. Once a form is
+ * chosen it is kept, so a later re-check can't swap fields while someone types.
  */
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { publicApi, type RegisterStudentResult } from "@/lib/api/auth";
 import type { GradeLevel } from "@/lib/api/types";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
-import { Alert } from "@/app/components/ui/feedback";
+import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
+import SchoolClaimFields, { emptyDraft } from "@/app/components/account/SchoolClaimFields";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { registrationGate, type RegistrationSchoolMode } from "@/lib/accounts/registration-mode";
+import {
+  SCHOOL_CLAIM_ERRORS,
+  SCHOOL_CLAIM_SERVER_FIELDS,
+  schoolClaimPayload,
+  validateSchoolClaim,
+  type SchoolClaimDraft,
+  type SchoolClaimField,
+} from "@/lib/accounts/school-claim";
 
 const GRADES: GradeLevel[] = ["S1", "S2", "S3", "S4", "S5", "S6"];
 const USERNAME = /^[a-z0-9._-]{3,30}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const FIELDS = ["firstName", "lastName", "username", "email", "password", "gradeLevel", "schoolName", "schoolLocation", "homeLocation"] as const;
 type F = (typeof FIELDS)[number] | "confirm";
+const CLAIM_SERVER_FIELDS = Object.keys(SCHOOL_CLAIM_SERVER_FIELDS);
+
+const REGISTER_ERRORS: Readonly<Record<string, string>> = {
+  REGISTRATION_CLOSED: "Student registration is closed at the moment. Please try again later or contact us.",
+  IDENTITY_TAKEN: "That username or e-mail is already in use. Try another, or sign in if you already have an account.",
+  NO_CURRENT_ACADEMIC_YEAR: "Registration isn't open yet: the new school year hasn't started on ROF LMS. Please try again later.",
+  ...SCHOOL_CLAIM_ERRORS,
+};
 
 export default function RegisterForm() {
   const [v, setV] = useState({ firstName: "", lastName: "", username: "", email: "", gradeLevel: "" as GradeLevel | "", schoolName: "", schoolLocation: "", homeLocation: "" });
@@ -31,6 +60,14 @@ export default function RegisterForm() {
   const [done, setDone] = useState<RegisterStudentResult | null>(null);
   const [schools, setSchools] = useState<{ id: string; name: string; location: string }[]>([]);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
+  const caps = useBackendCapabilities();
+  const gate = registrationGate(caps.detection, caps.fetching);
+  const [schoolMode, setSchoolMode] = useState<RegistrationSchoolMode | null>(null);
+  // Adopt the first definite answer and keep it (state adjusted during render, not in an effect).
+  if (schoolMode === null && gate.state === "ready") setSchoolMode(gate.mode);
+  const directory = schoolMode === "directory";
+  const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
+  const [claimErrors, setClaimErrors] = useState<Partial<Record<SchoolClaimField, string>>>({});
 
   // School name suggestions from the public search (2+ characters, debounced).
   useEffect(() => {
@@ -55,8 +92,10 @@ export default function RegisterForm() {
     if (!USERNAME.test(v.username)) e.username = "3–30 characters: lowercase letters, digits, “.”, “_” or “-”.";
     if (!EMAIL.test(v.email.trim())) e.email = "Enter a valid e-mail address.";
     if (!v.gradeLevel) e.gradeLevel = "Choose your grade.";
-    if (v.schoolName.trim().length < 2) e.schoolName = "Enter your school's name.";
-    if (v.schoolLocation.trim().length < 2) e.schoolLocation = "Enter your school's location (e.g. district).";
+    if (!directory) {
+      if (v.schoolName.trim().length < 2) e.schoolName = "Enter your school's name.";
+      if (v.schoolLocation.trim().length < 2) e.schoolLocation = "Enter your school's location (e.g. district).";
+    }
     if (v.homeLocation.trim().length < 2) e.homeLocation = "Enter where you live (e.g. district).";
     const p = validateNewPassword(password, confirm);
     if (p.password) e.password = p.password;
@@ -66,11 +105,13 @@ export default function RegisterForm() {
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
-    if (submitting) return;
+    if (submitting || schoolMode === null) return;
     const e = validate();
+    const ce = directory ? validateSchoolClaim(claim) : {};
     setErrors(e);
+    setClaimErrors(ce);
     setError(null);
-    if (Object.keys(e).length) return;
+    if (Object.keys(e).length || Object.keys(ce).length) return;
     setSubmitting(true);
     try {
       const res = await publicApi.registerStudent({
@@ -80,14 +121,17 @@ export default function RegisterForm() {
         email: v.email.trim(),
         password,
         gradeLevel: v.gradeLevel as GradeLevel,
-        schoolName: v.schoolName.trim(),
-        schoolLocation: v.schoolLocation.trim(),
+        ...(directory ? schoolClaimPayload(claim) : { schoolName: v.schoolName.trim(), schoolLocation: v.schoolLocation.trim() }),
         homeLocation: v.homeLocation.trim(),
       });
       setDone(res);
     } catch (err) {
       setError(err);
       setErrors(fieldErrors(err, FIELDS));
+      if (directory) {
+        const server = fieldErrors(err, CLAIM_SERVER_FIELDS);
+        setClaimErrors(Object.fromEntries(Object.entries(server).map(([k, m]) => [SCHOOL_CLAIM_SERVER_FIELDS[k], m])));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -101,6 +145,7 @@ export default function RegisterForm() {
         <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
           {done.requiresEmailVerification && <li>We sent an activation link to your e-mail address. Open it to activate your account.</li>}
           {done.requiresApproval && <li>An administrator will review and approve your account. You can sign in once it is approved.</li>}
+          {done.schoolVerification === "PENDING" && <li>An administrator will check your school. Until then it is shown as not yet verified.</li>}
           {!done.requiresEmailVerification && !done.requiresApproval && <li>You can sign in now.</li>}
         </ul>
         <Link href="/login" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
@@ -110,9 +155,42 @@ export default function RegisterForm() {
     );
   }
 
-  const closed = isApiError(error) && error.code === "REGISTRATION_CLOSED";
-  const taken = isApiError(error) && error.code === "IDENTITY_TAKEN";
-  const fieldErr = Object.keys(fieldErrors(error, FIELDS)).length > 0;
+  if (schoolMode === null) {
+    return (
+      <div className="space-y-5" data-testid="register-gate">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a student</h1>
+          <p className="mt-1 text-sm text-slate-500">Create your ROF LMS account to start learning Olympiad mathematics.</p>
+        </div>
+        {gate.state === "failed" ? (
+          <div className="space-y-4" data-testid="register-detection-failed">
+            <Alert tone="error">We couldn&apos;t reach the ROF LMS server to prepare the registration form.</Alert>
+            <p className="text-sm text-slate-600">Check your connection and try again. The server can take up to a minute to wake up.</p>
+            <Button type="button" className="w-full" onClick={caps.retry}>
+              Try again
+            </Button>
+            <Button type="button" variant="secondary" className="w-full" onClick={() => setSchoolMode("legacy")}>
+              Continue with the basic form
+            </Button>
+          </div>
+        ) : (
+          <div data-testid="register-loading">
+            <LoadingBlock label="Preparing the registration form…" />
+            <p className="text-center text-xs text-slate-500">This can take up to a minute while the server wakes up.</p>
+          </div>
+        )}
+        <p className="text-center text-sm text-slate-500">
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-[#2B2BB2] hover:underline">Sign in</Link>
+          {" · "}
+          <Link href="/" className="font-medium text-[#2B2BB2] hover:underline">Home</Link>
+        </p>
+      </div>
+    );
+  }
+
+  const known = isApiError(error) && error.code ? REGISTER_ERRORS[error.code] : undefined;
+  const fieldErr = Object.keys(fieldErrors(error, directory ? [...FIELDS, ...CLAIM_SERVER_FIELDS] : FIELDS)).length > 0;
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
@@ -123,11 +201,7 @@ export default function RegisterForm() {
 
       {error != null && !fieldErr && (
         <Alert tone="error">
-          {closed
-            ? "Student registration is closed at the moment. Please try again later or contact us."
-            : taken
-              ? "That username or e-mail is already in use. Try another, or sign in if you already have an account."
-              : errorMessage(error)}
+          {known ?? errorMessage(error)}
         </Alert>
       )}
 
@@ -166,16 +240,29 @@ export default function RegisterForm() {
         )}
       </div>
 
+      {directory ? (
+        <SchoolClaimFields
+          value={claim}
+          onChange={(d) => {
+            setClaim(d);
+            setClaimErrors({});
+          }}
+          errors={claimErrors}
+        />
+      ) : (
+        <>
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField label="School" name="schoolName" required maxLength={200} list="school-suggestions" autoComplete="off" value={v.schoolName} onChange={(e) => onSchool(e.target.value)} error={errors.schoolName} />
         <TextField label="School location" name="schoolLocation" required maxLength={200} value={v.schoolLocation} onChange={(e) => set("schoolLocation")(e.target.value)} error={errors.schoolLocation} hint="District or city" />
       </div>
-      <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
       <datalist id="school-suggestions">
         {schools.map((s) => (
           <option key={s.id} value={s.name}>{s.location}</option>
         ))}
       </datalist>
+        </>
+      )}
+      <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
 
       <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
 

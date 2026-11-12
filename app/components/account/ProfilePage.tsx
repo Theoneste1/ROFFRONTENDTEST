@@ -10,7 +10,9 @@
  * - `PATCH /auth/password`, which signs out every session;
  * - `POST /auth/logout-all`;
  * - notification e-mail preferences and, for mentors and admins, per-type
- *   switches (NotificationPreferences.tsx).
+ *   switches (NotificationPreferences.tsx);
+ * - students, on a backend advertising `schoolAffiliations`: their school and its
+ *   verification, and asking for another school (SchoolAffiliationCard.tsx).
  */
 import { useState, type FormEvent, type ReactNode } from "react";
 import { KeyRound, LogOut, UserRound } from "lucide-react";
@@ -27,6 +29,7 @@ import { Button, PasswordField, TextField } from "@/app/components/ui/form";
 import { PageFrame } from "@/app/components/ui/PageFrame";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import NotificationPreferences from "./NotificationPreferences";
+import SchoolAffiliationCard from "./SchoolAffiliationCard";
 import { Section } from "./Section";
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
@@ -73,6 +76,7 @@ export default function ProfilePage() {
 
         <div className="xl:col-span-2 space-y-6 min-w-0">
           <DetailsForm user={user} />
+          {user.role === "STUDENT" && <SchoolAffiliationCard />}
           <PasswordForm />
           <SessionsCard />
           <NotificationPreferences role={user.role} />
