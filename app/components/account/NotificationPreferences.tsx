@@ -19,6 +19,7 @@ import {
   useUpdateNotificationPreferences,
 } from "@/lib/queries/community";
 import { errorMessage } from "@/lib/api/errors";
+import { hasNotificationTypeSettings } from "@/lib/auth/roles";
 import { Alert, ErrorState, Spinner } from "@/app/components/ui/feedback";
 import { Button } from "@/app/components/ui/form";
 import { CATEGORY_META } from "@/app/components/notifications/notificationUi";
@@ -54,7 +55,8 @@ export default function NotificationPreferences({ role }: { role: Role }) {
   return (
     <>
       <EmailPreferences />
-      {role !== "STUDENT" && <TypeSettings />}
+      {/* The backend serves per-type switches to coaches and administrators only (others get 403). */}
+      {hasNotificationTypeSettings(role) && <TypeSettings />}
     </>
   );
 }

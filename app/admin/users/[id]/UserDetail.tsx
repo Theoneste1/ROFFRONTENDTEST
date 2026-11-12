@@ -8,7 +8,7 @@ import { useSession } from "@/lib/auth/session";
 import { useAdminUser, useUserAction, type UserAction } from "@/lib/queries/admin";
 import { isApiError } from "@/lib/api/errors";
 import { formatDateTime, formatNumber } from "@/lib/format";
-import { ROLE_LABEL } from "@/lib/auth/roles";
+import { roleLabel } from "@/lib/auth/roles";
 import type { UpdateUserInput } from "@/lib/api/admin";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { AdminPage, Card, ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, btnSecondary } from "../../components/adminUi";
@@ -64,7 +64,7 @@ export default function UserDetail({ userId }: { userId: string }) {
       title={name}
       description={
         <span className="inline-flex flex-wrap items-center gap-2">
-          @{u.username} · {ROLE_LABEL[u.role]} <AccountStatusBadge user={u} />
+          @{u.username} · {roleLabel(u.role)} <AccountStatusBadge user={u} />
         </span>
       }
       actions={
@@ -85,7 +85,7 @@ export default function UserDetail({ userId }: { userId: string }) {
           <h2 className="text-base font-bold text-gray-900 mb-2">Account</h2>
           <dl>
             <Row label="E-mail">{u.email}</Row>
-            <Row label="Role">{ROLE_LABEL[u.role]}</Row>
+            <Row label="Role">{roleLabel(u.role)}</Row>
             {u.role === "STUDENT" && (
               <>
                 <Row label="Division">{u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}</Row>

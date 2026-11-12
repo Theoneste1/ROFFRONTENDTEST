@@ -6,7 +6,12 @@ import { useQuery } from "@tanstack/react-query";
 import { schoolsApi, USER_RULES, type CreateUserInput, type InviteUserInput, type UpdateUserInput } from "@/lib/api/admin";
 import { PASSWORD_RULE } from "@/lib/api/auth";
 import { errorMessage, fieldErrors } from "@/lib/api/errors";
-import type { AdminUser, GradeLevel, Role, SchoolRef } from "@/lib/api/types";
+import type { AdminUser, GradeLevel, Permission, Role, SchoolRef } from "@/lib/api/types";
+import { roleLabel } from "@/lib/auth/roles";
+import { assignableRoles } from "@/lib/auth/role-rules";
+import { useSession } from "@/lib/auth/session";
+import { hasFeature } from "@/lib/api/capabilities";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Badge, btnPrimary } from "../../components/adminUi";
 
@@ -193,6 +198,8 @@ export function UserForm({
   /** The admin's own account: the backend refuses role changes. */
   lockRole?: boolean;
 }) {
+  const session = useSession();
+  const { detection } = useBackendCapabilities();
   const [f, setF] = useState<FormState>(() => ({
     firstName: initial?.firstName ?? "",
     lastName: initial?.lastName ?? "",
@@ -287,11 +294,19 @@ export function UserForm({
     }
   }
 
-  const roleOptions = [
-    { label: "Student", value: "STUDENT" },
-    { label: "Coach", value: "MENTOR" },
-    { label: "Administrator", value: "ADMIN" },
-  ];
+  // Roles that can be given here: Student, Coach and Administrator on every backend;
+  // Teacher / Head Coach only when the backend advertises it (GET /api/v1) and the
+  // caller holds the matching permission (lib/auth/role-rules.ts). An account that
+  // already holds another role keeps it listed, so the form shows the real role and
+  // saves no change unless another one is chosen.
+  const roleOptions: { label: string; value: string }[] = assignableRoles({
+    teacherAccounts: hasFeature(detection, "teacherAccounts"),
+    headCoachAccounts: hasFeature(detection, "headCoachAccounts"),
+    can: (p) => session.can(p as Permission),
+  }).map((r) => ({ label: roleLabel(r), value: r }));
+  if (initial?.role && !roleOptions.some((o) => o.value === initial.role)) {
+    roleOptions.push({ label: roleLabel(initial.role), value: initial.role });
+  }
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>

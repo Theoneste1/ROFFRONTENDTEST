@@ -1,0 +1,60 @@
+/**
+ * Portal menus and the permission each item needs (no imports; unit-tested in
+ * tests/roles.test.mjs).
+ *
+ * Every permission named here is in the list `GET /me/permissions` returns
+ * for that portal's roles today — including the frozen ADMIN / MENTOR lists
+ * of the backend (the newer administrative names such as `schools.manage` are
+ * NOT in the ADMIN list, so they are not used here). A Super Administrator's
+ * list contains every administrative permission; a DENY override removes the
+ * permission from the list, which hides its menu item.
+ *
+ * Hiding is navigation only: the API refuses everything not permitted.
+ */
+
+export interface NavItem {
+  href: string;
+  label: string;
+  /** The permission the area's main API calls need; undefined = everyone in the portal. */
+  permission?: string;
+}
+
+export const ADMIN_NAV: readonly NavItem[] = [
+  { href: "/admin/dashboard", label: "Menu" },
+  { href: "/admin/users", label: "Users", permission: "users.manage" },
+  { href: "/admin/mentors", label: "Coaches", permission: "mentorAssignments.manage" },
+  { href: "/admin/students", label: "Students", permission: "users.manage" },
+  { href: "/admin/divisions", label: "Divisions", permission: "divisions.manage" },
+  { href: "/admin/courses", label: "Courses", permission: "courses.manage" },
+  { href: "/admin/assignments", label: "Assignments", permission: "assignments.publish" },
+  { href: "/admin/results", label: "Results", permission: "results.publish" },
+  { href: "/admin/reports", label: "Reports", permission: "reports.export" },
+  { href: "/admin/audit-log", label: "Audit Log", permission: "audit.view" },
+  { href: "/admin/moderation", label: "Moderation", permission: "discussions.moderate" },
+  // Contact messages are served to ADMIN and SUPER_ADMIN by role, not by a permission.
+  { href: "/admin/messages", label: "Messages" },
+];
+
+/** The administrators' "Settings" link (platform settings). */
+export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
+
+export const MENTOR_NAV: readonly NavItem[] = [
+  { href: "/mentor/dashboard", label: "Dashboard" },
+  { href: "/mentor/courses", label: "Courses", permission: "resources.manage" },
+  { href: "/mentor/assignments", label: "Assignments", permission: "assignments.prepare" },
+  { href: "/mentor/reviews", label: "Reviews", permission: "reviews.grade" },
+];
+
+/**
+ * Whether an item is shown. `permissions` null means "not known yet" (still
+ * loading, or the request failed): the item is shown rather than hiding the
+ * whole menu — the API still refuses anything not permitted.
+ */
+export function canSeeNavItem(item: Pick<NavItem, "permission">, permissions: ReadonlySet<string> | null): boolean {
+  if (!item.permission || permissions === null) return true;
+  return permissions.has(item.permission);
+}
+
+export function visibleNav(items: readonly NavItem[], permissions: ReadonlySet<string> | null): NavItem[] {
+  return items.filter((item) => canSeeNavItem(item, permissions));
+}

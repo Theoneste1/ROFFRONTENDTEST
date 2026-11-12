@@ -39,6 +39,11 @@ interface SessionValue {
   /** True after the user signed out themselves (sign out, sign out everywhere): go to plain /login. */
   signedOutByUser: boolean;
   permissions: ReadonlySet<Permission>;
+  /**
+   * The permissions once `GET /me/permissions` has answered; null while it is
+   * loading or if it failed (menus then show their items — the API enforces).
+   */
+  knownPermissions: ReadonlySet<Permission> | null;
   can: (permission: Permission) => boolean;
   login: (username: string, password: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
@@ -188,6 +193,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionValue>(() => {
     const user = signedIn ? (meQuery.data ?? null) : null;
     const permissions = new Set<Permission>(signedIn ? (permissionsQuery.data?.permissions ?? []) : []);
+    const knownPermissions = signedIn && permissionsQuery.data ? permissions : null;
 
     let status: SessionStatus;
     let error: unknown = null;
@@ -208,6 +214,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       role: user?.role ?? null,
       signedOutByUser,
       permissions,
+      knownPermissions,
       can: (p) => permissions.has(p),
       login,
       logout,

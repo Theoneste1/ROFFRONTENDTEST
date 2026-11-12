@@ -6,6 +6,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MailPlus, Upload, UserPlus } from "lucide-react";
 import type { CreateUserInput, InviteUserInput, UserFilters } from "@/lib/api/admin";
 import type { Role } from "@/lib/api/types";
+import { roleLabel } from "@/lib/auth/roles";
+import { roleFilterTabs } from "@/lib/auth/role-rules";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { useAdminDivisions, useAdminUsers, useCreateUser } from "@/lib/queries/admin";
 import { formatDate } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
@@ -13,13 +16,6 @@ import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, Modal, Notice, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
 import { AccountStatusBadge, UserForm } from "./userUi";
 import ImportUsersDialog from "./ImportUsersDialog";
-
-const ROLE_TABS: { label: string; value: "" | Role }[] = [
-  { label: "All", value: "" },
-  { label: "Students", value: "STUDENT" },
-  { label: "Coaches", value: "MENTOR" },
-  { label: "Admins", value: "ADMIN" },
-];
 
 /** URL value → backend flags. */
 const STATUS_FILTERS: Record<string, { label: string; flags: Partial<UserFilters> }> = {
@@ -36,7 +32,13 @@ export default function UsersTableClient() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const role = (params.get("role") ?? "") as "" | Role;
+  // Role tabs follow the backend: the newer roles only on a backend that lists them
+  // (GET /api/v1 capabilities). A role in the URL that is not offered is ignored, so a
+  // production backend never receives a filter value it would reject.
+  const { detection } = useBackendCapabilities();
+  const roleTabs = roleFilterTabs(detection?.state === "NEW" ? detection.roles : null);
+  const requestedRole = (params.get("role") ?? "") as "" | Role;
+  const role = roleTabs.some((t) => t.value === requestedRole) ? requestedRole : "";
   const status = STATUS_FILTERS[params.get("status") ?? ""] ? (params.get("status") ?? "") : "";
   const divisionId = params.get("divisionId") ?? "";
   const search = params.get("q") ?? "";
@@ -95,7 +97,7 @@ export default function UsersTableClient() {
       {/* Controls Bar: Search & Pill Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <SearchInput value={search} onChange={(v) => setParam("q", v)} placeholder="Search name, username or e-mail…" label="Search users" />
-        <FilterPills label="Role" options={ROLE_TABS} value={role} onChange={(v) => setParam("role", v)} />
+        <FilterPills label="Role" options={roleTabs} value={role} onChange={(v) => setParam("role", v)} />
         <SelectFilter label="Status" value={status} onChange={(v) => setParam("status", v)} options={Object.entries(STATUS_FILTERS).map(([value, s]) => ({ value, label: s.label }))} />
         <SelectFilter
           label="Division"
@@ -143,7 +145,7 @@ export default function UsersTableClient() {
                     <span className="block text-[11px] font-normal text-gray-400">@{u.username}</span>
                   </td>
                   <td className={`${td} text-gray-500 font-medium`}>{u.email}</td>
-                  <td className={`${td} text-gray-600 font-medium`}>{u.role === "ADMIN" ? "Admin" : u.role === "MENTOR" ? "Coach" : "Student"}</td>
+                  <td className={`${td} text-gray-600 font-medium`}>{roleLabel(u.role)}</td>
                   <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>
                     {u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}
                   </td>

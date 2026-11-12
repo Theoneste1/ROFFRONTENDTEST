@@ -10,7 +10,7 @@ import SignOutButton from "./SignOutButton";
  * Sign Out. Settings opens the user's profile for students and mentors, and
  * the platform settings for administrators (their profile is in the navbar).
  */
-export default function SidebarUtilities({ isOpen, settingsHref }: { isOpen: boolean; settingsHref: string }) {
+export default function SidebarUtilities({ isOpen, settingsHref }: { isOpen: boolean; settingsHref?: string }) {
   const pathname = usePathname();
   const item = (active: boolean) =>
     `flex items-center gap-3 w-full py-2.5 rounded-lg transition-all text-sm ${isOpen ? "px-4" : "justify-center px-0"} ${
@@ -24,10 +24,13 @@ export default function SidebarUtilities({ isOpen, settingsHref }: { isOpen: boo
         {isOpen && <span className="whitespace-nowrap">Help</span>}
       </Link>
 
-      <Link href={settingsHref} title="Settings" className={item(pathname.startsWith(settingsHref))}>
-        <Settings className="h-4 w-4 flex-shrink-0" />
-        {isOpen && <span className="whitespace-nowrap">Settings</span>}
-      </Link>
+      {/* No href: the user may not open the settings (e.g. platform settings without settings.manage). */}
+      {settingsHref && (
+        <Link href={settingsHref} title="Settings" className={item(pathname.startsWith(settingsHref))}>
+          <Settings className="h-4 w-4 flex-shrink-0" />
+          {isOpen && <span className="whitespace-nowrap">Settings</span>}
+        </Link>
+      )}
 
       <SignOutButton isOpen={isOpen} />
     </div>

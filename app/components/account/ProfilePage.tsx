@@ -15,7 +15,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { KeyRound, LogOut, UserRound } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
-import { ROLE_LABEL } from "@/lib/auth/roles";
+import { roleLabel } from "@/lib/auth/roles";
 import { clearLoginNotice, setLoginNotice } from "@/lib/auth/notice";
 import { useChangePassword, useUpdateMe } from "@/lib/queries/account";
 import { PASSWORD_RULE } from "@/lib/api/auth";
@@ -52,7 +52,7 @@ export default function ProfilePage() {
               {(user.firstName || user.username).charAt(0).toUpperCase()}
             </div>
             <p className="mt-3 text-lg font-bold text-gray-900">{fullName}</p>
-            <p className="text-sm text-gray-500">{ROLE_LABEL[user.role]}</p>
+            <p className="text-sm text-gray-500">{roleLabel(user.role)}</p>
             <dl className="mt-6 w-full grid grid-cols-1 gap-4 text-left">
               <Detail label="Username">{user.username}</Detail>
               <Detail label="E-mail">{user.email}</Detail>

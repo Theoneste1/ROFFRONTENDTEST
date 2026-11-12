@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutGrid,
   Users,
@@ -18,13 +19,37 @@ import {
   Inbox
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
+import { useSession } from "@/lib/auth/session";
+import { ADMIN_NAV, ADMIN_SETTINGS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
 
 interface SidebarProps {
   isOpen: boolean;
 }
 
+const ICONS: Record<string, LucideIcon> = {
+  "/admin/dashboard": LayoutGrid,
+  "/admin/users": Users,
+  "/admin/mentors": GraduationCap,
+  "/admin/students": UserCircle,
+  "/admin/divisions": FolderTree,
+  "/admin/courses": BookOpen,
+  "/admin/assignments": FileText,
+  "/admin/results": Award,
+  "/admin/reports": BarChart3,
+  "/admin/audit-log": ScrollText,
+  "/admin/moderation": ShieldAlert,
+  "/admin/messages": Inbox,
+};
+
+/**
+ * The administrator portal menu (Administrators and Super Administrators).
+ * Items follow `GET /me/permissions` (lib/auth/navigation.ts): an item whose
+ * permission the user does not hold — e.g. removed by a Super Admin's DENY
+ * override — is hidden. Navigation only; the API enforces every permission.
+ */
 export default function Sidebar({ isOpen }: SidebarProps) {
   const pathname = usePathname();
+  const { knownPermissions } = useSession();
 
   // Function to check if link is active
   const isActive = (path: string) => {
@@ -46,177 +71,28 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           {isOpen ? "ROF LMS" : "ROF"}
         </div>
 
-        {/* Menu Link */}
-        <Link
-          href="/admin/dashboard"
-          title="Dashboard"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/dashboard")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <LayoutGrid className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Menu</span>}
-        </Link>
-
-        {/* Users Link */}
-        <Link
-          href="/admin/users"
-          title="Users"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/users")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <Users className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Users</span>}
-        </Link>
-
-        {/* Mentors Link */}
-        <Link
-          href="/admin/mentors"
-          title="Coaches"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/mentors")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <GraduationCap className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Coaches</span>}
-        </Link>
-
-        {/* Students Link */}
-        <Link
-          href="/admin/students"
-          title="Students"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/students")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <UserCircle className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Students</span>}
-        </Link>
-
-        {/* Divisions Link */}
-        <Link
-          href="/admin/divisions"
-          title="Divisions"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/divisions")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <FolderTree className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Divisions</span>}
-        </Link>
-
-        {/* Courses Link */}
-        <Link
-          href="/admin/courses"
-          title="Courses"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/courses")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <BookOpen className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Courses</span>}
-        </Link>
-
-        {/* Assignments Link */}
-        <Link
-          href="/admin/assignments"
-          title="Assignments"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/assignments")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <FileText className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Assignments</span>}
-        </Link>
-
-        {/* Results Link */}
-        <Link
-          href="/admin/results"
-          title="Results"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/results")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <Award className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Results</span>}
-        </Link>
-
-        {/* Reports Link */}
-        <Link
-          href="/admin/reports"
-          title="Reports"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/reports")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <BarChart3 className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Reports</span>}
-        </Link>
-
-        {/* Audit Log Link */}
-        <Link
-          href="/admin/audit-log"
-          title="Audit Log"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/audit-log")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <ScrollText className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Audit Log</span>}
-        </Link>
-
-        {/* Moderation Link */}
-        <Link
-          href="/admin/moderation"
-          title="Moderation"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/moderation")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <ShieldAlert className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Moderation</span>}
-        </Link>
-
-        {/* Contact messages Link */}
-        <Link
-          href="/admin/messages"
-          title="Messages"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/admin/messages")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <Inbox className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Messages</span>}
-        </Link>
+        {visibleNav(ADMIN_NAV, knownPermissions).map((item) => {
+          const Icon = ICONS[item.href] ?? LayoutGrid;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.href === "/admin/dashboard" ? "Dashboard" : item.label}
+              className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
+                } ${isActive(item.href)
+                  ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
+                  : "hover:bg-white/5 text-slate-400 hover:text-white"
+                }`}
+            >
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              {isOpen && <span className="whitespace-nowrap">{item.label}</span>}
+            </Link>
+          );
+        })}
       </div>
 
       {/* BOTTOM UTILITY LINKS */}
-      <SidebarUtilities isOpen={isOpen} settingsHref="/admin/settings" />
+      <SidebarUtilities isOpen={isOpen} settingsHref={canSeeNavItem(ADMIN_SETTINGS, knownPermissions) ? ADMIN_SETTINGS.href : undefined} />
     </aside>
   );
 }
