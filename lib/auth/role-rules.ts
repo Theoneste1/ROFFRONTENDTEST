@@ -8,10 +8,16 @@
  * other value, which is treated as an unknown role (never a crash, never a
  * redirect loop).
  *
- * Portals: students, coaches and administrators each have one. A Super
- * Administrator uses the administrator portal (the backend grants it every
- * administrator permission). Teachers and Head Coaches have no portal on this
- * site yet: they, and any unknown role, see the "no access configured" page.
+ * Portals:
+ * - students, coaches and administrators each have one;
+ * - a Super Administrator uses the administrator portal (the backend grants it
+ *   every administrator permission);
+ * - a Teacher has the teacher portal (/teacher: the students of the schools an
+ *   Administrator assigned, with the delegations an Administrator granted);
+ * - a Head Coach uses the coach portal: like a coach, they prepare and grade
+ *   only through course × division assignments an Administrator created, and
+ *   the portal adds monitoring of the programmes they head;
+ * - any unknown role sees the "no access configured" page.
  *
  * Hiding by role is navigation only; the backend enforces every permission.
  */
@@ -31,15 +37,15 @@ export const ROLE_LABEL: Readonly<Record<KnownRole, string>> = {
 /** The page for a signed-in account whose role has no portal on this site. */
 export const NO_ACCESS_PATH = "/no-access";
 
-export type PortalPrefix = "/student" | "/mentor" | "/admin";
+export type PortalPrefix = "/student" | "/teacher" | "/mentor" | "/admin";
 
-const PORTAL: Readonly<Record<KnownRole, PortalPrefix | null>> = {
+const PORTAL: Readonly<Record<KnownRole, PortalPrefix>> = {
   STUDENT: "/student",
+  TEACHER: "/teacher",
   MENTOR: "/mentor",
+  HEAD_COACH: "/mentor",
   ADMIN: "/admin",
   SUPER_ADMIN: "/admin",
-  TEACHER: null,
-  HEAD_COACH: null,
 };
 
 export function isKnownRole(role: unknown): role is KnownRole {

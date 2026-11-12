@@ -8,7 +8,8 @@ import {
     LayoutGrid,
     BookOpen,
     FileText,
-    ClipboardCheck
+    ClipboardCheck,
+    Network
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import { useSession } from "@/lib/auth/session";
@@ -23,6 +24,7 @@ const ICONS: Record<string, LucideIcon> = {
     "/mentor/courses": BookOpen,
     "/mentor/assignments": FileText,
     "/mentor/reviews": ClipboardCheck,
+    "/mentor/programme": Network,
 };
 
 /**

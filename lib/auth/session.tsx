@@ -44,6 +44,11 @@ interface SessionValue {
    * loading or if it failed (menus then show their items — the API enforces).
    */
   knownPermissions: ReadonlySet<Permission> | null;
+  /**
+   * Whether `GET /me/permissions` has answered: pages whose content depends on
+   * a permission wait for "ready" instead of briefly showing "not permitted".
+   */
+  permissionsStatus: "loading" | "ready" | "error";
   can: (permission: Permission) => boolean;
   login: (username: string, password: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
@@ -215,6 +220,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signedOutByUser,
       permissions,
       knownPermissions,
+      permissionsStatus: knownPermissions ? "ready" : signedIn && permissionsQuery.isError ? "error" : "loading",
       can: (p) => permissions.has(p),
       login,
       logout,
@@ -223,7 +229,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       error,
       retry,
     };
-  }, [phase, signedIn, signedOutByUser, meQuery.data, meQuery.isError, meQuery.error, permissionsQuery.data, login, logout, logoutEverywhere, endSession, retry]);
+  }, [phase, signedIn, signedOutByUser, meQuery.data, meQuery.isError, meQuery.error, permissionsQuery.data, permissionsQuery.isError, login, logout, logoutEverywhere, endSession, retry]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

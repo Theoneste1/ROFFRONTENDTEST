@@ -38,11 +38,23 @@ export const ADMIN_NAV: readonly NavItem[] = [
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
 
+/**
+ * The coach portal (coaches and Head Coaches). Courses need only courses.view:
+ * a Head Coach reads resources (resource management stays behind
+ * resources.manage inside the page). Programme is the Head Coach's monitoring
+ * of the programmes they head (coaches.monitor: Head Coaches, not coaches).
+ */
 export const MENTOR_NAV: readonly NavItem[] = [
   { href: "/mentor/dashboard", label: "Dashboard" },
-  { href: "/mentor/courses", label: "Courses", permission: "resources.manage" },
+  { href: "/mentor/courses", label: "Courses", permission: "courses.view" },
   { href: "/mentor/assignments", label: "Assignments", permission: "assignments.prepare" },
   { href: "/mentor/reviews", label: "Reviews", permission: "reviews.grade" },
+  { href: "/mentor/programme", label: "Programme", permission: "coaches.monitor" },
+];
+
+/** The teacher portal: the students of the teacher's assigned schools (students.viewScoped, a Teacher default). */
+export const TEACHER_NAV: readonly NavItem[] = [
+  { href: "/teacher/dashboard", label: "My students", permission: "students.viewScoped" },
 ];
 
 /**
