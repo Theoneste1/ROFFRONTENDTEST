@@ -11,7 +11,7 @@ import type { StudentAssignment, Submission, SubmissionHistory } from '@/lib/api
 import { SUBMISSION_UPLOAD, submissionsApi } from '@/lib/api/assessment';
 import { useSubmitAssignment } from '@/lib/queries/assessment';
 import { errorMessage, isApiError } from '@/lib/api/errors';
-import { formatDateTime, formatFileSize } from '@/lib/format';
+import { formatDateTime, formatFileSize, hasAcceptedExtension } from '@/lib/format';
 import { Alert, Spinner } from '@/app/components/ui/feedback';
 import FileButton from '@/app/components/ui/FileButton';
 import { StatusBadge } from '../../../components/studentUi';
@@ -132,6 +132,10 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
     setFileError(null);
     const next = [...files];
     for (const f of Array.from(list)) {
+      if (!hasAcceptedExtension(f.name, SUBMISSION_UPLOAD.accept)) {
+        setFileError(`"${f.name}" is not an accepted file type (PDF, images, Word, ZIP or plain text).`);
+        continue;
+      }
       if (f.size > SUBMISSION_UPLOAD.maxFileBytes) {
         setFileError(`"${f.name}" is larger than 20 MB.`);
         continue;

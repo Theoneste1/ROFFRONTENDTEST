@@ -19,6 +19,11 @@ export const queryKeys = {
     permissions: () => [...queryKeys.me.all, "permissions"] as const,
   },
   support: ["support"] as const,
+  /** Backend-wide information (`GET /api/v1`), the same for every user. */
+  backend: {
+    all: ["backend"] as const,
+    capabilities: () => [...queryKeys.backend.all, "capabilities"] as const,
+  },
 
   courses: {
     all: ["courses"] as const,

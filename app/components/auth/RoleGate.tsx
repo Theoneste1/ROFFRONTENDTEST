@@ -32,7 +32,7 @@ export default function RoleGate({ role, children }: { role: Role; children: Rea
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#e2e8f0] p-4">
         <div className="max-w-md w-full">
-          <ErrorState error={null} title="Couldn't load your account" onRetry={session.retry} />
+          <ErrorState error={session.error} title="Couldn't load your account" onRetry={session.retry} />
         </div>
       </div>
     );

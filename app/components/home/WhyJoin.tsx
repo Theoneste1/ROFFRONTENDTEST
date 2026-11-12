@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "@/app/components/ui/Image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { AUDIENCES } from "@/lib/site/content";

@@ -45,6 +45,7 @@ APP_URL=http://localhost:3001
 | `npm run build` / `npm start` | Production build / server on port 3001 |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript, no emit |
+| `npm test` | Unit tests (Node test runner, `tests/`) |
 
 ## Code layout
 
@@ -75,4 +76,4 @@ lib/
 - **Branch on `error.code`, never on `message`.**
 - **Hiding UI by role or permission is a courtesy.** The backend enforces every rule.
 
-Project documents: `FRONTEND_AUDIT.md`, `BACKEND_AUDIT.md`, `INTEGRATION_MAPPING.md`, `IMPLEMENTATION_ROADMAP.md`, `INTEGRATION_PROGRESS.md`, `PHASE5_ADMIN_PLAN.md`, `PHASE6_PLAN.md`.
+Project documents: `FINALIZATION-REPORT.md` (final audit and owner checklist), `DEPLOYMENT.md` (Netlify), `INTEGRATION.md` (how this app and the backend work together), `FRONTEND_AUDIT.md`, `BACKEND_AUDIT.md`, `INTEGRATION_MAPPING.md`, `IMPLEMENTATION_ROADMAP.md`, `INTEGRATION_PROGRESS.md`, `PHASE5_ADMIN_PLAN.md`, `PHASE6_PLAN.md`.

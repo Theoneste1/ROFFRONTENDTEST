@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "@/app/components/ui/Image";
 import Link from "next/link";
 import { GraduationCap, Presentation, Trophy } from "lucide-react";
 import Reveal from "./Reveal";

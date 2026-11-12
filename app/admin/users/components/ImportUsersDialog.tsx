@@ -1,15 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FileUp } from "lucide-react";
 import { USER_RULES } from "@/lib/api/admin";
-import { errorMessage } from "@/lib/api/errors";
+import { saveFile } from "@/lib/api/client";
+import { IMPORT_HEADER, IMPORT_TEMPLATE, importHeaderProblems } from "@/lib/import-header";
+import { errorMessage, isApiError } from "@/lib/api/errors";
 import type { UserImportResult } from "@/lib/api/types";
 import { useImportUsers } from "@/lib/queries/admin";
 import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Modal, btnPrimary, btnSecondary } from "../../components/adminUi";
 
-const HEADER = "firstName,lastName,email,role,gradeLevel,schoolName,schoolLocation,homeLocation,username";
+function apiHeaderProblems(e: unknown): string | null {
+  if (!isApiError(e) || e.code !== "INVALID_CSV_HEADER") return null;
+  const d = (e.details ?? {}) as { missing?: string[]; unknown?: string[] };
+  const parts = ["The header row is not valid."];
+  if (d.missing?.length) parts.push(`Missing columns: ${d.missing.join(", ")}.`);
+  if (d.unknown?.length) parts.push(`Unknown columns: ${d.unknown.map((u) => u || "(empty)").join(", ")}.`);
+  return parts.join(" ");
+}
 
 /**
  * Bulk invitation from a CSV file (`POST /admin/users/import`). The file is
@@ -23,11 +32,27 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
   const importUsers = useImportUsers();
   const busy = importUsers.isPending;
 
-  function pick(f: File | null) {
+  // Only the latest pick may update the dialog (reading an earlier, slower file can finish later).
+  const latestPick = useRef(0);
+
+  async function pick(f: File | null) {
+    const pickId = ++latestPick.current;
     setChecked(null);
     setError(null);
-    if (f && !/\.csv$/i.test(f.name)) return setError("Choose a .csv file.");
-    if (f && f.size > USER_RULES.importMaxBytes) return setError("The file is larger than 1 MB.");
+    setFile(null);
+    if (!f) return;
+    if (!/\.csv$/i.test(f.name)) return setError("Choose a .csv file.");
+    if (f.size > USER_RULES.importMaxBytes) return setError("The file is larger than 1 MB.");
+    let text: string;
+    try {
+      text = await f.text();
+    } catch {
+      if (pickId === latestPick.current) setError(`"${f.name}" could not be read. Choose the file again.`);
+      return;
+    }
+    if (pickId !== latestPick.current) return;
+    const problem = importHeaderProblems(text.split(/\r?\n/, 1)[0] ?? "");
+    if (problem) return setError(`"${f.name}": ${problem}`);
     setFile(f);
   }
 
@@ -42,7 +67,7 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
         onClose();
       }
     } catch (e) {
-      setError(errorMessage(e, "The file could not be processed."));
+      setError(apiHeaderProblems(e) ?? errorMessage(e, "The file could not be processed."));
     }
   }
 
@@ -52,11 +77,26 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
         <p className="text-xs text-gray-500">
           UTF-8 CSV, up to 1 MB and {USER_RULES.importMaxRows.toLocaleString()} rows. Every valid row receives an invitation e-mail. Header (first three columns required):
         </p>
-        <code className="block text-[11px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 break-all">{HEADER}</code>
+        <code className="block text-[11px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 break-all">{IMPORT_HEADER}</code>
+        <p className="text-xs text-gray-500">
+          role: STUDENT (default), MENTOR (coach) or ADMIN · gradeLevel S1–S6, required for students · username: lowercase, generated when empty. An
+          exported students list cannot be imported as it is.{" "}
+          <button
+            type="button"
+            onClick={() => saveFile({ blob: new Blob([IMPORT_TEMPLATE], { type: "text/csv" }), filename: "users-import-template.csv" })}
+            className="font-medium text-indigo-600 hover:underline"
+          >
+            Download template
+          </button>
+        </p>
         <label className="flex items-center gap-3 border border-dashed border-gray-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-50">
           <FileUp className="h-5 w-5 text-indigo-600 shrink-0" aria-hidden="true" />
           <span className="min-w-0 truncate text-xs">{file ? file.name : "Choose a CSV file…"}</span>
-          <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => pick(e.target.files?.[0] ?? null)} />
+          <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(e) => {
+              void pick(e.target.files?.[0] ?? null);
+              e.target.value = ""; // choosing the same file again (after fixing it) fires a new change
+            }}
+          />
         </label>
 
         {checked && (
