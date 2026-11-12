@@ -3,14 +3,17 @@
 import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/session";
-import { portalHome } from "@/lib/auth/roles";
+import { portalHome, sharesPortal } from "@/lib/auth/roles";
 import type { Role } from "@/lib/api/types";
 import { ErrorState, FullPageLoader } from "@/app/components/ui/feedback";
 
 /**
- * Renders a portal only for its role.
+ * Renders a portal only for the roles that use it (`role` names the portal:
+ * "ADMIN" also admits a Super Administrator).
  * - Not signed in → /login?next=<current path> (plain /login after the user signed out)
- * - Signed in with another role → that role's own portal
+ * - Signed in with a role of another portal → that role's own portal
+ * - A role without a portal here (Teacher, Head Coach, unknown) → the "no
+ *   access configured" page, which is not gated, so this never loops.
  *
  * This is navigation, not security: the API refuses anything the role may not do.
  */
@@ -18,15 +21,16 @@ export default function RoleGate({ role, children }: { role: Role; children: Rea
   const session = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const allowed = session.status === "authenticated" && sharesPortal(session.role, role);
 
   useEffect(() => {
     if (session.status === "unauthenticated") {
       // The only redirect after a sign-out, so two navigations never race.
       router.replace(session.signedOutByUser ? "/login" : `/login?next=${encodeURIComponent(pathname)}`);
-    } else if (session.status === "authenticated" && session.role !== role) {
-      router.replace(portalHome(session.role!));
+    } else if (session.status === "authenticated" && !allowed) {
+      router.replace(portalHome(session.role));
     }
-  }, [session.status, session.role, session.signedOutByUser, role, pathname, router]);
+  }, [session.status, session.role, session.signedOutByUser, allowed, pathname, router]);
 
   if (session.status === "error") {
     return (
@@ -38,7 +42,7 @@ export default function RoleGate({ role, children }: { role: Role; children: Rea
     );
   }
 
-  if (session.status !== "authenticated" || session.role !== role) {
+  if (!allowed) {
     return <FullPageLoader label={session.status === "unauthenticated" ? "Redirecting to sign in…" : "Loading…"} />;
   }
 

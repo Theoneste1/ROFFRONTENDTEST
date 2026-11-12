@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { User } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
-import { ROLE_LABEL, portalPath } from "@/lib/auth/roles";
+import { portalPath, roleLabel } from "@/lib/auth/roles";
 
 /** The signed-in user in a portal navbar (same look as the original block); opens "My profile". */
 export default function NavbarUser({ avatarClassName = "bg-blue-600" }: { avatarClassName?: string }) {
@@ -15,7 +15,7 @@ export default function NavbarUser({ avatarClassName = "bg-blue-600" }: { avatar
     <Link
       href={portalPath(user.role, "profile")}
       className="flex items-center gap-2 md:gap-3 rounded-xl p-1 -m-1 hover:bg-gray-200/50 transition-colors"
-      title={`${fullName} · ${ROLE_LABEL[user.role]} — My profile`}
+      title={`${fullName} · ${roleLabel(user.role)} — My profile`}
       aria-label={`My profile (${fullName})`}
     >
       <div className={`h-8 w-8 md:h-10 md:w-10 rounded-full ${avatarClassName} flex items-center justify-center`} aria-hidden="true">
@@ -28,7 +28,7 @@ export default function NavbarUser({ avatarClassName = "bg-blue-600" }: { avatar
 
       <div className="hidden lg:flex flex-col">
         <span className="text-sm font-semibold text-gray-800">{fullName}</span>
-        <span className="text-xs text-gray-500">{user.email || ROLE_LABEL[user.role]}</span>
+        <span className="text-xs text-gray-500">{user.email || roleLabel(user.role)}</span>
       </div>
     </Link>
   );

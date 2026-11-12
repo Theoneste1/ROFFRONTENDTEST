@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MailPlus, Upload, UserPlus } from "lucide-react";
 import type { CreateUserInput, InviteUserInput, UserFilters } from "@/lib/api/admin";
 import type { Role } from "@/lib/api/types";
+import { roleLabel } from "@/lib/auth/roles";
 import { useAdminDivisions, useAdminUsers, useCreateUser } from "@/lib/queries/admin";
 import { formatDate } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
@@ -143,7 +144,7 @@ export default function UsersTableClient() {
                     <span className="block text-[11px] font-normal text-gray-400">@{u.username}</span>
                   </td>
                   <td className={`${td} text-gray-500 font-medium`}>{u.email}</td>
-                  <td className={`${td} text-gray-600 font-medium`}>{u.role === "ADMIN" ? "Admin" : u.role === "MENTOR" ? "Coach" : "Student"}</td>
+                  <td className={`${td} text-gray-600 font-medium`}>{roleLabel(u.role)}</td>
                   <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>
                     {u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}
                   </td>

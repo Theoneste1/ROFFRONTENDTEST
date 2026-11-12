@@ -8,7 +8,12 @@
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
-export type Role = "STUDENT" | "MENTOR" | "ADMIN";
+/**
+ * The backend's six user types (MENTOR is shown as "Coach"). The production
+ * backend still returns only STUDENT, MENTOR and ADMIN; code that branches on
+ * a role must also cope with an unknown value (see lib/auth/role-rules.ts).
+ */
+export type Role = "STUDENT" | "TEACHER" | "MENTOR" | "HEAD_COACH" | "ADMIN" | "SUPER_ADMIN";
 export type DivisionCode = "JUNIOR" | "SENIOR";
 export type GradeLevel = "S1" | "S2" | "S3" | "S4" | "S5" | "S6";
 
@@ -83,9 +88,27 @@ export interface CurrentUser {
   createdAt: string;
 }
 
+/**
+ * `GET /me/permissions`. Production returns `{ role, permissions }`; the next
+ * backend adds `roleLabel`, `scopes` and `overrides` (optional here, so both work).
+ * For STUDENT, MENTOR and ADMIN the backend keeps the original permission list,
+ * which does not list newer administrative permissions — do not rely on it for those.
+ */
 export interface MePermissions {
   role: Role;
   permissions: Permission[];
+  roleLabel?: string | null;
+  scopes?: {
+    courseDivisions?: { courseId: string; divisionId: string }[];
+    programmes?: string[];
+  };
+  overrides?: {
+    permission: string;
+    effect: "GRANT" | "DENY";
+    courseId: string | null;
+    divisionId: string | null;
+    expiresAt: string | null;
+  }[];
 }
 
 // ─── Auth ───────────────────────────────────────────────────────────────────
@@ -724,7 +747,7 @@ export interface ReportsOverview {
     studentsAwaitingApproval: number;
     failedEmails: number;
   };
-  activeUsers: Record<Role, number>;
+  activeUsers: Partial<Record<Role, number>>;
   assignments: Partial<Record<AssignmentStatus, number>>;
   submissions: Partial<Record<SubmissionStatus, number>>;
   studentsByDivision: { id: string; code: DivisionCode; name: string; students: number }[];

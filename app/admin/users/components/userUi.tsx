@@ -7,6 +7,7 @@ import { schoolsApi, USER_RULES, type CreateUserInput, type InviteUserInput, typ
 import { PASSWORD_RULE } from "@/lib/api/auth";
 import { errorMessage, fieldErrors } from "@/lib/api/errors";
 import type { AdminUser, GradeLevel, Role, SchoolRef } from "@/lib/api/types";
+import { roleLabel } from "@/lib/auth/roles";
 import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Badge, btnPrimary } from "../../components/adminUi";
 
@@ -287,11 +288,17 @@ export function UserForm({
     }
   }
 
+  // Roles that can be given here (the production backend accepts only these). An
+  // account that already holds another role (e.g. Teacher) keeps it listed, so the
+  // form shows the real role and saves no change unless another one is chosen.
   const roleOptions = [
     { label: "Student", value: "STUDENT" },
     { label: "Coach", value: "MENTOR" },
     { label: "Administrator", value: "ADMIN" },
   ];
+  if (initial?.role && !roleOptions.some((o) => o.value === initial.role)) {
+    roleOptions.push({ label: roleLabel(initial.role), value: initial.role });
+  }
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
