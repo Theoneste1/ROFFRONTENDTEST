@@ -14,8 +14,7 @@ import { hasFeature } from "@/lib/api/capabilities";
 import type { DirectorySchoolRecord, SchoolSource } from "@/lib/api/school-directory";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
-import { useDirectorySchools, useSchoolLocations } from "@/lib/queries/school-directory";
-import { queryKeys } from "@/lib/query/keys";
+import { invalidateAfterSchoolChange, useDirectorySchools, useSchoolLocations } from "@/lib/queries/school-directory";
 import { formatNumber } from "@/lib/format";
 import { RWANDA, SOURCE_LABEL, initialListState, isFiltered, listFilters, placeLabel, type ListState } from "@/lib/admin/school-directory";
 import { ErrorState } from "@/app/components/ui/feedback";
@@ -29,7 +28,7 @@ type Dialog = { kind: "create" } | { kind: "edit"; school: DirectorySchoolRecord
 export default function SchoolDirectoryList() {
   const [state, setState] = useState<ListState>(initialListState);
   const [dialog, setDialog] = useState<Dialog>(null);
-  const [notice, setNotice] = useState<{ text: string; href?: string } | null>(null);
+  const [notice, setNotice] = useState<{ text: string; href?: string; warning?: string } | null>(null);
   const qc = useQueryClient();
   const filters = listFilters(state);
   const schools = useDirectorySchools(filters);
@@ -46,7 +45,7 @@ export default function SchoolDirectoryList() {
   const provinces = locations.data ?? [];
   const districts = provinces.find((p) => p.province === state.province)?.districts ?? [];
   const sectors = districts.find((d) => d.district === state.district)?.sectors ?? [];
-  const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.schoolDirectory.all });
+  const refresh = () => invalidateAfterSchoolChange(qc);
 
   return (
     <AdminPage
@@ -75,6 +74,11 @@ export default function SchoolDirectoryList() {
             <Link href={notice.href} className="underline font-medium">
               Open
             </Link>
+          )}
+          {notice.warning && (
+            <span className="block mt-1" data-testid="active-warning">
+              {notice.warning}
+            </span>
           )}
         </Notice>
       )}
@@ -265,7 +269,7 @@ export default function SchoolDirectoryList() {
           onClose={() => setDialog(null)}
           onDone={(r) => {
             setDialog(null);
-            setNotice({ text: !r.changed ? `${r.school.name} was already ${r.school.isActive ? "active" : "inactive"}.` : `${r.school.name} was ${r.school.isActive ? "reactivated" : "deactivated"}.` });
+            setNotice({ text: !r.changed ? `${r.school.name} was already ${r.school.isActive ? "active" : "inactive"}.` : `${r.school.name} was ${r.school.isActive ? "reactivated" : "deactivated"}.`, warning: r.warning });
             void refresh();
           }}
         />

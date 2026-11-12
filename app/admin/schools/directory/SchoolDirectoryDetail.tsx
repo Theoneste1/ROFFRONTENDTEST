@@ -11,8 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { isApiError } from "@/lib/api/errors";
 import type { DirectorySchoolDetail, SchoolClaimStatus } from "@/lib/api/school-directory";
-import { useDirectorySchool, useDirectorySchoolHistory, useDirectorySchoolStudents } from "@/lib/queries/school-directory";
-import { queryKeys } from "@/lib/query/keys";
+import { invalidateAfterSchoolChange, useDirectorySchool, useDirectorySchoolHistory, useDirectorySchoolStudents } from "@/lib/queries/school-directory";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { ACCOMMODATION_LABEL, CLAIM_LABEL, OWNERSHIP_LABEL, RWANDA, SOURCE_LABEL, describeAuditEntry, isUuid, placeLabel } from "@/lib/admin/school-directory";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
@@ -33,7 +32,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
   const school = useDirectorySchool(schoolId, valid);
   const [tab, setTab] = useState<"students" | "history">("students");
   const [dialog, setDialog] = useState<"edit" | "active" | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null);
   const qc = useQueryClient();
   const back = (
     <Link href="/admin/schools" className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800 mb-4">
@@ -59,7 +58,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
     );
 
   const s = school.data;
-  const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.schoolDirectory.all });
+  const refresh = () => invalidateAfterSchoolChange(qc);
   return (
     <AdminPage
       title={s.name}
@@ -76,7 +75,16 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       }
     >
       {back}
-      {notice && <Notice onClose={() => setNotice(null)}>{notice}</Notice>}
+      {notice && (
+        <Notice onClose={() => setNotice(null)}>
+          {notice.text}
+          {notice.warning && (
+            <span className="block mt-1" data-testid="active-warning">
+              {notice.warning}
+            </span>
+          )}
+        </Notice>
+      )}
       {!s.isActive && (
         <Notice tone="info">This school is inactive: it accepts no new registrations, claims, verifications or Teacher assignments. Existing records are kept.</Notice>
       )}
@@ -113,7 +121,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
           onClose={() => setDialog(null)}
           onSaved={(saved) => {
             setDialog(null);
-            setNotice(`${saved.name} was saved.`);
+            setNotice({ text: `${saved.name} was saved.` });
             void refresh();
           }}
         />
@@ -124,7 +132,10 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
           onClose={() => setDialog(null)}
           onDone={(r) => {
             setDialog(null);
-            setNotice(!r.changed ? `The school was already ${r.school.isActive ? "active" : "inactive"}.` : r.school.isActive ? "The school was reactivated." : "The school was deactivated.");
+            setNotice({
+              text: !r.changed ? `The school was already ${r.school.isActive ? "active" : "inactive"}.` : r.school.isActive ? "The school was reactivated." : "The school was deactivated.",
+              warning: r.warning,
+            });
             void refresh();
           }}
         />

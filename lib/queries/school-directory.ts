@@ -5,7 +5,7 @@
  * (lib/admin/school-directory.ts → schoolDirectoryMode): the routes do not exist on the legacy
  * backend and need `schools.manage`.
  */
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, type QueryClient } from "@tanstack/react-query";
 import { schoolDirectoryApi } from "@/lib/api/accounts";
 import { adminSchoolsApi, type DirectoryListFilters } from "@/lib/api/school-directory";
 import { useSession } from "@/lib/auth/session";
@@ -59,4 +59,17 @@ export function useSchoolLocations() {
     queryFn: schoolDirectoryApi.locations,
     staleTime: 60 * 60_000,
   });
+}
+
+/**
+ * After a school is created, edited, deactivated or reactivated: the directory queries and the
+ * students' claim review (its list and candidate schools show school names and active state).
+ * Other account queries are left alone.
+ */
+export function invalidateAfterSchoolChange(qc: QueryClient) {
+  return Promise.all([
+    qc.invalidateQueries({ queryKey: queryKeys.schoolDirectory.all }),
+    qc.invalidateQueries({ queryKey: [...queryKeys.accounts.all, "affiliations"] }),
+    qc.invalidateQueries({ queryKey: [...queryKeys.accounts.all, "candidates"] }),
+  ]);
 }

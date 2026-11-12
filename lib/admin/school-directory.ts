@@ -207,7 +207,9 @@ export function updatePayload(school: DirectorySchoolRecord, f: SchoolForm): Upd
   const out: UpdateSchoolInput = {};
   const country = f.countryCode.trim().toUpperCase();
   const name = cleanSchoolName(f.name);
-  if (name !== school.name) out.name = name;
+  // A field the administrator did not touch is never sent: stored values may keep inner spaces
+  // (the directory sync trims only the ends), so the cleaned form value alone would differ.
+  if (f.name !== school.name && name !== school.name) out.name = name;
   if (country !== school.countryCode) out.countryCode = country;
   const code = f.code.trim();
   if (code && code !== (school.code ?? "")) out.code = code;
@@ -221,11 +223,13 @@ export function updatePayload(school: DirectorySchoolRecord, f: SchoolForm): Upd
   place("district", f.district);
   place("sector", f.sector);
   for (const k of ["cell", "village"] as const) {
+    // Untouched in Rwanda: kept. Moved out of Rwanda: cleared even when untouched.
+    const untouched = rwanda && f[k] === (school[k] ?? "");
     const next = rwanda ? cleanPlace(f[k]) || null : null;
-    if (next !== (school[k] ?? null)) out[k] = next;
+    if (!untouched && next !== (school[k] ?? null)) out[k] = next;
   }
   const location = f.location.trim();
-  if (location && location !== school.location) out.location = location;
+  if (f.location !== (school.location ?? "") && location && location !== school.location) out.location = location;
   if (f.ownership && f.ownership !== school.ownership) out.ownership = f.ownership;
   const accommodation = f.accommodation || null;
   if (accommodation !== (school.accommodation ?? null)) out.accommodation = accommodation;

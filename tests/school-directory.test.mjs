@@ -117,6 +117,23 @@ test("edit payload: only changed fields; moving abroad clears the Rwandan place 
   assert.deepEqual(updatePayload(withCell, { ...formFromSchool(withCell), ownership: "" }), {});
 });
 
+test("edit payload: untouched stored values with inner spaces are never sent (sync trims only the ends)", () => {
+  const stored = school({ name: "GS  Kigali", cell: "Rukiri  I", village: "Agatare   A", location: "Remera,  Gasabo " });
+  const onlyAccommodation = updatePayload(stored, { ...formFromSchool(stored), accommodation: "DAY" });
+  assert.deepEqual(onlyAccommodation, { accommodation: "DAY" });
+  assert.equal(reasonRequired(stored, onlyAccommodation), false, "no reason for an accommodation-only edit of an official school");
+  assert.deepEqual(validateSchoolForm({ ...formFromSchool(stored), accommodation: "DAY" }, stored), {});
+  // A deliberate edit of such a field is still sent, cleaned.
+  assert.deepEqual(updatePayload(stored, { ...formFromSchool(stored), name: "GS Kigali" }), { name: "GS Kigali" });
+  assert.deepEqual(updatePayload(stored, { ...formFromSchool(stored), cell: "Rukiri I" }), { cell: "Rukiri I" });
+  assert.deepEqual(updatePayload(stored, { ...formFromSchool(stored), location: "Remera, Gasabo" }), { location: "Remera, Gasabo" });
+  // Moving out of Rwanda still clears the Rwandan fields, even untouched ones.
+  const abroad = updatePayload(school({ code: null, source: "ADMIN", cell: "Rukiri  I", village: "Agatare   A" }), {
+    ...formFromSchool(school({ code: null, source: "ADMIN", cell: "Rukiri  I", village: "Agatare   A" })), countryCode: "KE", location: "Nairobi",
+  });
+  assert.deepEqual(abroad, { countryCode: "KE", province: null, district: null, sector: null, cell: null, village: null, location: "Nairobi" });
+});
+
 test("reason: required to set/change a code, or the name/country/place of an official-directory school", () => {
   const official = school();
   const admin = school({ source: "ADMIN", code: null });
