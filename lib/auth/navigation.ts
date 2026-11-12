@@ -25,6 +25,7 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/mentors", label: "Coaches", permission: "mentorAssignments.manage" },
   { href: "/admin/students", label: "Students", permission: "users.manage" },
   { href: "/admin/divisions", label: "Divisions", permission: "divisions.manage" },
+  { href: "/admin/academic-years", label: "Academic Years", permission: "academicYears.manage" },
   { href: "/admin/courses", label: "Courses", permission: "courses.manage" },
   { href: "/admin/assignments", label: "Assignments", permission: "assignments.publish" },
   { href: "/admin/results", label: "Results", permission: "results.publish" },
