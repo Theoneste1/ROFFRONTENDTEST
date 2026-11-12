@@ -26,6 +26,16 @@ export const queryKeys = {
     list: () => [...queryKeys.academicYears.all, "list"] as const,
     enrollments: (yearId: string, filters: object) => [...queryKeys.academicYears.all, "enrollments", yearId, filters] as const,
   },
+  /** School directory administration (lib/api/school-directory.ts, `/admin/schools`). */
+  schoolDirectory: {
+    all: ["school-directory"] as const,
+    list: (filters: object) => [...queryKeys.schoolDirectory.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.schoolDirectory.all, "detail", id] as const,
+    students: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "students", id, page] as const,
+    history: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "history", id, page] as const,
+    /** The public province → district → sector list (the same key the claim form uses). */
+    locations: () => ["schools", "locations"] as const,
+  },
   /** Account administration added with the school and role work (lib/api/accounts.ts). */
   accounts: {
     all: ["accounts"] as const,
