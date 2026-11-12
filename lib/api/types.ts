@@ -402,7 +402,8 @@ export interface ResultDetail extends ResultSummary {
     mentor: { firstName: string; lastName: string } | null;
     files: Attachment[];
   };
-  previousVersions: Array<{ score: number; maximumMarks: number; percentage: number; publishedAt: string; supersededAt?: string }>;
+  /** Earlier published versions of a corrected result (backend: score, percentage, publishedAt, withdrawnAt — no maximum). */
+  previousVersions: Array<{ score: number; percentage: number; publishedAt: string; withdrawnAt: string | null }>;
   repliesAllowed: boolean;
 }
 

@@ -10,12 +10,15 @@ import { UploadCloud, AlertCircle, Check, X, FileText, RotateCcw } from 'lucide-
 import type { StudentAssignment, Submission, SubmissionHistory } from '@/lib/api/types';
 import { SUBMISSION_UPLOAD, submissionsApi } from '@/lib/api/assessment';
 import { useSubmitAssignment } from '@/lib/queries/assessment';
-import { errorMessage, isApiError } from '@/lib/api/errors';
+import { errorMessage } from '@/lib/api/errors';
 import { formatDateTime, formatFileSize, hasAcceptedExtension } from '@/lib/format';
 import { Alert, Spinner } from '@/app/components/ui/feedback';
 import FileButton from '@/app/components/ui/FileButton';
 import { StatusBadge } from '../../../components/studentUi';
 import { useNow } from '@/lib/hooks/useNow';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query/keys';
+import { submitErrorMessage, submitErrorStale } from '@/lib/assessment/student-state';
 
 interface Props {
   assignment: StudentAssignment;
@@ -119,6 +122,7 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const submit = useSubmitAssignment();
+  const qc = useQueryClient();
   const now = useNow();
 
   const late = new Date(a.deadline).getTime() < now;
@@ -134,6 +138,10 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
     for (const f of Array.from(list)) {
       if (!hasAcceptedExtension(f.name, SUBMISSION_UPLOAD.accept)) {
         setFileError(`"${f.name}" is not an accepted file type (PDF, images, Word, ZIP or plain text).`);
+        continue;
+      }
+      if (f.size === 0) {
+        setFileError(`"${f.name}" is empty.`);
         continue;
       }
       if (f.size > SUBMISSION_UPLOAD.maxFileBytes) {
@@ -174,13 +182,20 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
           setShowSuccessModal(true);
           setTimeout(() => setShowSuccessModal(false), 2500);
         },
-        onError: () => setShowConfirmModal(false),
+        onError: (err) => {
+          setShowConfirmModal(false);
+          // The answer and files stay in the form, so the student can retry after fixing the problem.
+          // A state refusal means this page is out of date: reload the assignment and submission.
+          if (submitErrorStale(err)) {
+            void qc.invalidateQueries({ queryKey: queryKeys.assignments.all });
+            void qc.invalidateQueries({ queryKey: queryKeys.submissions.all });
+          }
+        },
       },
     );
   }
 
   const submitError = submit.error;
-  const fileTypeError = isApiError(submitError) && (submitError.code === 'FILE_TYPE_NOT_ALLOWED' || submitError.status === 415);
 
   return (
     <>
@@ -190,9 +205,7 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
         <div className="space-y-5">
           {late && a.allowLateSubmission && <Alert tone="info">The deadline has passed. Your work will be accepted but marked as late.</Alert>}
           {submitError != null && (
-            <Alert tone="error">
-              {fileTypeError ? `One of the files isn't an accepted type. Accepted: ${SUBMISSION_UPLOAD.label}.` : errorMessage(submitError)}
-            </Alert>
+            <Alert tone="error">{submitErrorMessage(submitError) ?? errorMessage(submitError, "Your work couldn't be sent. Check your connection and try again — your answer and files are still here.")}</Alert>
           )}
 
           <div>
