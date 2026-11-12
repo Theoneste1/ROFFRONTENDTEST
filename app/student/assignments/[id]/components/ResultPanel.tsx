@@ -94,9 +94,12 @@ export default function ResultPanel({ assignment: a, onAsk }: { assignment: Stud
             {r.previousVersions.map((v, i) => (
               <li key={i} className="flex justify-between gap-2 border-b border-gray-100 pb-2 last:border-0">
                 <span>
-                  {v.score}/{v.maximumMarks} ({v.percentage}%)
+                  {v.score} marks ({v.percentage}%)
                 </span>
-                <span className="text-xs text-gray-400">Published {formatDateTime(v.publishedAt)}</span>
+                <span className="text-xs text-gray-400">
+                  Published {formatDateTime(v.publishedAt)}
+                  {v.withdrawnAt ? ` · withdrawn ${formatDateTime(v.withdrawnAt)}` : ''}
+                </span>
               </li>
             ))}
           </ul>
