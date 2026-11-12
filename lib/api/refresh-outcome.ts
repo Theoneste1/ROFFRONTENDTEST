@@ -106,10 +106,11 @@ export interface Refresher {
 }
 
 /**
- * A cooldown shared by every tab of the browser (localStorage in the app). It
- * holds only a timestamp — never a token. Any of these may throw (storage
- * disabled, private mode, quota); the refresher then falls back to the
- * per-tab cooldown.
+ * A cooldown shared by the tabs of the browser (localStorage in the app), as
+ * best-effort coordination: another tab may briefly read an older value (see
+ * createRefresher). It holds only a timestamp — never a token. Any of these
+ * may throw (storage disabled, private mode, quota); the refresher then falls
+ * back to the per-tab cooldown.
  */
 export interface SharedCooldown {
   /** The shared "unavailable until" time (ms), or null when none is set. */
@@ -143,12 +144,20 @@ function tryStorage<T>(op: () => T): T | null {
  * failing queries cannot start a storm of refresh requests. A thrown error
  * inside `run` counts as `unavailable` (never as a rejection).
  *
- * Across tabs, the refresh runs inside the lock. The holder first reads the
- * shared cooldown and, while it is active, answers `unavailable` without a
- * request; after a refresh it writes (unavailable) or clears (ok, rejected)
- * the shared cooldown before releasing the lock. So when several tabs queue
- * during an outage, only the first makes the retry cycle and the others learn
- * the outcome from it — deterministically, without messages.
+ * Across tabs (best effort): the refresh runs inside the lock. The holder
+ * first reads the shared cooldown and, while it is active, answers
+ * `unavailable` without a request; after a refresh it writes (unavailable) or
+ * clears (ok, rejected) the shared cooldown before releasing the lock. When
+ * several tabs queue during an outage, later tabs usually learn the outcome
+ * from it and skip their own retry cycle.
+ *
+ * This is NOT guaranteed. The Web Lock serialises cooperating tabs, but it
+ * does not make localStorage changes visible to other tabs at once: Chromium
+ * propagates them asynchronously, so a tab that takes the lock right after a
+ * write can still read the old value (measured: 11 of 40 immediate reads).
+ * Such a tab misses the shared cooldown and makes its own retry cycle — the
+ * per-tab behaviour. That costs extra refresh requests, never the session or
+ * any data.
  */
 export function createRefresher({
   run,
@@ -212,6 +221,18 @@ export function createRefresher({
       if (shared) tryStorage(shared.clear);
     },
   };
+}
+
+/**
+ * Runs a sign-in and, only once it has succeeded, ends the refresh cooldown
+ * (`clearCooldown`): a successful sign-in proves the server is reachable, so
+ * an "unavailable" cooldown left from an outage must not hold back the next
+ * refresh. A failed sign-in rethrows its error and leaves the cooldown as it is.
+ */
+export async function signInThenClearCooldown<T>(signIn: () => Promise<T>, clearCooldown: () => void): Promise<T> {
+  const result = await signIn();
+  clearCooldown();
+  return result;
 }
 
 export interface SessionRefreshHooks<R extends { status: number }> {

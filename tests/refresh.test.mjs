@@ -13,6 +13,7 @@ import {
   isTransient,
   retryDelayMs,
   sendWithSessionRefresh,
+  signInThenClearCooldown,
 } from "../lib/api/refresh-outcome.ts";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -280,10 +281,14 @@ test("parallel 401s during an outage share one refresh, then the cooldown answer
   assert.equal(expired, 0, "nobody was signed out");
 });
 
-// ─── Shared (cross-tab) cooldown ────────────────────────────────────────────
+// ─── Shared (cross-tab) cooldown — best effort ──────────────────────────────
 // Several createRefresher instances stand for several tabs of one browser:
 // they share one lock (Web Locks: one holder at a time, FIFO) and one storage
 // (localStorage); each keeps its own in-memory state, as real tabs do.
+// memoryStorage() is always up to date, so these tests check the logic in the
+// best case. Real localStorage can show another tab an older value right after
+// a write (Chromium); the "stale read" test covers that case: the tab then
+// makes its own retry cycle, as without the shared cooldown.
 
 /** A FIFO mutex like navigator.locks.request, logging acquire/release. */
 function sharedLock(log = []) {
@@ -351,7 +356,7 @@ function tabs(n, { outcome = "unavailable", storage, clock = () => 0, log = [] }
   return { list, network, log };
 }
 
-test("three tabs hitting 401 during an outage: only ONE refresh cycle reaches the network", async () => {
+test("three tabs hitting 401 during an outage, storage up to date: one refresh cycle reaches the network", async () => {
   const storage = memoryStorage();
   const { list, network } = tabs(3, { storage });
   const outcomes = await Promise.all(list.map((t) => t.refresh()));
@@ -360,7 +365,39 @@ test("three tabs hitting 401 during an outage: only ONE refresh cycle reaches th
   assert.equal(typeof storage.peek(), "number");
 });
 
-test("five tabs: still one cycle; each tab then has its own cooldown too (no request on retry)", async () => {
+test("stale storage read (Chromium can lag between tabs): the tab makes its own cycle — still unavailable, never rejected", async () => {
+  const storage = memoryStorage();
+  // The first read after each write still returns the previous value, as another tab may see it.
+  let previous = null;
+  let staleOnce = false;
+  const lagging = {
+    get: () => {
+      if (staleOnce) {
+        staleOnce = false;
+        return previous;
+      }
+      return storage.get();
+    },
+    set: (v) => {
+      previous = storage.get();
+      staleOnce = true;
+      storage.set(v);
+    },
+    clear: () => {
+      previous = storage.get();
+      staleOnce = true;
+      storage.clear();
+    },
+  };
+  const { list, network } = tabs(3, { storage: lagging });
+  const outcomes = await Promise.all(list.map((t) => t.refresh()));
+  assert.deepEqual(outcomes, ["unavailable", "unavailable", "unavailable"], "nobody is signed out");
+  assert.equal(network.cycles, 2, "tab 2 missed the cooldown and made its own cycle; tab 3 saw it");
+  await Promise.all(list.map((t) => t.refresh()));
+  assert.equal(network.cycles, 2, "afterwards every tab is in its own cooldown: no further requests");
+});
+
+test("five tabs, storage up to date: one cycle; each tab then has its own cooldown too (no request on retry)", async () => {
   const storage = memoryStorage();
   const { list, network } = tabs(5, { storage });
   await Promise.all(list.map((t) => t.refresh()));
@@ -489,4 +526,85 @@ test("only a timestamp is stored: no token reaches the shared storage", async ()
   await r.refresh();
   assert.deepEqual(written, [1_000 + UNAVAILABLE_COOLDOWN_MS]);
   assert.equal(typeof written[0], "number");
+});
+
+// ─── Sign-in ends the outage cooldown (V5) ──────────────────────────────────
+
+test("a successful sign-in clears the cooldown, after the sign-in completed", async () => {
+  const order = [];
+  const user = await signInThenClearCooldown(
+    async () => (order.push("sign-in"), { id: "u1" }),
+    () => order.push("clear"),
+  );
+  assert.deepEqual(user, { id: "u1" });
+  assert.deepEqual(order, ["sign-in", "clear"]);
+});
+
+test("a failed sign-in rethrows and leaves the cooldown untouched", async () => {
+  let cleared = 0;
+  const error = Object.assign(new Error("Invalid username or password"), { status: 401 });
+  await assert.rejects(
+    signInThenClearCooldown(async () => {
+      throw error;
+    }, () => cleared++),
+    (e) => e === error,
+  );
+  assert.equal(cleared, 0);
+});
+
+test("after an outage, a successful sign-in in tab 0 lets every other tab adopt it with one refresh each", async () => {
+  let clock = 0;
+  const storage = memoryStorage();
+  const { list, network } = tabs(3, {
+    storage,
+    clock: () => clock,
+    outcome: (cycle) => (cycle === 1 ? "unavailable" : "ok"),
+  });
+  // The outage: one cycle, every tab now in its own cooldown and the shared one.
+  await Promise.all(list.map((t) => t.refresh()));
+  assert.equal(network.cycles, 1);
+  clock += 2_000; // still inside the 15 s cooldown
+
+  // Tab 0 signs in (POST /auth/login, not a refresh), then clears the cooldown.
+  await signInThenClearCooldown(async () => ({ id: "u1" }), () => list[0].clearCooldown());
+  assert.equal(storage.peek(), null, "the shared cooldown is gone");
+
+  // Tabs 1 and 2 receive the "login" message: clear their own cooldown, refresh once.
+  const adopted = await Promise.all([1, 2].map(async (i) => (list[i].clearCooldown(), list[i].refresh())));
+  assert.deepEqual(adopted, ["ok", "ok"]);
+  assert.equal(network.cycles, 3, "exactly one refresh per adopting tab — no extra requests");
+});
+
+test("without clearing its own cooldown, a receiving tab could not adopt the sign-in (why both parts are needed)", async () => {
+  let clock = 0;
+  const storage = memoryStorage();
+  const { list, network } = tabs(2, {
+    storage,
+    clock: () => clock,
+    outcome: (cycle) => (cycle === 1 ? "unavailable" : "ok"),
+  });
+  await Promise.all(list.map((t) => t.refresh()));
+  clock += 2_000;
+  await signInThenClearCooldown(async () => ({}), () => list[0].clearCooldown());
+  assert.equal(await list[1].refresh(), "unavailable", "tab 1's in-memory cooldown still applies");
+  assert.equal(network.cycles, 1);
+});
+
+test("a failed sign-in after an outage: the cooldown stays, the other tabs make no requests", async () => {
+  let clock = 0;
+  const storage = memoryStorage();
+  const { list, network } = tabs(3, { storage, clock: () => clock });
+  await Promise.all(list.map((t) => t.refresh()));
+  const before = storage.peek();
+  clock += 2_000;
+
+  await assert.rejects(
+    signInThenClearCooldown(async () => {
+      throw new Error("Invalid username or password");
+    }, () => list[0].clearCooldown()),
+  );
+  // No "login" message is sent after a failure, so the other tabs keep their cooldown.
+  assert.equal(storage.peek(), before, "shared cooldown unchanged");
+  assert.deepEqual(await Promise.all(list.map((t) => t.refresh())), ["unavailable", "unavailable", "unavailable"]);
+  assert.equal(network.cycles, 1, "no new refresh requests");
 });

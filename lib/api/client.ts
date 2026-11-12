@@ -88,8 +88,10 @@ function withCrossTabLock<T>(fn: () => Promise<T>): Promise<T> {
 /**
  * The cross-tab refresh cooldown: only a timestamp ("unavailable until"),
  * never a token. Read and written inside the Web Lock (refresh-outcome.ts).
- * Every call may throw (no window, storage disabled); the refresher then
- * keeps the per-tab cooldown only.
+ * Best effort: the lock orders the tabs, but another tab may still read an
+ * older localStorage value right after a write, then makes its own retry
+ * cycle (more requests, never a sign-out). Every call may throw (no window,
+ * storage disabled); the refresher then keeps the per-tab cooldown only.
  */
 const REFRESH_COOLDOWN_KEY = "rof-refresh-unavailable-until";
 

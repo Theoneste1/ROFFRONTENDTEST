@@ -26,7 +26,7 @@ import {
   setAccessToken,
 } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/errors";
-import type { RefreshOutcome } from "@/lib/api/refresh-outcome";
+import { signInThenClearCooldown, type RefreshOutcome } from "@/lib/api/refresh-outcome";
 import { authApi, meApi } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/query/keys";
 import type { CurrentUser, Permission, Role } from "@/lib/api/types";
@@ -110,7 +110,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (event.data?.type === "logout") {
         signOutLocally();
       } else if (event.data?.type === "login" && !getAccessToken()) {
-        // Another tab signed in: adopt its session. Anything but "ok" leaves this tab as it is.
+        // Another tab signed in (the message is sent only after a successful
+        // sign-in, so the server is reachable): end this tab's own outage
+        // cooldown, then adopt the session with one refresh. Anything but "ok"
+        // leaves this tab as it is.
+        clearRefreshCooldown();
         if ((await refreshSession()) === "ok") setPhase("signed-in");
       }
     };
@@ -138,7 +142,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (username: string, password: string) => {
-      const res = await authApi.login(username, password);
+      // The cooldown is cleared only after the sign-in succeeded (a failure throws first).
+      const res = await signInThenClearCooldown(() => authApi.login(username, password), clearRefreshCooldown);
       queryClient.clear();
       queryClient.setQueryData(queryKeys.me.profile(), res.user);
       setSignedOutByUser(false);
