@@ -80,6 +80,12 @@ export default function ProgrammeMonitor() {
         <FilterPills label="View" options={tabs.map((t) => ({ label: t.label, value: t.value }))} value={active} onChange={(v) => setTab(v)} />
       </div>
       {(active === "students" || active === "coaches") && <Members programmeId={selected.id} role={active === "students" ? "STUDENT" : "MENTOR"} />}
+      {(active === "progress" || active === "activity") && (
+        <p className="text-xs text-gray-500 mb-3" data-testid="report-scope-note">
+          {active === "progress" ? "Student progress" : "Coach activity"} covers all {headed.programmes.length > 1 ? `${headed.programmes.length} programmes` : "the programmes"} you head
+          {headed.programmes.length > 1 ? ", not only the one selected above" : ""}, for the current academic year.
+        </p>
+      )}
       {active === "progress" && <StudentProgress />}
       {active === "activity" && <CoachActivity />}
     </PageFrame>

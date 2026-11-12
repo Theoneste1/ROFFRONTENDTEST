@@ -9,7 +9,9 @@
  * - submit    submissions.submitOnBehalf (`POST /teacher/students/:id/submissions`): the
  *             student stays the owner, the teacher is recorded as the submitter
  * Choosing an assignment to submit needs the progress list (no other teacher
- * route lists a student's assignments). The backend enforces every rule.
+ * route lists a student's assignments). The action is hidden, with the reason,
+ * when the progress data already shows the backend would refuse it
+ * (lib/teacher/on-behalf); the backend enforces every rule regardless.
  */
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -19,6 +21,8 @@ import { errorMessage, isApiError } from "@/lib/api/errors";
 import type { OnBehalfSubmission, Submitter, TeacherProgressAssignment } from "@/lib/api/teacher";
 import { roleLabel } from "@/lib/auth/roles";
 import { useSession } from "@/lib/auth/session";
+import { useNow } from "@/lib/hooks/useNow";
+import { onBehalfEligibility } from "@/lib/teacher/on-behalf";
 import { formatDateTime, personName } from "@/lib/format";
 import { useSubmitOnBehalf, useTeacherStudentProfile, useTeacherStudentProgress } from "@/lib/queries/teacher";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
@@ -151,9 +155,10 @@ function AssignmentCard({
 }) {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState<OnBehalfSubmission | null>(null);
-  // Offered while the assignment takes submissions or a new attempt was requested; the backend
-  // still applies every deadline, late and resubmission rule.
-  const canSubmitHere = maySubmit && (a.status === "PUBLISHED" || a.submission?.status === "RESUBMISSION_REQUESTED");
+  const now = useNow();
+  // Hidden only when the progress data shows the backend would refuse; otherwise the backend decides.
+  const eligibility = onBehalfEligibility(a, now);
+  const canSubmitHere = maySubmit && eligibility.allowed;
 
   return (
     <div data-testid="teacher-assignment">
@@ -175,6 +180,12 @@ function AssignmentCard({
             )}
           </div>
         </div>
+
+        {maySubmit && !eligibility.allowed && !open && (
+          <p className="mt-2 text-xs text-gray-500" data-testid="on-behalf-unavailable">
+            Can&apos;t submit for this student: {eligibility.reason}
+          </p>
+        )}
 
         {a.submission && a.submission.attempts.length > 0 && (
           <TableCard>

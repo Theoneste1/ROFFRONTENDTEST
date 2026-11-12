@@ -83,7 +83,9 @@ export default function TeacherStudents() {
                 <TableMessage colSpan={canOpen ? 5 : 4}>Loading…</TableMessage>
               ) : rows.length === 0 ? (
                 <TableMessage colSpan={canOpen ? 5 : 4}>
-                  {q || grade ? "No student matches these filters." : "No students yet. An administrator assigns your schools."}
+                  {q || grade
+                    ? "No student matches these filters."
+                    : "No students to show yet. Students appear here once an administrator has assigned you their school and verified their affiliation with it."}
                 </TableMessage>
               ) : (
                 rows.map((s) => (
