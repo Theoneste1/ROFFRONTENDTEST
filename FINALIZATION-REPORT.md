@@ -4,6 +4,8 @@ Repository `ROFFRONTENDTEST` · Next.js 16.4.5 / React 19 · production `https:/
 backend `https://rofbackendtest.onrender.com` (Render). How the two work together: [INTEGRATION.md](INTEGRATION.md).
 Deployment: [DEPLOYMENT.md](DEPLOYMENT.md). Branch: `feature/production-readiness` (not pushed, not deployed).
 
+> **Historical report.** It describes the state on 2026-11-07. *Update 2026-11-12:* the branch is pushed and proposed for `main` in pull request #4 (not merged, not deployed); the live site no longer answers "Page not found" and serves the app built from `main`.
+
 Statuses: Completed and tested · Completed but not fully tested · Failed and fixed · Partially completed · Not completed · Requires owner action.
 
 ## A. Audit
@@ -14,7 +16,7 @@ Statuses: Completed and tested · Completed but not fully tested · Failed and f
 | Authentication | Access token in memory, httpOnly `SameSite=Strict` refresh cookie via same-origin `/api` proxy, single-flight refresh across tabs, role gates (UI) + backend enforcement | Completed and tested |
 | API layer | One client (`lib/api/client.ts`), typed modules per area; all 83 endpoints called exist in the backend with the same method and path | Completed and tested |
 | Configuration | Backend URL pinned in `netlify.toml`; the only `localhost` is the local-development default, which the build refuses on Netlify | Completed and tested |
-| Live site | `https://roflms.netlify.app` answers "Page not found" on every path: `main` cannot build on Netlify without a dashboard variable. This branch builds without one | Failed and fixed (not deployed) |
+| Live site | On 2026-11-07, `https://roflms.netlify.app` answered "Page not found" on every path: `main` could not build on Netlify without a dashboard variable. This branch builds without one. (By 2026-11-12 the site served the app built from `main`.) | Failed and fixed (not deployed) |
 | Tests | No unit tests or CI existed | Failed and fixed |
 | Upload progress | Uploads showed only "Uploading…" (fetch cannot report progress) | Failed and fixed |
 | CSP | next/image's inline style violated the strict CSP on every page (console errors) | Failed and fixed |
@@ -75,7 +77,7 @@ Status: **Completed but not fully tested** (verified with Netlify's build settin
 
 ## G. Outstanding
 
-1. Not deployed: the live site stays "Page not found" until this branch is merged and Netlify builds it. — Requires owner action
+1. Not deployed: on 2026-11-07 the live site answered "Page not found" (by 2026-11-12 it served the app built from `main`); this branch reaches production when pull request #4 is merged and Netlify builds it. — Requires owner action
 2. Signed-in checks on production (login, dashboards, upload > 8 MB to R2, grading, notifications, logout) need real or test accounts. — Requires owner action
 3. Render free plan sleeps after ~15 min; the first request can take ~1 min and fail through Netlify's proxy (502/504). Ping `/health` every 5–10 min or use a paid plan. — Requires owner action
 4. Uploads from deploy previews fail CORS (preview address not in `CORS_ORIGINS`); test uploads on production.

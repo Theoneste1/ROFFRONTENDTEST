@@ -85,7 +85,7 @@ as `/assignments/:id`. The frontend serves each of these routes.
 - Backend `/health`: database up, storage up; health is ~300 ms slower than a database-only call, consistent with a live R2 bucket check.
 - CORS: `https://roflms.netlify.app` allowed, with credentials.
 - E-mail: an approved password-reset e-mail to the admin was **delivered** by Resend from `Rwanda Olympiad Foundation <info@rwandaolympiadfoundation.org>`; its link points to `https://roflms.netlify.app/reset-password?token=…`.
-- **Frontend: `https://roflms.netlify.app` serves Netlify's "Page not found" on every path.** A clean build of frontend `main` stops with "API_PROXY_TARGET must be set…" (reproduced); the `feature/production-readiness` branch sets it in `netlify.toml` and builds cleanly from a fresh clone.
+- **Frontend (historical observation, 2026-11-07): `https://roflms.netlify.app` served Netlify's "Page not found" on every path.** A clean build of frontend `main` stopped with "API_PROXY_TARGET must be set…" (reproduced); the `feature/production-readiness` branch sets it in `netlify.toml` and builds cleanly from a fresh clone. *Update 2026-11-12:* the site no longer answers "Page not found": it serves the app built from `main` (its CSP has no upload origin, so this branch is not deployed yet). This branch reaches production through pull request #4.
 
 Not yet possible: browser tests on the live site (needs the fixed frontend deployed), and a live upload to R2 (needs a production coach or admin login).
 
