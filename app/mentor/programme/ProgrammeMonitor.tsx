@@ -8,10 +8,18 @@
  *   (GET /admin/programmes/:id/members — programmes.manageMembers)
  * - Student progress: GET /admin/reports/students (reports.view, programme-scoped)
  * - Coach activity: GET /admin/reports/mentors (coaches.monitor, programme-scoped)
- * Read-only: preparing and grading happen in Assignments and Reviews, only
+ * Changes a Head Coach may make here: invite a new Coach into the programme
+ * (users.manageCoaches; the account waits for an Administrator's approval) and
+ * end a student's membership (programmes.manageMembers; students only). Adding
+ * an existing student needs a way to find them, which the backend doesn't give
+ * a Head Coach. Preparing and grading happen in Assignments and Reviews, only
  * through course × division assignments an Administrator created.
  */
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { programmesApi } from "@/lib/api/programmes";
+import { queryKeys } from "@/lib/query/keys";
+import CoachInvite from "./CoachInvite";
 import type { Permission } from "@/lib/api/types";
 import { useSession } from "@/lib/auth/session";
 import { formatDate, formatNumber, personName } from "@/lib/format";
@@ -20,7 +28,7 @@ import { useMentorReport, useStudentReport } from "@/lib/queries/admin";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
-import { Notice, SelectFilter, TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
+import { ConfirmDialog, Notice, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "@/app/admin/components/adminUi";
 
 type Tab = "students" | "coaches" | "progress" | "activity";
 const TABS: { value: Tab; label: string; permission: Permission }[] = [
@@ -79,6 +87,7 @@ export default function ProgrammeMonitor() {
         )}
         <FilterPills label="View" options={tabs.map((t) => ({ label: t.label, value: t.value }))} value={active} onChange={(v) => setTab(v)} />
       </div>
+      {active === "coaches" && can("users.manageCoaches") && <CoachInvite programmeId={selected.id} programmeName={selected.name} />}
       {(active === "students" || active === "coaches") && <Members programmeId={selected.id} role={active === "students" ? "STUDENT" : "MENTOR"} />}
       {(active === "progress" || active === "activity") && (
         <p className="text-xs text-gray-500 mb-3" data-testid="report-scope-note">
@@ -95,10 +104,23 @@ export default function ProgrammeMonitor() {
 function Members({ programmeId, role }: { programmeId: string; role: "STUDENT" | "MENTOR" }) {
   const [page, setPage] = useState(1);
   const members = useProgrammeMembers(programmeId, { role, page, limit: PAGE_SIZE });
+  const qc = useQueryClient();
+  const [ending, setEnding] = useState<{ id: string; name: string } | null>(null);
+  const [ended, setEnded] = useState<string | null>(null);
+  const end = useMutation({
+    mutationFn: (userId: string) => programmesApi.endMember(programmeId, userId),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.programmes.all }),
+  });
+  // A Head Coach may end STUDENT memberships only (coaches leave through an Administrator).
+  const { can } = useSession();
+  const mayEnd = role === "STUDENT" && can("programmes.manageMembers");
   if (members.isError) return <ErrorState error={members.error} title="Couldn't load the members" onRetry={() => members.refetch()} />;
   const rows = members.data?.data ?? [];
   const student = role === "STUDENT";
+  const cols = (student ? 5 : 2) + (mayEnd ? 1 : 0);
   return (
+    <>
+    {ended && <Notice tone="success" onClose={() => setEnded(null)}>{ended}</Notice>}
     <TableCard footer={members.data && <Pagination page={page} totalPages={members.data.meta.totalPages} total={members.data.meta.total} onPage={setPage} disabled={members.isFetching} />}>
       <thead className="bg-gray-50/60 border-b border-gray-100">
         <tr>
@@ -107,13 +129,14 @@ function Members({ programmeId, role }: { programmeId: string; role: "STUDENT" |
           {student && <th className={th}>Division</th>}
           {student && <th className={th}>School</th>}
           <th className={th}>Member since</th>
+          {mayEnd && <th className={`${th} text-right`}>Actions</th>}
         </tr>
       </thead>
       <tbody className="divide-y divide-gray-50" data-testid={`members-${role}`}>
         {members.isPending ? (
-          <TableMessage colSpan={student ? 5 : 2}>Loading…</TableMessage>
+          <TableMessage colSpan={cols}>Loading…</TableMessage>
         ) : rows.length === 0 ? (
-          <TableMessage colSpan={student ? 5 : 2}>{student ? "No students in this programme yet." : "No coaches in this programme yet."}</TableMessage>
+          <TableMessage colSpan={cols}>{student ? "No students in this programme yet." : "No coaches in this programme yet."}</TableMessage>
         ) : (
           rows.map((m) => (
             <tr key={m.id}>
@@ -136,11 +159,32 @@ function Members({ programmeId, role }: { programmeId: string; role: "STUDENT" |
                 </td>
               )}
               <td className={`${td} text-gray-600`}>{formatDate(m.membership.createdAt)}</td>
+              {mayEnd && (
+                <td className={`${td} text-right`}>
+                  <button type="button" className={linkBtn} onClick={() => setEnding({ id: m.id, name: personName(m) })} aria-label={`End membership of ${personName(m)}`}>
+                    End membership
+                  </button>
+                </td>
+              )}
             </tr>
           ))
         )}
       </tbody>
     </TableCard>
+    {ending && (
+      <ConfirmDialog
+        title="End this membership?"
+        body={`${ending.name} leaves this programme. Their account, work and results are kept; an administrator can add them back.`}
+        confirmLabel="End membership"
+        tone="danger"
+        onClose={() => setEnding(null)}
+        onConfirm={async () => {
+          await end.mutateAsync(ending.id);
+          setEnded(`${ending.name} is no longer a member of this programme.`);
+        }}
+      />
+    )}
+    </>
   );
 }
 

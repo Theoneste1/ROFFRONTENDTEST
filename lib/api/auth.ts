@@ -71,6 +71,13 @@ export const meApi = {
   permissions: () => api<MePermissions>("/me/permissions"),
 };
 
+/**
+ * `POST /auth/register/student`. Every backend accepts the legacy school fields
+ * (`schoolName` + `schoolLocation`). A backend advertising `schoolAffiliations`
+ * also accepts exactly one of the school-claim shapes instead (lib/accounts/school-claim):
+ * `schoolCode`; `schoolName` + province / district / sector; or `country` + `schoolName`.
+ * Unknown fields are refused (400), so the new shapes go only to that backend.
+ */
 export interface RegisterStudentInput {
   firstName: string;
   lastName: string;
@@ -78,8 +85,13 @@ export interface RegisterStudentInput {
   email: string;
   password: string;
   gradeLevel: GradeLevel;
-  schoolName: string;
-  schoolLocation: string;
+  schoolName?: string;
+  schoolLocation?: string;
+  schoolCode?: string;
+  schoolProvince?: string;
+  schoolDistrict?: string;
+  schoolSector?: string;
+  country?: string;
   /** Student's home district or city (required, 2–200 characters). */
   homeLocation: string;
 }
@@ -90,6 +102,8 @@ export interface RegisterStudentResult {
   username: string;
   requiresApproval: boolean;
   requiresEmailVerification: boolean;
+  /** New backend: "PENDING" while an administrator verifies the school (absent on older backends). */
+  schoolVerification?: "PENDING" | null;
 }
 
 export interface MentorApplicationInput {

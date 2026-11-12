@@ -5,10 +5,10 @@ import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { schoolsApi, USER_RULES, type CreateUserInput, type InviteUserInput, type UpdateUserInput } from "@/lib/api/admin";
 import { PASSWORD_RULE } from "@/lib/api/auth";
-import { errorMessage, fieldErrors } from "@/lib/api/errors";
+import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
 import type { AdminUser, GradeLevel, Permission, Role, SchoolRef } from "@/lib/api/types";
 import { roleLabel } from "@/lib/auth/roles";
-import { assignableRoles } from "@/lib/auth/role-rules";
+import { assignableRoles, canPromoteToSuperAdmin, roleChangeNeedsPassword } from "@/lib/auth/role-rules";
 import { useSession } from "@/lib/auth/session";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -163,6 +163,24 @@ export function SchoolPicker({ value, onChange, label = "School" }: { value: Sch
 
 // ─── Create / invite / edit form ────────────────────────────────────────────
 
+/** Backend account-management refusals that need a plain explanation. */
+const USER_ERRORS: Readonly<Record<string, string>> = {
+  ROLE_NOT_ASSIGNABLE: "You can't give this role, or not to this account.",
+  TEACHERS_DISABLED: "Teacher accounts are switched off on this server.",
+  HEAD_COACHES_DISABLED: "Head Coach accounts are switched off on this server.",
+  CANNOT_CHANGE_OWN_ROLE: "You can't change your own role.",
+  LAST_SUPER_ADMIN: "This is the last active Super Administrator; another one must exist first.",
+  GRADE_REQUIRED: "Students need a grade.",
+  IDENTITY_TAKEN: "That username or e-mail is already in use.",
+  USERNAME_UNAVAILABLE: "No username could be made from this e-mail address; enter one.",
+  SCHOOL_REFERENCE_REQUIRED: "Choose an existing school from the list.",
+  SCHOOL_NAME_MISMATCH: "The school name doesn't match the school chosen.",
+  SCHOOL_REFERENCE_MISMATCH: "The school reference doesn't match; choose the school again.",
+  SCHOOL_INACTIVE: "That school is no longer active.",
+  NO_CURRENT_ACADEMIC_YEAR: "There is no current academic year, so students can't be enrolled yet.",
+  USER_CHANGED_CONCURRENTLY: "Someone else changed this account at the same time. Reload it and try again.",
+};
+
 export type UserFormMode = "create" | "invite" | "edit";
 
 interface FormState {
@@ -177,9 +195,11 @@ interface FormState {
   newSchoolName: string;
   newSchoolLocation: string;
   homeLocation: string;
+  /** The editor's own password, for a role change to or from Administrator / Super Administrator. */
+  currentPassword: string;
 }
 
-const FIELDS = ["firstName", "lastName", "username", "email", "password", "role", "gradeLevel", "schoolId", "schoolName", "schoolLocation", "homeLocation"] as const;
+const FIELDS = ["firstName", "lastName", "username", "email", "password", "role", "gradeLevel", "schoolId", "schoolName", "schoolLocation", "homeLocation", "currentPassword"] as const;
 
 export function UserForm({
   mode,
@@ -212,12 +232,17 @@ export function UserForm({
     newSchoolName: "",
     newSchoolLocation: "",
     homeLocation: initial?.homeLocation ?? "",
+    currentPassword: "",
   }));
   const [errors, setErrors] = useState<Partial<Record<(typeof FIELDS)[number], string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((s) => ({ ...s, [k]: v }));
   const isStudent = f.role === "STUDENT";
+  // New backends (schoolReferenceRequired): an invitation must name an existing school, and
+  // an edit may remove the school (schoolId: null). Older backends keep the earlier behaviour.
+  const schoolReference = hasFeature(detection, "schoolReferenceRequired");
+  const stepUp = mode === "edit" && !lockRole && roleChangeNeedsPassword(initial?.role, f.role);
 
   function validate() {
     const e: typeof errors = {};
@@ -231,7 +256,8 @@ export function UserForm({
     if (mode === "create" && !PASSWORD_RULE.test(f.password)) e.password = PASSWORD_RULE.hint;
     if (isStudent && !f.gradeLevel) e.gradeLevel = "Students need a grade (it sets the division).";
     if (f.homeLocation.trim() && !len(f.homeLocation, 2, 200)) e.homeLocation = "2–200 characters.";
-    if (mode === "invite" && !f.school && (f.newSchoolName.trim() || f.newSchoolLocation.trim())) {
+    if (stepUp && !f.currentPassword) e.currentPassword = "Enter your own password to confirm this role change.";
+    if (mode === "invite" && !schoolReference && !f.school && (f.newSchoolName.trim() || f.newSchoolLocation.trim())) {
       if (!len(f.newSchoolName, 2, 200)) e.schoolName = "2–200 characters.";
       if (!len(f.newSchoolLocation, 2, 200)) e.schoolLocation = "2–200 characters.";
     }
@@ -254,8 +280,8 @@ export function UserForm({
       return {
         ...base,
         username: username || undefined,
-        schoolName: !f.school && f.newSchoolName.trim() ? f.newSchoolName.trim() : undefined,
-        schoolLocation: !f.school && f.newSchoolName.trim() ? f.newSchoolLocation.trim() : undefined,
+        schoolName: !schoolReference && !f.school && f.newSchoolName.trim() ? f.newSchoolName.trim() : undefined,
+        schoolLocation: !schoolReference && !f.school && f.newSchoolName.trim() ? f.newSchoolLocation.trim() : undefined,
       } as InviteUserInput;
     // Edit: send only what changed.
     const changes: UpdateUserInput = {};
@@ -267,7 +293,9 @@ export function UserForm({
     if (!lockRole && base.role !== initial.role) changes.role = base.role;
     if (base.gradeLevel && base.gradeLevel !== initial.gradeLevel) changes.gradeLevel = base.gradeLevel;
     if (f.school && f.school.id !== initial.school?.id) changes.schoolId = f.school.id;
+    if (!f.school && initial.school && schoolReference) changes.schoolId = null;
     if (base.homeLocation && base.homeLocation !== (initial.homeLocation ?? "")) changes.homeLocation = base.homeLocation;
+    if (changes.role && roleChangeNeedsPassword(initial.role, changes.role)) changes.currentPassword = f.currentPassword;
     return changes;
   }
 
@@ -287,8 +315,9 @@ export function UserForm({
       await onSubmit(input);
     } catch (err) {
       const fe = fieldErrors(err, FIELDS);
+      if (isApiError(err) && err.code === "STEP_UP_REQUIRED") fe.currentPassword = "That password isn't correct. Enter your own current password.";
       setErrors(fe);
-      setFormError(Object.keys(fe).length ? "Please correct the highlighted fields." : errorMessage(err));
+      setFormError(Object.keys(fe).length ? "Please correct the highlighted fields." : (isApiError(err) && err.code ? USER_ERRORS[err.code] : undefined) ?? errorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -306,6 +335,9 @@ export function UserForm({
   }).map((r) => ({ label: roleLabel(r), value: r }));
   if (initial?.role && !roleOptions.some((o) => o.value === initial.role)) {
     roleOptions.push({ label: roleLabel(initial.role), value: initial.role });
+  }
+  if (mode === "edit" && initial && canPromoteToSuperAdmin(session.role, initial) && !roleOptions.some((o) => o.value === "SUPER_ADMIN")) {
+    roleOptions.push({ label: roleLabel("SUPER_ADMIN"), value: "SUPER_ADMIN" });
   }
 
   return (
@@ -340,8 +372,17 @@ export function UserForm({
         )}
         <TextInput label="Home location" value={f.homeLocation} onChange={(v) => set("homeLocation", v)} error={errors.homeLocation} maxLength={200} placeholder="District or city" />
       </div>
+      {stepUp && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-2" data-testid="role-step-up">
+          <p className="text-xs text-amber-800">
+            Changing a role to or from {roleLabel("ADMIN")} or {roleLabel("SUPER_ADMIN")} needs your own password. The account&apos;s sessions end when its role changes.
+          </p>
+          <TextInput label="Your current password" required type="password" value={f.currentPassword} onChange={(v) => set("currentPassword", v)} error={errors.currentPassword} maxLength={200} autoComplete="current-password" />
+        </div>
+      )}
       <SchoolPicker value={f.school} onChange={(s) => set("school", s)} />
-      {mode === "invite" && !f.school && (
+      {mode === "invite" && schoolReference && !f.school && <p className="text-[11px] text-gray-400">An invitation can only name a school that already exists.</p>}
+      {mode === "invite" && !schoolReference && !f.school && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput label="…or a new school name" value={f.newSchoolName} onChange={(v) => set("newSchoolName", v)} error={errors.schoolName} maxLength={200} />
           <TextInput label="New school location" value={f.newSchoolLocation} onChange={(v) => set("newSchoolLocation", v)} error={errors.schoolLocation} maxLength={200} />

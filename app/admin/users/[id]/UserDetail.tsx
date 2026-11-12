@@ -12,7 +12,9 @@ import { roleLabel } from "@/lib/auth/roles";
 import type { UpdateUserInput } from "@/lib/api/admin";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { AdminPage, Card, ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, btnSecondary } from "../../components/adminUi";
-import { AccountStatusBadge, UserForm, accountStatus } from "../components/userUi";
+import { AccountStatusBadge, UserForm } from "../components/userUi";
+import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
+import TeacherAccessCard from "./TeacherAccessCard";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -27,7 +29,7 @@ type Confirm = { action: UserAction; title: string; body: ReactNode; label: stri
 
 export default function UserDetail({ userId }: { userId: string }) {
   const router = useRouter();
-  const { user: me } = useSession();
+  const { user: me, can } = useSession();
   const user = useAdminUser(userId);
   const act = useUserAction(userId);
   const [editing, setEditing] = useState(false);
@@ -51,7 +53,6 @@ export default function UserDetail({ userId }: { userId: string }) {
 
   const u = user.data;
   const isMe = me?.id === u.id;
-  const status = accountStatus(u);
   const name = `${u.firstName} ${u.lastName}`;
 
   const ask = (c: Confirm) => {
@@ -113,7 +114,8 @@ export default function UserDetail({ userId }: { userId: string }) {
           <h2 className="text-base font-bold text-gray-900 mb-1">Actions</h2>
           <p className="text-xs text-gray-500 mb-4">Administrators never see or set another person&apos;s password; send a reset link instead.</p>
           <div className="flex flex-col gap-2">
-            {status === "AWAITING_APPROVAL" && (
+            {/* The backend approves any active account; a coach invited by a Head Coach waits for approval even before activation. */}
+            {u.isActive && !u.isApproved && (
               <button
                 type="button"
                 className={btnPrimary}
@@ -181,6 +183,10 @@ export default function UserDetail({ userId }: { userId: string }) {
             {isMe && <p className="text-[11px] text-gray-400">This is your own account: it cannot be suspended or deleted here, and its role cannot be changed.</p>}
           </div>
         </Card>
+
+        {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
+        {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
+        {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}
       </div>
 
       {editing && (

@@ -111,6 +111,25 @@ export function assignableRoles(opts: {
   return roles;
 }
 
+const ADMIN_ROLES: readonly string[] = ["ADMIN", "SUPER_ADMIN"];
+
+/**
+ * A role change to or from Administrator / Super Administrator needs the
+ * editor's own current password (`currentPassword`; backend 403 STEP_UP_REQUIRED).
+ */
+export function roleChangeNeedsPassword(from: string | null | undefined, to: string | null | undefined): boolean {
+  return !!from && !!to && from !== to && (ADMIN_ROLES.includes(from) || ADMIN_ROLES.includes(to));
+}
+
+/**
+ * Promotion to Super Administrator, as the backend allows it: only by a Super
+ * Administrator, only for an active, activated Administrator (and with the
+ * password step-up). It is never offered when creating an account.
+ */
+export function canPromoteToSuperAdmin(actorRole: string | null | undefined, target: { role: string; isActive: boolean; activatedAt: string | null }): boolean {
+  return actorRole === "SUPER_ADMIN" && target.role === "ADMIN" && target.isActive && !!target.activatedAt;
+}
+
 const TAB_LABEL: Readonly<Record<KnownRole, string>> = {
   STUDENT: "Students",
   TEACHER: "Teachers",

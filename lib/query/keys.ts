@@ -17,6 +17,17 @@ export const queryKeys = {
     all: ["me"] as const,
     profile: () => [...queryKeys.me.all, "profile"] as const,
     permissions: () => [...queryKeys.me.all, "permissions"] as const,
+    /** Students: GET /me/school-affiliation. */
+    schoolAffiliation: () => [...queryKeys.me.all, "school-affiliation"] as const,
+  },
+  /** Account administration added with the school and role work (lib/api/accounts.ts). */
+  accounts: {
+    all: ["accounts"] as const,
+    affiliations: (filters: object) => [...queryKeys.accounts.all, "affiliations", filters] as const,
+    candidates: (id: string) => [...queryKeys.accounts.all, "candidates", id] as const,
+    teacherSchools: (teacherId: string) => [...queryKeys.accounts.all, "teacher-schools", teacherId] as const,
+    delegations: (teacherId: string) => [...queryKeys.accounts.all, "delegations", teacherId] as const,
+    programmeHeads: (programmeId: string) => [...queryKeys.accounts.all, "programme-heads", programmeId] as const,
   },
   support: ["support"] as const,
   /** Teacher portal: students of the teacher's assigned schools. */
