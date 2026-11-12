@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/app/components/ui/Image";
 import Link from "next/link";
 import { useSupportInfo } from "@/lib/queries/account";
 import { SITE } from "@/lib/site/content";

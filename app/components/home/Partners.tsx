@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import Image from "next/image";
+import Image from "@/app/components/ui/Image";
 import { PARTNERS } from "@/lib/site/content";
 import Reveal from "./Reveal";
 

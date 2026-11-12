@@ -54,6 +54,21 @@ export function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/**
+ * True when the file name's extension is in an `accept` list such as
+ * ".pdf,.docx". Dropped files skip the browser's `accept` filter, so pickers
+ * check it themselves; the backend still checks the real type from the content.
+ */
+export function hasAcceptedExtension(name: string, accept: string): boolean {
+  const dot = name.lastIndexOf(".");
+  if (dot < 0) return false;
+  const ext = name.slice(dot).toLowerCase();
+  return accept
+    .split(",")
+    .map((a) => a.trim().toLowerCase())
+    .includes(ext);
+}
+
 /** "Eric S." style name; tolerates a missing author (deleted content). */
 export function personName(p: { firstName: string; lastName: string } | null | undefined, fallback = "Unknown"): string {
   if (!p) return fallback;

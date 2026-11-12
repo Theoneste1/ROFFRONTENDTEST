@@ -5,14 +5,27 @@
  *   to the backend.
  * - The access token (15 min) lives in memory only. The refresh token is the
  *   backend's httpOnly cookie `rof_refresh`; this code never reads it.
- * - On a 401 the client refreshes once and retries the request. If the
- *   refresh fails, the session is over and listeners are told (the session
- *   provider then shows the login page).
+ * - On a 401 the client refreshes once and retries the request. Only a
+ *   definite refusal (401/403 from /auth/refresh, or a 401 right after a
+ *   successful refresh) ends the session; listeners are told and the session
+ *   provider shows the login page. A temporary failure (network, 429, 5xx)
+ *   keeps the session and throws `SESSION_REFRESH_UNAVAILABLE` instead.
  * - Refresh tokens rotate on every use and a reused token revokes the whole
  *   session, so refreshes are single-flight within a tab and serialised
  *   across tabs with the Web Locks API.
  */
 import { ApiError } from "./errors";
+import {
+  UPLOAD_TOKEN_MARGIN_MS,
+  attemptRefresh,
+  createRefresher,
+  sendWithSessionRefresh,
+  tokenExpiresWithin,
+  type RefreshOutcome,
+  type SharedCooldown,
+} from "./refresh-outcome";
+import { UPLOAD_ORIGIN } from "./upload-origin";
+import { trackUpload } from "./upload-progress";
 import type { TokenResponse } from "./types";
 
 export const API_BASE = "/api/v1";
@@ -44,45 +57,34 @@ function notifyExpired() {
 }
 
 // ─── Refresh ────────────────────────────────────────────────────────────────
+//
+// The rules (outcomes, retries, single flight, cooldown) live in
+// refresh-outcome.ts. Only a definite rejection (401/403) means "signed out";
+// a rate limit (429), a server error or a network failure is retried and, if
+// it persists, reported as `unavailable` — the refresh cookie may still be
+// valid, so the session is kept.
 
-let refreshing: Promise<boolean> | null = null;
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-const REFRESH_ATTEMPTS = 3;
-
-/**
- * POST /auth/refresh. Only a definite rejection (401/403) means "signed out".
- * A rate limit (429) or a network/server hiccup is retried with a short
- * backoff: the backend rejects those requests before touching the token, so
- * the cookie is still valid and retrying is safe.
- */
-async function postRefresh(): Promise<boolean> {
-  for (let attempt = 1; attempt <= REFRESH_ATTEMPTS; attempt++) {
-    let res: Response;
-    try {
-      res = await fetch(`${API_BASE}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-        headers: { Accept: "application/json" },
-      });
-    } catch {
-      if (attempt === REFRESH_ATTEMPTS) return false;
-      await delay(1000 * attempt);
-      continue;
-    }
-    if (res.ok) {
-      const body = (await res.json()) as TokenResponse;
-      accessToken = body.access_token;
-      return true;
-    }
-    const transient = res.status === 429 || res.status >= 500;
-    if (!transient || attempt === REFRESH_ATTEMPTS) return false;
-    const retryAfter = Number(res.headers.get("retry-after"));
-    await delay(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 30) * 1000 : 2000 * attempt);
-  }
-  return false;
+/** One POST /auth/refresh (the httpOnly cookie carries the refresh token). */
+async function postRefresh() {
+  const res = await fetch(`${API_BASE}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+  return {
+    status: res.status,
+    retryAfter: res.headers.get("retry-after"),
+    accessToken: async () => ((await res.json()) as Partial<TokenResponse>).access_token ?? null,
+  };
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+async function runRefresh(): Promise<RefreshOutcome> {
+  const result = await attemptRefresh({ post: postRefresh, delay });
+  if (result.outcome === "ok" && result.accessToken) accessToken = result.accessToken;
+  return result.outcome;
+}
 
 function withCrossTabLock<T>(fn: () => Promise<T>): Promise<T> {
   if (typeof navigator !== "undefined" && "locks" in navigator && navigator.locks) {
@@ -92,14 +94,50 @@ function withCrossTabLock<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /**
- * Exchange the refresh cookie for a new access token. Returns false when
- * there is no valid session. Concurrent callers share one request.
+ * The cross-tab refresh cooldown: only a timestamp ("unavailable until"),
+ * never a token. Read and written inside the Web Lock (refresh-outcome.ts).
+ * Best effort: the lock orders the tabs, but another tab may still read an
+ * older localStorage value right after a write, then makes its own retry
+ * cycle (more requests, never a sign-out). Every call may throw (no window,
+ * storage disabled); the refresher then keeps the per-tab cooldown only.
  */
-export function refreshSession(): Promise<boolean> {
-  refreshing ??= withCrossTabLock(postRefresh).finally(() => {
-    refreshing = null;
-  });
-  return refreshing;
+const REFRESH_COOLDOWN_KEY = "rof-refresh-unavailable-until";
+
+const sharedRefreshCooldown: SharedCooldown = {
+  get: () => {
+    const raw = window.localStorage.getItem(REFRESH_COOLDOWN_KEY);
+    return raw === null ? null : Number(raw);
+  },
+  set: (until) => window.localStorage.setItem(REFRESH_COOLDOWN_KEY, String(until)),
+  clear: () => window.localStorage.removeItem(REFRESH_COOLDOWN_KEY),
+};
+
+const refresher = createRefresher({ run: runRefresh, lock: withCrossTabLock, shared: sharedRefreshCooldown });
+
+/**
+ * Exchange the refresh cookie for a new access token: `ok`, `rejected` (no
+ * valid session) or `unavailable` (temporary failure; try again later).
+ * Concurrent callers share one request, serialised across tabs.
+ */
+export function refreshSession(): Promise<RefreshOutcome> {
+  return refresher.refresh();
+}
+
+/**
+ * Allow an immediate refresh again, e.g. when the user presses "Try again":
+ * ends this tab's cooldown and the shared one (other tabs keep their own
+ * in-memory cooldown, at most 15 s).
+ */
+export function clearRefreshCooldown(): void {
+  refresher.clearCooldown();
+}
+
+/** Thrown when the session could not be renewed for a temporary reason (the user stays signed in). */
+export const SESSION_REFRESH_UNAVAILABLE = "SESSION_REFRESH_UNAVAILABLE";
+
+/** The error for a session that could not be renewed for a temporary reason (also used by the session provider). */
+export function refreshUnavailableError(): ApiError {
+  return new ApiError(503, SESSION_REFRESH_UNAVAILABLE, "Can't reach the server to renew your session. Please try again.");
 }
 
 // ─── Requests ───────────────────────────────────────────────────────────────
@@ -141,11 +179,91 @@ async function send(path: string, opts: RequestOptions): Promise<Response> {
     payload = JSON.stringify(body);
   }
 
+  // Uploads go straight to the backend when configured (see upload-origin.ts);
+  // no cookies are sent across origins.
+  const direct = body instanceof FormData && UPLOAD_ORIGIN !== "";
+  const url = direct ? `${UPLOAD_ORIGIN}${buildUrl(path, query)}` : buildUrl(path, query);
+
+  if (body instanceof FormData && typeof XMLHttpRequest !== "undefined") {
+    return sendMultipart(url, init.method ?? "POST", headers, body, !direct, init.signal ?? undefined);
+  }
+
   try {
-    return await fetch(buildUrl(path, query), { ...init, headers, body: payload, credentials: "include" });
+    return await fetch(url, { ...init, headers, body: payload, credentials: direct ? "omit" : "include" });
   } catch {
     throw new ApiError(0, "NETWORK_ERROR", "Cannot reach the server.");
   }
+}
+
+function formSize(form: FormData): number {
+  let size = 0;
+  form.forEach((value) => {
+    size += typeof value === "string" ? value.length : value.size;
+  });
+  return size;
+}
+
+/**
+ * Multipart uploads use XMLHttpRequest (fetch cannot report upload progress)
+ * and resolve to an ordinary `Response`, so callers handle them like any other.
+ */
+function sendMultipart(
+  url: string,
+  method: string,
+  headers: Headers,
+  form: FormData,
+  withCredentials: boolean,
+  signal?: AbortSignal,
+): Promise<Response> {
+  const tracker = trackUpload(formSize(form));
+  return new Promise<Response>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const onSignalAbort = () => xhr.abort();
+    // Every way out ends the progress entry and drops the abort listener once.
+    let finished = false;
+    const finish = () => {
+      if (finished) return false;
+      finished = true;
+      tracker.done();
+      signal?.removeEventListener("abort", onSignalAbort);
+      return true;
+    };
+    const fail = () => {
+      if (finish()) reject(new ApiError(0, "NETWORK_ERROR", "Cannot reach the server."));
+    };
+    const cancelled = () => {
+      if (finish()) reject(new DOMException("The upload was cancelled.", "AbortError"));
+    };
+
+    if (signal?.aborted) return cancelled();
+
+    xhr.onerror = fail;
+    xhr.ontimeout = fail;
+    xhr.onabort = cancelled;
+    xhr.onload = () => {
+      if (!finish()) return;
+      const responseHeaders = new Headers();
+      for (const line of xhr.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
+        const i = line.indexOf(":");
+        if (i > 0) responseHeaders.append(line.slice(0, i).trim(), line.slice(i + 1).trim());
+      }
+      const noBody = xhr.status === 204 || xhr.status === 205 || xhr.status === 304;
+      resolve(new Response(noBody ? null : (xhr.response as Blob), { status: xhr.status, statusText: xhr.statusText, headers: responseHeaders }));
+    };
+
+    try {
+      xhr.open(method, url);
+      xhr.withCredentials = withCredentials;
+      xhr.responseType = "blob";
+      headers.forEach((value, key) => xhr.setRequestHeader(key, value));
+      xhr.upload.onprogress = (e) => tracker.progress(e.loaded, e.lengthComputable ? e.total : 0);
+      signal?.addEventListener("abort", onSignalAbort, { once: true });
+      xhr.send(form);
+    } catch {
+      // open / setRequestHeader / send threw synchronously: no event will follow.
+      fail();
+    }
+  });
 }
 
 async function toError(res: Response): Promise<ApiError> {
@@ -153,17 +271,31 @@ async function toError(res: Response): Promise<ApiError> {
   return ApiError.fromBody(res.status, body, res.statusText || "Request failed");
 }
 
-/** Send a request, refreshing the session once if the access token expired. */
+/**
+ * Send a request, refreshing the session once if the access token expired.
+ * Signs out only on a definite rejection; a temporary refresh failure throws
+ * `SESSION_REFRESH_UNAVAILABLE` and keeps the session.
+ */
 async function sendWithRefresh(path: string, opts: RequestOptions): Promise<Response> {
   const auth = opts.auth ?? true;
-  let res = await send(path, opts);
-  if (res.status === 401 && auth && !path.startsWith("/auth/")) {
-    if (await refreshSession()) {
-      res = await send(path, opts);
+  if (!auth || path.startsWith("/auth/")) return send(path, opts);
+  // Uploads: refresh first when the token is missing or about to expire, so a
+  // large body is not sent with a dead token (rejected with 401, then sent
+  // again — or cut off by the server, which looks like a network error).
+  if (opts.body instanceof FormData && tokenExpiresWithin(accessToken, UPLOAD_TOKEN_MARGIN_MS)) {
+    const outcome = await refreshSession();
+    if (outcome === "rejected") {
+      notifyExpired();
+      throw new ApiError(401, "UNAUTHORIZED", "Your session has ended. Please sign in again.");
     }
-    if (res.status === 401) notifyExpired();
+    if (outcome === "unavailable") throw refreshUnavailableError();
   }
-  return res;
+  return sendWithSessionRefresh({
+    send: () => send(path, opts),
+    refresh: refreshSession,
+    onExpired: notifyExpired,
+    unavailableError: refreshUnavailableError,
+  });
 }
 
 /** Call the API and parse JSON. Throws `ApiError` on any non-2xx answer. */

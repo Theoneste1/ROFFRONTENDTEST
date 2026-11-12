@@ -9,7 +9,7 @@
  *   style attributes in server-rendered HTML.
  */
 import { useEffect, useState, useSyncExternalStore } from "react";
-import Image from "next/image";
+import Image from "@/app/components/ui/Image";
 import Link from "next/link";
 import { ArrowRight, BookOpen, GraduationCap, Pause, Play, Users } from "lucide-react";
 import { HERO_QUOTES, HERO_SLIDES, HERO_VIDEO } from "@/lib/site/content";

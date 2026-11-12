@@ -51,7 +51,7 @@ export default function DeepLinkRedirect() {
   if (session.status === "error") {
     return (
       <PublicCard>
-        <ErrorState error={null} title="Couldn't load your account" onRetry={session.retry} />
+        <ErrorState error={session.error} title="Couldn't load your account" onRetry={session.retry} />
       </PublicCard>
     );
   }

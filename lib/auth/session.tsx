@@ -8,12 +8,24 @@
  * permissions (`GET /me/permissions`) are loaded through TanStack Query, so
  * any mutation can refresh them by invalidating `queryKeys.me.all`.
  *
+ * Only a definite refusal of the refresh token signs the user out. If the
+ * server cannot be reached (network, 429, 5xx), the status is "error" with a
+ * "Try again" that restores the session — never a silent sign-out.
+ *
  * Hiding UI by role or permission is only a courtesy: the backend enforces
  * every rule again on every request.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getAccessToken, onSessionExpired, refreshSession, setAccessToken } from "@/lib/api/client";
+import {
+  clearRefreshCooldown,
+  getAccessToken,
+  onSessionExpired,
+  refreshSession,
+  refreshUnavailableError,
+  setAccessToken,
+} from "@/lib/api/client";
+import { signInThenClearCooldown, type RefreshOutcome } from "@/lib/api/refresh-outcome";
 import { authApi, meApi } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/query/keys";
 import type { CurrentUser, Permission, Role } from "@/lib/api/types";
@@ -36,13 +48,24 @@ interface SessionValue {
    * backend has already revoked it (e.g. after a password change).
    */
   endSession: () => void;
-  /** Retry loading the session after an error. */
+  /** Why `status` is "error" (pass it to ErrorState); null otherwise. */
+  error: unknown;
+  /** Retry loading the session after an error (restores it if the server was unreachable). */
   retry: () => void;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
 
-type Phase = "checking" | "signed-in" | "signed-out";
+/** "unavailable": the session could not be restored because the server was unreachable — not signed out. */
+type Phase = "checking" | "signed-in" | "signed-out" | "unavailable";
+
+/** ok → signed in; rejected → signed out; unavailable → not signed out, "Try again" restores. */
+function phaseFor(outcome: RefreshOutcome): Phase {
+  return outcome === "ok" ? "signed-in" : outcome === "rejected" ? "signed-out" : "unavailable";
+}
+
+/** The same error the API client throws for an unavailable refresh (one definition, in client.ts). */
+const UNAVAILABLE_ERROR = refreshUnavailableError();
 
 const CHANNEL = "rof-auth";
 type AuthMessage = { type: "login" } | { type: "logout" };
@@ -63,8 +86,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const ok = getAccessToken() ? true : await refreshSession();
-      if (!cancelled) setPhase(ok ? "signed-in" : "signed-out");
+      const outcome = getAccessToken() ? "ok" : await refreshSession();
+      if (!cancelled) setPhase(phaseFor(outcome));
     })();
     return () => {
       cancelled = true;
@@ -83,7 +106,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (event.data?.type === "logout") {
         signOutLocally();
       } else if (event.data?.type === "login" && !getAccessToken()) {
-        if (await refreshSession()) setPhase("signed-in");
+        // Another tab signed in (the message is sent only after a successful
+        // sign-in, so the server is reachable): end this tab's own outage
+        // cooldown, then adopt the session with one refresh. Anything but "ok"
+        // leaves this tab as it is.
+        clearRefreshCooldown();
+        if ((await refreshSession()) === "ok") setPhase("signed-in");
       }
     };
     return () => {
@@ -110,7 +138,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (username: string, password: string) => {
-      const res = await authApi.login(username, password);
+      // The cooldown is cleared only after the sign-in succeeded (a failure throws first).
+      const res = await signInThenClearCooldown(() => authApi.login(username, password), clearRefreshCooldown);
       queryClient.clear();
       queryClient.setQueryData(queryKeys.me.profile(), res.user);
       setSignedOutByUser(false);
@@ -144,21 +173,34 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
   }, [signOutLocally]);
 
+  // A deliberate "Try again" may refresh at once (ends the storm-prevention cooldown).
   const retry = useCallback(() => {
+    clearRefreshCooldown();
+    if (phase === "unavailable") {
+      setPhase("checking");
+      void (async () => setPhase(phaseFor(await refreshSession())))();
+      return;
+    }
     void meQuery.refetch();
     void permissionsQuery.refetch();
-  }, [meQuery, permissionsQuery]);
+  }, [phase, meQuery, permissionsQuery]);
 
   const value = useMemo<SessionValue>(() => {
     const user = signedIn ? (meQuery.data ?? null) : null;
     const permissions = new Set<Permission>(signedIn ? (permissionsQuery.data?.permissions ?? []) : []);
 
     let status: SessionStatus;
+    let error: unknown = null;
     if (phase === "checking") status = "loading";
     else if (phase === "signed-out") status = "unauthenticated";
-    else if (user) status = "authenticated";
-    else if (meQuery.isError) status = "error";
-    else status = "loading";
+    else if (phase === "unavailable") {
+      status = "error";
+      error = UNAVAILABLE_ERROR;
+    } else if (user) status = "authenticated";
+    else if (meQuery.isError) {
+      status = "error";
+      error = meQuery.error;
+    } else status = "loading";
 
     return {
       status,
@@ -171,9 +213,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       logout,
       logoutEverywhere,
       endSession,
+      error,
       retry,
     };
-  }, [phase, signedIn, signedOutByUser, meQuery.data, meQuery.isError, permissionsQuery.data, login, logout, logoutEverywhere, endSession, retry]);
+  }, [phase, signedIn, signedOutByUser, meQuery.data, meQuery.isError, meQuery.error, permissionsQuery.data, login, logout, logoutEverywhere, endSession, retry]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

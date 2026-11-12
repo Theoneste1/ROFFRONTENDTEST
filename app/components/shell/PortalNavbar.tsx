@@ -5,7 +5,7 @@
 import { Menu } from "lucide-react";
 import NavbarUser from "@/app/components/shell/NavbarUser";
 import NotificationBell from "@/app/components/notifications/NotificationBell";
-import Image from "next/image";
+import Image from "@/app/components/ui/Image";
 
 interface NavbarProps {
   onMenuClick: () => void;
