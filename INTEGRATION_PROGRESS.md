@@ -114,6 +114,11 @@ Phases 3 and 4 flows that waited for the admin (student submission, mentor gradi
 ## Known limitations (backend)
 No push notifications (60 s polling); no teacher accounts (teachers use the contact form); contact messages cannot be answered from the platform (reply by e-mail); e-mail is DRY_RUN locally; no avatar upload, and username/e-mail/school are not user-editable; no school create/edit; no assignment delete.
 
+**Starting an academic year is not idempotent (backend requirement, open).** `POST /admin/academic-years/:id/activate` is one request whose transaction can run for up to 120 s, while the Netlify proxy gives up after about 26 s. If the browser gets no answer, the outcome is unknown. A second request still sees the year as PLANNED, waits behind the first, and then runs the rollover again (re-closing the previous year, a duplicate audit entry, and promotion on top of promotion if the choices differ). The admin page prevents this only in the same browser: after an unanswered start it locks "Start year" for 5 minutes, through closing the dialog and reloading the page (unless browser storage is blocked), until the list shows the result (`lib/admin/academic-years.ts`). Other administrators, browsers and devices are not covered. The 5-minute window is an estimate: it can't cover a request that reaches a sleeping backend later than that. To make retries safe, the backend needs one of:
+- single-flight activation: a lock, or a conditional `PLANNED → ACTIVE` update inside the transaction that refuses with 409 when the year is no longer PLANNED;
+- an idempotency key; or
+- an asynchronous job whose status the page can poll.
+
 ## Environment
 Backend `node dist/main.js` on `:3000` with the local `prisma dev` database `rof`; frontend on `:3001` (`/api` proxy). `APP_URL=http://localhost:3001` ✅. Admin credentials are read from the user environment variables `ROF_ADMIN_USER` / `ROF_ADMIN_PASSWORD`, never stored in files. Test scripts are kept outside the repository, in the session scratchpads.
 

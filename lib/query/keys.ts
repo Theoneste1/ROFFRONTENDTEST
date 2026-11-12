@@ -20,6 +20,12 @@ export const queryKeys = {
     /** Students: GET /me/school-affiliation. */
     schoolAffiliation: () => [...queryKeys.me.all, "school-affiliation"] as const,
   },
+  /** Academic years and enrolments (lib/api/academic-years.ts). */
+  academicYears: {
+    all: ["academic-years"] as const,
+    list: () => [...queryKeys.academicYears.all, "list"] as const,
+    enrollments: (yearId: string, filters: object) => [...queryKeys.academicYears.all, "enrollments", yearId, filters] as const,
+  },
   /** Account administration added with the school and role work (lib/api/accounts.ts). */
   accounts: {
     all: ["accounts"] as const,
