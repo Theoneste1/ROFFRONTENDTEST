@@ -9,8 +9,10 @@ import {
   BookOpen,
   FileText,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Library
 } from "lucide-react";
+import { useSession } from "@/lib/auth/session";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 
 interface SidebarProps {
@@ -20,6 +22,9 @@ interface SidebarProps {
 export default function Sidebar({ isOpen }: SidebarProps) {
   const pathname = usePathname();
   const [isAssignmentsOpen, setIsAssignmentsOpen] = useState(pathname.startsWith("/student/assignments"));
+  // Shown while permissions load (menus follow /me/permissions once known); the API enforces access.
+  const { knownPermissions } = useSession();
+  const showResources = !knownPermissions || knownPermissions.has("resources.view");
 
   // Function to check if link is active
   const isActive = (path: string) => {
@@ -82,6 +87,22 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           <BookOpen className="h-5 w-5 flex-shrink-0" />
           {isOpen && <span className="whitespace-nowrap">Courses</span>}
         </Link>
+
+        {/* Mathematics resource library */}
+        {showResources && (
+          <Link
+            href="/student/resources"
+            title="Resources"
+            className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
+              } ${isActive("/student/resources")
+                ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
+                : "hover:bg-white/5 text-slate-400 hover:text-white"
+              }`}
+          >
+            <Library className="h-5 w-5 flex-shrink-0" />
+            {isOpen && <span className="whitespace-nowrap">Resources</span>}
+          </Link>
+        )}
 
         {/* Assignments Section (Collapsible) */}
         <div>
