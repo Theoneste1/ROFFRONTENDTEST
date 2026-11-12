@@ -11,7 +11,12 @@
  *
  * The browser talks to this origin — the API is proxied under `/api`, fonts
  * are self-hosted by next/font, images are local, downloads use `blob:` URLs —
- * plus, for file uploads only, the backend origin in NEXT_PUBLIC_API_UPLOAD_ORIGIN.
+ * plus the backend origin in NEXT_PUBLIC_API_UPLOAD_ORIGIN. `connect-src`
+ * allows connections to that whole origin (any path or method, by fetch, XHR,
+ * WebSocket or beacon): CSP cannot limit it to particular paths. The
+ * application itself uses the origin only for multipart file uploads
+ * (lib/api/client.ts); the backend still requires the access token and
+ * enforces CORS for those requests.
  *
  * No imports: next.config.ts loads this file at build time, and its loader
  * cannot follow further TypeScript imports.
