@@ -28,7 +28,17 @@ export type Permission =
   | "users.manage" | "academicYears.manage" | "enrollments.manage"
   | "divisions.manage" | "courses.manage" | "mentorAssignments.manage"
   | "mentorRequests.decide" | "settings.manage" | "email.bulkSend"
-  | "audit.view" | "activity.view";
+  | "audit.view" | "activity.view"
+  // Phase 1 names (backend develop, src/auth/permissions.ts). The production backend never
+  // returns them; for ADMIN / MENTOR / STUDENT the backend keeps the original lists above.
+  | "reports.view" | "students.viewScoped" | "users.view"
+  | "users.manageStudents" | "users.manageCoaches" | "users.manageTeachers"
+  | "users.manageHeadCoaches" | "users.manageAdmins"
+  | "programmes.manageHeads" | "programmes.manageMembers" | "coaches.monitor"
+  | "settings.manageSystem" | "permissions.view" | "permissions.manageOverrides"
+  // Teacher delegations: granted to an individual Teacher by an Administrator.
+  | "students.viewProfile" | "students.viewProgress" | "submissions.submitOnBehalf"
+  | "schools.manage" | "schools.syncDirectory";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 

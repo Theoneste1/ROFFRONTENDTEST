@@ -8,6 +8,7 @@
  */
 import React, { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "@/lib/auth/session";
 import { ArrowLeft, ChevronDown, Trash2 } from "lucide-react";
 import type { CourseResource, ResourceType, TeachingScope } from "@/lib/api/types";
 import { RESOURCE_RULES, RESOURCE_UPLOAD } from "@/lib/api/mentor";
@@ -29,6 +30,7 @@ const inputCls =
  */
 export default function ResourceForm({ scopeList, basePath = "/mentor/courses" }: { scopeList?: TeachingScope[]; basePath?: string } = {}) {
   const params = useSearchParams();
+  const { can, permissionsStatus } = useSession();
   const teaching = useTeachingScopes(!scopeList);
   const scopes = scopeList ? { data: scopeList, isPending: false, isError: false as const, error: null, refetch: () => undefined } : teaching;
   const resourceId = params.get("resourceId") ?? undefined;
@@ -36,6 +38,14 @@ export default function ResourceForm({ scopeList, basePath = "/mentor/courses" }
   const scope = list.find((s) => scopeKey(s) === params.get("scope")) ?? list[0];
   const existing = useMentorResource(resourceId ? scope?.course.id : undefined, resourceId);
 
+  // Uploading and editing need resources.manage (a Head Coach views resources only).
+  if (permissionsStatus === "loading") return <LoadingBlock />;
+  if (!can("resources.manage"))
+    return (
+      <div className="p-8 bg-white rounded-2xl m-8">
+        <EmptyState title="You can't add or edit resources" description="Your role can view this course's resources but not change them." />
+      </div>
+    );
   if (scopes.isPending || (resourceId && existing.isPending)) return <LoadingBlock />;
   if (scopes.isError) return <ErrorState error={scopes.error} onRetry={() => scopes.refetch()} />;
   if (!scope)

@@ -19,6 +19,19 @@ export const queryKeys = {
     permissions: () => [...queryKeys.me.all, "permissions"] as const,
   },
   support: ["support"] as const,
+  /** Teacher portal: students of the teacher's assigned schools. */
+  teacher: {
+    all: ["teacher"] as const,
+    students: (filters: Record<string, unknown> = {}) => [...queryKeys.teacher.all, "students", filters] as const,
+    profile: (studentId: string) => [...queryKeys.teacher.all, "profile", studentId] as const,
+    progress: (studentId: string) => [...queryKeys.teacher.all, "progress", studentId] as const,
+  },
+  /** Programmes (Head Coach monitoring). */
+  programmes: {
+    all: ["programmes"] as const,
+    list: () => [...queryKeys.programmes.all, "list"] as const,
+    members: (programmeId: string, filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "members", programmeId, filters] as const,
+  },
   /** Backend-wide information (`GET /api/v1`), the same for every user. */
   backend: {
     all: ["backend"] as const,

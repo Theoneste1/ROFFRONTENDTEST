@@ -27,6 +27,7 @@ const RE = {
 /** Portal-prefixed paths the backend links to, per portal (all exist in this app). */
 const PORTAL_PATHS: Record<PortalPrefix, RegExp[]> = {
   "/student": [/^\/student\//],
+  "/teacher": [/^\/teacher\/students\/[\w-]+\/?$/],
   "/mentor": [/^\/mentor\/assignments\/[\w-]+\/?$/, /^\/mentor\/reviews\/?$/, /^\/mentor\/reviews\/[\w-]+\/?$/],
   "/admin": [/^\/admin\/assignments\/[\w-]+\/?$/, /^\/admin\/submissions\/[\w-]+\/?$/, /^\/admin\/moderation\/reports\/[\w-]+\/?$/],
 };
@@ -36,21 +37,31 @@ export function isDeepLinkPath(path: string): boolean {
   return Object.values(RE).some((re) => re.test(path));
 }
 
-/** The discussion page in the role's portal, or null for a role without a portal. */
+/**
+ * Portals that have no course, assignment or discussion pages: the teacher
+ * portal shows students only, so such links open nothing there.
+ */
+const WITHOUT_COURSE_PAGES: readonly PortalPrefix[] = ["/teacher"];
+
+/** The discussion page in the role's portal, or null when the portal has none (teacher, unknown role). */
 export function discussionHref(role: string | null | undefined, threadId: string): string | null {
   const prefix = portalPrefix(role);
-  return prefix ? `${prefix}/discussions/${threadId}` : null;
+  return prefix && !WITHOUT_COURSE_PAGES.includes(prefix) ? `${prefix}/discussions/${threadId}` : null;
 }
 
 /**
  * Maps a backend path (with optional query) to this app's route for `role`.
  * `/results/:id` for a student without a known assignment returns the
- * redirect route, which looks the assignment up. A role without a portal
- * (Teacher, Head Coach, unknown) has nothing to open here: null.
+ * redirect route, which looks the assignment up. An unknown role has nothing
+ * to open here, and a teacher only the student pages of the teacher portal: null otherwise.
  */
 export function resolveLink(link: string, role: string | null | undefined, data?: Record<string, string | undefined> | null): string | null {
   const prefix = portalPrefix(role);
   if (!prefix) return null;
+  if (WITHOUT_COURSE_PAGES.includes(prefix)) {
+    const path = link.split("?", 1)[0];
+    return !link.startsWith("//") && PORTAL_PATHS[prefix].some((re) => re.test(path)) ? link : null;
+  }
   if (!link.startsWith("/") || link.startsWith("//")) return null;
   const [path, query = ""] = link.split("?", 2);
   const qs = query ? `?${query}` : "";

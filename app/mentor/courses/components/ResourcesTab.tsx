@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { ArrowUpDown, BookOpen, Download, Edit, Eye, EyeOff, FileText, MoreHorizontal, NotebookPen, Plus, RotateCcw, Archive, Trash2 } from "lucide-react";
 import type { CourseResource, ResourceType } from "@/lib/api/types";
 import { mentorResourcesApi } from "@/lib/api/mentor";
+import { useSession } from "@/lib/auth/session";
 import { saveFile } from "@/lib/api/client";
 import { useMentorResources, useResourceAction } from "@/lib/queries/mentor";
 import { errorMessage } from "@/lib/api/errors";
@@ -59,6 +60,8 @@ export default function ResourcesTab({
   basePath?: string;
 }) {
   const router = useRouter();
+  // Coaches and administrators manage resources; a Head Coach (resources.view only) reads them.
+  const canManage = useSession().can("resources.manage");
   const cfg = KIND[kind];
   const resources = useMentorResources(courseId, divisionId);
   const action = useResourceAction(courseId);
@@ -104,14 +107,16 @@ export default function ResourcesTab({
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{cfg.title}</h2>
           <p className="text-gray-500 text-sm mt-1">{cfg.subtitle}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => router.push(addHref)}
-          className="flex items-center gap-2.5 bg-[#2522A5] hover:bg-[#1d1a88] text-white px-6 py-3 rounded-2xl font-medium shadow-sm transition-all text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{cfg.add}</span>
-        </button>
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => router.push(addHref)}
+            className="flex items-center gap-2.5 bg-[#2522A5] hover:bg-[#1d1a88] text-white px-6 py-3 rounded-2xl font-medium shadow-sm transition-all text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{cfg.add}</span>
+          </button>
+        )}
       </div>
 
       {notice && <Alert tone="success">{notice}</Alert>}
@@ -219,6 +224,7 @@ export default function ResourcesTab({
                           <RowMenu
                             resource={r}
                             state={st}
+                            canManage={canManage}
                             onEdit={() => router.push(`${basePath}/upload-book?scope=${encodeURIComponent(scopeKeyValue)}&resourceId=${r.id}&tab=${kind}`)}
                             onDownload={async () => {
                               for (const a of r.attachments) saveFile(await mentorResourcesApi.file(courseId, r.id, a.id, a.file.originalName));
@@ -242,12 +248,15 @@ export default function ResourcesTab({
 function RowMenu({
   resource,
   state,
+  canManage,
   onEdit,
   onDownload,
   onAction,
 }: {
   resource: CourseResource;
   state: "published" | "draft" | "archived";
+  /** resources.manage: edit, publish, archive, delete. Without it only the download is offered. */
+  canManage: boolean;
   onEdit: () => void;
   onDownload: () => Promise<void>;
   onAction: (a: "publish" | "unpublish" | "archive" | "restore" | "delete") => void;
@@ -294,6 +303,8 @@ function RowMenu({
               <Download className="w-3.5 h-3.5" /> Download file{resource.attachments.length > 1 ? "s" : ""}
             </button>
           )}
+          {canManage && (
+          <>
           <button type="button" className={item} onClick={choose(onEdit)}>
             <Edit className="w-3.5 h-3.5" /> Edit
           </button>
@@ -319,6 +330,8 @@ function RowMenu({
           <button type="button" className={`${item} !text-red-600`} onClick={choose(() => onAction("delete"))}>
             <Trash2 className="w-3.5 h-3.5" /> Delete
           </button>
+          </>
+          )}
         </div>
       )}
     </div>
