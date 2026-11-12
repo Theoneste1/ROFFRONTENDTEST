@@ -83,6 +83,49 @@ export function isAdministrative(role: string | null | undefined): boolean {
   return role === "ADMIN" || role === "SUPER_ADMIN";
 }
 
+/** Roles any administrator can give today on every backend (the production backend accepts only these). */
+export const BASE_ASSIGNABLE_ROLES: readonly KnownRole[] = ["STUDENT", "MENTOR", "ADMIN"];
+
+/**
+ * The roles the user form may offer. TEACHER / HEAD_COACH only when the
+ * backend advertises `teacherAccounts` / `headCoachAccounts` (GET /api/v1
+ * capabilities — false on LEGACY and UNKNOWN) AND the caller holds
+ * `users.manageTeachers` / `users.manageHeadCoaches` in /me/permissions, as the
+ * backend contract requires. SUPER_ADMIN is never offered (the API never gives
+ * it on creation; promotion needs step-up — a later change).
+ */
+export function assignableRoles(opts: {
+  teacherAccounts: boolean;
+  headCoachAccounts: boolean;
+  can: (permission: string) => boolean;
+}): KnownRole[] {
+  const roles: KnownRole[] = [...BASE_ASSIGNABLE_ROLES];
+  if (opts.teacherAccounts && opts.can("users.manageTeachers")) roles.splice(1, 0, "TEACHER");
+  if (opts.headCoachAccounts && opts.can("users.manageHeadCoaches")) roles.splice(roles.indexOf("ADMIN"), 0, "HEAD_COACH");
+  return roles;
+}
+
+const TAB_LABEL: Readonly<Record<KnownRole, string>> = {
+  STUDENT: "Students",
+  TEACHER: "Teachers",
+  MENTOR: "Coaches",
+  HEAD_COACH: "Head Coaches",
+  ADMIN: "Admins",
+  SUPER_ADMIN: "Super Admins",
+};
+
+/**
+ * Role filter tabs for the users list. The production backend accepts only
+ * STUDENT, MENTOR and ADMIN as a filter (any other value is a 400), so the
+ * newer roles are offered only when the backend is positively NEW and lists
+ * them in `capabilities.roles` (`backendRoles`; null on LEGACY, UNKNOWN or
+ * while loading).
+ */
+export function roleFilterTabs(backendRoles: readonly string[] | null): { label: string; value: "" | KnownRole }[] {
+  const shown = ROLES.filter((r) => BASE_ASSIGNABLE_ROLES.includes(r) || (backendRoles?.includes(r) ?? false));
+  return [{ label: "All", value: "" }, ...shown.map((r) => ({ label: TAB_LABEL[r], value: r }))];
+}
+
 /** Roles the backend serves `/me/notification-settings` (per-type switches) to. */
 export function hasNotificationTypeSettings(role: string | null | undefined): boolean {
   return role === "ADMIN" || role === "MENTOR" || role === "SUPER_ADMIN";

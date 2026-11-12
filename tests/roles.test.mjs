@@ -17,6 +17,8 @@ import {
   roleLabel,
   sharesPortal,
 } from "../lib/auth/role-rules.ts";
+import { BASE_ASSIGNABLE_ROLES, assignableRoles, roleFilterTabs } from "../lib/auth/role-rules.ts";
+import { ADMIN_NAV, ADMIN_SETTINGS, MENTOR_NAV, canSeeNavItem, visibleNav } from "../lib/auth/navigation.ts";
 import { postLoginPath } from "../lib/auth/roles.ts";
 import { discussionHref, isDeepLinkPath, notificationHref, resolveLink } from "../lib/notifications/links.ts";
 
@@ -137,4 +139,90 @@ test("links: Teacher, Head Coach and unknown roles get nothing to open (no crash
 test("deep-link paths are unchanged", () => {
   for (const p of ["/assignments/a1", "/results/s1", "/courses/c1/resources/r1", "/discussions/t1"]) assert.equal(isDeepLinkPath(p), true, p);
   for (const p of ["/admin/users", "/student/dashboard", "/assignments/"]) assert.equal(isDeepLinkPath(p), false, p);
+});
+
+// ─── Permission-driven menus ────────────────────────────────────────────────
+// The lists GET /me/permissions returns, copied from backend develop
+// (src/auth/permissions.ts: ROLE_PERMISSIONS for ADMIN / MENTOR — frozen — and
+// the SUPER_ADMIN grants).
+const ADMIN_LIST = [
+  "courses.view", "resources.view", "resources.manage", "assignments.view", "assignments.publish", "submissions.distribute",
+  "results.approve", "results.publish", "discussions.participate", "discussions.report", "discussions.moderate",
+  "analytics.course", "leaderboard.view", "reports.export", "users.manage", "academicYears.manage", "enrollments.manage",
+  "divisions.manage", "courses.manage", "mentorAssignments.manage", "mentorRequests.decide", "settings.manage",
+  "email.bulkSend", "audit.view", "activity.view",
+];
+const MENTOR_LIST = [
+  "courses.view", "resources.view", "resources.manage", "assignments.view", "assignments.prepare", "reviews.grade",
+  "discussions.participate", "discussions.report", "analytics.course", "leaderboard.view",
+];
+const SUPER_ADMIN_LIST = [
+  ...ADMIN_LIST, "reports.view", "students.viewScoped", "users.view", "users.manageStudents", "users.manageCoaches",
+  "users.manageTeachers", "users.manageHeadCoaches", "users.manageAdmins", "programmes.manageHeads", "programmes.manageMembers",
+  "coaches.monitor", "permissions.view", "permissions.manageOverrides", "settings.manageSystem", "schools.manage", "schools.syncDirectory",
+];
+const hrefs = (items) => items.map((i) => i.href);
+
+test("menus: today's ADMIN and MENTOR lists show every item they had before (no regression)", () => {
+  assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, new Set(ADMIN_LIST))), hrefs(ADMIN_NAV));
+  assert.equal(canSeeNavItem(ADMIN_SETTINGS, new Set(ADMIN_LIST)), true);
+  assert.deepEqual(hrefs(visibleNav(MENTOR_NAV, new Set(MENTOR_LIST))), hrefs(MENTOR_NAV));
+});
+
+test("menus: every permission a menu needs is in the frozen list of its portal's role", () => {
+  for (const item of [...ADMIN_NAV, ADMIN_SETTINGS]) if (item.permission) assert.ok(ADMIN_LIST.includes(item.permission), item.href);
+  for (const item of MENTOR_NAV) if (item.permission) assert.ok(MENTOR_LIST.includes(item.permission), item.href);
+});
+
+test("menus: a Super Administrator sees the whole administrator menu", () => {
+  assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, new Set(SUPER_ADMIN_LIST))), hrefs(ADMIN_NAV));
+  assert.equal(canSeeNavItem(ADMIN_SETTINGS, new Set(SUPER_ADMIN_LIST)), true);
+});
+
+test("menus: a DENY override hides exactly its own item", () => {
+  const withoutAudit = new Set(ADMIN_LIST.filter((p) => p !== "audit.view"));
+  assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, withoutAudit)), hrefs(ADMIN_NAV).filter((h) => h !== "/admin/audit-log"));
+  const withoutSettings = new Set(ADMIN_LIST.filter((p) => p !== "settings.manage"));
+  assert.equal(canSeeNavItem(ADMIN_SETTINGS, withoutSettings), false);
+  const coachWithoutGrading = new Set(MENTOR_LIST.filter((p) => p !== "reviews.grade"));
+  assert.deepEqual(hrefs(visibleNav(MENTOR_NAV, coachWithoutGrading)), ["/mentor/dashboard", "/mentor/courses", "/mentor/assignments"]);
+});
+
+test("menus: unknown permissions (loading or failed) show every item; an empty list keeps the always-on items", () => {
+  assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, null)), hrefs(ADMIN_NAV));
+  assert.equal(canSeeNavItem(ADMIN_SETTINGS, null), true);
+  assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, new Set())), ["/admin/dashboard", "/admin/messages"]);
+});
+
+// ─── Role options and filters from the backend's capabilities ───────────────
+
+const can = (list) => (p) => list.includes(p);
+
+test("assignable roles: Student, Coach, Administrator on every backend (no capabilities needed)", () => {
+  assert.deepEqual(assignableRoles({ teacherAccounts: false, headCoachAccounts: false, can: can(ADMIN_LIST) }), ["STUDENT", "MENTOR", "ADMIN"]);
+  assert.deepEqual([...BASE_ASSIGNABLE_ROLES], ["STUDENT", "MENTOR", "ADMIN"]);
+});
+
+test("assignable roles: Teacher / Head Coach need BOTH the backend feature and the caller's permission", () => {
+  assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(SUPER_ADMIN_LIST) }), ["STUDENT", "TEACHER", "MENTOR", "HEAD_COACH", "ADMIN"]);
+  assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: false, can: can(SUPER_ADMIN_LIST) }), ["STUDENT", "TEACHER", "MENTOR", "ADMIN"]);
+  assert.deepEqual(assignableRoles({ teacherAccounts: false, headCoachAccounts: false, can: can(SUPER_ADMIN_LIST) }), ["STUDENT", "MENTOR", "ADMIN"], "feature off: never offered");
+  // The ADMIN list from /me/permissions is frozen and lacks users.manageTeachers / manageHeadCoaches.
+  assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(ADMIN_LIST) }), ["STUDENT", "MENTOR", "ADMIN"]);
+});
+
+test("assignable roles: Super Administrator is never offered", () => {
+  for (const t of [true, false]) for (const h of [true, false]) {
+    assert.ok(!assignableRoles({ teacherAccounts: t, headCoachAccounts: h, can: () => true }).includes("SUPER_ADMIN"));
+  }
+});
+
+test("role filter tabs: production (LEGACY), UNKNOWN or loading → only the three original roles", () => {
+  assert.deepEqual(roleFilterTabs(null).map((t) => t.value), ["", "STUDENT", "MENTOR", "ADMIN"]);
+});
+
+test("role filter tabs: a NEW backend adds the roles it lists, in a stable order", () => {
+  const all = ["STUDENT", "TEACHER", "MENTOR", "HEAD_COACH", "ADMIN", "SUPER_ADMIN"];
+  assert.deepEqual(roleFilterTabs(all).map((t) => t.label), ["All", "Students", "Teachers", "Coaches", "Head Coaches", "Admins", "Super Admins"]);
+  assert.deepEqual(roleFilterTabs(["STUDENT", "MENTOR", "ADMIN", "FUTURE_ROLE"]).map((t) => t.value), ["", "STUDENT", "MENTOR", "ADMIN"], "unknown role names ignored");
 });
