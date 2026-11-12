@@ -59,6 +59,8 @@ export function errorMessage(error: unknown, fallback = "Something went wrong. P
     switch (error.code) {
       case "NETWORK_ERROR":
         return "Cannot reach the server. Check your connection and try again.";
+      case "SESSION_REFRESH_UNAVAILABLE":
+        return "Can't reach the server to renew your session. You are still signed in — please try again in a moment.";
       case "VALIDATION_FAILED":
         return error.validationMessages[0] ?? error.message;
       default:

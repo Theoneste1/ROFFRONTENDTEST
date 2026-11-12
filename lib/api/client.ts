@@ -5,14 +5,17 @@
  *   to the backend.
  * - The access token (15 min) lives in memory only. The refresh token is the
  *   backend's httpOnly cookie `rof_refresh`; this code never reads it.
- * - On a 401 the client refreshes once and retries the request. If the
- *   refresh fails, the session is over and listeners are told (the session
- *   provider then shows the login page).
+ * - On a 401 the client refreshes once and retries the request. Only a
+ *   definite refusal (401/403 from /auth/refresh, or a 401 right after a
+ *   successful refresh) ends the session; listeners are told and the session
+ *   provider shows the login page. A temporary failure (network, 429, 5xx)
+ *   keeps the session and throws `SESSION_REFRESH_UNAVAILABLE` instead.
  * - Refresh tokens rotate on every use and a reused token revokes the whole
  *   session, so refreshes are single-flight within a tab and serialised
  *   across tabs with the Web Locks API.
  */
 import { ApiError } from "./errors";
+import { attemptRefresh, createRefresher, sendWithSessionRefresh, type RefreshOutcome } from "./refresh-outcome";
 import { UPLOAD_ORIGIN } from "./upload-origin";
 import { trackUpload } from "./upload-progress";
 import type { TokenResponse } from "./types";
@@ -46,45 +49,34 @@ function notifyExpired() {
 }
 
 // ─── Refresh ────────────────────────────────────────────────────────────────
+//
+// The rules (outcomes, retries, single flight, cooldown) live in
+// refresh-outcome.ts. Only a definite rejection (401/403) means "signed out";
+// a rate limit (429), a server error or a network failure is retried and, if
+// it persists, reported as `unavailable` — the refresh cookie may still be
+// valid, so the session is kept.
 
-let refreshing: Promise<boolean> | null = null;
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-const REFRESH_ATTEMPTS = 3;
-
-/**
- * POST /auth/refresh. Only a definite rejection (401/403) means "signed out".
- * A rate limit (429) or a network/server hiccup is retried with a short
- * backoff: the backend rejects those requests before touching the token, so
- * the cookie is still valid and retrying is safe.
- */
-async function postRefresh(): Promise<boolean> {
-  for (let attempt = 1; attempt <= REFRESH_ATTEMPTS; attempt++) {
-    let res: Response;
-    try {
-      res = await fetch(`${API_BASE}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-        headers: { Accept: "application/json" },
-      });
-    } catch {
-      if (attempt === REFRESH_ATTEMPTS) return false;
-      await delay(1000 * attempt);
-      continue;
-    }
-    if (res.ok) {
-      const body = (await res.json()) as TokenResponse;
-      accessToken = body.access_token;
-      return true;
-    }
-    const transient = res.status === 429 || res.status >= 500;
-    if (!transient || attempt === REFRESH_ATTEMPTS) return false;
-    const retryAfter = Number(res.headers.get("retry-after"));
-    await delay(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter, 30) * 1000 : 2000 * attempt);
-  }
-  return false;
+/** One POST /auth/refresh (the httpOnly cookie carries the refresh token). */
+async function postRefresh() {
+  const res = await fetch(`${API_BASE}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+  return {
+    status: res.status,
+    retryAfter: res.headers.get("retry-after"),
+    accessToken: async () => ((await res.json()) as Partial<TokenResponse>).access_token ?? null,
+  };
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+async function runRefresh(): Promise<RefreshOutcome> {
+  const result = await attemptRefresh({ post: postRefresh, delay });
+  if (result.outcome === "ok" && result.accessToken) accessToken = result.accessToken;
+  return result.outcome;
+}
 
 function withCrossTabLock<T>(fn: () => Promise<T>): Promise<T> {
   if (typeof navigator !== "undefined" && "locks" in navigator && navigator.locks) {
@@ -93,15 +85,27 @@ function withCrossTabLock<T>(fn: () => Promise<T>): Promise<T> {
   return fn();
 }
 
+const refresher = createRefresher({ run: runRefresh, lock: withCrossTabLock });
+
 /**
- * Exchange the refresh cookie for a new access token. Returns false when
- * there is no valid session. Concurrent callers share one request.
+ * Exchange the refresh cookie for a new access token: `ok`, `rejected` (no
+ * valid session) or `unavailable` (temporary failure; try again later).
+ * Concurrent callers share one request, serialised across tabs.
  */
-export function refreshSession(): Promise<boolean> {
-  refreshing ??= withCrossTabLock(postRefresh).finally(() => {
-    refreshing = null;
-  });
-  return refreshing;
+export function refreshSession(): Promise<RefreshOutcome> {
+  return refresher.refresh();
+}
+
+/** Allow an immediate refresh again, e.g. when the user presses "Try again". */
+export function clearRefreshCooldown(): void {
+  refresher.clearCooldown();
+}
+
+/** Thrown when the session could not be renewed for a temporary reason (the user stays signed in). */
+export const SESSION_REFRESH_UNAVAILABLE = "SESSION_REFRESH_UNAVAILABLE";
+
+function refreshUnavailableError(): ApiError {
+  return new ApiError(503, SESSION_REFRESH_UNAVAILABLE, "Can't reach the server to renew your session. Please try again.");
 }
 
 // ─── Requests ───────────────────────────────────────────────────────────────
@@ -226,17 +230,20 @@ async function toError(res: Response): Promise<ApiError> {
   return ApiError.fromBody(res.status, body, res.statusText || "Request failed");
 }
 
-/** Send a request, refreshing the session once if the access token expired. */
+/**
+ * Send a request, refreshing the session once if the access token expired.
+ * Signs out only on a definite rejection; a temporary refresh failure throws
+ * `SESSION_REFRESH_UNAVAILABLE` and keeps the session.
+ */
 async function sendWithRefresh(path: string, opts: RequestOptions): Promise<Response> {
   const auth = opts.auth ?? true;
-  let res = await send(path, opts);
-  if (res.status === 401 && auth && !path.startsWith("/auth/")) {
-    if (await refreshSession()) {
-      res = await send(path, opts);
-    }
-    if (res.status === 401) notifyExpired();
-  }
-  return res;
+  if (!auth || path.startsWith("/auth/")) return send(path, opts);
+  return sendWithSessionRefresh({
+    send: () => send(path, opts),
+    refresh: refreshSession,
+    onExpired: notifyExpired,
+    unavailableError: refreshUnavailableError,
+  });
 }
 
 /** Call the API and parse JSON. Throws `ApiError` on any non-2xx answer. */
