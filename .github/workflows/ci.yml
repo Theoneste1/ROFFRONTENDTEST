@@ -1,28 +1,45 @@
-name: CI
+name: Frontend CI
 
-# Lint, type-check and the production build with the same settings as Netlify
-# (netlify.toml): a broken build is caught on the pull request, not on deploy.
+# Lint, route types, type-check, unit tests and the production build with the
+# same settings as Netlify (netlify.toml): a broken build is caught on the PR.
 
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  quality:
+    name: Lint, type-check, test and build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22        # same as NODE_VERSION in netlify.toml
           cache: npm
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci               # package-lock.json is committed
 
       - name: Lint
         run: npm run lint
+
+      # PageProps / LayoutProps are generated into .next/types (gitignored);
+      # a fresh checkout has none, so generate them before tsc runs.
+      - name: Generate Next.js route types
+        run: npx next typegen
 
       - name: Type-check
         run: npm run typecheck
@@ -30,8 +47,7 @@ jobs:
       - name: Unit tests
         run: npm test
 
-      # NETLIFY=true runs next.config.ts's hosted-build check (API_PROXY_TARGET
-      # must be a public backend), exactly as on Netlify.
+      # NETLIFY=true runs next.config.ts's hosted-build check, exactly as on Netlify.
       - name: Production build (Netlify settings)
         run: npm run build
         env:
