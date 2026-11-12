@@ -50,6 +50,16 @@ export function schoolClaimPayload(d: SchoolClaimDraft): SchoolClaimInput {
   return { country: d.country.trim().toUpperCase(), schoolName: d.name.trim() };
 }
 
+/**
+ * True when a directory draft names the same official school as the current claim
+ * (same school code): the backend would refuse it (CLAIM_ALREADY_PENDING /
+ * ALREADY_VERIFIED). Name-only and abroad drafts are left to the backend, which
+ * compares its own normalised identity.
+ */
+export function sameClaimedSchool(d: SchoolClaimDraft, current: { school: { code: string | null } | null }): boolean {
+  return d.mode === "directory" && !!d.school && !!current.school?.code && d.school.code === current.school.code;
+}
+
 /** Backend error fields → the draft field they belong to (for showing server field errors). */
 export const SCHOOL_CLAIM_SERVER_FIELDS: Readonly<Record<string, SchoolClaimField>> = {
   schoolCode: "school",

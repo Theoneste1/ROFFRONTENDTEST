@@ -62,3 +62,37 @@ test("promotion to Super Administrator: only by a Super Administrator, of an act
   assert.equal(canPromoteToSuperAdmin("SUPER_ADMIN", { ...admin, activatedAt: null }), false);
   assert.equal(canPromoteToSuperAdmin("SUPER_ADMIN", { ...admin, role: "MENTOR" }), false);
 });
+
+// ── Follow-up: backend-dependent step-up, pending claims, registration gate ──
+import { roleChangeStepUp } from "../lib/auth/role-rules.ts";
+import { sameClaimedSchool } from "../lib/accounts/school-claim.ts";
+import { registrationGate } from "../lib/accounts/registration-mode.ts";
+
+test("role-change step-up is asked and sent only on a NEW backend (LEGACY refuses currentPassword)", () => {
+  for (const [from, to] of [["STUDENT", "ADMIN"], ["MENTOR", "ADMIN"], ["ADMIN", "MENTOR"], ["ADMIN", "STUDENT"], ["ADMIN", "SUPER_ADMIN"]]) {
+    assert.equal(roleChangeStepUp("NEW", from, to), true, `NEW ${from}→${to}`);
+    assert.equal(roleChangeStepUp("LEGACY", from, to), false, `LEGACY ${from}→${to}`);
+    assert.equal(roleChangeStepUp("UNKNOWN", from, to), false, `UNKNOWN ${from}→${to}: asked only if the backend demands it`);
+    assert.equal(roleChangeStepUp(undefined, from, to), false, `loading ${from}→${to}`);
+  }
+  assert.equal(roleChangeStepUp("NEW", "STUDENT", "MENTOR"), false, "no admin role involved");
+});
+
+test("pending claims: only the same official school (same code) is treated as a duplicate", () => {
+  const current = { school: { code: "110101" } };
+  assert.equal(sameClaimedSchool({ mode: "directory", school: { code: "110101", name: "A" } }, current), true);
+  assert.equal(sameClaimedSchool({ mode: "directory", school: { code: "220202", name: "B" } }, current), false);
+  assert.equal(sameClaimedSchool({ mode: "notListed", name: "A", province: "P", district: "D", sector: "S" }, current), false, "left to the backend");
+  assert.equal(sameClaimedSchool({ mode: "directory", school: { code: "110101", name: "A" } }, { school: null }), false);
+});
+
+test("registration gate: no form until detection answers; UNKNOWN is a visible failure, never LEGACY", () => {
+  const NEW = (features) => ({ state: "NEW", schemaVersion: 1, roles: [], features });
+  assert.deepEqual(registrationGate(undefined, true), { state: "loading" });
+  assert.deepEqual(registrationGate(undefined, false), { state: "loading" });
+  assert.deepEqual(registrationGate({ state: "UNKNOWN", reason: "timeout" }, true), { state: "loading" }, "retry in flight");
+  assert.deepEqual(registrationGate({ state: "UNKNOWN", reason: "timeout" }, false), { state: "failed", reason: "timeout" });
+  assert.deepEqual(registrationGate({ state: "LEGACY" }, false), { state: "ready", mode: "legacy" });
+  assert.deepEqual(registrationGate(NEW(["schoolAffiliations"]), false), { state: "ready", mode: "directory" });
+  assert.deepEqual(registrationGate(NEW([]), false), { state: "ready", mode: "legacy" });
+});

@@ -116,14 +116,22 @@ function DirectoryPicker({ value, onChange, error }: { value: Extract<SchoolClai
 
   if (value.school) {
     return (
-      <div className="flex items-center justify-between gap-3 border border-slate-300 rounded-lg px-4 py-3 text-sm" data-testid="school-chosen">
-        <span className="min-w-0">
-          <span className="font-semibold text-slate-800">{value.school.name}</span>
-          <span className="block text-xs text-slate-500">School code {value.school.code}</span>
-        </span>
-        <button type="button" onClick={() => onChange({ mode: "directory", school: null })} className="text-xs font-semibold text-[#2B2BB2] hover:underline shrink-0">
-          Change
-        </button>
+      <div>
+        <div className={`flex items-center justify-between gap-3 border rounded-lg px-4 py-3 text-sm ${error ? "border-red-400" : "border-slate-300"}`} data-testid="school-chosen">
+          <span className="min-w-0">
+            <span className="font-semibold text-slate-800">{value.school.name}</span>
+            <span className="block text-xs text-slate-500">School code {value.school.code}</span>
+          </span>
+          <button type="button" onClick={() => onChange({ mode: "directory", school: null })} className="text-xs font-semibold text-[#2B2BB2] hover:underline shrink-0">
+            Change
+          </button>
+        </div>
+        {/* A chosen school can still be refused (same school already pending, or a server check). */}
+        {error && (
+          <p className="mt-1.5 text-xs text-red-600" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     );
   }

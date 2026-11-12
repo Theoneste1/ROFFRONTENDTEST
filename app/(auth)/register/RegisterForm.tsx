@@ -10,18 +10,23 @@
  * from the official directory, a Rwandan school that isn't listed, or a school
  * abroad (SchoolClaimFields); every other backend — and an unknown one — gets the
  * legacy name + location fields, which both accept.
+ *
+ * Until the backend has been detected the form is not shown (its school fields
+ * and validation depend on it). If detection fails the page says so, offers a
+ * retry, and lets the student continue with the legacy fields. Once a form is
+ * chosen it is kept, so a later re-check can't swap fields while someone types.
  */
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { publicApi, type RegisterStudentResult } from "@/lib/api/auth";
 import type { GradeLevel } from "@/lib/api/types";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
-import { Alert } from "@/app/components/ui/feedback";
+import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import SchoolClaimFields, { emptyDraft } from "@/app/components/account/SchoolClaimFields";
-import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { registrationGate, type RegistrationSchoolMode } from "@/lib/accounts/registration-mode";
 import {
   SCHOOL_CLAIM_ERRORS,
   SCHOOL_CLAIM_SERVER_FIELDS,
@@ -55,8 +60,12 @@ export default function RegisterForm() {
   const [done, setDone] = useState<RegisterStudentResult | null>(null);
   const [schools, setSchools] = useState<{ id: string; name: string; location: string }[]>([]);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
-  const { detection, loading: detecting } = useBackendCapabilities();
-  const directory = hasFeature(detection, "schoolAffiliations");
+  const caps = useBackendCapabilities();
+  const gate = registrationGate(caps.detection, caps.fetching);
+  const [schoolMode, setSchoolMode] = useState<RegistrationSchoolMode | null>(null);
+  // Adopt the first definite answer and keep it (state adjusted during render, not in an effect).
+  if (schoolMode === null && gate.state === "ready") setSchoolMode(gate.mode);
+  const directory = schoolMode === "directory";
   const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
   const [claimErrors, setClaimErrors] = useState<Partial<Record<SchoolClaimField, string>>>({});
 
@@ -96,7 +105,7 @@ export default function RegisterForm() {
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
-    if (submitting) return;
+    if (submitting || schoolMode === null) return;
     const e = validate();
     const ce = directory ? validateSchoolClaim(claim) : {};
     setErrors(e);
@@ -142,6 +151,40 @@ export default function RegisterForm() {
         <Link href="/login" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
           Go to sign in
         </Link>
+      </div>
+    );
+  }
+
+  if (schoolMode === null) {
+    return (
+      <div className="space-y-5" data-testid="register-gate">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a student</h1>
+          <p className="mt-1 text-sm text-slate-500">Create your ROF LMS account to start learning Olympiad mathematics.</p>
+        </div>
+        {gate.state === "failed" ? (
+          <div className="space-y-4" data-testid="register-detection-failed">
+            <Alert tone="error">We couldn&apos;t reach the ROF LMS server to prepare the registration form.</Alert>
+            <p className="text-sm text-slate-600">Check your connection and try again. The server can take up to a minute to wake up.</p>
+            <Button type="button" className="w-full" onClick={caps.retry}>
+              Try again
+            </Button>
+            <Button type="button" variant="secondary" className="w-full" onClick={() => setSchoolMode("legacy")}>
+              Continue with the basic form
+            </Button>
+          </div>
+        ) : (
+          <div data-testid="register-loading">
+            <LoadingBlock label="Preparing the registration form…" />
+            <p className="text-center text-xs text-slate-500">This can take up to a minute while the server wakes up.</p>
+          </div>
+        )}
+        <p className="text-center text-sm text-slate-500">
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-[#2B2BB2] hover:underline">Sign in</Link>
+          {" · "}
+          <Link href="/" className="font-medium text-[#2B2BB2] hover:underline">Home</Link>
+        </p>
       </div>
     );
   }
@@ -206,8 +249,6 @@ export default function RegisterForm() {
           }}
           errors={claimErrors}
         />
-      ) : detecting ? (
-        <p className="text-sm text-slate-500" data-testid="school-loading">Loading the school list…</p>
       ) : (
         <>
       <div className="grid gap-4 sm:grid-cols-2">

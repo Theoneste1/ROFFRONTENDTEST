@@ -122,6 +122,17 @@ export function roleChangeNeedsPassword(from: string | null | undefined, to: str
 }
 
 /**
+ * Whether the form must ask for (and send) `currentPassword` before saving a role change.
+ * Only a backend that advertises capabilities (state "NEW") has the step-up; the
+ * LEGACY production backend has no `currentPassword` field and refuses unknown
+ * fields (400), so its request keeps the previous format. On an UNKNOWN backend
+ * nothing is sent up front; if it answers STEP_UP_REQUIRED the form asks then.
+ */
+export function roleChangeStepUp(backendState: string | null | undefined, from: string | null | undefined, to: string | null | undefined): boolean {
+  return backendState === "NEW" && roleChangeNeedsPassword(from, to);
+}
+
+/**
  * Promotion to Super Administrator, as the backend allows it: only by a Super
  * Administrator, only for an active, activated Administrator (and with the
  * password step-up). It is never offered when creating an account.

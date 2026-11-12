@@ -8,7 +8,7 @@ import { PASSWORD_RULE } from "@/lib/api/auth";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
 import type { AdminUser, GradeLevel, Permission, Role, SchoolRef } from "@/lib/api/types";
 import { roleLabel } from "@/lib/auth/roles";
-import { assignableRoles, canPromoteToSuperAdmin, roleChangeNeedsPassword } from "@/lib/auth/role-rules";
+import { assignableRoles, canPromoteToSuperAdmin, roleChangeNeedsPassword, roleChangeStepUp } from "@/lib/auth/role-rules";
 import { useSession } from "@/lib/auth/session";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -237,12 +237,17 @@ export function UserForm({
   const [errors, setErrors] = useState<Partial<Record<(typeof FIELDS)[number], string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Set when an UNKNOWN backend answered STEP_UP_REQUIRED: it has the step-up after all.
+  const [stepUpAsked, setStepUpAsked] = useState(false);
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((s) => ({ ...s, [k]: v }));
   const isStudent = f.role === "STUDENT";
   // New backends (schoolReferenceRequired): an invitation must name an existing school, and
   // an edit may remove the school (schoolId: null). Older backends keep the earlier behaviour.
   const schoolReference = hasFeature(detection, "schoolReferenceRequired");
-  const stepUp = mode === "edit" && !lockRole && roleChangeNeedsPassword(initial?.role, f.role);
+  // NEW backends require the editor's password for a role change to or from ADMIN / SUPER_ADMIN;
+  // the LEGACY backend has no such field and would refuse it (400), so it is neither asked nor sent there.
+  const stepUp =
+    mode === "edit" && !lockRole && (roleChangeStepUp(detection?.state, initial?.role, f.role) || (stepUpAsked && roleChangeNeedsPassword(initial?.role, f.role)));
 
   function validate() {
     const e: typeof errors = {};
@@ -295,7 +300,7 @@ export function UserForm({
     if (f.school && f.school.id !== initial.school?.id) changes.schoolId = f.school.id;
     if (!f.school && initial.school && schoolReference) changes.schoolId = null;
     if (base.homeLocation && base.homeLocation !== (initial.homeLocation ?? "")) changes.homeLocation = base.homeLocation;
-    if (changes.role && roleChangeNeedsPassword(initial.role, changes.role)) changes.currentPassword = f.currentPassword;
+    if (changes.role && stepUp) changes.currentPassword = f.currentPassword;
     return changes;
   }
 
@@ -315,7 +320,10 @@ export function UserForm({
       await onSubmit(input);
     } catch (err) {
       const fe = fieldErrors(err, FIELDS);
-      if (isApiError(err) && err.code === "STEP_UP_REQUIRED") fe.currentPassword = "That password isn't correct. Enter your own current password.";
+      if (isApiError(err) && err.code === "STEP_UP_REQUIRED") {
+        fe.currentPassword = stepUp ? "That password isn't correct. Enter your own current password." : "Enter your own password to confirm this role change.";
+        setStepUpAsked(true);
+      }
       setErrors(fe);
       setFormError(Object.keys(fe).length ? "Please correct the highlighted fields." : (isApiError(err) && err.code ? USER_ERRORS[err.code] : undefined) ?? errorMessage(err));
     } finally {

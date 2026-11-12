@@ -5,12 +5,17 @@
  * asking for another one (`POST /me/school-affiliation`). Students only, and only
  * when the backend advertises `schoolAffiliations`. A new claim is PENDING until
  * an Administrator verifies it; teachers see a student only once it is VERIFIED.
- * The backend enforces the limits (one pending claim, 3 a day, 7-day cooldown).
+ * A student may ask for a different school while a claim is pending (the new
+ * claim replaces it); asking again for the same school is refused
+ * (CLAIM_ALREADY_PENDING / ALREADY_VERIFIED — checked here for a directory school,
+ * and always by the backend). The backend also enforces 3 requests a day and a
+ * 7-day cooldown after a rejection.
  */
 import { useState, type FormEvent } from "react";
 import { School } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { myAffiliationApi, type AffiliationStatus } from "@/lib/api/accounts";
+import { sameClaimedSchool } from "@/lib/accounts/school-claim";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -65,6 +70,10 @@ export default function SchoolAffiliationCard() {
     e.preventDefault();
     if (claim.isPending) return;
     const v = validateSchoolClaim(draft);
+    const cur = mine.data?.current;
+    if (Object.keys(v).length === 0 && cur && (cur.status === "PENDING" || cur.status === "VERIFIED") && sameClaimedSchool(draft, cur)) {
+      v.school = cur.status === "PENDING" ? "This school is already waiting for verification. Choose a different school to replace it." : "This school is already verified for your account.";
+    }
     setErrors(v);
     if (Object.keys(v).length === 0) claim.mutate();
   }
@@ -124,10 +133,10 @@ export default function SchoolAffiliationCard() {
                 </Button>
               </div>
             </form>
-          ) : pending ? (
-            <p className="text-xs text-gray-500">You can change your school once this one has been checked.</p>
           ) : (
-            <Button
+            <div className="space-y-2">
+              {pending && <p className="text-xs text-gray-500">Chose the wrong school? Ask for the right one: it replaces the request that is waiting.</p>}
+              <Button
               type="button"
               variant="secondary"
               onClick={() => {
@@ -139,7 +148,8 @@ export default function SchoolAffiliationCard() {
               }}
             >
               {current ? "Change my school" : "Add my school"}
-            </Button>
+              </Button>
+            </div>
           )}
         </div>
       )}
