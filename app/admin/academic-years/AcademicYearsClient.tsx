@@ -9,8 +9,15 @@
  * over (moved up one grade when "promote" is chosen; S6 students graduate). The
  * page states this plainly and asks for the year's name before doing it.
  * Without a current year, registration and student creation fail.
+ *
+ * Because that request can outlive the proxy (~26 s) while the backend keeps
+ * working (up to 120 s), a lost answer means "outcome unknown": an activation
+ * lock (lib/admin/academic-years.ts) then keeps every Start button disabled —
+ * across closing the dialog and reloading the page — until the list shows the
+ * year started, or the backend's time limit has passed and the year is still
+ * planned. The lock is per browser; see the backend note in that file.
  */
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarPlus, Pencil, PlayCircle, Users } from "lucide-react";
@@ -19,7 +26,26 @@ import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
 import { useSession } from "@/lib/auth/session";
 import { queryKeys } from "@/lib/query/keys";
 import { formatNumber } from "@/lib/format";
-import { YEAR_ERRORS, YEAR_RULES, activationSummary, currentYear, dayOf, formatDay, validateYearForm, yearChanges, type YearForm } from "@/lib/admin/academic-years";
+import {
+  ACTIVATION_LOCK_KEY,
+  YEAR_ERRORS,
+  YEAR_RULES,
+  activationLockState,
+  activationOutcomeUnknown,
+  activationSummary,
+  clearActivationLock,
+  currentYear,
+  dayOf,
+  formatDay,
+  lockStorage,
+  readActivationLock,
+  validateYearForm,
+  writeActivationLock,
+  yearChanges,
+  type ActivationLock,
+  type YearForm,
+} from "@/lib/admin/academic-years";
+import { useNow } from "@/lib/hooks/useNow";
 import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import { AdminPage, Badge, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../components/adminUi";
 
@@ -30,15 +56,71 @@ const STATUS_BADGE: Record<AcademicYear["status"], { label: string; cls: string 
 };
 const yearError = (e: unknown) => (isApiError(e) && e.code && YEAR_ERRORS[e.code]) || errorMessage(e);
 
+const LOCK_EVENT = "rof:academic-year-lock";
+
+/** The activation lock as React state, kept in step with browser storage (also across tabs). */
+function useActivationLock() {
+  const subscribe = useCallback((onChange: () => void) => {
+    const onStorage = (e: StorageEvent) => e.key === ACTIVATION_LOCK_KEY && onChange();
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(LOCK_EVENT, onChange);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(LOCK_EVENT, onChange);
+    };
+  }, []);
+  const raw = useSyncExternalStore(
+    subscribe,
+    () => lockStorage().getItem(ACTIVATION_LOCK_KEY),
+    () => null,
+  );
+  const lock = raw ? readActivationLock({ getItem: () => raw, setItem: () => {}, removeItem: () => {} }) : null;
+  const set = useCallback((next: ActivationLock | null) => {
+    if (next) writeActivationLock(lockStorage(), next);
+    else clearActivationLock(lockStorage());
+    window.dispatchEvent(new Event(LOCK_EVENT));
+  }, []);
+  return [lock, set] as const;
+}
+
 export default function AcademicYearsClient() {
   const { can, permissionsStatus } = useSession();
   const allowed = permissionsStatus === "ready" && can("academicYears.manage");
   const qc = useQueryClient();
-  const years = useQuery({ queryKey: queryKeys.academicYears.list(), queryFn: academicYearsApi.list, enabled: allowed });
+  const [lock, setLock] = useActivationLock();
+  const now = useNow(1000);
+  const years = useQuery({
+    queryKey: queryKeys.academicYears.list(),
+    queryFn: academicYearsApi.list,
+    enabled: allowed,
+    // While a start's outcome is unknown, keep checking whether the year became current.
+    refetchInterval: (q) => (activationLockState(lock, q.state.data, q.state.dataUpdatedAt, Date.now()).kind === "waiting" ? 10_000 : false),
+  });
   const [editing, setEditing] = useState<AcademicYear | "new" | null>(null);
   const [activating, setActivating] = useState<AcademicYear | null>(null);
   const [notice, setNotice] = useState<{ tone: "success" | "error"; lines: string[] } | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.academicYears.all });
+
+  const list = years.data ?? [];
+  const current = currentYear(list);
+  const lockState = activationLockState(lock, years.data, years.dataUpdatedAt, now);
+  const settled = lockState.kind === "succeeded" || lockState.kind === "expired" ? lockState : null;
+  // A settled lock is reported until the administrator dismisses it (which releases it).
+  // While settled, starting is allowed again: either the year is current, or the backend's
+  // time limit has passed and the year is still planned (a new attempt is safe).
+  const settledNotice = settled
+    ? settled.kind === "succeeded"
+      ? { tone: "success" as const, lines: [`${settled.lock.yearName} is now the current academic year.`, "The detailed counts weren't received; check the enrolments of the new year."] }
+      : { tone: "error" as const, lines: [`Starting ${settled.lock.yearName} did not complete: it is still planned. You can try again; check the current year first.`] }
+    : null;
+  const settledKey = settled ? `${settled.kind}:${settled.lock.startedAt}` : null;
+  useEffect(() => {
+    if (!settledKey) return;
+    // Students, divisions and assignments may have changed.
+    void qc.invalidateQueries({ queryKey: queryKeys.admin.all });
+    void qc.invalidateQueries({ queryKey: queryKeys.assignments.all });
+  }, [settledKey, qc]);
+  const startLocked = lockState.kind === "waiting";
 
   if (permissionsStatus === "ready" && !allowed) {
     return (
@@ -48,8 +130,6 @@ export default function AcademicYearsClient() {
     );
   }
 
-  const list = years.data ?? [];
-  const current = currentYear(list);
 
   return (
     <AdminPage
@@ -61,6 +141,17 @@ export default function AcademicYearsClient() {
         </button>
       }
     >
+      {settledNotice && (
+        <div data-testid="activation-outcome">
+          <Notice tone={settledNotice.tone} onClose={() => setLock(null)}>
+            {settledNotice.lines.map((l) => (
+              <span key={l} className="block">
+                {l}
+              </span>
+            ))}
+          </Notice>
+        </div>
+      )}
       {notice && (
         <Notice tone={notice.tone} onClose={() => setNotice(null)}>
           {notice.lines.map((l) => (
@@ -77,6 +168,15 @@ export default function AcademicYearsClient() {
         <ErrorState error={years.error} title="Couldn't load the academic years" onRetry={() => years.refetch()} />
       ) : (
         <>
+          {lockState.kind === "waiting" && (
+            <div className="mb-4" data-testid="activation-lock">
+              <Alert tone="error">
+                Starting <strong>{lockState.lock.yearName}</strong> was requested at {new Date(lockState.lock.startedAt).toLocaleTimeString()}, but no answer was received. The server may still be
+                working on it, so no year can be started until {new Date(lockState.until).toLocaleTimeString()} (about {Math.max(1, Math.ceil((lockState.until - now) / 1000))} s). This list checks
+                every 10 seconds and will show the result. Don&apos;t start a year from another browser or device in the meantime.
+              </Alert>
+            </div>
+          )}
           {current ? (
             <p className="mb-4 text-sm text-gray-600" data-testid="current-year">
               Current year: <strong className="text-gray-900">{current.name}</strong> ({formatDay(current.startsOn)} – {formatDay(current.endsOn)})
@@ -127,7 +227,14 @@ export default function AcademicYearsClient() {
                         </button>
                       )}
                       {y.status === "PLANNED" && (
-                        <button type="button" className={linkBtn} onClick={() => setActivating(y)} aria-label={`Start ${y.name}`}>
+                        <button
+                          type="button"
+                          className={`${linkBtn} disabled:opacity-40 disabled:cursor-not-allowed`}
+                          onClick={() => setActivating(y)}
+                          disabled={startLocked}
+                          title={startLocked ? "Locked while an earlier start's outcome is unknown" : undefined}
+                          aria-label={`Start ${y.name}`}
+                        >
                           <PlayCircle className="inline h-3.5 w-3.5 mr-1" aria-hidden="true" />
                           Start year
                         </button>
@@ -157,8 +264,11 @@ export default function AcademicYearsClient() {
         <ActivateDialog
           year={activating}
           current={current}
+          locked={startLocked}
+          onLock={setLock}
           onClose={() => setActivating(null)}
           onDone={(r) => {
+            setLock(null);
             setActivating(null);
             setNotice({ tone: "success", lines: activationSummary(r) });
             void refresh();
@@ -177,7 +287,11 @@ function YearFormDialog({ year, onClose, onSaved, onStale }: { year: AcademicYea
   const [f, setF] = useState<YearForm>({ name: year?.name ?? "", startsOn: year ? dayOf(year.startsOn) : "", endsOn: year ? dayOf(year.endsOn) : "" });
   const [errors, setErrors] = useState<Partial<Record<keyof YearForm, string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const inFlight = useRef(false);
   const save = useMutation({
+    onSettled: () => {
+      inFlight.current = false;
+    },
     mutationFn: () => (year ? academicYearsApi.update(year.id, yearChanges(year, f)) : academicYearsApi.create({ name: f.name.trim(), startsOn: f.startsOn, endsOn: f.endsOn })),
     onSuccess: (y) => onSaved(y, !year),
     onError: (e) => {
@@ -198,6 +312,7 @@ function YearFormDialog({ year, onClose, onSaved, onStale }: { year: AcademicYea
     setFormError(null);
     if (Object.keys(v).length) return;
     if (year && Object.keys(yearChanges(year, f)).length === 0) return setFormError("Nothing has changed.");
+    inFlight.current = true;
     save.mutate();
   }
 
@@ -226,7 +341,7 @@ function YearFormDialog({ year, onClose, onSaved, onStale }: { year: AcademicYea
   );
 
   return (
-    <Modal title={year ? `Edit ${year.name}` : "Plan an academic year"} onClose={onClose}>
+    <Modal title={year ? `Edit ${year.name}` : "Plan an academic year"} onClose={() => !inFlight.current && onClose()}>
       <form onSubmit={onSubmit} noValidate className="space-y-4" data-testid="year-form">
         {field("name", "Name", "text", { maxLength: YEAR_RULES.nameMax, placeholder: "2027-2028" })}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -249,21 +364,51 @@ function YearFormDialog({ year, onClose, onSaved, onStale }: { year: AcademicYea
   );
 }
 
-function ActivateDialog({ year, current, onClose, onDone, onStale }: { year: AcademicYear; current: AcademicYear | null; onClose: () => void; onDone: (r: ActivationResult) => void; onStale: () => void }) {
+function ActivateDialog({
+  year,
+  current,
+  locked,
+  onLock,
+  onClose,
+  onDone,
+  onStale,
+}: {
+  year: AcademicYear;
+  current: AcademicYear | null;
+  locked: boolean;
+  onLock: (lock: ActivationLock | null) => void;
+  onClose: () => void;
+  onDone: (r: ActivationResult) => void;
+  onStale: () => void;
+}) {
   const [promote, setPromote] = useState<"" | "yes" | "no">("");
-  const [deactivateGraduates, setDeactivateGraduates] = useState(true);
   const [typed, setTyped] = useState("");
+  const [unknown, setUnknown] = useState(false);
+  const inFlight = useRef(false);
   const activate = useMutation({
-    mutationFn: () => academicYearsApi.activate(year.id, { promoteStudents: promote === "yes", ...(promote === "yes" && { deactivateGraduates }) }),
+    onSettled: () => {
+      inFlight.current = false;
+    },
+    // Graduates are always deactivated: with deactivateGraduates=false the backend would
+    // re-enrol them as S6 students in the new year (its "students without an enrolment" step).
+    mutationFn: () => academicYearsApi.activate(year.id, { promoteStudents: promote === "yes", ...(promote === "yes" && { deactivateGraduates: true }) }),
+    onMutate: () => onLock({ yearId: year.id, yearName: year.name, startedAt: Date.now() }),
     onSuccess: onDone,
     onError: (e) => {
-      if (isApiError(e) && e.code === "INVALID_STATE_TRANSITION") onStale();
+      if (activationOutcomeUnknown(e)) {
+        // Keep the lock: the backend may still be starting the year.
+        setUnknown(true);
+        onStale();
+        return;
+      }
+      onLock(null);
+      if (isApiError(e) && (e.code === "INVALID_STATE_TRANSITION" || e.status === 404)) onStale();
     },
   });
-  const ready = promote !== "" && typed.trim() === year.name && !activate.isPending;
+  const ready = promote !== "" && typed.trim() === year.name && !activate.isPending && !locked && !unknown;
 
   return (
-    <Modal wide title={`Start ${year.name}`} onClose={onClose}>
+    <Modal wide title={`Start ${year.name}`} onClose={() => !inFlight.current && onClose()}>
       <div className="space-y-4" data-testid="activate-dialog">
         <Alert tone="error">This changes the whole platform at once and can&apos;t be undone here.</Alert>
         <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
@@ -277,7 +422,11 @@ function ActivateDialog({ year, current, onClose, onDone, onStale }: { year: Aca
           ) : (
             <li>There is no current year to close.</li>
           )}
-          <li>Every active student is enrolled in {year.name}; students without an enrolment are enrolled at their current grade.</li>
+          <li>
+            Students with an active enrolment{current ? ` in ${current.name}` : ""} and an active account move into {year.name} (moved up a grade or kept, as chosen below).
+          </li>
+          <li>Suspended students are not moved into {year.name}.</li>
+          <li>Active students with no enrolment are enrolled at the grade on their profile; they are not moved up.</li>
         </ul>
 
         <fieldset className="space-y-2">
@@ -287,14 +436,14 @@ function ActivateDialog({ year, current, onClose, onDone, onStale }: { year: Aca
           <label className="flex items-start gap-2 text-sm text-gray-700">
             <input type="radio" name="promote" checked={promote === "yes"} onChange={() => setPromote("yes")} className="mt-1" />
             <span>
-              <strong>Move every student up one grade</strong> — the start of a new school year (S3 students move to the Senior division; S6 students graduate).
+              <strong>Move every student up one grade</strong> — the start of a new school year (S3 students move to the Senior division).
             </span>
           </label>
           {promote === "yes" && (
-            <label className="ml-6 flex items-start gap-2 text-sm text-gray-700">
-              <input type="checkbox" checked={deactivateGraduates} onChange={(e) => setDeactivateGraduates(e.target.checked)} className="mt-1" />
-              <span>Deactivate the accounts of graduating S6 students</span>
-            </label>
+            <p className="ml-6 text-xs text-gray-600" data-testid="graduates-note">
+              S6 students graduate: their enrolment ends and their accounts are deactivated, so they can no longer sign in. Their work and results are kept. This can&apos;t be switched off here —
+              the server would otherwise enrol graduates again as S6 students in {year.name}. Reactivate a graduate&apos;s account individually afterwards if needed.
+            </p>
           )}
           <label className="flex items-start gap-2 text-sm text-gray-700">
             <input type="radio" name="promote" checked={promote === "no"} onChange={() => setPromote("no")} className="mt-1" />
@@ -317,13 +466,26 @@ function ActivateDialog({ year, current, onClose, onDone, onStale }: { year: Aca
           />
         </div>
 
-        {activate.isError && <Alert tone="error">{yearError(activate.error)}</Alert>}
-        {activate.isPending && <p className="text-xs text-gray-500">Starting the year… this can take a minute with many students. Keep this page open.</p>}
+        {unknown ? (
+          <Alert tone="error">
+            No answer was received ({errorMessage(activate.error)}). The server may still be starting {year.name}. Starting is locked for a few minutes while the list checks the result —
+            you can close this dialog; the lock stays.
+          </Alert>
+        ) : (
+          activate.isError && <Alert tone="error">{yearError(activate.error)}</Alert>
+        )}
+        {locked && !activate.isPending && !unknown && <Alert tone="info">An earlier start&apos;s outcome is still unknown. Starting is locked until the list shows the result.</Alert>}
+        {activate.isPending && <p className="text-xs text-gray-500">Starting the year… this can take a minute or two with many students. Keep this page open; this dialog can&apos;t be closed meanwhile.</p>}
         <div className="flex justify-end gap-3">
           <button type="button" className={btnSecondary} onClick={onClose} disabled={activate.isPending}>
-            Cancel
+            {unknown ? "Close" : "Cancel"}
           </button>
-          <button type="button" className={btnPrimary} disabled={!ready} onClick={() => activate.mutate()}>
+          <button type="button" className={btnPrimary} disabled={!ready} onClick={() => {
+              if (inFlight.current) return;
+              inFlight.current = true;
+              activate.mutate();
+            }}
+          >
             {activate.isPending && <Spinner className="h-3.5 w-3.5 !text-white" />}
             Start {year.name}
           </button>

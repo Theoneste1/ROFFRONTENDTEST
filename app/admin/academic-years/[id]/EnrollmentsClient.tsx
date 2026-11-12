@@ -8,12 +8,12 @@
  * withdrawing also suspends the account. Earlier years are read-only (the
  * backend refuses changes to them).
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { academicYearsApi, type Enrollment, type EnrollmentFilters, type EnrollmentStatus } from "@/lib/api/academic-years";
-import { errorMessage, isApiError } from "@/lib/api/errors";
+import { ApiError, errorMessage, isApiError } from "@/lib/api/errors";
 import type { GradeLevel } from "@/lib/api/types";
 import { useSession } from "@/lib/auth/session";
 import { queryKeys } from "@/lib/query/keys";
@@ -31,6 +31,8 @@ const STATUS: Record<EnrollmentStatus, { label: string; cls: string }> = {
 };
 const PAGE_SIZE = 50;
 const enrolError = (e: unknown) => (isApiError(e) && e.code && YEAR_ERRORS[e.code]) || errorMessage(e);
+/** The same error with its plain-language message (ConfirmDialog shows `errorMessage`). */
+const plain = (e: unknown) => (isApiError(e) ? new ApiError(e.status, e.code, enrolError(e), e.details, e.requestId) : e);
 
 export default function EnrollmentsClient({ yearId }: { yearId: string }) {
   const { can, permissionsStatus } = useSession();
@@ -39,6 +41,7 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
   const qc = useQueryClient();
   const years = useQuery({ queryKey: queryKeys.academicYears.list(), queryFn: academicYearsApi.list, enabled: allowed });
   const year = years.data?.find((y) => y.id === yearId) ?? null;
+  const missing = years.isSuccess && !year;
   const [grade, setGrade] = useState<"" | GradeLevel>("");
   const [status, setStatus] = useState<"" | EnrollmentStatus>("");
   const [page, setPage] = useState(1);
@@ -46,7 +49,8 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
   const rows = useQuery({
     queryKey: queryKeys.academicYears.enrollments(yearId, filters),
     queryFn: () => academicYearsApi.enrollments(yearId, filters),
-    enabled: allowed,
+    // Only for a year that exists (a malformed or unknown id is "not found", not a backend 400).
+    enabled: allowed && !!year,
     placeholderData: keepPreviousData,
   });
   const [regrading, setRegrading] = useState<Enrollment | null>(null);
@@ -68,6 +72,15 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
       <AdminPage title="Enrolments">
         {back}
         <Notice tone="info">Viewing enrolments needs the academicYears.manage permission.</Notice>
+      </AdminPage>
+    );
+  }
+
+  if (missing) {
+    return (
+      <AdminPage title="Enrolments">
+        {back}
+        <Notice tone="info">Academic year not found.</Notice>
       </AdminPage>
     );
   }
@@ -109,7 +122,7 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
 
       {rows.isError ? (
         <ErrorState error={rows.error} title={isApiError(rows.error) && rows.error.status === 404 ? "Academic year not found" : "Couldn't load the enrolments"} onRetry={() => rows.refetch()} />
-      ) : rows.isPending ? (
+      ) : rows.isPending || !year ? (
         <LoadingBlock />
       ) : (
         <TableCard footer={<Pagination page={page} totalPages={rows.data.meta.totalPages} total={rows.data.meta.total} onPage={setPage} disabled={rows.isFetching} />}>
@@ -142,7 +155,8 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
                   <td className={`${td} text-gray-600`}>{e.division.name}</td>
                   <td className={`${td} text-gray-600`}>{e.school?.name ?? "—"}</td>
                   <td className={td}>
-                    <Badge className={STATUS[e.status].cls}>{STATUS[e.status].label}</Badge>
+                    {/* A kept (not promoted) enrolment of a closed year stays ACTIVE in the backend. */}
+                    <Badge className={STATUS[e.status].cls}>{e.status === "ACTIVE" && year?.status === "CLOSED" ? "Ended with the year" : STATUS[e.status].label}</Badge>
                   </td>
                   {editable && (
                     <td className={`${td} text-right whitespace-nowrap space-x-3`}>
@@ -180,7 +194,7 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
       {withdrawing && (
         <ConfirmDialog
           title={`Withdraw ${name(withdrawing)}?`}
-          body="The enrolment ends and the student's account is suspended (they can't sign in). Their work and results are kept. An administrator can reactivate the account later."
+          body="The enrolment ends and the student's account is suspended (they can't sign in). Their work and results are kept. Reactivating the account later does not restore this enrolment: the student is not placed in the year again automatically."
           confirmLabel="Withdraw student"
           tone="danger"
           onClose={() => setWithdrawing(null)}
@@ -188,8 +202,8 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
             try {
               await academicYearsApi.updateEnrollment(withdrawing.id, { status: "WITHDRAWN" });
             } catch (e) {
-              if (isApiError(e) && e.code === "INVALID_STATE_TRANSITION") refresh();
-              throw e;
+              if (isApiError(e) && (e.code === "INVALID_STATE_TRANSITION" || e.status === 404)) refresh();
+              throw plain(e);
             }
             setNotice(`${name(withdrawing)} was withdrawn and their account suspended.`);
             refresh();
@@ -202,16 +216,21 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
 
 function GradeDialog({ enrollment: e, onClose, onDone, onStale }: { enrollment: Enrollment; onClose: () => void; onDone: (g: GradeLevel) => void; onStale: () => void }) {
   const [grade, setGrade] = useState<GradeLevel>(e.gradeLevel);
+  // Set the moment the request is fired, so Escape can't slip in before the re-render.
+  const inFlight = useRef(false);
   const save = useMutation({
     mutationFn: () => academicYearsApi.updateEnrollment(e.id, { gradeLevel: grade }),
+    onSettled: () => {
+      inFlight.current = false;
+    },
     onSuccess: () => onDone(grade),
     onError: (err) => {
-      if (isApiError(err) && err.code === "INVALID_STATE_TRANSITION") onStale();
+      if (isApiError(err) && (err.code === "INVALID_STATE_TRANSITION" || err.status === 404)) onStale();
     },
   });
   const crosses = (["S1", "S2", "S3"].includes(e.gradeLevel) ? "J" : "S") !== (["S1", "S2", "S3"].includes(grade) ? "J" : "S");
   return (
-    <Modal title={`Change grade · ${e.student.firstName} ${e.student.lastName}`} onClose={onClose}>
+    <Modal title={`Change grade · ${e.student.firstName} ${e.student.lastName}`} onClose={() => !inFlight.current && onClose()}>
       <div className="space-y-4" data-testid="grade-dialog">
         <label className="block text-xs font-semibold text-gray-600">
           Grade in the current year
@@ -229,7 +248,11 @@ function GradeDialog({ enrollment: e, onClose, onDone, onStale }: { enrollment: 
           <button type="button" className={btnSecondary} onClick={onClose} disabled={save.isPending}>
             Cancel
           </button>
-          <button type="button" className={btnPrimary} disabled={save.isPending || grade === e.gradeLevel} onClick={() => save.mutate()}>
+          <button type="button" className={btnPrimary} disabled={save.isPending || grade === e.gradeLevel} onClick={() => {
+              inFlight.current = true;
+              save.mutate();
+            }}
+          >
             Save grade
           </button>
         </div>
