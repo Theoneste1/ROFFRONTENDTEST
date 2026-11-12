@@ -14,6 +14,8 @@ import {
   retryDelayMs,
   sendWithSessionRefresh,
   signInThenClearCooldown,
+  tokenExpiresWithin,
+  UPLOAD_TOKEN_MARGIN_MS,
 } from "../lib/api/refresh-outcome.ts";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -607,4 +609,39 @@ test("a failed sign-in after an outage: the cooldown stays, the other tabs make 
   assert.equal(storage.peek(), before, "shared cooldown unchanged");
   assert.deepEqual(await Promise.all(list.map((t) => t.refresh())), ["unavailable", "unavailable", "unavailable"]);
   assert.equal(network.cycles, 1, "no new refresh requests");
+});
+
+// ─── Refresh before an upload when the token is about to expire ─────────────
+
+/** An unsigned JWT-shaped token with the given payload (only `exp` is read). */
+function jwt(payload) {
+  const b64url = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  return `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url(payload)}.signature`;
+}
+
+test("tokenExpiresWithin: a token valid for longer than the margin needs no refresh", () => {
+  const now = 1_700_000_000_000;
+  assert.equal(tokenExpiresWithin(jwt({ sub: "u1", exp: now / 1000 + 600 }), UPLOAD_TOKEN_MARGIN_MS, now), false);
+});
+
+test("tokenExpiresWithin: expired, or expiring within the margin, means refresh first", () => {
+  const now = 1_700_000_000_000;
+  assert.equal(tokenExpiresWithin(jwt({ exp: now / 1000 - 1 }), UPLOAD_TOKEN_MARGIN_MS, now), true, "expired");
+  assert.equal(tokenExpiresWithin(jwt({ exp: now / 1000 + 30 }), UPLOAD_TOKEN_MARGIN_MS, now), true, "30 s left");
+  assert.equal(tokenExpiresWithin(jwt({ exp: now / 1000 + 60 }), UPLOAD_TOKEN_MARGIN_MS, now), true, "exactly the margin");
+});
+
+test("tokenExpiresWithin: missing or unreadable tokens mean refresh first (never trusted as valid)", () => {
+  for (const t of [null, "", "not-a-jwt", "a.b.c", `x.${Buffer.from("{}").toString("base64url")}.y`, `x.${Buffer.from('{"exp":"soon"}').toString("base64url")}.y`]) {
+    assert.equal(tokenExpiresWithin(t, UPLOAD_TOKEN_MARGIN_MS, 0), true, String(t));
+  }
+});
+
+test("tokenExpiresWithin: base64url payloads with - and _ characters decode correctly", () => {
+  const now = 1_700_000_000_000;
+  // Pad the payload so its base64url form contains '-' or '_'.
+  const payload = { exp: now / 1000 + 600, note: "~~~???>>>" };
+  const token = jwt(payload);
+  assert.match(token.split(".")[1], /[-_]/);
+  assert.equal(tokenExpiresWithin(token, UPLOAD_TOKEN_MARGIN_MS, now), false);
 });

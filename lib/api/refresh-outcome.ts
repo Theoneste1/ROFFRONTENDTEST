@@ -223,6 +223,30 @@ export function createRefresher({
   };
 }
 
+/** Refresh before an upload when the access token expires within this time. */
+export const UPLOAD_TOKEN_MARGIN_MS = 60_000;
+
+/**
+ * True when the access token is missing, unreadable or expires within
+ * `marginMs`. Reads the JWT's `exp` claim only to decide whether to refresh
+ * before a large upload (so the body is not sent with a dead token, rejected
+ * with 401 and sent again) — the token is never trusted for anything else; the
+ * backend still verifies it.
+ */
+export function tokenExpiresWithin(token: string | null, marginMs: number, now: number = Date.now()): boolean {
+  if (!token) return true;
+  const part = token.split(".")[1];
+  if (!part) return true;
+  try {
+    const json = atob(part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "="));
+    const exp = (JSON.parse(json) as { exp?: unknown }).exp;
+    if (typeof exp !== "number" || !Number.isFinite(exp)) return true;
+    return exp * 1000 - now <= marginMs;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Runs a sign-in and, only once it has succeeded, ends the refresh cooldown
  * (`clearCooldown`): a successful sign-in proves the server is reachable, so

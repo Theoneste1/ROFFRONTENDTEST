@@ -18,14 +18,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  SESSION_REFRESH_UNAVAILABLE,
   clearRefreshCooldown,
   getAccessToken,
   onSessionExpired,
   refreshSession,
+  refreshUnavailableError,
   setAccessToken,
 } from "@/lib/api/client";
-import { ApiError } from "@/lib/api/errors";
 import { signInThenClearCooldown, type RefreshOutcome } from "@/lib/api/refresh-outcome";
 import { authApi, meApi } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/query/keys";
@@ -65,11 +64,8 @@ function phaseFor(outcome: RefreshOutcome): Phase {
   return outcome === "ok" ? "signed-in" : outcome === "rejected" ? "signed-out" : "unavailable";
 }
 
-const UNAVAILABLE_ERROR = new ApiError(
-  503,
-  SESSION_REFRESH_UNAVAILABLE,
-  "Can't reach the server to renew your session. Please try again.",
-);
+/** The same error the API client throws for an unavailable refresh (one definition, in client.ts). */
+const UNAVAILABLE_ERROR = refreshUnavailableError();
 
 const CHANNEL = "rof-auth";
 type AuthMessage = { type: "login" } | { type: "logout" };

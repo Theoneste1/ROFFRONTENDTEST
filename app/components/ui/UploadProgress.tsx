@@ -17,7 +17,11 @@ export default function UploadProgress() {
 
   useEffect(() => {
     if (!active) return;
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    // preventDefault() for current browsers; returnValue for Safari and older Chromium.
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [active]);

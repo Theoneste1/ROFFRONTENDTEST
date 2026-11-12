@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FileUp } from "lucide-react";
 import { USER_RULES } from "@/lib/api/admin";
 import { saveFile } from "@/lib/api/client";
@@ -32,15 +32,26 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
   const importUsers = useImportUsers();
   const busy = importUsers.isPending;
 
+  // Only the latest pick may update the dialog (reading an earlier, slower file can finish later).
+  const latestPick = useRef(0);
+
   async function pick(f: File | null) {
+    const pickId = ++latestPick.current;
     setChecked(null);
     setError(null);
     setFile(null);
     if (!f) return;
     if (!/\.csv$/i.test(f.name)) return setError("Choose a .csv file.");
     if (f.size > USER_RULES.importMaxBytes) return setError("The file is larger than 1 MB.");
-    const firstLine = (await f.text()).split(/\r?\n/, 1)[0] ?? "";
-    const problem = importHeaderProblems(firstLine);
+    let text: string;
+    try {
+      text = await f.text();
+    } catch {
+      if (pickId === latestPick.current) setError(`"${f.name}" could not be read. Choose the file again.`);
+      return;
+    }
+    if (pickId !== latestPick.current) return;
+    const problem = importHeaderProblems(text.split(/\r?\n/, 1)[0] ?? "");
     if (problem) return setError(`"${f.name}": ${problem}`);
     setFile(f);
   }

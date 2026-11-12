@@ -15,7 +15,15 @@
  *   across tabs with the Web Locks API.
  */
 import { ApiError } from "./errors";
-import { attemptRefresh, createRefresher, sendWithSessionRefresh, type RefreshOutcome, type SharedCooldown } from "./refresh-outcome";
+import {
+  UPLOAD_TOKEN_MARGIN_MS,
+  attemptRefresh,
+  createRefresher,
+  sendWithSessionRefresh,
+  tokenExpiresWithin,
+  type RefreshOutcome,
+  type SharedCooldown,
+} from "./refresh-outcome";
 import { UPLOAD_ORIGIN } from "./upload-origin";
 import { trackUpload } from "./upload-progress";
 import type { TokenResponse } from "./types";
@@ -127,7 +135,8 @@ export function clearRefreshCooldown(): void {
 /** Thrown when the session could not be renewed for a temporary reason (the user stays signed in). */
 export const SESSION_REFRESH_UNAVAILABLE = "SESSION_REFRESH_UNAVAILABLE";
 
-function refreshUnavailableError(): ApiError {
+/** The error for a session that could not be renewed for a temporary reason (also used by the session provider). */
+export function refreshUnavailableError(): ApiError {
   return new ApiError(503, SESSION_REFRESH_UNAVAILABLE, "Can't reach the server to renew your session. Please try again.");
 }
 
@@ -209,24 +218,30 @@ function sendMultipart(
   const tracker = trackUpload(formSize(form));
   return new Promise<Response>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open(method, url);
-    xhr.withCredentials = withCredentials;
-    xhr.responseType = "blob";
-    headers.forEach((value, key) => xhr.setRequestHeader(key, value));
-    xhr.upload.onprogress = (e) => tracker.progress(e.loaded, e.lengthComputable ? e.total : 0);
-
-    const fail = () => {
+    const onSignalAbort = () => xhr.abort();
+    // Every way out ends the progress entry and drops the abort listener once.
+    let finished = false;
+    const finish = () => {
+      if (finished) return false;
+      finished = true;
       tracker.done();
-      reject(new ApiError(0, "NETWORK_ERROR", "Cannot reach the server."));
+      signal?.removeEventListener("abort", onSignalAbort);
+      return true;
     };
+    const fail = () => {
+      if (finish()) reject(new ApiError(0, "NETWORK_ERROR", "Cannot reach the server."));
+    };
+    const cancelled = () => {
+      if (finish()) reject(new DOMException("The upload was cancelled.", "AbortError"));
+    };
+
+    if (signal?.aborted) return cancelled();
+
     xhr.onerror = fail;
     xhr.ontimeout = fail;
-    xhr.onabort = () => {
-      tracker.done();
-      reject(new DOMException("The upload was cancelled.", "AbortError"));
-    };
+    xhr.onabort = cancelled;
     xhr.onload = () => {
-      tracker.done();
+      if (!finish()) return;
       const responseHeaders = new Headers();
       for (const line of xhr.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
         const i = line.indexOf(":");
@@ -236,15 +251,18 @@ function sendMultipart(
       resolve(new Response(noBody ? null : (xhr.response as Blob), { status: xhr.status, statusText: xhr.statusText, headers: responseHeaders }));
     };
 
-    if (signal) {
-      if (signal.aborted) {
-        tracker.done();
-        reject(new DOMException("The upload was cancelled.", "AbortError"));
-        return;
-      }
-      signal.addEventListener("abort", () => xhr.abort(), { once: true });
+    try {
+      xhr.open(method, url);
+      xhr.withCredentials = withCredentials;
+      xhr.responseType = "blob";
+      headers.forEach((value, key) => xhr.setRequestHeader(key, value));
+      xhr.upload.onprogress = (e) => tracker.progress(e.loaded, e.lengthComputable ? e.total : 0);
+      signal?.addEventListener("abort", onSignalAbort, { once: true });
+      xhr.send(form);
+    } catch {
+      // open / setRequestHeader / send threw synchronously: no event will follow.
+      fail();
     }
-    xhr.send(form);
   });
 }
 
@@ -261,6 +279,17 @@ async function toError(res: Response): Promise<ApiError> {
 async function sendWithRefresh(path: string, opts: RequestOptions): Promise<Response> {
   const auth = opts.auth ?? true;
   if (!auth || path.startsWith("/auth/")) return send(path, opts);
+  // Uploads: refresh first when the token is missing or about to expire, so a
+  // large body is not sent with a dead token (rejected with 401, then sent
+  // again — or cut off by the server, which looks like a network error).
+  if (opts.body instanceof FormData && tokenExpiresWithin(accessToken, UPLOAD_TOKEN_MARGIN_MS)) {
+    const outcome = await refreshSession();
+    if (outcome === "rejected") {
+      notifyExpired();
+      throw new ApiError(401, "UNAUTHORIZED", "Your session has ended. Please sign in again.");
+    }
+    if (outcome === "unavailable") throw refreshUnavailableError();
+  }
   return sendWithSessionRefresh({
     send: () => send(path, opts),
     refresh: refreshSession,
