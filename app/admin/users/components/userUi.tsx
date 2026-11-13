@@ -10,7 +10,10 @@ import type { AdminUser, GradeLevel, Permission, Role, SchoolRef } from "@/lib/a
 import { roleLabel } from "@/lib/auth/roles";
 import { assignableRoles, canPromoteToSuperAdmin, roleChangeNeedsPassword, roleChangeStepUp } from "@/lib/auth/role-rules";
 import { useSession } from "@/lib/auth/session";
-import { hasFeature } from "@/lib/api/capabilities";
+import { hasFeature, isLegacyBackend } from "@/lib/api/capabilities";
+import { adminSchoolsApi } from "@/lib/api/school-directory";
+import { schoolRefFromDirectoryRow } from "@/lib/admin/school-directory";
+import { useSchoolDirectoryMode } from "@/lib/queries/school-directory";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Badge, btnPrimary } from "../../components/adminUi";
@@ -107,13 +110,22 @@ export function SelectInput({ label, value, onChange, options, error, required }
   );
 }
 
-/** Pick an existing school (`GET /schools/search?q=`, 2–100 characters). */
+/**
+ * Pick an existing school, 2–100 characters.
+ * - With the school directory (`schoolAdministration` + `schools.manage`): `GET /admin/schools`
+ *   (active schools of every kind — official, administrator-created, legacy, other countries).
+ *   The public `/schools/search` lists only official Rwandan schools on those backends, so a
+ *   school an Administrator has just created could not otherwise be picked.
+ * - Otherwise: `GET /schools/search` (both backends).
+ */
 export function SchoolPicker({ value, onChange, label = "School" }: { value: SchoolRef | null; onChange: (s: SchoolRef | null) => void; label?: string }) {
   const [q, setQ] = useState("");
-  const term = q.trim();
+  const term = q.trim().slice(0, 100);
+  const directory = useSchoolDirectoryMode() === "manage";
   const results = useQuery({
-    queryKey: ["schools", "search", term],
-    queryFn: () => schoolsApi.search(term),
+    queryKey: ["schools", "search", directory ? "directory" : "public", term],
+    queryFn: async (): Promise<SchoolRef[]> =>
+      directory ? (await adminSchoolsApi.list({ q: term, isActive: true, limit: 20 })).data.map(schoolRefFromDirectoryRow) : schoolsApi.search(term),
     enabled: term.length >= 2,
     staleTime: 60_000,
   });
@@ -244,6 +256,9 @@ export function UserForm({
   // New backends (schoolReferenceRequired): an invitation must name an existing school, and
   // an edit may remove the school (schoolId: null). Older backends keep the earlier behaviour.
   const schoolReference = hasFeature(detection, "schoolReferenceRequired");
+  // A new school by name exists only on the LEGACY backend; an UNKNOWN backend may be a new one,
+  // which refuses a name without a code (SCHOOL_REFERENCE_REQUIRED), so only the picker is offered.
+  const newSchoolByName = isLegacyBackend(detection);
   // NEW backends require the editor's password for a role change to or from ADMIN / SUPER_ADMIN;
   // the LEGACY backend has no such field and would refuse it (400), so it is neither asked nor sent there.
   const stepUp =
@@ -262,7 +277,7 @@ export function UserForm({
     if (isStudent && !f.gradeLevel) e.gradeLevel = "Students need a grade (it sets the division).";
     if (f.homeLocation.trim() && !len(f.homeLocation, 2, 200)) e.homeLocation = "2–200 characters.";
     if (stepUp && !f.currentPassword) e.currentPassword = "Enter your own password to confirm this role change.";
-    if (mode === "invite" && !schoolReference && !f.school && (f.newSchoolName.trim() || f.newSchoolLocation.trim())) {
+    if (mode === "invite" && newSchoolByName && !f.school && (f.newSchoolName.trim() || f.newSchoolLocation.trim())) {
       if (!len(f.newSchoolName, 2, 200)) e.schoolName = "2–200 characters.";
       if (!len(f.newSchoolLocation, 2, 200)) e.schoolLocation = "2–200 characters.";
     }
@@ -285,8 +300,8 @@ export function UserForm({
       return {
         ...base,
         username: username || undefined,
-        schoolName: !schoolReference && !f.school && f.newSchoolName.trim() ? f.newSchoolName.trim() : undefined,
-        schoolLocation: !schoolReference && !f.school && f.newSchoolName.trim() ? f.newSchoolLocation.trim() : undefined,
+        schoolName: newSchoolByName && !f.school && f.newSchoolName.trim() ? f.newSchoolName.trim() : undefined,
+        schoolLocation: newSchoolByName && !f.school && f.newSchoolName.trim() ? f.newSchoolLocation.trim() : undefined,
       } as InviteUserInput;
     // Edit: send only what changed.
     const changes: UpdateUserInput = {};
@@ -389,8 +404,8 @@ export function UserForm({
         </div>
       )}
       <SchoolPicker value={f.school} onChange={(s) => set("school", s)} />
-      {mode === "invite" && schoolReference && !f.school && <p className="text-[11px] text-gray-400">An invitation can only name a school that already exists.</p>}
-      {mode === "invite" && !schoolReference && !f.school && (
+      {mode === "invite" && !newSchoolByName && !f.school && <p className="text-[11px] text-gray-400">An invitation can only name a school that already exists.</p>}
+      {mode === "invite" && newSchoolByName && !f.school && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput label="…or a new school name" value={f.newSchoolName} onChange={(v) => set("newSchoolName", v)} error={errors.schoolName} maxLength={200} />
           <TextInput label="New school location" value={f.newSchoolLocation} onChange={(v) => set("newSchoolLocation", v)} error={errors.schoolLocation} maxLength={200} />

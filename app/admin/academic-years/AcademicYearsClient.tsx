@@ -24,9 +24,11 @@ import { CalendarPlus, Pencil, PlayCircle, Users } from "lucide-react";
 import { academicYearsApi, type AcademicYear, type ActivationResult } from "@/lib/api/academic-years";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
 import { useSession } from "@/lib/auth/session";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { queryKeys } from "@/lib/query/keys";
 import { formatNumber } from "@/lib/format";
 import {
+  startYearAvailability,
   ACTIVATION_LOCK_KEY,
   YEAR_ERRORS,
   YEAR_RULES,
@@ -86,6 +88,8 @@ function useActivationLock() {
 export default function AcademicYearsClient() {
   const { can, permissionsStatus } = useSession();
   const allowed = permissionsStatus === "ready" && can("academicYears.manage");
+  // "Start year" only where the backend makes a start single-flight and retry-safe.
+  const startAvailability = startYearAvailability(useBackendCapabilities().detection);
   const qc = useQueryClient();
   const [lock, setLock] = useActivationLock();
   const now = useNow(1000);
@@ -177,6 +181,15 @@ export default function AcademicYearsClient() {
               </Alert>
             </div>
           )}
+          {startAvailability !== "available" && list.some((y) => y.status === "PLANNED") && (
+            <div className="mb-4" data-testid="start-unavailable">
+              <Notice tone="info">
+                {startAvailability === "checking"
+                  ? "Checking whether this server can start a year safely…"
+                  : "Starting a year isn't available on this server yet: it can't guarantee that a repeated or interrupted start runs only once. You can still plan and edit years here."}
+              </Notice>
+            </div>
+          )}
           {current ? (
             <p className="mb-4 text-sm text-gray-600" data-testid="current-year">
               Current year: <strong className="text-gray-900">{current.name}</strong> ({formatDay(current.startsOn)} – {formatDay(current.endsOn)})
@@ -184,7 +197,7 @@ export default function AcademicYearsClient() {
           ) : (
             <div className="mb-4" data-testid="no-current-year">
               <Alert tone="error">
-                No academic year is active. Student registration and creating student accounts fail until a year is started. Plan a year (if needed) and start it.
+                No academic year is active. Student registration and creating student accounts fail until a year is started.{startAvailability === "available" ? " Plan a year (if needed) and start it." : ""}
               </Alert>
             </div>
           )}
@@ -226,7 +239,7 @@ export default function AcademicYearsClient() {
                           Edit
                         </button>
                       )}
-                      {y.status === "PLANNED" && (
+                      {y.status === "PLANNED" && startAvailability === "available" && (
                         <button
                           type="button"
                           className={`${linkBtn} disabled:opacity-40 disabled:cursor-not-allowed`}
@@ -391,7 +404,14 @@ function ActivateDialog({
     },
     // Graduates are always deactivated: with deactivateGraduates=false the backend would
     // re-enrol them as S6 students in the new year (its "students without an enrolment" step).
-    mutationFn: () => academicYearsApi.activate(year.id, { promoteStudents: promote === "yes", ...(promote === "yes" && { deactivateGraduates: true }) }),
+    // The dialog is only offered with `academicYearActivation`, so the backend accepts
+    // expectedCurrentYearId: a start racing another administrator's is refused, not repeated.
+    mutationFn: () =>
+      academicYearsApi.activate(year.id, {
+        promoteStudents: promote === "yes",
+        ...(promote === "yes" && { deactivateGraduates: true }),
+        expectedCurrentYearId: current?.id ?? null,
+      }),
     onMutate: () => onLock({ yearId: year.id, yearName: year.name, startedAt: Date.now() }),
     onSuccess: onDone,
     onError: (e) => {
@@ -402,7 +422,7 @@ function ActivateDialog({
         return;
       }
       onLock(null);
-      if (isApiError(e) && (e.code === "INVALID_STATE_TRANSITION" || e.status === 404)) onStale();
+      if (isApiError(e) && (e.code === "INVALID_STATE_TRANSITION" || e.code === "CURRENT_YEAR_CHANGED" || e.code === "ACTIVATION_OPTIONS_DIFFER" || e.status === 404)) onStale();
     },
   });
   const ready = promote !== "" && typed.trim() === year.name && !activate.isPending && !locked && !unknown;

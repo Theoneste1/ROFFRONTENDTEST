@@ -424,6 +424,11 @@ export function placeLabel(s: Pick<DirectorySchoolRecord, "countryCode" | "provi
   return `${s.location || "No location"} (${s.countryCode})`;
 }
 
+/** A directory row as the user forms' school reference (`{ id, name, location }`). */
+export function schoolRefFromDirectoryRow(s: Pick<DirectorySchoolRecord, "id" | "name" | "code" | "countryCode" | "province" | "district" | "sector" | "location">): { id: string; name: string; location: string } {
+  return { id: s.id, name: s.code ? `${s.name} (${s.code})` : s.name, location: placeLabel(s) };
+}
+
 export const isUuid = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 // ─── History ────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 /**
- * Portal menus and the permission each item needs (no imports; unit-tested in
+ * Portal menus and the permission each item needs (type-only imports; unit-tested in
  * tests/roles.test.mjs).
  *
  * Every permission named here is in the list `GET /me/permissions` returns
@@ -11,6 +11,7 @@
  *
  * Hiding is navigation only: the API refuses everything not permitted.
  */
+import type { Permission } from "../api/types";
 
 export interface NavItem {
   href: string;
@@ -70,4 +71,15 @@ export function canSeeNavItem(item: Pick<NavItem, "permission">, permissions: Re
 
 export function visibleNav(items: readonly NavItem[], permissions: ReadonlySet<string> | null): NavItem[] {
   return items.filter((item) => canSeeNavItem(item, permissions));
+}
+
+/**
+ * For an action button: may it be offered? Known permissions decide. When `/me/permissions`
+ * FAILED to load, the action is offered and the backend decides (it refuses anything not
+ * permitted) — as on the original frontend, which never consulted the list. While the list is
+ * still loading, the action waits (no button flashing in and out).
+ */
+export function actionAllowed(permission: Permission, status: "loading" | "ready" | "error", can: (p: Permission) => boolean): boolean {
+  if (status === "error") return true;
+  return status === "ready" && can(permission);
 }

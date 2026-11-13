@@ -39,6 +39,8 @@ export interface ActivationResult {
   graduated: number;
   newlyEnrolled: number;
   assignmentsArchived: number;
+  /** True when this answers a repeated start: the year had already been started with the same choices. */
+  replayed?: boolean;
 }
 
 export interface Enrollment {
@@ -68,7 +70,12 @@ export const academicYearsApi = {
   list: () => api<AcademicYear[]>("/academic-years"),
   create: (input: { name: string; startsOn: string; endsOn: string }) => api<AcademicYear>("/admin/academic-years", { method: "POST", body: input }),
   update: (id: string, input: { name?: string; startsOn?: string; endsOn?: string }) => api<AcademicYear>(`/admin/academic-years/${id}`, { method: "PATCH", body: input }),
-  activate: (id: string, input: { promoteStudents: boolean; deactivateGraduates?: boolean }) =>
+  /**
+   * `expectedCurrentYearId` (backends with `academicYearActivation` only; the original backend
+   * refuses unknown fields): the year this page shows as current, or null for none. The backend
+   * refuses the start (409 CURRENT_YEAR_CHANGED) when another start has changed it meanwhile.
+   */
+  activate: (id: string, input: { promoteStudents: boolean; deactivateGraduates?: boolean; expectedCurrentYearId?: string | null }) =>
     api<ActivationResult>(`/admin/academic-years/${id}/activate`, { method: "POST", body: input }),
   enrollments: (id: string, filters: EnrollmentFilters = {}) => api<Page<Enrollment>>(`/admin/academic-years/${id}/enrollments`, { query: filters }),
   updateEnrollment: (id: string, input: { gradeLevel: GradeLevel } | { status: "WITHDRAWN" }) =>

@@ -1,4 +1,5 @@
 /** Academic years: pure rules for the admin page (validation mirrors the backend DTOs). */
+import { hasFeature, type BackendDetection } from "../api/capabilities";
 import type { AcademicYear, ActivationResult } from "../api/academic-years";
 
 export const YEAR_RULES = { nameMin: 4, nameMax: 30, datePattern: /^\d{4}-\d{2}-\d{2}$/ };
@@ -43,6 +44,7 @@ export function yearChanges(before: AcademicYear, f: YearForm): Partial<YearForm
 export function activationSummary(r: ActivationResult): string[] {
   const n = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
   const lines = [`${r.academicYear.name} is now the current academic year.`];
+  if (r.replayed) lines.push("It had already been started with these choices (an earlier request went through); nothing was done twice.");
   if (r.promoted) lines.push(`${n(r.promoted, "student was", "students were")} moved up one grade.`);
   if (r.carriedOver) lines.push(`${n(r.carriedOver, "student continues", "students continue")} in the same grade.`);
   if (r.graduated) lines.push(`${n(r.graduated, "S6 student graduated", "S6 students graduated")}.`);
@@ -55,6 +57,8 @@ export function activationSummary(r: ActivationResult): string[] {
 export const YEAR_ERRORS: Readonly<Record<string, string>> = {
   INVALID_DATE_RANGE: "The last day must be after the first day.",
   NOT_FOUND: "This academic year or enrolment no longer exists. The list has been refreshed.",
+  CURRENT_YEAR_CHANGED: "The current academic year changed since this page was loaded (another administrator may have started a year). Nothing was changed. The list has been refreshed.",
+  ACTIVATION_OPTIONS_DIFFER: "This year was already started with different choices (promotion or graduates). Nothing was changed. The list has been refreshed.",
   INVALID_STATE_TRANSITION: "This change isn't possible in the year's current state (closed years can't be edited; only planned years can be started; only current-year enrolments can be changed). The list has been refreshed.",
   DUPLICATE: "An academic year with this name already exists.",
   NO_CHANGES: "Nothing to change.",
@@ -195,4 +199,15 @@ export function activationLockState(lock: ActivationLock | null, years: readonly
 export function activationOutcomeUnknown(error: unknown): boolean {
   const status = (error as { status?: unknown } | null)?.status;
   return !(typeof status === "number" && status >= 400 && status < 500 && status !== 408);
+}
+
+/**
+ * Whether this page may offer "Start year": only on a backend advertising `academicYearActivation`
+ * (a start there is single-flight and a retry returns the recorded outcome). On the original
+ * backend, an UNKNOWN detection or while detecting, starting is not offered: a lost answer there
+ * cannot be told apart from a failure, and a second start can run the rollover again.
+ */
+export function startYearAvailability(detection: BackendDetection | undefined): "available" | "checking" | "unavailable" {
+  if (hasFeature(detection, "academicYearActivation")) return "available";
+  return detection === undefined ? "checking" : "unavailable";
 }

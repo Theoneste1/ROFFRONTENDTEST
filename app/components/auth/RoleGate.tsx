@@ -9,11 +9,13 @@ import { ErrorState, FullPageLoader } from "@/app/components/ui/feedback";
 
 /**
  * Renders a portal only for the roles that use it (`role` names the portal:
- * "ADMIN" also admits a Super Administrator).
+ * "ADMIN" also admits a Super Administrator; "MENTOR" also a Head Coach).
+ * Portals (lib/auth/role-rules.ts): Student → /student, Teacher → /teacher,
+ * Coach and Head Coach → /mentor, Administrator and Super Administrator → /admin.
  * - Not signed in → /login?next=<current path> (plain /login after the user signed out)
  * - Signed in with a role of another portal → that role's own portal
- * - A role without a portal here (Teacher, Head Coach, unknown) → the "no
- *   access configured" page, which is not gated, so this never loops.
+ * - An unknown role → the "no access configured" page, which is not gated, so
+ *   this never loops.
  *
  * This is navigation, not security: the API refuses anything the role may not do.
  */

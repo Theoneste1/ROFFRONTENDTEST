@@ -292,3 +292,14 @@ test("role filter tabs: a NEW backend adds the roles it lists, in a stable order
   assert.deepEqual(roleFilterTabs(all).map((t) => t.label), ["All", "Students", "Teachers", "Coaches", "Head Coaches", "Admins", "Super Admins"]);
   assert.deepEqual(roleFilterTabs(["STUDENT", "MENTOR", "ADMIN", "FUTURE_ROLE"]).map((t) => t.value), ["", "STUDENT", "MENTOR", "ADMIN"], "unknown role names ignored");
 });
+
+// ─── Action buttons when /me/permissions failed ─────────────────────────────
+import { actionAllowed } from "../lib/auth/navigation.ts";
+
+test("an action follows known permissions, waits while loading, and defers to the backend when the list failed", () => {
+  const holds = (...ps) => (p) => ps.includes(p);
+  assert.equal(actionAllowed("resources.manage", "ready", holds("resources.manage")), true);
+  assert.equal(actionAllowed("resources.manage", "ready", holds("resources.view")), false, "a Head Coach reads only");
+  assert.equal(actionAllowed("resources.manage", "loading", holds("resources.manage")), false, "no flashing while loading");
+  assert.equal(actionAllowed("resources.manage", "error", holds()), true, "list failed: the API decides, as before");
+});

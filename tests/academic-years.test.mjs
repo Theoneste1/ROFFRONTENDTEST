@@ -131,3 +131,24 @@ test("lock storage: written, read back, cleared; malformed values are ignored", 
   m.set(ACTIVATION_LOCK_KEY, JSON.stringify({ yearId: 1 }));
   assert.equal(readActivationLock(storage), null);
 });
+
+// ─── Start-year availability (academicYearActivation) ───────────────────────
+import { startYearAvailability, YEAR_ERRORS as YE, activationSummary as summary } from "../lib/admin/academic-years.ts";
+
+test("Start year is offered only when the backend advertises academicYearActivation", () => {
+  const NEWB = (features) => ({ state: "NEW", schemaVersion: 1, roles: [], features });
+  assert.equal(startYearAvailability(NEWB(["academicYearActivation"])), "available");
+  assert.equal(startYearAvailability(NEWB(["schoolAdministration"])), "unavailable", "new backend without the fix");
+  assert.equal(startYearAvailability({ state: "LEGACY" }), "unavailable", "production today");
+  assert.equal(startYearAvailability({ state: "UNKNOWN", reason: "timeout" }), "unavailable");
+  assert.equal(startYearAvailability(undefined), "checking");
+});
+
+test("the start's new refusals and a replayed answer are explained", () => {
+  assert.match(YE.CURRENT_YEAR_CHANGED, /current academic year changed/);
+  assert.match(YE.ACTIVATION_OPTIONS_DIFFER, /different choices/);
+  const y = { id: "y", name: "2027-2028" };
+  const base = { academicYear: y, promoted: 3, carriedOver: 0, graduated: 1, newlyEnrolled: 0, assignmentsArchived: 0 };
+  assert.ok(!summary(base).some((l) => /already been started/.test(l)));
+  assert.ok(summary({ ...base, replayed: true }).some((l) => /already been started/.test(l)));
+});

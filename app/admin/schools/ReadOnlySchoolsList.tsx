@@ -24,12 +24,18 @@ export default function ReadOnlySchoolsList() {
   const schools = useSchools({ search: search || undefined, page, limit: 20 });
   const { can } = useSession();
   // Students' school claims: on a backend with school affiliations, for holders of schools.manage.
-  const review = hasFeature(useBackendCapabilities().detection, "schoolAffiliations") && can("schools.manage");
+  const { detection } = useBackendCapabilities();
+  const review = hasFeature(detection, "schoolAffiliations") && can("schools.manage");
+  // Only the original backend creates schools from registrations and invitations; a newer one
+  // creates them only under Schools (schools.manage), and this read-only view means the user lacks it.
+  const description = hasFeature(detection, "schoolReferenceRequired")
+    ? "Schools are created by administrators who manage the school directory (schools.manage). This list is read-only."
+    : "Schools are added automatically when students register or are invited. They cannot be edited here.";
 
   return (
     <AdminPage
       title="Schools"
-      description="Schools are added automatically when students register or are invited. They cannot be edited here."
+      description={description}
       actions={
         review ? (
           <Link href="/admin/schools/affiliations" className={btnSecondary}>

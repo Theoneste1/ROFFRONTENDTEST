@@ -31,6 +31,13 @@ export const KNOWN_FEATURES = [
   "teacherAccounts",
   /** Optional: the HEAD_COACH role can currently be assigned (the caller still needs users.manageHeadCoaches). */
   "headCoachAccounts",
+  /**
+   * Starting an academic year (POST /admin/academic-years/:id/activate) is single-flight and
+   * retry-safe on this backend: a concurrent or repeated start cannot roll students over twice,
+   * and a retry after a lost answer returns the recorded outcome. Without it, the admin page
+   * offers no "Start year" (the original backend's start is not safe to repeat).
+   */
+  "academicYearActivation",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 
