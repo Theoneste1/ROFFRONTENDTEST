@@ -27,8 +27,9 @@ export default function MentorDashboard() {
   const analytics = useScopesAnalytics(scopes.data);
   const assignments = useMentorAssignments({ limit: 100 });
   // With reviewQueueFilters the totals come from the server (`counts`); otherwise from the first 100 rows (L3).
-  const serverCounts = hasFeature(useBackendCapabilities().detection, 'reviewQueueFilters');
-  const queue = useReviewQueue(serverCounts ? { group: 'all', limit: 1 } : { limit: 100 });
+  const caps = useBackendCapabilities();
+  const serverCounts = hasFeature(caps.detection, 'reviewQueueFilters');
+  const queue = useReviewQueue(serverCounts ? { group: 'all', limit: 1 } : { limit: 100 }, { enabled: !caps.loading });
   const notifications = useNotifications({ limit: 5 });
 
   const loadedAnalytics = analytics.map((q) => q.data).filter((d): d is NonNullable<typeof d> => !!d);

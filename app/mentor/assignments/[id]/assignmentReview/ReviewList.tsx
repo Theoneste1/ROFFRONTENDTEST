@@ -29,7 +29,9 @@ import { AssignmentStatusBadge } from "../../../components/mentorUi";
 
 export default function ReviewList({ assignmentId }: { assignmentId: string }) {
   const assignment = useMentorAssignment(assignmentId);
-  const server = hasFeature(useBackendCapabilities().detection, "reviewQueueFilters");
+  // Wait for the capabilities: they decide which query to send (no wasted legacy request first).
+  const caps = useBackendCapabilities();
+  const server = hasFeature(caps.detection, "reviewQueueFilters");
   const [controls, setControlsState] = useState<ControlsState>({ search: "", status: "all", sort: "submitted" });
   const [page, setPage] = useState(1);
   const search = useDebounced(controls.search);
@@ -39,6 +41,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
   };
   const queue = useReviewQueue(
     server ? serverQuery(assignmentId, { ...controls, search }, page) : { assignmentId, limit: LEGACY_LIMIT },
+    { enabled: !caps.loading },
   );
   const analytics = useCourseAnalytics(assignment.data?.courseId, assignment.data?.divisionId);
 

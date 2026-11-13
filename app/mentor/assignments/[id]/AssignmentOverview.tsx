@@ -35,8 +35,9 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
   const assignment = useMentorAssignment(assignmentId);
   const history = useAssignmentHistory(assignmentId);
   // With reviewQueueFilters the totals come from the server (`counts`); otherwise from the first 100 rows.
-  const serverCounts = hasFeature(useBackendCapabilities().detection, "reviewQueueFilters");
-  const queue = useReviewQueue(serverCounts ? { assignmentId, group: "all", limit: 1 } : { assignmentId, limit: 100 });
+  const caps = useBackendCapabilities();
+  const serverCounts = hasFeature(caps.detection, "reviewQueueFilters");
+  const queue = useReviewQueue(serverCounts ? { assignmentId, group: "all", limit: 1 } : { assignmentId, limit: 100 }, { enabled: !caps.loading });
   const analytics = useCourseAnalytics(assignment.data?.courseId, assignment.data?.divisionId);
   const transition = useAssignmentTransition(assignmentId);
   const [notice, setNotice] = useState<string | null>(null);
