@@ -12,6 +12,11 @@
  * server cannot be reached (network, 429, 5xx), the status is "error" with a
  * "Try again" that restores the session — never a silent sign-out.
  *
+ * After an explicit sign-out the session is never restored from the cookie
+ * until the next sign-in, and the server logout is repeated on load (H1;
+ * lib/auth/signed-out.ts): on a shared computer the next person cannot be
+ * signed in as the previous user, even if that user's logout request was lost.
+ *
  * Hiding UI by role or permission is only a courtesy: the backend enforces
  * every rule again on every request.
  */
@@ -27,6 +32,7 @@ import {
 } from "@/lib/api/client";
 import { signInThenClearCooldown, type RefreshOutcome } from "@/lib/api/refresh-outcome";
 import { authApi, meApi } from "@/lib/api/auth";
+import { clearSignedOut, confirmSignedOut, isMarkedSignedOut, isSignedOutEvent, markSignedOut, needsServerLogout } from "@/lib/auth/signed-out";
 import { queryKeys } from "@/lib/query/keys";
 import type { CurrentUser, Permission, Role } from "@/lib/api/types";
 
@@ -96,6 +102,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      if (isMarkedSignedOut()) {
+        // Signed out on this device: never restore from the cookie, and make sure
+        // the server session is revoked (the earlier logout request may have been lost).
+        if (needsServerLogout()) authApi.logout().then(() => confirmSignedOut(), () => undefined);
+        if (!cancelled) {
+          setSignedOutByUser(true);
+          setPhase("signed-out");
+        }
+        return;
+      }
       const outcome = getAccessToken() ? "ok" : await refreshSession();
       if (!cancelled) setPhase(phaseFor(outcome));
     })();
@@ -130,6 +146,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [signOutLocally]);
 
+  // The same through localStorage: another tab wrote the signed-out marker
+  // (covers browsers without BroadcastChannel and a missed message).
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (isSignedOutEvent(event)) {
+        setSignedOutByUser(true);
+        signOutLocally();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [signOutLocally]);
+
   const signedIn = phase === "signed-in";
 
   const meQuery = useQuery({
@@ -150,6 +179,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     async (username: string, password: string) => {
       // The cooldown is cleared only after the sign-in succeeded (a failure throws first).
       const res = await signInThenClearCooldown(() => authApi.login(username, password), clearRefreshCooldown);
+      // Before any other request: a refresh while the marker is set is refused.
+      clearSignedOut();
       queryClient.clear();
       queryClient.setQueryData(queryKeys.me.profile(), res.user);
       setSignedOutByUser(false);
@@ -161,10 +192,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    // First, before any request: from now on nothing restores this session in
+    // this browser, even if the logout request below is lost.
+    markSignedOut();
     try {
+      // The cookie identifies the session, so this works with an expired access token.
       await authApi.logout();
+      confirmSignedOut();
     } catch {
-      // The session ends locally even if the server could not be reached.
+      // The session ends locally even if the server could not be reached; the
+      // marker keeps it ended and the next load repeats the server logout.
     }
     setSignedOutByUser(true);
     signOutLocally();
@@ -172,13 +209,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [signOutLocally]);
 
   const logoutEverywhere = useCallback(async () => {
+    // Refreshes first if the access token expired (M1); a failure is shown, nothing changes.
     await authApi.logoutAll();
+    confirmSignedOut();
     setSignedOutByUser(true);
     signOutLocally();
     channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
   }, [signOutLocally]);
 
   const endSession = useCallback(() => {
+    // The server already ended every session (e.g. password changed).
+    confirmSignedOut();
     signOutLocally();
     channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
   }, [signOutLocally]);

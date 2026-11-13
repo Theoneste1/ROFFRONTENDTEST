@@ -24,6 +24,7 @@ import {
   type RefreshOutcome,
   type SharedCooldown,
 } from "./refresh-outcome";
+import { isMarkedSignedOut } from "../auth/signed-out";
 import { UPLOAD_ORIGIN } from "./upload-origin";
 import { trackUpload } from "./upload-progress";
 import type { TokenResponse } from "./types";
@@ -81,7 +82,15 @@ async function postRefresh() {
 }
 
 async function runRefresh(): Promise<RefreshOutcome> {
+  // Signed out on this device (lib/auth/signed-out.ts): never revive the session
+  // from the cookie — also not when a refresh was already on its way while the
+  // user (or another tab) signed out.
+  if (isMarkedSignedOut()) return "rejected";
   const result = await attemptRefresh({ post: postRefresh, delay });
+  if (isMarkedSignedOut()) {
+    accessToken = null;
+    return "rejected";
+  }
   if (result.outcome === "ok" && result.accessToken) accessToken = result.accessToken;
   return result.outcome;
 }
@@ -151,6 +160,22 @@ export interface RequestOptions extends Omit<RequestInit, "body"> {
   query?: Record<string, QueryValue>;
   /** Send the bearer token and refresh on 401 (default true). */
   auth?: boolean;
+  /**
+   * With `auth`: refresh the session and retry once on 401 (default true).
+   * False sends the bearer token if there is one but never refreshes — for
+   * logout, which the server authenticates by the refresh cookie (H1).
+   */
+  refresh?: boolean;
+}
+
+/**
+ * Whether a request refreshes the session and retries on 401. Every
+ * authenticated call does — including /auth/logout-all and /auth/password
+ * (M1: they failed with 401 once the 15-minute access token had expired) —
+ * except where `refresh: false` says otherwise.
+ */
+export function refreshesOnUnauthorized(opts: Pick<RequestOptions, "auth" | "refresh">): boolean {
+  return (opts.auth ?? true) && (opts.refresh ?? true);
 }
 
 export function buildUrl(path: string, query?: Record<string, QueryValue>): string {
@@ -166,7 +191,8 @@ export function buildUrl(path: string, query?: Record<string, QueryValue>): stri
 }
 
 async function send(path: string, opts: RequestOptions): Promise<Response> {
-  const { body, query, auth = true, headers: initHeaders, ...init } = opts;
+  const { body, query, auth = true, refresh, headers: initHeaders, ...init } = opts;
+  void refresh; // not a fetch option: used by sendWithRefresh only
   const headers = new Headers(initHeaders);
   headers.set("Accept", headers.get("Accept") ?? "application/json");
   if (auth && accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
@@ -277,8 +303,7 @@ async function toError(res: Response): Promise<ApiError> {
  * `SESSION_REFRESH_UNAVAILABLE` and keeps the session.
  */
 async function sendWithRefresh(path: string, opts: RequestOptions): Promise<Response> {
-  const auth = opts.auth ?? true;
-  if (!auth || path.startsWith("/auth/")) return send(path, opts);
+  if (!refreshesOnUnauthorized(opts)) return send(path, opts);
   // Uploads: refresh first when the token is missing or about to expire, so a
   // large body is not sent with a dead token (rejected with 401, then sent
   // again — or cut off by the server, which looks like a network error).

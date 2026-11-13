@@ -24,14 +24,21 @@ export const authApi = {
     return res;
   },
 
+  /**
+   * End this session on the server. The refresh cookie identifies it, so this
+   * works after the access token has expired (H1): never refresh first (that
+   * would only rotate the session about to be revoked). A bearer token, if one
+   * is in memory, is sent so the server blacklists it too.
+   */
   async logout(): Promise<void> {
     try {
-      await api<MessageResponse>("/auth/logout", { method: "POST" });
+      await api<MessageResponse>("/auth/logout", { method: "POST", refresh: false });
     } finally {
       setAccessToken(null);
     }
   },
 
+  /** Needs a valid access token: on 401 the client refreshes once and retries (M1). */
   async logoutAll(): Promise<void> {
     try {
       await api<MessageResponse>("/auth/logout-all", { method: "POST" });
