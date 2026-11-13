@@ -12,6 +12,7 @@ import { ArrowUpDown, BookOpen, Download, Edit, Eye, EyeOff, FileText, MoreHoriz
 import type { CourseResource, ResourceType } from "@/lib/api/types";
 import { mentorResourcesApi } from "@/lib/api/mentor";
 import { useSession } from "@/lib/auth/session";
+import { actionAllowed } from "@/lib/auth/navigation";
 import { saveFile } from "@/lib/api/client";
 import { useMentorResources, useResourceAction } from "@/lib/queries/mentor";
 import { errorMessage } from "@/lib/api/errors";
@@ -61,7 +62,9 @@ export default function ResourcesTab({
 }) {
   const router = useRouter();
   // Coaches and administrators manage resources; a Head Coach (resources.view only) reads them.
-  const canManage = useSession().can("resources.manage");
+  // If the permission list failed to load, the buttons stay and the backend decides.
+  const { can, permissionsStatus } = useSession();
+  const canManage = actionAllowed("resources.manage", permissionsStatus, can);
   const cfg = KIND[kind];
   const resources = useMentorResources(courseId, divisionId);
   const action = useResourceAction(courseId);

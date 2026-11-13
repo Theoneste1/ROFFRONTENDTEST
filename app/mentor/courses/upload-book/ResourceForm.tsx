@@ -9,6 +9,7 @@
 import React, { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth/session";
+import { actionAllowed } from "@/lib/auth/navigation";
 import { ArrowLeft, ChevronDown, Trash2 } from "lucide-react";
 import type { CourseResource, ResourceType, TeachingScope } from "@/lib/api/types";
 import { RESOURCE_RULES, RESOURCE_UPLOAD } from "@/lib/api/mentor";
@@ -40,7 +41,7 @@ export default function ResourceForm({ scopeList, basePath = "/mentor/courses" }
 
   // Uploading and editing need resources.manage (a Head Coach views resources only).
   if (permissionsStatus === "loading") return <LoadingBlock />;
-  if (!can("resources.manage"))
+  if (!actionAllowed("resources.manage", permissionsStatus, can))
     return (
       <div className="p-8 bg-white rounded-2xl m-8">
         <EmptyState title="You can't add or edit resources" description="Your role can view this course's resources but not change them." />

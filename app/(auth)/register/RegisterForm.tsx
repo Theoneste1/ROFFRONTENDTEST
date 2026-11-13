@@ -166,8 +166,8 @@ export default function RegisterForm() {
           <div className="space-y-4" data-testid="register-detection-failed">
             <Alert tone="error">We couldn&apos;t reach the ROF LMS server to prepare the registration form.</Alert>
             <p className="text-sm text-slate-600">Check your connection and try again. The server can take up to a minute to wake up.</p>
-            <Button type="button" className="w-full" onClick={caps.retry}>
-              Try again
+            <Button type="button" className="w-full" onClick={caps.retry} disabled={gate.retrying} data-testid="register-retry">
+              {gate.retrying ? "Trying again…" : "Try again"}
             </Button>
             <Button type="button" variant="secondary" className="w-full" onClick={() => setSchoolMode("legacy")}>
               Continue with the basic form

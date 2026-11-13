@@ -90,8 +90,9 @@ test("registration gate: no form until detection answers; UNKNOWN is a visible f
   const NEW = (features) => ({ state: "NEW", schemaVersion: 1, roles: [], features });
   assert.deepEqual(registrationGate(undefined, true), { state: "loading" });
   assert.deepEqual(registrationGate(undefined, false), { state: "loading" });
-  assert.deepEqual(registrationGate({ state: "UNKNOWN", reason: "timeout" }, true), { state: "loading" }, "retry in flight");
-  assert.deepEqual(registrationGate({ state: "UNKNOWN", reason: "timeout" }, false), { state: "failed", reason: "timeout" });
+  // Once detection has failed, a retry in flight keeps the panel (and its "basic form" fallback).
+  assert.deepEqual(registrationGate({ state: "UNKNOWN", reason: "timeout" }, true), { state: "failed", reason: "timeout", retrying: true }, "retry in flight");
+  assert.deepEqual(registrationGate({ state: "UNKNOWN", reason: "timeout" }, false), { state: "failed", reason: "timeout", retrying: false });
   assert.deepEqual(registrationGate({ state: "LEGACY" }, false), { state: "ready", mode: "legacy" });
   assert.deepEqual(registrationGate(NEW(["schoolAffiliations"]), false), { state: "ready", mode: "directory" });
   assert.deepEqual(registrationGate(NEW([]), false), { state: "ready", mode: "legacy" });

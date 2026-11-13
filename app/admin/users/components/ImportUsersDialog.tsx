@@ -4,7 +4,9 @@ import { useRef, useState } from "react";
 import { FileUp } from "lucide-react";
 import { USER_RULES } from "@/lib/api/admin";
 import { saveFile } from "@/lib/api/client";
-import { IMPORT_HEADER, IMPORT_TEMPLATE, importHeaderProblems } from "@/lib/import-header";
+import { importFormatFor, importHeader, importHeaderProblems, importSchoolHint, importTemplate } from "@/lib/import-header";
+import { hasFeature } from "@/lib/api/capabilities";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import type { UserImportResult } from "@/lib/api/types";
 import { useImportUsers } from "@/lib/queries/admin";
@@ -31,6 +33,9 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
   const [error, setError] = useState<string | null>(null);
   const importUsers = useImportUsers();
   const busy = importUsers.isPending;
+  // The columns follow the backend: a school given by code / id where schools must exist.
+  const { detection } = useBackendCapabilities();
+  const format = importFormatFor({ schoolReferenceRequired: hasFeature(detection, "schoolReferenceRequired"), detectionState: detection?.state });
 
   // Only the latest pick may update the dialog (reading an earlier, slower file can finish later).
   const latestPick = useRef(0);
@@ -51,7 +56,7 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
       return;
     }
     if (pickId !== latestPick.current) return;
-    const problem = importHeaderProblems(text.split(/\r?\n/, 1)[0] ?? "");
+    const problem = importHeaderProblems(text.split(/\r?\n/, 1)[0] ?? "", format);
     if (problem) return setError(`"${f.name}": ${problem}`);
     setFile(f);
   }
@@ -77,13 +82,14 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
         <p className="text-xs text-gray-500">
           UTF-8 CSV, up to 1 MB and {USER_RULES.importMaxRows.toLocaleString()} rows. Every valid row receives an invitation e-mail. Header (first three columns required):
         </p>
-        <code className="block text-[11px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 break-all">{IMPORT_HEADER}</code>
+        <code className="block text-[11px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 break-all">{importHeader(format)}</code>
         <p className="text-xs text-gray-500">
-          role: STUDENT (default), MENTOR (coach) or ADMIN · gradeLevel S1–S6, required for students · username: lowercase, generated when empty. An
+          role: STUDENT (default), MENTOR (coach) or ADMIN · gradeLevel S1–S6, required for students · username: lowercase, generated when empty.{" "}
+          {importSchoolHint(format)} An
           exported students list cannot be imported as it is.{" "}
           <button
             type="button"
-            onClick={() => saveFile({ blob: new Blob([IMPORT_TEMPLATE], { type: "text/csv" }), filename: "users-import-template.csv" })}
+            onClick={() => saveFile({ blob: new Blob([importTemplate(format)], { type: "text/csv" }), filename: "users-import-template.csv" })}
             className="font-medium text-indigo-600 hover:underline"
           >
             Download template
