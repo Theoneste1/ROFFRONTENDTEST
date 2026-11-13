@@ -150,6 +150,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                 />
                 <TextInput label="Reason" required value={grant.reason} onChange={(v) => setGrant((g) => ({ ...g, reason: v }))} maxLength={DELEGATION_RULES.reasonMax} hint="Recorded in the audit log." />
                 <TextInput label="End date (optional)" type="date" value={grant.expiresAt} onChange={(v) => setGrant((g) => ({ ...g, expiresAt: v }))} />
+                <p className="text-xs text-gray-500">The teacher will be notified by e-mail and in the app of the permission granted.</p>
                 {grantError && <Alert tone="error">{grantError}</Alert>}
                 <button type="submit" className={btnPrimary} disabled={act.isPending}>
                   Grant permission

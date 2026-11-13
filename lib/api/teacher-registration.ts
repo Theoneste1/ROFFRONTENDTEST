@@ -6,6 +6,7 @@
  *   POST /auth/register/teacher                       public  the application (201)
  *   GET  /admin/teacher-applications                  users.manageTeachers  paginated list
  *   GET  /admin/teacher-applications/:id              users.manageTeachers
+ *   POST /admin/teacher-applications/:id/school       users.manageTeachers  { schoolId, note? } — verify a missing school
  *   POST /admin/teacher-applications/:id/approve      users.manageTeachers  { schoolId?, note? }
  *   POST /admin/teacher-applications/:id/reject       users.manageTeachers  { reason }
  *
@@ -90,6 +91,13 @@ export interface TeacherApplication {
   decisionNote: string | null;
   userId: string | null;
   assignedSchool: { id: string; name: string; code: string | null } | null;
+  /**
+   * When an Administrator verified a missing school (POST …/:id/school): the official school is
+   * then in `school`. Null for a listed school and while not yet verified. Optional so an older
+   * backend without the field still type-checks (treated as not verified).
+   */
+  schoolVerifiedAt?: string | null;
+  schoolVerifiedBy?: { id: string; firstName: string; lastName: string } | null;
 }
 
 export interface TeacherApplicationFilters {
@@ -115,6 +123,14 @@ export const teacherApplicationsAdminApi = {
   list: (filters: TeacherApplicationFilters = {}) =>
     api<Page<TeacherApplication>>("/admin/teacher-applications", { query: { ...filters } }),
   get: (id: string) => api<TeacherApplication>(`/admin/teacher-applications/${encodeURIComponent(id)}`),
+  /**
+   * Verify a missing-school application's school (an existing official school). Keeps the
+   * application PENDING (no account); the applicant is e-mailed that the school was verified.
+   * 409 SCHOOL_ALREADY_VERIFIED / APPLICATION_ALREADY_DECIDED; 400 UNKNOWN_SCHOOL.
+   */
+  verifySchool: (id: string, input: { schoolId: string; note?: string }) =>
+    api<TeacherApplication>(`/admin/teacher-applications/${encodeURIComponent(id)}/school`, { method: "POST", body: input }),
+  /** 400 SCHOOL_NOT_VERIFIED (missing school not verified yet) / SCHOOL_MISMATCH; 409 APPLICATION_ALREADY_DECIDED. */
   approve: (id: string, input: { schoolId?: string; note?: string }) =>
     api<ApproveTeacherApplicationResult>(`/admin/teacher-applications/${encodeURIComponent(id)}/approve`, { method: "POST", body: input }),
   reject: (id: string, reason: string) =>

@@ -18,11 +18,12 @@ import {
   ScrollText,
   ShieldAlert,
   Inbox,
-  UserPlus
+  UserPlus,
+  MailCheck
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import { useSession } from "@/lib/auth/session";
-import { ADMIN_NAV, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
 import { teacherApplicationsNavVisible } from "@/lib/admin/teacher-applications";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
@@ -45,6 +46,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/moderation": ShieldAlert,
   "/admin/messages": Inbox,
   "/admin/teacher-applications": UserPlus,
+  "/admin/notification-deliveries": MailCheck,
 };
 
 /**
@@ -58,9 +60,12 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   const { knownPermissions } = useSession();
   const { detection } = useBackendCapabilities();
   // Teacher applications: only with the backend feature AND the (known) users.manageTeachers.
-  const items = teacherApplicationsNavVisible(detection, knownPermissions)
-    ? [...visibleNav(ADMIN_NAV, knownPermissions), ADMIN_TEACHER_APPLICATIONS]
-    : visibleNav(ADMIN_NAV, knownPermissions);
+  const items = [
+    ...visibleNav(ADMIN_NAV, knownPermissions),
+    ...(teacherApplicationsNavVisible(detection, knownPermissions) ? [ADMIN_TEACHER_APPLICATIONS] : []),
+    // Notification deliveries: email.bulkSend (the single constant in lib/admin/notification-deliveries.ts).
+    ...visibleNav([ADMIN_NOTIFICATION_DELIVERIES], knownPermissions),
+  ];
 
   // Function to check if link is active
   const isActive = (path: string) => {

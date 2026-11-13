@@ -4,9 +4,13 @@
  * Teacher applications (`/admin/teacher-applications`, users.manageTeachers), only on a backend
  * advertising `teacherSelfRegistration`. An application is PENDING until an Administrator decides:
  *   listed school  → approve (confirm, optional note) or reject (reason)
- *   missing school → approve only after choosing an official school (a new school is first
- *                    created under Schools → directory), or reject (reason)
- * Approval creates the TEACHER account and its school assignment; nothing exists before.
+ *   missing school → first "Verify school": the Administrator matches an EXISTING official school
+ *                    (a new school is first created under Schools → directory, never a duplicate);
+ *                    the applicant is e-mailed that the school was verified and the application
+ *                    stays PENDING. Approve is disabled until then. Reject (reason) at any time.
+ * Approval never chooses a school; it creates the TEACHER account and its school assignment and
+ * notifies the teacher (e-mail and in-app). Nothing exists before.
+ * The rules live in lib/admin/teacher-applications.ts (unit-tested).
  */
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
@@ -31,15 +35,18 @@ import {
   REJECTION_REASON,
   TEACHER_APPLICATION_STATUSES,
   TEACHER_REVIEW_ERRORS,
+  VERIFY_NOTE_MAX,
   applicationSchoolPlace,
-  approvalNeedsSchool,
   approvalPayload,
+  isMissingSchoolApplication,
+  teacherReviewActions,
   teacherReviewMode,
+  verifySchoolPayload,
 } from "@/lib/admin/teacher-applications";
 import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { DistrictSchoolSelect, PlaceSelect } from "@/app/components/account/SchoolPlaceFields";
-import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableMessage, btnPrimary, linkBtn, td, th } from "../components/adminUi";
+import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../components/adminUi";
 
 /** The backend's error with a message for its code (shown by the dialogs). */
 function explain(e: unknown): unknown {
@@ -64,6 +71,7 @@ export default function TeacherApplicationsReview() {
     placeholderData: keepPreviousData,
   });
   const [viewing, setViewing] = useState<TeacherApplication | null>(null);
+  const [verifying, setVerifying] = useState<TeacherApplication | null>(null);
   const [approving, setApproving] = useState<TeacherApplication | null>(null);
   const [rejecting, setRejecting] = useState<TeacherApplication | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -90,7 +98,10 @@ export default function TeacherApplicationsReview() {
 
   const rows = list.data?.data ?? [];
   return (
-    <AdminPage title="Teacher applications" description="Teachers who applied for an account. Approving creates the Teacher account and assigns it to the school.">
+    <AdminPage
+      title="Teacher applications"
+      description="Teachers who applied for an account. A school that wasn't listed is verified first; approving creates the Teacher account and assigns it to the school."
+    >
       {notice && (
         <Notice tone="success" onClose={() => setNotice(null)}>
           {notice}
@@ -152,16 +163,7 @@ export default function TeacherApplicationsReview() {
                     <button type="button" className={linkBtn} onClick={() => setViewing(a)}>
                       View
                     </button>
-                    {a.status === "PENDING" && (
-                      <>
-                        <button type="button" className={linkBtn} onClick={() => setApproving(a)}>
-                          Approve
-                        </button>
-                        <button type="button" className={linkBtn} onClick={() => setRejecting(a)}>
-                          Reject
-                        </button>
-                      </>
-                    )}
+                    <ReviewButtons app={a} onVerify={setVerifying} onApprove={setApproving} onReject={setRejecting} />
                   </td>
                 </tr>
               ))
@@ -174,6 +176,10 @@ export default function TeacherApplicationsReview() {
         <DetailDialog
           app={viewing}
           onClose={() => setViewing(null)}
+          onVerify={(a) => {
+            setViewing(null);
+            setVerifying(a);
+          }}
           onApprove={(a) => {
             setViewing(null);
             setApproving(a);
@@ -181,6 +187,17 @@ export default function TeacherApplicationsReview() {
           onReject={(a) => {
             setViewing(null);
             setRejecting(a);
+          }}
+        />
+      )}
+      {verifying && (
+        <VerifySchoolDialog
+          app={verifying}
+          onClose={() => setVerifying(null)}
+          onError={onError}
+          onVerified={(text) => {
+            setNotice(text);
+            void refresh();
           }}
         />
       )}
@@ -218,22 +235,66 @@ export default function TeacherApplicationsReview() {
   );
 }
 
+/** Verify school / Approve (disabled with its reason until the school is verified) / Reject. */
+function ReviewButtons({
+  app,
+  onVerify,
+  onApprove,
+  onReject,
+}: {
+  app: TeacherApplication;
+  onVerify: (a: TeacherApplication) => void;
+  onApprove: (a: TeacherApplication) => void;
+  onReject: (a: TeacherApplication) => void;
+}) {
+  const actions = teacherReviewActions(app);
+  return (
+    <>
+      {actions.verifySchool && (
+        <button type="button" className={linkBtn} onClick={() => onVerify(app)}>
+          Verify school
+        </button>
+      )}
+      {actions.approve.shown && (
+        <button
+          type="button"
+          className={`${linkBtn} disabled:text-gray-300 disabled:cursor-not-allowed`}
+          disabled={!actions.approve.enabled}
+          title={actions.approve.enabled ? undefined : actions.approve.reason}
+          onClick={() => onApprove(app)}
+        >
+          Approve
+        </button>
+      )}
+      {actions.reject && (
+        <button type="button" className={linkBtn} onClick={() => onReject(app)}>
+          Reject
+        </button>
+      )}
+    </>
+  );
+}
+
 function SchoolCell({ app }: { app: TeacherApplication }) {
   const place = applicationSchoolPlace(app);
   if (app.school) {
     return (
       <>
         {app.school.name}
+        {isMissingSchoolApplication(app) && app.schoolVerifiedAt && <span className="ml-1 text-[11px] text-emerald-700">(verified)</span>}
         <span className="block text-xs text-gray-400">
           {app.school.code ? `code ${app.school.code} · ` : ""}
           {place}
         </span>
+        {app.proposedSchoolName && app.proposedSchoolName !== app.school.name && (
+          <span className="block text-[11px] text-gray-400">applied as &ldquo;{app.proposedSchoolName}&rdquo;</span>
+        )}
       </>
     );
   }
   return (
     <>
-      {app.proposedSchoolName ?? "—"} <span className="text-[11px] text-amber-700">(not in the directory)</span>
+      {app.proposedSchoolName ?? "—"} <span className="text-[11px] text-amber-700">(not listed — verify first)</span>
       <span className="block text-xs text-gray-400">{place || "No place given"}</span>
     </>
   );
@@ -248,10 +309,24 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function DetailDialog({ app, onClose, onApprove, onReject }: { app: TeacherApplication; onClose: () => void; onApprove: (a: TeacherApplication) => void; onReject: (a: TeacherApplication) => void }) {
+function DetailDialog({
+  app,
+  onClose,
+  onVerify,
+  onApprove,
+  onReject,
+}: {
+  app: TeacherApplication;
+  onClose: () => void;
+  onVerify: (a: TeacherApplication) => void;
+  onApprove: (a: TeacherApplication) => void;
+  onReject: (a: TeacherApplication) => void;
+}) {
   const detail = useQuery({ queryKey: queryKeys.teacherApplications.detail(app.id), queryFn: () => teacherApplicationsAdminApi.get(app.id), placeholderData: app });
   const a = detail.data ?? app;
   const status = TEACHER_APPLICATION_STATUSES.find((s) => s.value === a.status)?.label ?? a.status;
+  const actions = teacherReviewActions(a);
+  const missing = isMissingSchoolApplication(a);
   return (
     <Modal wide title={`${fullName(a)} — teacher application`} onClose={onClose}>
       <div data-testid="teacher-application-detail">
@@ -263,17 +338,30 @@ function DetailDialog({ app, onClose, onApprove, onReject }: { app: TeacherAppli
           <Row label="Phone">{a.phone}</Row>
           <Row label="Country">{countryLabel(a.country)}</Row>
           <Row label="Olympiad interests">{a.olympiadInterests.map(subjectLabel).join(", ") || "—"}</Row>
-          {a.school ? (
-            <Row label="School">
+          {missing && (
+            <Row label="School requested (not listed)">
+              {a.proposedSchoolName ?? "—"}
+              <span className="block text-xs text-gray-500">{[a.schoolSector, a.schoolDistrict, a.schoolProvince].filter(Boolean).join(", ") || "No place given"}</span>
+            </Row>
+          )}
+          {missing && (
+            <Row label="School verified">
+              {a.schoolVerifiedAt ? (
+                <>
+                  {formatDateTime(a.schoolVerifiedAt)}
+                  {a.schoolVerifiedBy && ` by ${fullName(a.schoolVerifiedBy)}`}
+                </>
+              ) : (
+                <span className="text-amber-700">Not yet</span>
+              )}
+            </Row>
+          )}
+          {a.school && (
+            <Row label={missing ? "Official school" : "School"}>
               {a.school.name}
               <span className="block text-xs text-gray-500">
                 {a.school.code ? `School code ${a.school.code}` : "No school code"} · Sector {a.school.sector ?? "—"} · {[a.school.district, a.school.province].filter(Boolean).join(", ")}
               </span>
-            </Row>
-          ) : (
-            <Row label="School (not listed)">
-              {a.proposedSchoolName ?? "—"}
-              <span className="block text-xs text-gray-500">{[a.schoolSector, a.schoolDistrict, a.schoolProvince].filter(Boolean).join(", ") || "No place given"}</span>
             </Row>
           )}
           <Row label="Home location">{[a.homeSector, a.homeDistrict].filter(Boolean).join(", ") || "—"}</Row>
@@ -296,13 +384,25 @@ function DetailDialog({ app, onClose, onApprove, onReject }: { app: TeacherAppli
           )}
         </dl>
         {a.status === "PENDING" && (
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" className="px-5 py-2 text-sm text-red-600" onClick={() => onReject(a)}>
-              Reject
-            </button>
-            <button type="button" className={btnPrimary} onClick={() => onApprove(a)}>
-              Approve
-            </button>
+          <div className="pt-4 space-y-3">
+            {actions.approve.shown && !actions.approve.enabled && <p className="text-xs text-amber-700 text-right">{actions.approve.reason}</p>}
+            <div className="flex flex-wrap justify-end gap-3">
+              {actions.reject && (
+                <button type="button" className="px-5 py-2 text-sm text-red-600" onClick={() => onReject(a)}>
+                  Reject
+                </button>
+              )}
+              {actions.verifySchool && (
+                <button type="button" className={btnSecondary} onClick={() => onVerify(a)}>
+                  Verify school
+                </button>
+              )}
+              {actions.approve.shown && (
+                <button type="button" className={btnPrimary} disabled={!actions.approve.enabled} onClick={() => onApprove(a)}>
+                  Approve
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -310,18 +410,39 @@ function DetailDialog({ app, onClose, onApprove, onReject }: { app: TeacherAppli
   );
 }
 
-function ApproveDialog({ app, onClose, onError, onApproved }: { app: TeacherApplication; onClose: () => void; onError: (e: unknown) => unknown; onApproved: (notice: string) => void }) {
-  const needsSchool = approvalNeedsSchool(app);
+function NoteField({ id, value, onChange, max }: { id: string; value: string; onChange: (v: string) => void; max: number }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs font-semibold text-gray-600 mb-1">
+        Note <span className="font-normal text-gray-400">(optional)</span>
+      </label>
+      <textarea
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+        maxLength={max}
+        className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+    </div>
+  );
+}
+
+/**
+ * Verify a missing school by matching it to an EXISTING official school (POST …/:id/school).
+ * The application stays PENDING; the applicant is e-mailed that the school was verified.
+ */
+function VerifySchoolDialog({ app, onClose, onError, onVerified }: { app: TeacherApplication; onClose: () => void; onError: (e: unknown) => unknown; onVerified: (notice: string) => void }) {
   const locations = useSchoolLocations();
-  const [province, setProvince] = useState(needsSchool ? app.schoolProvince ?? "" : "");
-  const [district, setDistrict] = useState(needsSchool ? app.schoolDistrict ?? "" : "");
+  const [province, setProvince] = useState(app.schoolProvince ?? "");
+  const [district, setDistrict] = useState(app.schoolDistrict ?? "");
   const [school, setSchool] = useState<DirectorySchool | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function approve() {
-    const p = approvalPayload(app, school?.id ?? null, note);
+  async function verify() {
+    const p = verifySchoolPayload(school?.id ?? null, note);
     if (!p.ok) {
       setError(p.problem);
       return;
@@ -329,9 +450,9 @@ function ApproveDialog({ app, onClose, onError, onApproved }: { app: TeacherAppl
     setBusy(true);
     setError(null);
     try {
-      const res = await teacherApplicationsAdminApi.approve(app.id, p.body);
-      onApproved(
-        `${fullName(app)}: approved. Teacher account @${res.teacher.username} created${res.emailVerificationRequired ? "; an activation e-mail was sent" : ""}.`,
+      const res = await teacherApplicationsAdminApi.verifySchool(app.id, p.body);
+      onVerified(
+        `${fullName(app)}: school verified as ${res.school?.name ?? school?.name ?? "the chosen school"}. The applicant will be e-mailed that their school was verified; the application is still waiting for approval.`,
       );
       onClose();
     } catch (e) {
@@ -342,77 +463,125 @@ function ApproveDialog({ app, onClose, onError, onApproved }: { app: TeacherAppl
   }
 
   return (
-    <Modal wide={needsSchool} title="Approve this application?" onClose={busy ? () => undefined : onClose}>
-      <div className="space-y-4" data-testid="teacher-approve-dialog">
+    <Modal wide title="Verify the applicant's school" onClose={busy ? () => undefined : onClose}>
+      <div className="space-y-4" data-testid="teacher-verify-school-dialog">
+        <Alert tone="info">
+          {fullName(app)} named a school that isn&apos;t in the directory: <strong>{app.proposedSchoolName ?? "—"}</strong> ({applicationSchoolPlace(app) || "no place given"}). Choose
+          the existing official school it corresponds to.
+        </Alert>
         <p className="text-sm text-gray-600">
-          {fullName(app)} (@{app.username}) gets a Teacher account and sees the verified students of the school below.
+          If the school really isn&apos;t in the directory yet, first create it under{" "}
+          <Link href="/admin/schools" className="font-semibold text-indigo-700 underline">
+            Schools → directory
+          </Link>
+          , then come back. Search carefully before creating one: the school may already be listed (perhaps under a slightly different name), and a school that already exists must
+          never be added again.
         </p>
-        {needsSchool ? (
-          <>
-            <Alert tone="info">
-              The applicant&apos;s school <strong>{app.proposedSchoolName}</strong> ({applicationSchoolPlace(app) || "no place given"}) is not in the directory. Choose the official school to
-              assign. If it doesn&apos;t exist yet, first create it under{" "}
-              <Link href="/admin/schools" className="font-semibold underline">
-                Schools → directory
-              </Link>
-              , then come back.
-            </Alert>
-            {locations.isError ? (
-              <ErrorState error={locations.error} title="Couldn't load the list of places" onRetry={() => void locations.refetch()} />
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <PlaceSelect
-                  label="Province"
-                  value={province}
-                  onChange={(v) => {
-                    setProvince(v);
-                    setDistrict("");
-                    setSchool(null);
-                  }}
-                  options={provincesOf(locations.data)}
-                  placeholder={locations.isPending ? "Loading…" : "Choose"}
-                  disabled={locations.isPending}
-                />
-                <PlaceSelect
-                  label="District"
-                  value={district}
-                  onChange={(v) => {
-                    setDistrict(v);
-                    setSchool(null);
-                  }}
-                  options={districtsOf(locations.data, province)}
-                  disabled={!province}
-                />
-              </div>
-            )}
-            <DistrictSchoolSelect province={province} district={district} value={school} onChange={setSchool} />
-          </>
+        {locations.isError ? (
+          <ErrorState error={locations.error} title="Couldn't load the list of places" onRetry={() => void locations.refetch()} />
         ) : (
-          <p className="text-sm text-gray-800">
-            School: <strong>{app.school!.name}</strong>
-            {app.school!.code ? ` (code ${app.school!.code})` : ""}
-            <span className="block text-xs text-gray-500">{applicationSchoolPlace(app)}</span>
-          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <PlaceSelect
+              label="Province"
+              value={province}
+              onChange={(v) => {
+                setProvince(v);
+                setDistrict("");
+                setSchool(null);
+              }}
+              options={provincesOf(locations.data)}
+              placeholder={locations.isPending ? "Loading…" : "Choose"}
+              disabled={locations.isPending}
+            />
+            <PlaceSelect
+              label="District"
+              value={district}
+              onChange={(v) => {
+                setDistrict(v);
+                setSchool(null);
+              }}
+              options={districtsOf(locations.data, province)}
+              disabled={!province}
+            />
+          </div>
         )}
-        <div>
-          <label htmlFor="approve-note" className="block text-xs font-semibold text-gray-600 mb-1">
-            Note <span className="font-normal text-gray-400">(optional)</span>
-          </label>
-          <textarea
-            id="approve-note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            maxLength={APPROVAL_NOTE_MAX}
-            className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+        <DistrictSchoolSelect province={province} district={district} value={school} onChange={setSchool} label="Official school" />
+        <NoteField id="verify-note" value={note} onChange={setNote} max={VERIFY_NOTE_MAX} />
+        <Alert tone="info">
+          The applicant will be e-mailed at <strong>{app.email}</strong> that their school was verified. This does <strong>not</strong> approve the teacher: the application keeps
+          waiting, and you approve or reject it separately.
+        </Alert>
         {error && <Alert tone="error">{error}</Alert>}
         <div className="flex justify-end gap-3">
           <button type="button" onClick={onClose} disabled={busy} className="px-5 py-2 text-sm text-gray-600 disabled:opacity-50">
             Cancel
           </button>
-          <button type="button" onClick={approve} disabled={busy || (needsSchool && !school)} className={btnPrimary}>
+          <button type="button" onClick={verify} disabled={busy || !school} className={btnPrimary}>
+            {busy && <Spinner className="h-3.5 w-3.5 !text-white" />}
+            Verify school
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** Approve with an optional note. Never chooses a school: the application's own (listed or verified) is used. */
+function ApproveDialog({ app, onClose, onError, onApproved }: { app: TeacherApplication; onClose: () => void; onError: (e: unknown) => unknown; onApproved: (notice: string) => void }) {
+  const actions = teacherReviewActions(app);
+  const blocked = actions.approve.shown && !actions.approve.enabled ? actions.approve.reason : null;
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function approve() {
+    const p = approvalPayload(note);
+    if (!p.ok) {
+      setError(p.problem);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await teacherApplicationsAdminApi.approve(app.id, p.body);
+      onApproved(
+        `${fullName(app)}: approved. Teacher account @${res.teacher.username} created${res.emailVerificationRequired ? "; they must confirm their e-mail with the activation message before signing in" : ""}. The teacher is notified by e-mail and in the app.`,
+      );
+      onClose();
+    } catch (e) {
+      setError(errorMessage(onError(e)));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title="Approve this application?" onClose={busy ? () => undefined : onClose}>
+      <div className="space-y-4" data-testid="teacher-approve-dialog">
+        <p className="text-sm text-gray-600">
+          {fullName(app)} (@{app.username}) gets a Teacher account and sees the verified students of the school below.
+        </p>
+        {app.school && (
+          <p className="text-sm text-gray-800">
+            School: <strong>{app.school.name}</strong>
+            {app.school.code ? ` (code ${app.school.code})` : ""}
+            <span className="block text-xs text-gray-500">{applicationSchoolPlace(app)}</span>
+          </p>
+        )}
+        {blocked ? (
+          <Alert tone="info">{blocked}</Alert>
+        ) : (
+          <>
+            <NoteField id="approve-note" value={note} onChange={setNote} max={APPROVAL_NOTE_MAX} />
+            <p className="text-sm text-gray-600">The teacher will be notified of the approval by e-mail and in the app.</p>
+          </>
+        )}
+        {error && <Alert tone="error">{error}</Alert>}
+        <div className="flex justify-end gap-3">
+          <button type="button" onClick={onClose} disabled={busy} className="px-5 py-2 text-sm text-gray-600 disabled:opacity-50">
+            Cancel
+          </button>
+          <button type="button" onClick={approve} disabled={busy || !!blocked} className={btnPrimary}>
             {busy && <Spinner className="h-3.5 w-3.5 !text-white" />}
             Approve
           </button>

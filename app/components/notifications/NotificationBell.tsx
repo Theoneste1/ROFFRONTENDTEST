@@ -15,7 +15,7 @@ import { useNotificationActions, useNotifications, useUnreadCount } from "@/lib/
 import { formatRelative } from "@/lib/format";
 import { errorMessage } from "@/lib/api/errors";
 import { Spinner } from "@/app/components/ui/feedback";
-import { CATEGORY_META, NotificationLink } from "./notificationUi";
+import { NotificationLink, notificationMeta } from "./notificationUi";
 
 const PREVIEW = 6;
 
@@ -116,7 +116,7 @@ export default function NotificationBell() {
             ) : (
               <ul>
                 {items.map((n) => {
-                  const { icon: Icon, tone } = CATEGORY_META[n.category] ?? CATEGORY_META.ACCOUNT;
+                  const { icon: Icon, tone } = notificationMeta(n);
                   return (
                     <li key={n.id} className="border-b border-gray-50 last:border-0">
                       <NotificationLink

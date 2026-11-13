@@ -48,6 +48,11 @@ export const queryKeys = {
     list: (filters: object) => [...queryKeys.teacherApplications.all, "list", filters] as const,
     detail: (id: string) => [...queryKeys.teacherApplications.all, "detail", id] as const,
   },
+  /** Admin delivery log of the decision notifications (lib/api/notification-deliveries.ts). */
+  notificationDeliveries: {
+    all: ["notification-deliveries"] as const,
+    list: (filters: object) => [...queryKeys.notificationDeliveries.all, "list", filters] as const,
+  },
   /** Account administration added with the school and role work (lib/api/accounts.ts). */
   accounts: {
     all: ["accounts"] as const,

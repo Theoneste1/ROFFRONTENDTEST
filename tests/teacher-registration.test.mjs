@@ -30,13 +30,18 @@ import {
   validateTeacherRegistration,
 } from "../lib/accounts/teacher-registration.ts";
 import {
+  REFRESH_AFTER,
+  SCHOOL_NOT_VERIFIED_REASON,
   TEACHER_REVIEW_ERRORS,
   applicationSchoolPlace,
-  approvalNeedsSchool,
   approvalPayload,
+  isMissingSchoolApplication,
   rejectionReasonProblem,
+  schoolVerificationNeeded,
   teacherApplicationsNavVisible,
+  teacherReviewActions,
   teacherReviewMode,
+  verifySchoolPayload,
 } from "../lib/admin/teacher-applications.ts";
 import { ADMIN_NAV, ADMIN_TEACHER_APPLICATIONS } from "../lib/auth/navigation.ts";
 
@@ -331,14 +336,48 @@ test("menu: Teacher Applications only with the feature and the known permission;
 const listed = { school: { id: "s1", name: "GS Tumba", code: "310001", province: "Southern Province", district: "Huye", sector: "Tumba" }, schoolProvince: "Southern Province", schoolDistrict: "Huye", schoolSector: null };
 const missing = { school: null, schoolProvince: "Southern Province", schoolDistrict: "Huye", schoolSector: "Tumba" };
 
-test("approval: a listed school is approved as is (no schoolId); a missing school requires one", () => {
-  assert.equal(approvalNeedsSchool(listed), false);
-  assert.equal(approvalNeedsSchool(missing), true);
-  assert.deepEqual(approvalPayload(listed, null, ""), { ok: true, body: {} });
-  assert.deepEqual(approvalPayload(listed, "other", "  ok  "), { ok: true, body: { note: "ok" } }, "never another school for a listed one");
-  assert.equal(approvalPayload(missing, null, "").ok, false);
-  assert.deepEqual(approvalPayload(missing, "s9", ""), { ok: true, body: { schoolId: "s9" } });
-  assert.equal(approvalPayload(listed, null, "x".repeat(501)).ok, false);
+const official = { id: "s9", name: "G.S. Tumba", code: "310009", province: "Southern Province", district: "Huye", sector: "Tumba" };
+const verified = { ...missing, proposedSchoolName: "Tumba school", school: official, schoolVerifiedAt: "2026-11-13T10:00:00.000Z", schoolVerifiedBy: { id: "a1", firstName: "Ada", lastName: "Admin" } };
+const listedApp = { ...listed, proposedSchoolName: null, schoolVerifiedAt: null, status: "PENDING" };
+const missingApp = { ...missing, proposedSchoolName: "Tumba school", schoolVerifiedAt: null, status: "PENDING" };
+const verifiedApp = { ...verified, status: "PENDING" };
+
+test("missing school: recognised before and after verification; verification needed only before", () => {
+  assert.equal(isMissingSchoolApplication(listedApp), false);
+  assert.equal(isMissingSchoolApplication(missingApp), true);
+  assert.equal(isMissingSchoolApplication(verifiedApp), true, "still a missing-school application once verified");
+  assert.equal(schoolVerificationNeeded(listedApp), false);
+  assert.equal(schoolVerificationNeeded(missingApp), true);
+  assert.equal(schoolVerificationNeeded(verifiedApp), false);
+  assert.equal(schoolVerificationNeeded({ ...missingApp, schoolVerifiedAt: undefined }), true, "older backend without the field: not verified");
+  assert.equal(schoolVerificationNeeded({ ...missingApp, schoolVerifiedAt: "2026-11-13T10:00:00.000Z" }), true, "a verification time without a school is not enough");
+});
+
+test("review actions: verify school is a separate step; approve disabled (with reason) until verified", () => {
+  assert.deepEqual(teacherReviewActions(missingApp), {
+    verifySchool: true,
+    approve: { shown: true, enabled: false, reason: SCHOOL_NOT_VERIFIED_REASON },
+    reject: true,
+  });
+  assert.deepEqual(teacherReviewActions(verifiedApp), { verifySchool: false, approve: { shown: true, enabled: true }, reject: true });
+  assert.deepEqual(teacherReviewActions(listedApp), { verifySchool: false, approve: { shown: true, enabled: true }, reject: true });
+  for (const status of ["APPROVED", "REJECTED"]) {
+    assert.deepEqual(teacherReviewActions({ ...missingApp, status }), { verifySchool: false, approve: { shown: false }, reject: false }, status);
+  }
+});
+
+test("approval payload: never a school; optional trimmed note ≤ 500", () => {
+  assert.deepEqual(approvalPayload(""), { ok: true, body: {} });
+  assert.deepEqual(approvalPayload("  ok  "), { ok: true, body: { note: "ok" } });
+  assert.equal(approvalPayload("x".repeat(500)).ok, true);
+  assert.equal(approvalPayload("x".repeat(501)).ok, false);
+});
+
+test("verify-school payload: an existing school is required; optional trimmed note ≤ 500", () => {
+  assert.equal(verifySchoolPayload(null, "").ok, false);
+  assert.deepEqual(verifySchoolPayload("s9", ""), { ok: true, body: { schoolId: "s9" } });
+  assert.deepEqual(verifySchoolPayload("s9", "  matched by code  "), { ok: true, body: { schoolId: "s9", note: "matched by code" } });
+  assert.equal(verifySchoolPayload("s9", "x".repeat(501)).ok, false);
 });
 
 test("rejection reason: 2–500 characters", () => {
@@ -348,7 +387,12 @@ test("rejection reason: 2–500 characters", () => {
 });
 
 test("review errors and school place", () => {
-  for (const code of ["APPLICATION_ALREADY_DECIDED", "SCHOOL_REQUIRED", "SCHOOL_MISMATCH", "UNKNOWN_SCHOOL", "TEACHERS_DISABLED"]) assert.ok(TEACHER_REVIEW_ERRORS[code], code);
+  for (const code of ["APPLICATION_ALREADY_DECIDED", "SCHOOL_ALREADY_VERIFIED", "SCHOOL_NOT_VERIFIED", "SCHOOL_REQUIRED", "SCHOOL_MISMATCH", "UNKNOWN_SCHOOL", "TEACHERS_DISABLED", "IDENTITY_TAKEN"]) {
+    assert.ok(TEACHER_REVIEW_ERRORS[code], code);
+  }
+  for (const code of ["APPLICATION_ALREADY_DECIDED", "SCHOOL_ALREADY_VERIFIED", "SCHOOL_NOT_VERIFIED", "SCHOOL_MISMATCH"]) assert.ok(REFRESH_AFTER.includes(code), code);
+  assert.ok(!REFRESH_AFTER.includes("UNKNOWN_SCHOOL"), "an unknown school is fixed in the dialog, not by refreshing");
+  assert.equal(applicationSchoolPlace(verifiedApp), "Tumba, Huye, Southern Province");
   assert.equal(applicationSchoolPlace(listed), "Tumba, Huye, Southern Province");
   assert.equal(applicationSchoolPlace(missing), "Tumba, Huye, Southern Province");
 });
