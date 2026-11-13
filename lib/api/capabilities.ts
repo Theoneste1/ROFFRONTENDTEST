@@ -38,6 +38,12 @@ export const KNOWN_FEATURES = [
    * offers no "Start year" (the original backend's start is not safe to repeat).
    */
   "academicYearActivation",
+  /**
+   * `GET /mentor/reviews` searches (`q`), groups (`group`), sorts (`sort`) and applies the course ×
+   * division scope in the database, and answers with `counts`. Without it the coach's per-assignment
+   * list loads one page of 100 and filters in the browser (older backends refuse the new parameters).
+   */
+  "reviewQueueFilters",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

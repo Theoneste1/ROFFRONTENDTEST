@@ -139,14 +139,23 @@ export interface ReviewFilters {
   courseId?: string;
   divisionId?: string;
   status?: SubmissionStatus;
+  /** The next three only with the backend feature `reviewQueueFilters` (older backends refuse them). */
+  q?: string;
+  group?: "open" | "done" | "all";
+  sort?: "submitted" | "recent" | "name" | "score";
   page?: number;
   limit?: number;
   [key: string]: QueryValue;
 }
 
+/** `GET /mentor/reviews`: `counts` (same scope, without search or status) only with `reviewQueueFilters`. */
+export interface ReviewQueuePage extends Page<ReviewSubmission> {
+  counts?: { open: number; done: number; all: number };
+}
+
 export const reviewsApi = {
   /** Submissions currently assigned to the mentor. */
-  queue: (filters: ReviewFilters = {}) => api<Page<ReviewSubmission>>("/mentor/reviews", { query: filters }),
+  queue: (filters: ReviewFilters = {}) => api<ReviewQueuePage>("/mentor/reviews", { query: filters }),
   submission: (id: string) => api<ReviewSubmission>(`/submissions/${id}`),
   cycles: (id: string) => api<ReviewCycle[]>(`/submissions/${id}/reviews`),
   /** ASSIGNED / SENT_BACK → IN_PROGRESS. */

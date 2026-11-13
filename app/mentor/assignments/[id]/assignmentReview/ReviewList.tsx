@@ -5,43 +5,47 @@
  * (`GET /mentor/reviews?assignmentId=`). Mentors only see work an
  * administrator distributed to them; division-wide totals come from the
  * course analytics.
+ *
+ * With the backend feature `reviewQueueFilters`, search, status, sort, totals
+ * and pagination run on the server, so every assigned submission is reachable
+ * (M2). Older backends: one page of 100, filtered in the browser (unchanged).
  */
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, FileText, Edit, Users, Calendar } from "lucide-react";
 import { useCourseAnalytics, useMentorAssignment, useReviewQueue } from "@/lib/queries/mentor";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { hasFeature } from "@/lib/api/capabilities";
 import { isApiError } from "@/lib/api/errors";
 import { formatDateTime } from "@/lib/format";
+import { useDebounced } from "@/lib/hooks/useDebounced";
+import { LEGACY_LIMIT, legacyCounts, legacyRows, serverQuery } from "@/lib/mentor/review-queue";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
-import type { SubmissionStatus } from "@/lib/api/types";
+import Pagination from "@/app/components/ui/Pagination";
 import SubmissionsTable from "./components/SubmissionsTable";
 import SubmissionControls, { type ControlsState } from "./components/SubmissionControls";
 import AssignmentSidebar from "./components/AssignmentSidebar";
-import { AssignmentStatusBadge, DONE_REVIEW_STATUSES, OPEN_REVIEW_STATUSES } from "../../../components/mentorUi";
+import { AssignmentStatusBadge } from "../../../components/mentorUi";
 
 export default function ReviewList({ assignmentId }: { assignmentId: string }) {
   const assignment = useMentorAssignment(assignmentId);
-  const queue = useReviewQueue({ assignmentId, limit: 100 });
+  const server = hasFeature(useBackendCapabilities().detection, "reviewQueueFilters");
+  const [controls, setControlsState] = useState<ControlsState>({ search: "", status: "all", sort: "submitted" });
+  const [page, setPage] = useState(1);
+  const search = useDebounced(controls.search);
+  const setControls = (next: ControlsState) => {
+    setControlsState(next);
+    setPage(1);
+  };
+  const queue = useReviewQueue(
+    server ? serverQuery(assignmentId, { ...controls, search }, page) : { assignmentId, limit: LEGACY_LIMIT },
+  );
   const analytics = useCourseAnalytics(assignment.data?.courseId, assignment.data?.divisionId);
-  const [controls, setControls] = useState<ControlsState>({ search: "", status: "all", sort: "submitted" });
 
   const items = useMemo(() => queue.data?.data ?? [], [queue.data]);
-  const rows = useMemo(() => {
-    const q = controls.search.trim().toLowerCase();
-    const filtered = items.filter((s) => {
-      const name = `${s.student.firstName} ${s.student.lastName} ${s.student.username ?? ""}`.toLowerCase();
-      if (q && !name.includes(q)) return false;
-      if (controls.status === "open") return OPEN_REVIEW_STATUSES.includes(s.status) || s.status === "RESUBMISSION_REQUESTED";
-      if (controls.status === "done") return DONE_REVIEW_STATUSES.includes(s.status);
-      if (controls.status !== "all") return s.status === (controls.status as SubmissionStatus);
-      return true;
-    });
-    return filtered.sort((x, y) => {
-      if (controls.sort === "name") return `${x.student.firstName} ${x.student.lastName}`.localeCompare(`${y.student.firstName} ${y.student.lastName}`);
-      if (controls.sort === "score") return (y.review?.score ?? -1) - (x.review?.score ?? -1);
-      return new Date(y.submittedAt).getTime() - new Date(x.submittedAt).getTime();
-    });
-  }, [items, controls]);
+  const rows = useMemo(() => (server ? items : legacyRows(items, controls)), [server, items, controls]);
+  const counts = server && queue.data?.counts ? queue.data.counts : legacyCounts(items);
+  const filtered = controls.search.trim() !== "" || controls.status !== "all";
 
   if (assignment.isPending) return <LoadingBlock label="Loading submissions…" />;
   if (assignment.isError) {
@@ -69,8 +73,8 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
   const engagement = [
     { label: "Total Students", value: total ?? "—", dot: "bg-blue-600", text: "text-blue-600" },
     { label: "Submitted", value: submitted, dot: "bg-emerald-500", text: "text-emerald-600" },
-    { label: "Not Reviewed", value: items.filter((s) => OPEN_REVIEW_STATUSES.includes(s.status)).length, dot: "bg-purple-600", text: "text-purple-600" },
-    { label: "Reviewed", value: items.filter((s) => DONE_REVIEW_STATUSES.includes(s.status)).length, dot: "bg-amber-500", text: "text-amber-500" },
+    { label: "Not Reviewed", value: counts.open, dot: "bg-purple-600", text: "text-purple-600" },
+    { label: "Reviewed", value: counts.done, dot: "bg-amber-500", text: "text-amber-500" },
     { label: "Not Submitted", value: total !== undefined ? Math.max(total - submitted, 0) : "—", dot: "bg-rose-500", text: "text-rose-500" },
   ];
   const editable = a.status === "DRAFT" || a.status === "REJECTED";
@@ -146,7 +150,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
             <LoadingBlock label="Loading your review queue…" />
           ) : queue.isError ? (
             <ErrorState error={queue.error} title="Couldn't load submissions" onRetry={() => queue.refetch()} />
-          ) : items.length === 0 ? (
+          ) : (server ? counts.all === 0 : items.length === 0) ? (
             <div className="bg-white rounded-2xl border border-slate-200">
               <EmptyState
                 title="No submissions assigned to you yet"
@@ -155,10 +159,15 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
             </div>
           ) : rows.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-200">
-              <EmptyState title="No submissions match" description="Try another search or status." />
+              <EmptyState title="No submissions match" description={filtered ? "Try another search or status." : "Nothing on this page."} />
             </div>
           ) : (
-            <SubmissionsTable assignmentId={a.id} maximumMarks={a.maximumMarks} rows={rows} />
+            <>
+              <SubmissionsTable assignmentId={a.id} maximumMarks={a.maximumMarks} rows={rows} />
+              {server && queue.data && (
+                <Pagination page={page} totalPages={queue.data.meta.totalPages} total={queue.data.meta.total} onPage={setPage} disabled={queue.isFetching} />
+              )}
+            </>
           )}
         </div>
 

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Edit, Users, Clock, CheckCircle2, AlertCircle, FileText, Calendar, BarChart3, Send, Undo2, History } from "lucide-react";
 import { useAssignmentHistory, useAssignmentTransition, useCourseAnalytics, useMentorAssignment, useReviewQueue } from "@/lib/queries/mentor";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { hasFeature } from "@/lib/api/capabilities";
 import { mentorAssignmentsApi } from "@/lib/api/mentor";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { formatDateTime, personName } from "@/lib/format";
@@ -32,12 +34,16 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
   const router = useRouter();
   const assignment = useMentorAssignment(assignmentId);
   const history = useAssignmentHistory(assignmentId);
-  const queue = useReviewQueue({ assignmentId, limit: 100 });
+  // With reviewQueueFilters the totals come from the server (`counts`); otherwise from the first 100 rows.
+  const serverCounts = hasFeature(useBackendCapabilities().detection, "reviewQueueFilters");
+  const queue = useReviewQueue(serverCounts ? { assignmentId, group: "all", limit: 1 } : { assignmentId, limit: 100 });
   const analytics = useCourseAnalytics(assignment.data?.courseId, assignment.data?.divisionId);
   const transition = useAssignmentTransition(assignmentId);
   const [notice, setNotice] = useState<string | null>(null);
 
   const reviewCounts = useMemo(() => {
+    const server = queue.data?.counts;
+    if (server) return { assigned: server.all, toReview: server.open, done: server.done };
     const items = queue.data?.data ?? [];
     return {
       assigned: items.length,
