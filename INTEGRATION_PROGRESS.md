@@ -1,6 +1,6 @@
 # ROF LMS — Integration Progress
 
-Last updated: 2026-11-06
+Last updated: 2026-11-13 (release readiness section below; earlier sections describe the state on 2026-11-06)
 
 This is the short, current-status version. The full step-by-step history of phases 1–6 (implementation details, endpoint lists, every test table) is in Git: `git show 1a1ca98:INTEGRATION_PROGRESS.md`. Plans: `PHASE5_ADMIN_PLAN.md`, `PHASE6_PLAN.md`, `VERIFICATION_PLAN.md`, `PHASE7_QA_PLAN.md`.
 
@@ -125,7 +125,7 @@ Phases 3 and 4 flows that waited for the admin (student submission, mentor gradi
 | 3 | Optional: fill in support contact details in platform settings; update the stale student-test count; rotate the admin password before any real use (it appears in the chat) | — |
 
 ## Known limitations (backend)
-No push notifications (60 s polling); no teacher accounts (teachers use the contact form); contact messages cannot be answered from the platform (reply by e-mail); e-mail is DRY_RUN locally; no avatar upload, and username/e-mail/school are not user-editable; no school create/edit on the legacy backend (see the school directory section for the new backend); no assignment delete.
+No push notifications (60 s polling); teacher accounts only on the new backend with TEACHERS_ENABLED (see release readiness); contact messages cannot be answered from the platform (reply by e-mail); e-mail is DRY_RUN locally; no avatar upload, and username/e-mail/school are not user-editable; no school create/edit on the legacy backend (see the school directory section for the new backend); no assignment delete.
 
 **Starting an academic year is not idempotent (backend requirement, open).** `POST /admin/academic-years/:id/activate` is one request whose transaction can run for up to 120 s, while the Netlify proxy gives up after about 26 s. If the browser gets no answer, the outcome is unknown. A second request still sees the year as PLANNED, waits behind the first, and then runs the rollover again (re-closing the previous year, a duplicate audit entry, and promotion on top of promotion if the choices differ). The admin page prevents this only in the same browser: after an unanswered start it locks "Start year" for 5 minutes, through closing the dialog and reloading the page (unless browser storage is blocked), until the list shows the result (`lib/admin/academic-years.ts`). Other administrators, browsers and devices are not covered. The 5-minute window is an estimate: it can't cover a request that reaches a sleeping backend later than that. To make retries safe, the backend needs one of:
 - single-flight activation: a lock, or a conditional `PLANNED → ACTIVE` update inside the transaction that refuses with 409 when the year is no longer PLANNED;
@@ -148,7 +148,7 @@ Production backend: `https://rofbackendtest.onrender.com` (health: database up, 
 | `netlify.toml` | Backend URL pinned (`API_PROXY_TARGET`, upload origin); `/api/*` CDN proxy rule added (no function cold start, large downloads stream) | Completed, not yet tested on Netlify |
 | CI | **Added** `.github/workflows/ci.yml` (lint, type-check, build with Netlify settings) — the repository had none | Completed, runs on the first push |
 | Quizzes, online exams, automatic marking | Not part of either application (assessment = uploaded solutions marked by coaches) | Not completed — product decision |
-| Admin pages for academic years, bulk e-mail, activity log | Backend APIs exist; no frontend pages (planned as optional in `INTEGRATION_MAPPING.md`). An academic year is active in production until 2027-07 | Not completed |
+| Bulk e-mail, activity log | Backend APIs exist; no frontend pages (planned as optional in `INTEGRATION_MAPPING.md`). Academic-year pages: done (PR #13; starting a year only with `academicYearActivation`) | Not completed |
 
 Changes: `lib/api/upload-origin.ts` (new), `lib/api/client.ts`, `lib/security/headers.ts`, `netlify.toml`, `.env.example`, `.github/workflows/ci.yml` (new), `DEPLOYMENT.md`, `INTEGRATION.md` (new), `README.md`.
 
@@ -163,3 +163,31 @@ Changes: `lib/api/upload-origin.ts` (new), `lib/api/client.ts`, `lib/security/he
 | Real-browser checks on the production build against the live backend | 39/39 (see `INTEGRATION.md`) | Completed and tested |
 
 Full report: `FINALIZATION-REPORT.md`.
+
+## Release readiness (2026-11-13, branch `fix/release-readiness`)
+
+Audit of `develop` → `main` for both repositories, fixes, and verification against a **real** backend.
+
+Frontend fixes (`b2105b7`): "Start year" only with the backend capability `academicYearActivation`
+(sends `expectedCurrentYearId`; explains CURRENT_YEAR_CHANGED / ACTIVATION_OPTIONS_DIFFER / replayed);
+CSV import follows the backend (schoolCode / schoolId where schools must exist); the admin school picker
+searches `/admin/schools` with the directory; "new school name" on invitations only on a LEGACY backend;
+registration keeps its fallback during detection retries; resource actions defer to the backend when
+`/me/permissions` failed; read-only schools copy per backend.
+
+Verification (local, disposable PostgreSQL; no request mocked):
+- Real integration, frontend production build → `/api` proxy → backend `fix/release-readiness`: all six
+  roles sign in and reach their portal; Teacher cross-school isolation (with a delegation: own school's
+  student opens, the other school's is refused); negative authorization for every role; registration with
+  an official code → claim verified in School verification; school directory create / edit (PATCH carries
+  only the change) / deactivate (backend warning shown) / reactivate / detail and history; invitation
+  picking an administrator-created school; CSV import with schoolCode; assignment lifecycle with the
+  student's submission and result in the UI; two administrators starting the same year at once (one
+  rollover, one audit entry).
+- Real integration against the backend that runs in production today (`main`, LEGACY): planning works and
+  Start year is not offered; read-only schools; invitation with a new school name; legacy CSV format;
+  role change without a password step; legacy registration; student and coach portals; no call to a
+  new-backend-only endpoint.
+- Known behaviour after the backend release: every existing claim is PENDING, so Teachers see no students
+  and the school leaderboard is empty until administrators verify claims.
+

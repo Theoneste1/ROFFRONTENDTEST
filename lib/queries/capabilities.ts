@@ -10,7 +10,10 @@
  *   focus); `retry()` asks again at once.
  * - Check features one by one with `hasFeature(detection, "…")`.
  *
- * Detection only: nothing in the app changes behaviour on it yet.
+ * Pages that depend on it: registration (school directory), the admin school
+ * directory and claim review, invitations and CSV import (school references),
+ * user roles (Teacher / Head Coach, password step-up), and starting an academic
+ * year (`academicYearActivation`).
  */
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query/keys";
