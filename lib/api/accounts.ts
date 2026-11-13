@@ -22,6 +22,8 @@ export interface DirectorySchool {
   location: string;
   district: string | null;
   sector: string | null;
+  /** Newer backends add the school's province (additive; absent on older ones). */
+  province?: string | null;
 }
 
 /** `GET /schools/locations`: the official province → district → sector list. */

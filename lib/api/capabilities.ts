@@ -38,6 +38,13 @@ export const KNOWN_FEATURES = [
    * offers no "Start year" (the original backend's start is not safe to repeat).
    */
   "academicYearActivation",
+  /**
+   * Optional (listed only while the TEACHER role is enabled): the backend implements the public
+   * teacher application (GET/POST /auth/register/teacher…) and its review
+   * (/admin/teacher-applications, users.manageTeachers). Whether registration is currently OPEN
+   * comes from GET /auth/register/teacher/availability, not from this flag.
+   */
+  "teacherSelfRegistration",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

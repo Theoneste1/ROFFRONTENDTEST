@@ -17,11 +17,14 @@ import {
   BarChart3,
   ScrollText,
   ShieldAlert,
-  Inbox
+  Inbox,
+  UserPlus
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import { useSession } from "@/lib/auth/session";
-import { ADMIN_NAV, ADMIN_SETTINGS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { ADMIN_NAV, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { teacherApplicationsNavVisible } from "@/lib/admin/teacher-applications";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -41,6 +44,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/audit-log": ScrollText,
   "/admin/moderation": ShieldAlert,
   "/admin/messages": Inbox,
+  "/admin/teacher-applications": UserPlus,
 };
 
 /**
@@ -52,6 +56,11 @@ const ICONS: Record<string, LucideIcon> = {
 export default function Sidebar({ isOpen }: SidebarProps) {
   const pathname = usePathname();
   const { knownPermissions } = useSession();
+  const { detection } = useBackendCapabilities();
+  // Teacher applications: only with the backend feature AND the (known) users.manageTeachers.
+  const items = teacherApplicationsNavVisible(detection, knownPermissions)
+    ? [...visibleNav(ADMIN_NAV, knownPermissions), ADMIN_TEACHER_APPLICATIONS]
+    : visibleNav(ADMIN_NAV, knownPermissions);
 
   // Function to check if link is active
   const isActive = (path: string) => {
@@ -73,7 +82,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           {isOpen ? "ROF LMS" : "ROF"}
         </div>
 
-        {visibleNav(ADMIN_NAV, knownPermissions).map((item) => {
+        {items.map((item) => {
           const Icon = ICONS[item.href] ?? LayoutGrid;
           return (
             <Link

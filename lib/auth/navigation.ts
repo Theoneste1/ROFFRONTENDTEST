@@ -37,6 +37,14 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/messages", label: "Messages" },
 ];
 
+/**
+ * Teacher applications (teacher self-registration review). Not part of ADMIN_NAV: its permission
+ * (users.manageTeachers) is not in the frozen ADMIN list, and the page exists only on a backend
+ * advertising `teacherSelfRegistration`. The Sidebar shows it only when both are definitely known
+ * (lib/admin/teacher-applications.ts → teacherApplicationsNavVisible).
+ */
+export const ADMIN_TEACHER_APPLICATIONS: NavItem = { href: "/admin/teacher-applications", label: "Teacher Applications", permission: "users.manageTeachers" };
+
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
 
