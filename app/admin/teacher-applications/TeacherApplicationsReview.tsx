@@ -47,6 +47,8 @@ import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/fe
 import Pagination from "@/app/components/ui/Pagination";
 import { DistrictSchoolSelect, PlaceSelect } from "@/app/components/account/SchoolPlaceFields";
 import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../components/adminUi";
+import { SchoolPicker } from "../users/components/userUi";
+import type { SchoolRef } from "@/lib/api/types";
 
 /** The backend's error with a message for its code (shown by the dialogs). */
 function explain(e: unknown): unknown {
@@ -437,12 +439,16 @@ function VerifySchoolDialog({ app, onClose, onError, onVerified }: { app: Teache
   const [province, setProvince] = useState(app.schoolProvince ?? "");
   const [district, setDistrict] = useState(app.schoolDistrict ?? "");
   const [school, setSchool] = useState<DirectorySchool | null>(null);
+  // A school just created under Schools (perhaps without its official code yet) is not in the public
+  // directory list above; the administrators' search of all schools finds it (as the student match dialog does).
+  const [other, setOther] = useState<SchoolRef | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const chosen = school ?? other;
 
   async function verify() {
-    const p = verifySchoolPayload(school?.id ?? null, note);
+    const p = verifySchoolPayload(chosen?.id ?? null, note);
     if (!p.ok) {
       setError(p.problem);
       return;
@@ -452,7 +458,7 @@ function VerifySchoolDialog({ app, onClose, onError, onVerified }: { app: Teache
     try {
       const res = await teacherApplicationsAdminApi.verifySchool(app.id, p.body);
       onVerified(
-        `${fullName(app)}: school verified as ${res.school?.name ?? school?.name ?? "the chosen school"}. The applicant will be e-mailed that their school was verified; the application is still waiting for approval.`,
+        `${fullName(app)}: school verified as ${res.school?.name ?? chosen?.name ?? "the chosen school"}. The applicant will be e-mailed that their school was verified; the application is still waiting for approval.`,
       );
       onClose();
     } catch (e) {
@@ -505,7 +511,24 @@ function VerifySchoolDialog({ app, onClose, onError, onVerified }: { app: Teache
             />
           </div>
         )}
-        <DistrictSchoolSelect province={province} district={district} value={school} onChange={setSchool} label="Official school" />
+        <DistrictSchoolSelect
+          province={province}
+          district={district}
+          value={school}
+          onChange={(s) => {
+            setSchool(s);
+            if (s) setOther(null);
+          }}
+          label="Official school"
+        />
+        <SchoolPicker
+          label="Or search all schools (including one you have just created)"
+          value={other}
+          onChange={(s) => {
+            setOther(s);
+            if (s) setSchool(null);
+          }}
+        />
         <NoteField id="verify-note" value={note} onChange={setNote} max={VERIFY_NOTE_MAX} />
         <Alert tone="info">
           The applicant will be e-mailed at <strong>{app.email}</strong> that their school was verified. This does <strong>not</strong> approve the teacher: the application keeps
@@ -516,7 +539,7 @@ function VerifySchoolDialog({ app, onClose, onError, onVerified }: { app: Teache
           <button type="button" onClick={onClose} disabled={busy} className="px-5 py-2 text-sm text-gray-600 disabled:opacity-50">
             Cancel
           </button>
-          <button type="button" onClick={verify} disabled={busy || !school} className={btnPrimary}>
+          <button type="button" onClick={verify} disabled={busy || !chosen} className={btnPrimary}>
             {busy && <Spinner className="h-3.5 w-3.5 !text-white" />}
             Verify school
           </button>
