@@ -182,9 +182,10 @@ test("deep-link paths are unchanged", () => {
 });
 
 // ─── Permission-driven menus ────────────────────────────────────────────────
-// The lists GET /me/permissions returns, copied from backend develop
-// (src/auth/permissions.ts: ROLE_PERMISSIONS for ADMIN / MENTOR — frozen — and
-// the SUPER_ADMIN grants).
+// The lists GET /me/permissions returns (backend src/auth/permissions.ts: ROLE_PERMISSIONS for
+// ADMIN / MENTOR — frozen — and the SUPER_ADMIN grants).
+// ADMIN_LIST: the PRODUCTION backend (main a8df186, 25 entries). The frontend must keep working
+// with it, so the menu checks below use this, the strictest list.
 const ADMIN_LIST = [
   "courses.view", "resources.view", "resources.manage", "assignments.view", "assignments.publish", "submissions.distribute",
   "results.approve", "results.publish", "discussions.participate", "discussions.report", "discussions.moderate",
@@ -192,6 +193,10 @@ const ADMIN_LIST = [
   "divisions.manage", "courses.manage", "mentorAssignments.manage", "mentorRequests.decide", "settings.manage",
   "email.bulkSend", "audit.view", "activity.view",
 ];
+// ADMIN_LIST_DEVELOP: backend develop with the ADMIN permission fix — the list also ends with
+// schools.manage (2026-11-12) and users.manageTeachers (2026-11-13). Administrators already HELD both;
+// the list now reports them. Nothing else was added (no Head Coach, Admin or Super-Admin-only permission).
+const ADMIN_LIST_DEVELOP = [...ADMIN_LIST, "schools.manage", "users.manageTeachers"];
 const MENTOR_LIST = [
   "courses.view", "resources.view", "resources.manage", "assignments.view", "assignments.prepare", "reviews.grade",
   "discussions.participate", "discussions.report", "analytics.course", "leaderboard.view",
@@ -273,8 +278,33 @@ test("assignable roles: Teacher / Head Coach need BOTH the backend feature and t
   assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(SUPER_ADMIN_LIST) }), ["STUDENT", "TEACHER", "MENTOR", "HEAD_COACH", "ADMIN"]);
   assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: false, can: can(SUPER_ADMIN_LIST) }), ["STUDENT", "TEACHER", "MENTOR", "ADMIN"]);
   assert.deepEqual(assignableRoles({ teacherAccounts: false, headCoachAccounts: false, can: can(SUPER_ADMIN_LIST) }), ["STUDENT", "MENTOR", "ADMIN"], "feature off: never offered");
-  // The ADMIN list from /me/permissions is frozen and lacks users.manageTeachers / manageHeadCoaches.
+  // The production ADMIN list is frozen and lacks users.manageTeachers / manageHeadCoaches.
   assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(ADMIN_LIST) }), ["STUDENT", "MENTOR", "ADMIN"]);
+});
+
+test("ADMIN permission fix: an ordinary Administrator is offered Teacher only with the backend fix AND TEACHERS_ENABLED; never Head Coach", () => {
+  // Backend fixed (users.manageTeachers reported) and the Teacher role switched on → Teacher offered.
+  assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(ADMIN_LIST_DEVELOP) }), ["STUDENT", "TEACHER", "MENTOR", "ADMIN"]);
+  // TEACHERS_ENABLED off (production default) → still not offered: the flag keeps its effect.
+  assert.deepEqual(assignableRoles({ teacherAccounts: false, headCoachAccounts: true, can: can(ADMIN_LIST_DEVELOP) }), ["STUDENT", "MENTOR", "ADMIN"]);
+  // Head Coach needs users.manageHeadCoaches, which the fix deliberately does not report (owner decision D-5 pending).
+  assert.ok(!assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(ADMIN_LIST_DEVELOP) }).includes("HEAD_COACH"));
+});
+
+test("ADMIN permission fix: exactly two entries added; no Head Coach, Admin-management or Super-Admin-only permission", () => {
+  assert.deepEqual(ADMIN_LIST_DEVELOP.filter((p) => !ADMIN_LIST.includes(p)), ["schools.manage", "users.manageTeachers"]);
+  for (const p of ["users.manageHeadCoaches", "users.manageAdmins", "programmes.manageHeads", "permissions.manageOverrides", "settings.manageSystem", "schools.syncDirectory"]) {
+    assert.ok(!ADMIN_LIST_DEVELOP.includes(p), p);
+  }
+  // Everything an Administrator is now told about, a Super Administrator holds too.
+  for (const p of ADMIN_LIST_DEVELOP) assert.ok(SUPER_ADMIN_LIST.includes(p), p);
+});
+
+test("ADMIN permission fix: the administrator menu is unchanged with the fixed list; other roles gain nothing", () => {
+  assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, new Set(ADMIN_LIST_DEVELOP))), hrefs(ADMIN_NAV));
+  for (const list of [MENTOR_LIST, HEAD_COACH_LIST, TEACHER_BASE]) {
+    assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(list) }).filter((r) => r === "TEACHER" || r === "HEAD_COACH"), []);
+  }
 });
 
 test("assignable roles: Super Administrator is never offered", () => {
