@@ -14,7 +14,7 @@ import { errorMessage } from "@/lib/api/errors";
 import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
 import Pagination from "@/app/components/ui/Pagination";
-import { CATEGORIES, CATEGORY_META, NotificationLink, useOpenNotification } from "./notificationUi";
+import { CATEGORIES, CATEGORY_META, NotificationLink, notificationMeta, useOpenNotification } from "./notificationUi";
 
 const PAGE_SIZE = 20;
 type Show = "all" | "unread";
@@ -118,7 +118,7 @@ export default function NotificationsInbox() {
 function InboxRow({ n }: { n: AppNotification }) {
   const { markRead, markUnread } = useNotificationActions();
   const { hrefOf } = useOpenNotification();
-  const { icon: Icon, tone, label } = CATEGORY_META[n.category] ?? CATEGORY_META.ACCOUNT;
+  const { icon: Icon, tone, label } = notificationMeta(n);
   const toggle = n.isRead ? markUnread : markRead;
   const href = hrefOf(n);
 

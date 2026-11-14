@@ -44,6 +44,13 @@ export const KNOWN_FEATURES = [
    * list loads one page of 100 and filters in the browser (older backends refuse the new parameters).
    */
   "reviewQueueFilters",
+  /**
+   * Optional (listed only while the TEACHER role is enabled): the backend implements the public
+   * teacher application (GET/POST /auth/register/teacher…) and its review
+   * (/admin/teacher-applications, users.manageTeachers). Whether registration is currently OPEN
+   * comes from GET /auth/register/teacher/availability, not from this flag.
+   */
+  "teacherSelfRegistration",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

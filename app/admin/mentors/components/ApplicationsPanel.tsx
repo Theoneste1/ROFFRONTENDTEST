@@ -106,7 +106,7 @@ export default function ApplicationsPanel() {
           title={decide.decision === "approve" ? "Approve this application?" : "Reject this application?"}
           body={
             decide.decision === "approve"
-              ? `A coach account is created for ${decide.request.firstName} ${decide.request.lastName} (${decide.request.email}). Give them course access afterwards on the Coaches tab.`
+              ? `A coach account is created for ${decide.request.firstName} ${decide.request.lastName} (${decide.request.email}). Give them course access afterwards on the Coaches tab. They will be notified of the approval by e-mail and in the app.`
               : `${decide.request.firstName} ${decide.request.lastName} can apply again later.`
           }
           confirmLabel={decide.decision === "approve" ? "Approve" : "Reject"}
