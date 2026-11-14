@@ -12,6 +12,8 @@ import { Users, FileText, BookOpen, TrendingUp, Clock, CheckCircle2, AlertCircle
 import { useSession } from '@/lib/auth/session';
 import { useMentorAssignments, useReviewQueue, useScopesAnalytics, useTeachingScopes } from '@/lib/queries/mentor';
 import { useNotifications } from '@/lib/queries/community';
+import { useBackendCapabilities } from '@/lib/queries/capabilities';
+import { hasFeature } from '@/lib/api/capabilities';
 import { NotificationLink } from '@/app/components/notifications/notificationUi';
 import { useNow } from '@/lib/hooks/useNow';
 import { formatDate, formatRelative } from '@/lib/format';
@@ -24,7 +26,10 @@ export default function MentorDashboard() {
   const scopes = useTeachingScopes();
   const analytics = useScopesAnalytics(scopes.data);
   const assignments = useMentorAssignments({ limit: 100 });
-  const queue = useReviewQueue({ limit: 100 });
+  // With reviewQueueFilters the totals come from the server (`counts`); otherwise from the first 100 rows (L3).
+  const caps = useBackendCapabilities();
+  const serverCounts = hasFeature(caps.detection, 'reviewQueueFilters');
+  const queue = useReviewQueue(serverCounts ? { group: 'all', limit: 1 } : { limit: 100 }, { enabled: !caps.loading });
   const notifications = useNotifications({ limit: 5 });
 
   const loadedAnalytics = analytics.map((q) => q.data).filter((d): d is NonNullable<typeof d> => !!d);
@@ -40,7 +45,7 @@ export default function MentorDashboard() {
   }).length;
   const drafts = list.filter((a) => a.status === 'DRAFT' || a.status === 'REJECTED').length;
   const pendingApproval = list.filter((a) => a.status === 'PENDING_APPROVAL').length;
-  const toReview = (queue.data?.data ?? []).filter((s) => OPEN_REVIEW_STATUSES.includes(s.status)).length;
+  const toReview = queue.data?.counts?.open ?? (queue.data?.data ?? []).filter((s) => OPEN_REVIEW_STATUSES.includes(s.status)).length;
 
   const loading = scopes.isPending || assignments.isPending || queue.isPending;
   const stats = [
@@ -61,7 +66,7 @@ export default function MentorDashboard() {
     {
       title: 'Reviews To Do',
       value: loading ? '…' : String(toReview),
-      change: `${queue.data?.meta.total ?? 0} assigned to you in total`,
+      change: `${queue.data?.counts?.all ?? queue.data?.meta.total ?? 0} assigned to you in total`,
       icon: <ClipboardCheck className="w-6 h-6" />,
       color: 'bg-emerald-500',
     },

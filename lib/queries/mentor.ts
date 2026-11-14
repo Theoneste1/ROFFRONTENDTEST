@@ -148,11 +148,13 @@ export function useAssignmentTransition(id: string) {
 
 // ─── Reviews ────────────────────────────────────────────────────────────────
 
-export function useReviewQueue(filters: ReviewFilters = {}) {
+/** `enabled: false` holds the request back (e.g. until the backend's capabilities decide which query to send). */
+export function useReviewQueue(filters: ReviewFilters = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.mentor.reviews(filters),
     queryFn: () => reviewsApi.queue(filters),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   });
 }
 
