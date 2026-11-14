@@ -11,6 +11,9 @@
  * abroad (SchoolClaimFields); every other backend — and an unknown one — gets the
  * legacy name + location fields, which both accept.
  *
+ * Olympiad interests (Mathematics, Computing, Physics; at least one) are asked for, and sent, only
+ * when the backend advertises `studentOlympiadInterests` (older backends refuse the field).
+ *
  * Until the backend has been detected the form is not shown (its school fields
  * and validation depend on it). If detection fails the page says so, offers a
  * retry, and lets the student continue with the legacy fields. Once a form is
@@ -26,6 +29,8 @@ import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import SchoolClaimFields, { emptyDraft } from "@/app/components/account/SchoolClaimFields";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
+import { studentInterestsSupported, validateInterests, type OlympiadSubject } from "@/lib/accounts/olympiad-interests";
 import { registrationGate, type RegistrationSchoolMode } from "@/lib/accounts/registration-mode";
 import {
   SCHOOL_CLAIM_ERRORS,
@@ -39,7 +44,7 @@ import {
 const GRADES: GradeLevel[] = ["S1", "S2", "S3", "S4", "S5", "S6"];
 const USERNAME = /^[a-z0-9._-]{3,30}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const FIELDS = ["firstName", "lastName", "username", "email", "password", "gradeLevel", "schoolName", "schoolLocation", "homeLocation"] as const;
+const FIELDS = ["firstName", "lastName", "username", "email", "password", "gradeLevel", "schoolName", "schoolLocation", "homeLocation", "olympiadInterests"] as const;
 type F = (typeof FIELDS)[number] | "confirm";
 const CLAIM_SERVER_FIELDS = Object.keys(SCHOOL_CLAIM_SERVER_FIELDS);
 
@@ -63,8 +68,14 @@ export default function RegisterForm() {
   const caps = useBackendCapabilities();
   const gate = registrationGate(caps.detection, caps.fetching, caps.waking);
   const [schoolMode, setSchoolMode] = useState<RegistrationSchoolMode | null>(null);
+  // Olympiad interests: asked for only when the backend accepts them (decided with the school mode).
+  const [interestsOn, setInterestsOn] = useState(false);
+  const [interests, setInterests] = useState<OlympiadSubject[]>([]);
   // Adopt the first definite answer and keep it (state adjusted during render, not in an effect).
-  if (schoolMode === null && gate.state === "ready") setSchoolMode(gate.mode);
+  if (schoolMode === null && gate.state === "ready") {
+    setSchoolMode(gate.mode);
+    setInterestsOn(studentInterestsSupported(caps.detection));
+  }
   const directory = schoolMode === "directory";
   const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
   const [claimErrors, setClaimErrors] = useState<Partial<Record<SchoolClaimField, string>>>({});
@@ -97,6 +108,10 @@ export default function RegisterForm() {
       if (v.schoolLocation.trim().length < 2) e.schoolLocation = "Enter your school's location (e.g. district).";
     }
     if (v.homeLocation.trim().length < 2) e.homeLocation = "Enter where you live (e.g. district).";
+    if (interestsOn) {
+      const i = validateInterests(interests);
+      if (i) e.olympiadInterests = i;
+    }
     const p = validateNewPassword(password, confirm);
     if (p.password) e.password = p.password;
     if (p.confirm) e.confirm = p.confirm;
@@ -123,6 +138,7 @@ export default function RegisterForm() {
         gradeLevel: v.gradeLevel as GradeLevel,
         ...(directory ? schoolClaimPayload(claim) : { schoolName: v.schoolName.trim(), schoolLocation: v.schoolLocation.trim() }),
         homeLocation: v.homeLocation.trim(),
+        ...(interestsOn && { olympiadInterests: interests }),
       });
       setDone(res);
     } catch (err) {
@@ -263,6 +279,17 @@ export default function RegisterForm() {
         </>
       )}
       <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
+
+      {interestsOn && (
+        <OlympiadInterestsField
+          value={interests}
+          onChange={(next) => {
+            setInterests(next);
+            setErrors((s) => ({ ...s, olympiadInterests: undefined }));
+          }}
+          error={errors.olympiadInterests}
+        />
+      )}
 
       <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
 

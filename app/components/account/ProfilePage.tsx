@@ -12,10 +12,22 @@
  * - notification e-mail preferences and, for mentors and admins, per-type
  *   switches (NotificationPreferences.tsx);
  * - students, on a backend advertising `schoolAffiliations`: their school and its
- *   verification, and asking for another school (SchoolAffiliationCard.tsx).
+ *   verification, and asking for another school (SchoolAffiliationCard.tsx);
+ * - students, on a backend advertising `studentOlympiadInterests`: their Olympiad interests
+ *   (`PATCH /me` olympiadInterests; at least one).
  */
 import { useState, type FormEvent, type ReactNode } from "react";
-import { KeyRound, LogOut, UserRound } from "lucide-react";
+import { KeyRound, LogOut, Trophy, UserRound } from "lucide-react";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import {
+  interestsText,
+  normaliseInterests,
+  sameInterests,
+  studentInterestsSupported,
+  validateInterests,
+  type OlympiadSubject,
+} from "@/lib/accounts/olympiad-interests";
+import OlympiadInterestsField from "./OlympiadInterestsField";
 import { useSession } from "@/lib/auth/session";
 import { roleLabel } from "@/lib/auth/roles";
 import { clearLoginNotice, setLoginNotice } from "@/lib/auth/notice";
@@ -43,7 +55,9 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
 
 export default function ProfilePage() {
   const { user } = useSession();
+  const caps = useBackendCapabilities();
   if (!user) return <LoadingBlock />;
+  const interestsOn = user.role === "STUDENT" && studentInterestsSupported(caps.detection);
 
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
   return (
@@ -65,6 +79,7 @@ export default function ProfilePage() {
                   <Detail label="Grade">{user.gradeLevel}</Detail>
                   <Detail label="School">{user.school ? `${user.school.name}${user.school.location ? `, ${user.school.location}` : ""}` : null}</Detail>
                   <Detail label="Points">{`${formatNumber(user.points)} · ${formatNumber(user.problemsSolved)} problems solved`}</Detail>
+                  {interestsOn && <Detail label="Olympiad interests">{interestsText(user.olympiadInterests) || "None chosen yet"}</Detail>}
                 </>
               )}
               <Detail label="Member since">{formatDate(user.createdAt)}</Detail>
@@ -76,6 +91,7 @@ export default function ProfilePage() {
 
         <div className="xl:col-span-2 space-y-6 min-w-0">
           <DetailsForm user={user} />
+          {interestsOn && <InterestsCard user={user} />}
           {user.role === "STUDENT" && <SchoolAffiliationCard />}
           <PasswordForm />
           <SessionsCard />
@@ -174,6 +190,60 @@ function DetailsForm({ user }: { user: CurrentUser }) {
         <div className="flex justify-end">
           <Button type="submit" loading={update.isPending}>
             Save details
+          </Button>
+        </div>
+      </form>
+    </Section>
+  );
+}
+
+// ─── Olympiad interests (PATCH /me olympiadInterests) ───────────────────────
+
+function InterestsCard({ user }: { user: CurrentUser }) {
+  const update = useUpdateMe();
+  const [interests, setInterests] = useState<OlympiadSubject[]>(() => normaliseInterests(user.olympiadInterests));
+  const [error, setError] = useState<string | undefined>();
+  const [saved, setSaved] = useState(false);
+  const serverError = fieldErrors(update.error, ["olympiadInterests"]).olympiadInterests;
+  const unchanged = sameInterests(interests, user.olympiadInterests);
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaved(false);
+    const err = validateInterests(interests);
+    setError(err);
+    if (err || unchanged || update.isPending) return;
+    update.mutate({ olympiadInterests: interests }, {
+      onSuccess: (me) => {
+        setSaved(true);
+        setInterests(normaliseInterests(me.olympiadInterests));
+      },
+    });
+  }
+
+  return (
+    <Section
+      title="Olympiad interests"
+      icon={<Trophy className="w-5 h-5" />}
+      description="The Olympiads you would like to take part in. This does not change your courses or what you can access."
+    >
+      <form onSubmit={onSubmit} noValidate className="space-y-4" data-testid="interests-form">
+        {saved && <Alert tone="success">Your Olympiad interests were saved.</Alert>}
+        {update.isError && !serverError && <Alert tone="error">{errorMessage(update.error)}</Alert>}
+        <OlympiadInterestsField
+          value={interests}
+          onChange={(next) => {
+            setInterests(next);
+            setError(undefined);
+            setSaved(false);
+          }}
+          error={error ?? serverError}
+          idPrefix="profile-interests"
+          hint="Choose at least one."
+        />
+        <div className="flex justify-end">
+          <Button type="submit" loading={update.isPending} disabled={unchanged}>
+            Save interests
           </Button>
         </div>
       </form>

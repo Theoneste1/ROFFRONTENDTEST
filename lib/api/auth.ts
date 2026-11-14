@@ -1,5 +1,6 @@
 /** Auth and current-user endpoints. */
 import { api, setAccessToken } from "./client";
+import type { OlympiadSubject } from "./teacher-registration";
 import { isApiError } from "./errors";
 import type {
   ActivateResponse,
@@ -122,6 +123,8 @@ export interface RegisterStudentInput {
   country?: string;
   /** Student's home district or city (required, 2–200 characters). */
   homeLocation: string;
+  /** Olympiad interests (only on a backend with `studentOlympiadInterests`; the form requires one). */
+  olympiadInterests?: OlympiadSubject[];
 }
 
 /** `POST /auth/register/student` response (the created profile plus what happens next). */

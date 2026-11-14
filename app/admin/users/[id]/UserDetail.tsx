@@ -16,6 +16,7 @@ import { AdminPage, Card, ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, b
 import { AccountStatusBadge, UserForm } from "../components/userUi";
 import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
+import { interestsText } from "@/lib/accounts/olympiad-interests";
 import PermissionOverridesCard from "./PermissionOverridesCard";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -93,6 +94,7 @@ export default function UserDetail({ userId }: { userId: string }) {
               <>
                 <Row label="Division">{u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}</Row>
                 <Row label="Points">{formatNumber(u.points)} · {formatNumber(u.problemsSolved)} problems solved</Row>
+                {u.olympiadInterests !== undefined && <Row label="Olympiad interests">{interestsText(u.olympiadInterests) || "None chosen"}</Row>}
               </>
             )}
             <Row label="School">{u.school ? `${u.school.name} · ${u.school.location}` : "—"}</Row>

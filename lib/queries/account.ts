@@ -6,7 +6,7 @@ import { authApi, meApi, publicApi, type ContactInput } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/query/keys";
 import type { UpdateMeInput } from "@/lib/api/types";
 
-/** `PATCH /me` (firstName, lastName, homeLocation). The navbar and pages update from the response. */
+/** `PATCH /me` (firstName, lastName, homeLocation; olympiadInterests on backends that accept them). The navbar and pages update from the response. */
 export function useUpdateMe() {
   const qc = useQueryClient();
   return useMutation({

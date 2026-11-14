@@ -68,6 +68,12 @@ export const KNOWN_FEATURES = [
    * comes from GET /auth/register/teacher/availability, not from this flag.
    */
   "teacherSelfRegistration",
+  /**
+   * Students' Olympiad interests (Mathematics, Computing, Physics; several at once): the sign-up
+   * form (`POST /auth/register/student`) and the profile (`PATCH /me`) send `olympiadInterests`,
+   * and profiles return it. Without it older backends refuse the field (400): neither shown nor sent.
+   */
+  "studentOlympiadInterests",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 
