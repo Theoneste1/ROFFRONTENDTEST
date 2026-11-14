@@ -193,7 +193,7 @@ export default function AffiliationsReview() {
           title={
             decision.kind === "verify" ? "Verify this school?" : decision.kind === "reject" ? "Reject this school claim?" : decision.kind === "revoke" ? "Revoke this verification?" : "Reopen this claim?"
           }
-          body={`${decision.claim.student.firstName} ${decision.claim.student.lastName} — ${decision.claim.school?.name ?? decision.claim.claimedName ?? ""}.${decision.kind === "verify" ? " The student's teachers at this school will see them." : decision.kind === "revoke" ? " The school's teachers stop seeing this student." : ""}`}
+          body={`${decision.claim.student.firstName} ${decision.claim.student.lastName} — ${decision.claim.school?.name ?? decision.claim.claimedName ?? ""}.${decision.kind === "verify" ? ` The student's teachers at this school will see them.${decision.claim.claimedName ? " The student named a school that wasn't listed, so they will be notified by e-mail and in the app that their school was verified." : ""}` : decision.kind === "revoke" ? " The school's teachers stop seeing this student." : ""}`}
           confirmLabel={decision.kind === "verify" ? "Verify" : decision.kind === "reject" ? "Reject" : decision.kind === "revoke" ? "Revoke" : "Reopen"}
           tone={decision.kind === "reject" || decision.kind === "revoke" ? "danger" : "primary"}
           note={decision.kind === "verify" ? NOTE : REASON}

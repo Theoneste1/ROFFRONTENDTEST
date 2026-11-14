@@ -35,6 +35,23 @@ export const queryKeys = {
     history: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "history", id, page] as const,
     /** The public province → district → sector list (the same key the claim form uses). */
     locations: () => ["schools", "locations"] as const,
+    /** The public search filtered by place (GET /schools/search?province=&district=). */
+    byPlace: (province: string, district: string) => ["schools", "by-place", province, district] as const,
+  },
+  /** Teacher self-registration (lib/api/teacher-registration.ts). */
+  teacherRegistration: {
+    availability: () => ["teacher-registration", "availability"] as const,
+  },
+  /** Teacher application review (`/admin/teacher-applications`). */
+  teacherApplications: {
+    all: ["teacher-applications"] as const,
+    list: (filters: object) => [...queryKeys.teacherApplications.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.teacherApplications.all, "detail", id] as const,
+  },
+  /** Admin delivery log of the decision notifications (lib/api/notification-deliveries.ts). */
+  notificationDeliveries: {
+    all: ["notification-deliveries"] as const,
+    list: (filters: object) => [...queryKeys.notificationDeliveries.all, "list", filters] as const,
   },
   /** Account administration added with the school and role work (lib/api/accounts.ts). */
   accounts: {
