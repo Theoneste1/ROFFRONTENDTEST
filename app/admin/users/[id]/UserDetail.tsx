@@ -15,6 +15,7 @@ import { AdminPage, Card, ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, b
 import { AccountStatusBadge, UserForm } from "../components/userUi";
 import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
+import PermissionOverridesCard from "./PermissionOverridesCard";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -187,6 +188,8 @@ export default function UserDetail({ userId }: { userId: string }) {
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
         {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}
+        {/* Super Administrators: effective permissions (permissions.view) and overrides (permissions.manageOverrides). */}
+        {(can("permissions.view") || can("permissions.manageOverrides")) && <PermissionOverridesCard user={u} />}
       </div>
 
       {editing && (

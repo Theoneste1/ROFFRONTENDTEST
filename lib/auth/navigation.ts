@@ -32,6 +32,8 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/results", label: "Results", permission: "results.publish" },
   { href: "/admin/reports", label: "Reports", permission: "reports.export" },
   { href: "/admin/audit-log", label: "Audit Log", permission: "audit.view" },
+  { href: "/admin/activity", label: "Activity", permission: "activity.view" },
+  { href: "/admin/email", label: "E-mail", permission: "email.bulkSend" },
   { href: "/admin/moderation", label: "Moderation", permission: "discussions.moderate" },
   // Contact messages are served to ADMIN and SUPER_ADMIN by role, not by a permission.
   { href: "/admin/messages", label: "Messages" },
