@@ -34,7 +34,7 @@ import ProgrammeOverview from "./ProgrammeOverview";
 import type { Permission } from "@/lib/api/types";
 import { useSession } from "@/lib/auth/session";
 import { formatDate, formatNumber } from "@/lib/format";
-import { canSearchPeople, memberRolesManaged } from "@/lib/programmes/programme-rules";
+import { memberRolesManaged, peopleSearch } from "@/lib/programmes/programme-rules";
 import { useHeadedProgrammes, useProgrammeParticipation } from "@/lib/queries/programmes";
 import { useMentorReport, useStudentReport } from "@/lib/queries/admin";
 import ProgrammeMembers from "@/app/components/programmes/ProgrammeMembers";
@@ -120,7 +120,7 @@ export default function ProgrammeMonitor() {
           programmeId={selected.id}
           role={active === "students" ? "STUDENT" : "MENTOR"}
           managed={memberRolesManaged(role, can)}
-          canSearch={canSearchPeople(can)}
+          search={peopleSearch(role, can)}
         />
       )}
       {ALL_PROGRAMMES[active] && (

@@ -2,14 +2,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  activityBreakdown, canSearchPeople, courseAccessError, courseAccessTarget, memberRolesManaged, membershipError,
-  programmeCourses, reportDivisions,
+  activityBreakdown, courseAccessError, courseAccessTarget, memberRolesManaged, membershipError,
+  peopleSearch, programmeCourses, reportDivisions,
 } from "../lib/programmes/programme-rules.ts";
 import { resourceSavedMessage, resourceSavedOutcome } from "../lib/mentor/resource-saved.ts";
 
 const can = (list) => (p) => list.includes(p);
-// GET /me/permissions lists (backend develop): ADMIN legacy list has no programmes.manageMembers (D-5).
+// GET /me/permissions lists. ADMIN: the production backend's frozen list has no programmes.manageMembers;
+// ADMIN_D5: a backend with owner decision D-5 (2026-11-14) appends the Head Coach administration it holds.
 const ADMIN = ["users.manage", "mentorAssignments.manage", "reports.export"];
+const ADMIN_D5 = [...ADMIN, "users.manageHeadCoaches", "programmes.manageHeads", "programmes.manageMembers", "coaches.monitor", "reports.view"];
 const SUPER = [...ADMIN, "programmes.manageMembers", "programmes.manageHeads", "users.view"];
 const HEAD = ["programmes.manageMembers", "mentorAssignments.manage", "users.view", "reports.view", "activity.view"];
 const COACH = ["courses.view", "reviews.grade", "analytics.course"];
@@ -17,14 +19,20 @@ const COACH = ["courses.view", "reviews.grade", "analytics.course"];
 test("membership: administrators students and coaches, a Head Coach students only, only with programmes.manageMembers", () => {
   assert.deepEqual(memberRolesManaged("SUPER_ADMIN", can(SUPER)), ["STUDENT", "MENTOR"]);
   assert.deepEqual(memberRolesManaged("HEAD_COACH", can(HEAD)), ["STUDENT"]);
-  assert.deepEqual(memberRolesManaged("ADMIN", can(ADMIN)), [], "an ADMIN's /me/permissions does not list it (D-5)");
+  assert.deepEqual(memberRolesManaged("ADMIN", can(ADMIN)), [], "the production ADMIN list does not report it");
+  assert.deepEqual(memberRolesManaged("ADMIN", can(ADMIN_D5)), ["STUDENT", "MENTOR"], "D-5: an Administrator manages students and coaches");
   assert.deepEqual(memberRolesManaged("MENTOR", can(COACH)), []);
   assert.deepEqual(memberRolesManaged("MENTOR", can(["programmes.manageMembers"])), [], "unknown holder role: nothing");
 });
 
-test("people search only with users.manage (a Head Coach's users.view is used by no route)", () => {
-  assert.equal(canSearchPeople(can(SUPER)), true);
-  assert.equal(canSearchPeople(can(HEAD)), false);
+test("people search: administrators search accounts; a Head Coach searches students in no programme; others nothing", () => {
+  assert.equal(peopleSearch("SUPER_ADMIN", can(SUPER)), "users");
+  assert.equal(peopleSearch("ADMIN", can(ADMIN_D5)), "users", "administrators keep their wider search");
+  assert.equal(peopleSearch("HEAD_COACH", can(HEAD)), "candidates");
+  assert.equal(peopleSearch("HEAD_COACH", can(HEAD.filter((p) => p !== "programmes.manageMembers"))), null, "a DENY override removes it");
+  assert.equal(peopleSearch("MENTOR", can(COACH)), null);
+  assert.equal(peopleSearch("MENTOR", can(["programmes.manageMembers"])), null, "unknown holder role: nothing");
+  assert.equal(peopleSearch(undefined, can(HEAD)), null);
 });
 
 test("course access targets follow the backend: coaches by any manager, Head Coaches by administrators only", () => {
@@ -43,6 +51,7 @@ test("backend refusals get readable messages; anything else falls back", () => {
   assert.match(courseAccessError(undefined, 404), /programme you head/);
   assert.equal(courseAccessError("OTHER", 500), null);
   assert.match(membershipError("ALREADY_MEMBER", 409), /Already/);
+  assert.match(membershipError("STUDENT_IN_OTHER_PROGRAMME", 409), /another programme.*administrator/);
   assert.match(membershipError("SCOPE_FORBIDDEN", 403), /administrator/);
   assert.equal(membershipError(undefined, 500), null);
 });

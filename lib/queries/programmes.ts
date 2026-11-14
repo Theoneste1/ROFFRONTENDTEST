@@ -115,6 +115,17 @@ export function usePeopleSearch(search: string, role: "STUDENT" | "MENTOR", enab
   });
 }
 
+/** Students a Head Coach (or administrator) may add to this programme (GET /admin/programmes/:id/student-candidates). */
+export function useStudentCandidates(programmeId: string, search: string, enabled: boolean) {
+  const q = search.trim();
+  return useQuery({
+    queryKey: queryKeys.programmes.studentCandidates(programmeId, q),
+    queryFn: () => programmesApi.studentCandidates(programmeId, q, 10),
+    enabled: enabled && q.length >= 2 && q.length <= 100,
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useMembershipAction(programmeId: string) {
   const qc = useQueryClient();
   return useMutation({
