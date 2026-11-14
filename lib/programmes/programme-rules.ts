@@ -27,12 +27,18 @@ export function memberRolesManaged(role: Role | string | null | undefined, can: 
 }
 
 /**
- * Finding a person to add needs a user search the caller is allowed to run.
- * The only one is GET /admin/users (users.manage: administrators). A Head Coach's
- * users.view is not used by any route, so a Head Coach can only add back someone
- * whose id the page already holds (a membership they just ended).
+ * Which search the caller uses to find a person to add (null: none):
+ *  - "users": GET /admin/users (users.manage: administrators) — every account of the role;
+ *  - "candidates": GET /admin/programmes/:id/student-candidates (programmes.manageMembers, a
+ *    Head Coach in a programme they head) — only students who are in no programme yet;
+ *    moving a student from another programme stays with an administrator.
  */
-export const canSearchPeople = (can: Can): boolean => can("users.manage");
+export type PeopleSearch = "users" | "candidates";
+export function peopleSearch(role: Role | string | null | undefined, can: Can): PeopleSearch | null {
+  if (can("users.manage")) return "users";
+  if (role === "HEAD_COACH" && can("programmes.manageMembers")) return "candidates";
+  return null;
+}
 
 export type CourseAccessTarget = "coach" | "headCoach" | "notEligible";
 
@@ -65,6 +71,7 @@ export function courseAccessError(code: string | undefined, status: number | und
 /** Readable text for the backend's refusals of a membership change. */
 export function membershipError(code: string | undefined, status: number | undefined): string | null {
   if (code === "ALREADY_MEMBER") return "Already an active member of this programme.";
+  if (code === "STUDENT_IN_OTHER_PROGRAMME") return "This student is in another programme. An administrator moves students between programmes.";
   if (code === "MEMBERSHIP_ENDED") return "This membership has already ended.";
   if (code === "ROLE_NOT_MEMBER") return "Only students and coaches are programme members; Head Coaches are set as programme heads.";
   if (code === "SCOPE_FORBIDDEN") return "Coaches join a programme through an administrator.";

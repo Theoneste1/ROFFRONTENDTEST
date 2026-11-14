@@ -67,6 +67,7 @@ export const queryKeys = {
     /** Coach course × division assignments the caller may manage. */
     coachAccess: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "coach-access", filters] as const,
     peopleSearch: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "people", filters] as const,
+    studentCandidates: (programmeId: string, q: string) => [...queryKeys.programmes.all, "candidates", programmeId, q] as const,
   },
   /** Backend-wide information (`GET /api/v1`), the same for every user. */
   backend: {

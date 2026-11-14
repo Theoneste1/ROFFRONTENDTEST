@@ -2,17 +2,17 @@
 
 /**
  * /admin/programmes — programme membership for administrators whose
- * GET /me/permissions lists programmes.manageMembers (today: Super
- * Administrators; the ADMIN list returned by the backend does not include it,
- * owner decision D-5 open). Members: GET/POST/DELETE /admin/programmes/:id/members;
- * people to add: GET /admin/users (users.manage).
+ * GET /me/permissions lists programmes.manageMembers (Super Administrators, and
+ * Administrators on a backend with owner decision D-5, 2026-11-14; the production
+ * backend's frozen ADMIN list does not include it yet). Members:
+ * GET/POST/DELETE /admin/programmes/:id/members; people to add: GET /admin/users (users.manage).
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { programmesApi } from "@/lib/api/programmes";
 import { useSession } from "@/lib/auth/session";
 import { queryKeys } from "@/lib/query/keys";
-import { canSearchPeople, memberRolesManaged, type MemberRole } from "@/lib/programmes/programme-rules";
+import { memberRolesManaged, peopleSearch, type MemberRole } from "@/lib/programmes/programme-rules";
 import ProgrammeMembers from "@/app/components/programmes/ProgrammeMembers";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { AdminPage, FilterPills, Notice, SelectFilter } from "../components/adminUi";
@@ -66,7 +66,7 @@ export default function ProgrammesAdmin() {
           ]}
         />
       </div>
-      <ProgrammeMembers key={`${selected.id}:${view}`} programmeId={selected.id} role={memberRole} former={former} managed={memberRolesManaged(role, can)} canSearch={canSearchPeople(can)} />
+      <ProgrammeMembers key={`${selected.id}:${view}`} programmeId={selected.id} role={memberRole} former={former} managed={memberRolesManaged(role, can)} search={peopleSearch(role, can)} />
     </AdminPage>
   );
 }

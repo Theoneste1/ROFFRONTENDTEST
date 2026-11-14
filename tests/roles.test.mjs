@@ -193,10 +193,12 @@ const ADMIN_LIST = [
   "divisions.manage", "courses.manage", "mentorAssignments.manage", "mentorRequests.decide", "settings.manage",
   "email.bulkSend", "audit.view", "activity.view",
 ];
-// ADMIN_LIST_DEVELOP: backend develop with the ADMIN permission fix — the list also ends with
-// schools.manage (2026-11-12) and users.manageTeachers (2026-11-13). Administrators already HELD both;
-// the list now reports them. Nothing else was added (no Head Coach, Admin or Super-Admin-only permission).
-const ADMIN_LIST_DEVELOP = [...ADMIN_LIST, "schools.manage", "users.manageTeachers"];
+// ADMIN_LIST_DEVELOP: backend develop with the ADMIN permission fixes — the list also ends with
+// schools.manage (2026-11-12), users.manageTeachers (2026-11-13) and the Head Coach administration of
+// owner decision D-5 (2026-11-14). Administrators already HELD all of them; the list now reports them.
+// Never an Admin-management or Super-Admin-only permission.
+const D5_HEAD_COACH_ADMIN = ["users.manageHeadCoaches", "programmes.manageHeads", "programmes.manageMembers", "coaches.monitor", "reports.view"];
+const ADMIN_LIST_DEVELOP = [...ADMIN_LIST, "schools.manage", "users.manageTeachers", ...D5_HEAD_COACH_ADMIN];
 const MENTOR_LIST = [
   "courses.view", "resources.view", "resources.manage", "assignments.view", "assignments.prepare", "reviews.grade",
   "discussions.participate", "discussions.report", "analytics.course", "leaderboard.view",
@@ -215,7 +217,9 @@ const HEAD_COACH_LIST = [
   "students.viewScoped", "users.view", "users.manageStudents", "users.manageCoaches", "programmes.manageMembers",
   "mentorAssignments.manage", "coaches.monitor", "activity.view",
 ];
-const TEACHER_BASE = ["courses.view", "resources.view", "assignments.view", "discussions.participate", "discussions.report", "students.viewScoped", "leaderboard.view"];
+// TEACHER: backend 2026-11-14 removed the dead course × division grants (courses.view, resources.view,
+// assignments.view, discussions.participate, discussions.report); catalogue order.
+const TEACHER_BASE = ["leaderboard.view", "students.viewScoped"];
 
 test("menus: today's ADMIN and MENTOR lists show every item they had before (no regression)", () => {
   assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, new Set(ADMIN_LIST))), hrefs(ADMIN_NAV));
@@ -282,18 +286,21 @@ test("assignable roles: Teacher / Head Coach need BOTH the backend feature and t
   assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(ADMIN_LIST) }), ["STUDENT", "MENTOR", "ADMIN"]);
 });
 
-test("ADMIN permission fix: an ordinary Administrator is offered Teacher only with the backend fix AND TEACHERS_ENABLED; never Head Coach", () => {
-  // Backend fixed (users.manageTeachers reported) and the Teacher role switched on → Teacher offered.
-  assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(ADMIN_LIST_DEVELOP) }), ["STUDENT", "TEACHER", "MENTOR", "ADMIN"]);
-  // TEACHERS_ENABLED off (production default) → still not offered: the flag keeps its effect.
-  assert.deepEqual(assignableRoles({ teacherAccounts: false, headCoachAccounts: true, can: can(ADMIN_LIST_DEVELOP) }), ["STUDENT", "MENTOR", "ADMIN"]);
-  // Head Coach needs users.manageHeadCoaches, which the fix deliberately does not report (owner decision D-5 pending).
-  assert.ok(!assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(ADMIN_LIST_DEVELOP) }).includes("HEAD_COACH"));
+test("ADMIN permission fix: an ordinary Administrator is offered Teacher / Head Coach only with the backend fix AND the role's flag", () => {
+  // Backend fixed (users.manageTeachers, users.manageHeadCoaches reported) and both roles switched on → both offered.
+  assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(ADMIN_LIST_DEVELOP) }), ["STUDENT", "TEACHER", "MENTOR", "HEAD_COACH", "ADMIN"]);
+  // TEACHERS_ENABLED / HEAD_COACHES_ENABLED off (production default) → not offered: the flags keep their effect.
+  assert.deepEqual(assignableRoles({ teacherAccounts: false, headCoachAccounts: true, can: can(ADMIN_LIST_DEVELOP) }), ["STUDENT", "MENTOR", "HEAD_COACH", "ADMIN"]);
+  assert.deepEqual(assignableRoles({ teacherAccounts: true, headCoachAccounts: false, can: can(ADMIN_LIST_DEVELOP) }), ["STUDENT", "TEACHER", "MENTOR", "ADMIN"]);
+  assert.deepEqual(assignableRoles({ teacherAccounts: false, headCoachAccounts: false, can: can(ADMIN_LIST_DEVELOP) }), ["STUDENT", "MENTOR", "ADMIN"]);
+  // D-5 (2026-11-14): an ordinary Administrator manages Head Coaches — but never Super Administrators.
+  assert.ok(!assignableRoles({ teacherAccounts: true, headCoachAccounts: true, can: can(ADMIN_LIST_DEVELOP) }).includes("SUPER_ADMIN"));
 });
 
-test("ADMIN permission fix: exactly two entries added; no Head Coach, Admin-management or Super-Admin-only permission", () => {
-  assert.deepEqual(ADMIN_LIST_DEVELOP.filter((p) => !ADMIN_LIST.includes(p)), ["schools.manage", "users.manageTeachers"]);
-  for (const p of ["users.manageHeadCoaches", "users.manageAdmins", "programmes.manageHeads", "permissions.manageOverrides", "settings.manageSystem", "schools.syncDirectory"]) {
+test("ADMIN permission fix: only additions, all held by the backend; no Admin-management or Super-Admin-only permission", () => {
+  assert.deepEqual(ADMIN_LIST_DEVELOP.slice(0, ADMIN_LIST.length), ADMIN_LIST, "the production list is a prefix (additive only)");
+  assert.deepEqual(ADMIN_LIST_DEVELOP.filter((p) => !ADMIN_LIST.includes(p)), ["schools.manage", "users.manageTeachers", ...D5_HEAD_COACH_ADMIN]);
+  for (const p of ["users.manageAdmins", "permissions.manageOverrides", "settings.manageSystem", "schools.syncDirectory"]) {
     assert.ok(!ADMIN_LIST_DEVELOP.includes(p), p);
   }
   // Everything an Administrator is now told about, a Super Administrator holds too.

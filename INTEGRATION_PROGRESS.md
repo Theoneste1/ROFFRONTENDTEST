@@ -191,3 +191,22 @@ Verification (local, disposable PostgreSQL; no request mocked):
 - Known behaviour after the backend release: every existing claim is PENDING, so Teachers see no students
   and the school leaderboard is empty until administrators verify claims.
 
+## Release permissions (2026-11-14, branch `feat/release-permissions`)
+
+Owner decisions of 2026-11-14, with the backend branch of the same name:
+
+- **D-5 — Administrators manage Head Coaches.** The backend's ADMIN `/me/permissions` list now also ends with
+  `users.manageHeadCoaches`, `programmes.manageHeads`, `programmes.manageMembers`, `coaches.monitor`,
+  `reports.view` (additive). With it, an Administrator is offered the Head Coach role (only while the backend
+  advertises `headCoachAccounts`), the "Programmes headed" card on a Head Coach's account and
+  `/admin/programmes` (members). Super Administrator is still never offered. On the production backend (frozen
+  list) nothing changes.
+- **Head Coaches add students.** The Head Coach's Programme → Students tab has "Add a student": it searches
+  `GET /admin/programmes/:id/student-candidates` (students in no programme yet; name, username, grade, division,
+  school). A student of another programme is never listed, and adding one is refused (409
+  `STUDENT_IN_OTHER_PROGRAMME`, shown as "an administrator moves students between programmes").
+  Administrators keep their account search (`GET /admin/users`). Rule: `peopleSearch()` in
+  `lib/programmes/programme-rules.ts`.
+- **Teachers.** The backend no longer grants Teachers the unused course permissions (`courses.view`,
+  `resources.view`, `assignments.view`, `discussions.*`); the teacher portal never used them (unit test
+  lists updated).

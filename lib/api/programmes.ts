@@ -10,8 +10,12 @@
  *
  * - heads     GET / PUT /admin/programmes/:id/heads (programmes.manageHeads: Administrators):
  *             PUT replaces the whole list with exactly these HEAD_COACH users
+ * - candidates GET /admin/programmes/:id/student-candidates?search= (programmes.manageMembers):
+ *             active students not in the programme — for a Head Coach only students in no
+ *             programme (name, username, grade, division, school; no contact details)
  * - add       POST /admin/programmes/:id/members { userId } (programmes.manageMembers;
- *             Head Coach: students only, own programmes; 409 ALREADY_MEMBER)
+ *             Head Coach: students only, own programmes, not a student of another programme
+ *             (409 STUDENT_IN_OTHER_PROGRAMME); 409 ALREADY_MEMBER)
  * - end       DELETE /admin/programmes/:id/members/:userId (programmes.manageMembers;
  *             Head Coach: students only, own programmes)
  * - invite    POST /admin/programmes/:id/coach-invitations (users.manageCoaches): a new
@@ -57,6 +61,9 @@ export interface ProgrammeMemberFilters {
   [key: string]: QueryValue;
 }
 
+/** `GET /admin/programmes/:id/student-candidates` row (no contact details). */
+export type ProgrammeCandidate = Omit<ProgrammeMember, "membership">;
+
 /** `GET /admin/programmes/:id/heads` row. */
 export interface ProgrammeHead {
   id: string;
@@ -86,6 +93,9 @@ export const programmesApi = {
   list: () => api<Programme[]>("/programmes"),
   members: (programmeId: string, filters: ProgrammeMemberFilters = {}) =>
     api<Page<ProgrammeMember>>(`/admin/programmes/${programmeId}/members`, { query: filters }),
+  /** Students who can be added (Head Coach: students in no programme). `search`: 2–100 characters. */
+  studentCandidates: (programmeId: string, search: string, limit = 10) =>
+    api<Page<ProgrammeCandidate>>(`/admin/programmes/${programmeId}/student-candidates`, { query: { search, limit } }),
   /** Add (or re-activate) a membership (programmes.manageMembers; Head Coach: students only). */
   addMember: (programmeId: string, userId: string) =>
     api<ProgrammeMember>(`/admin/programmes/${programmeId}/members`, { method: "POST", body: { userId } }),
