@@ -60,7 +60,7 @@ const fullName = (a: { firstName: string; lastName: string }) => `${a.firstName}
 
 export default function TeacherApplicationsReview() {
   const caps = useBackendCapabilities();
-  const { permissionsStatus, can } = useSession();
+  const { permissionsStatus, can, retry: retrySession } = useSession();
   const mode = teacherReviewMode({ detection: caps.detection, detectionLoading: caps.loading, permissionsStatus, can });
   const qc = useQueryClient();
   const [status, setStatus] = useState<TeacherApplicationStatus>("PENDING");
@@ -87,6 +87,13 @@ export default function TeacherApplicationsReview() {
     return (
       <AdminPage title="Teacher applications">
         <LoadingBlock />
+      </AdminPage>
+    );
+  }
+  if (mode === "error") {
+    return (
+      <AdminPage title="Teacher applications">
+        <ErrorState error={null} title="Couldn't load your permissions" onRetry={retrySession} />
       </AdminPage>
     );
   }

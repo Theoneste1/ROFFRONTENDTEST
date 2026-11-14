@@ -8,6 +8,7 @@
  */
 import type { DeliveryFilters, DeliveryStatus, NotificationDelivery } from "../api/notification-deliveries";
 import type { Permission } from "../api/types";
+import { hasFeature, type BackendDetection } from "../api/capabilities";
 import { DECISION_NOTIFICATION_TYPES } from "../notifications/display";
 
 export const NOTIFICATION_DELIVERIES_PERMISSION: Permission = "email.bulkSend";
@@ -78,9 +79,29 @@ export function deliveryQuery(status: DeliveryStatus | "", type: string, page: n
   return { ...(status && { status }), ...(type && { type }), page: Math.max(1, Math.floor(page) || 1), limit: DELIVERY_PAGE_SIZE };
 }
 
-/** Whether the page is shown: the permission, once `GET /me/permissions` has answered. */
-export function deliveryLogVisible(permissionsStatus: "loading" | "ready" | "error", can: (p: Permission) => boolean): boolean {
-  return permissionsStatus === "ready" && can(NOTIFICATION_DELIVERIES_PERMISSION);
+export type DeliveryLogMode = "loading" | "unsupported" | "error" | "forbidden" | "visible";
+
+/**
+ * What the page shows: "loading" while the backend detection or `GET /me/permissions` is still
+ * loading; "unsupported" when the backend does not advertise `notificationDeliveries`; "error" when
+ * the permissions could not be loaded (not the same as lacking the permission); "forbidden" without
+ * email.bulkSend; otherwise "visible".
+ */
+export function deliveryLogMode(opts: {
+  detection: BackendDetection | undefined;
+  detectionLoading: boolean;
+  permissionsStatus: "loading" | "ready" | "error";
+  can: (p: Permission) => boolean;
+}): DeliveryLogMode {
+  if (opts.detectionLoading || opts.permissionsStatus === "loading") return "loading";
+  if (!hasFeature(opts.detection, "notificationDeliveries")) return "unsupported";
+  if (opts.permissionsStatus === "error") return "error";
+  return opts.can(NOTIFICATION_DELIVERIES_PERMISSION) ? "visible" : "forbidden";
+}
+
+/** The menu item: only for a backend with the delivery log AND the known permission. */
+export function notificationDeliveriesNavVisible(detection: BackendDetection | undefined, permissions: ReadonlySet<string> | null): boolean {
+  return hasFeature(detection, "notificationDeliveries") && !!permissions && permissions.has(NOTIFICATION_DELIVERIES_PERMISSION);
 }
 
 /** Message for a failed retry: 409 means the row is no longer FAILED (sent or being sent). */

@@ -25,6 +25,7 @@ import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import { useSession } from "@/lib/auth/session";
 import { ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
 import { teacherApplicationsNavVisible } from "@/lib/admin/teacher-applications";
+import { notificationDeliveriesNavVisible } from "@/lib/admin/notification-deliveries";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 interface SidebarProps {
@@ -63,8 +64,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   const items = [
     ...visibleNav(ADMIN_NAV, knownPermissions),
     ...(teacherApplicationsNavVisible(detection, knownPermissions) ? [ADMIN_TEACHER_APPLICATIONS] : []),
-    // Notification deliveries: email.bulkSend (the single constant in lib/admin/notification-deliveries.ts).
-    ...visibleNav([ADMIN_NOTIFICATION_DELIVERIES], knownPermissions),
+    // Notification deliveries: the backend feature AND the known email.bulkSend (lib/admin/notification-deliveries.ts).
+    ...(notificationDeliveriesNavVisible(detection, knownPermissions) ? [ADMIN_NOTIFICATION_DELIVERIES] : []),
   ];
 
   // Function to check if link is active

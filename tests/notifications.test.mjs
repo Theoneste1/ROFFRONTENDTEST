@@ -11,7 +11,8 @@ import {
   NOTIFICATION_DELIVERIES_PERMISSION,
   canRetryDelivery,
   deliveryEntityLabel,
-  deliveryLogVisible,
+  deliveryLogMode,
+  notificationDeliveriesNavVisible,
   deliveryQuery,
   deliveryStatusLabel,
   deliveryTypeLabel,
@@ -100,10 +101,22 @@ test("delivery log: page and menu gated by the single constant email.bulkSend", 
   assert.ok(!ADMIN_NAV.some((i) => i.href === ADMIN_NOTIFICATION_DELIVERIES.href), "kept out of the frozen ADMIN_NAV");
 
   const can = (...held) => (p) => held.includes(p);
-  assert.equal(deliveryLogVisible("ready", can("email.bulkSend")), true);
-  assert.equal(deliveryLogVisible("ready", can("users.manage")), false);
-  assert.equal(deliveryLogVisible("loading", can("email.bulkSend")), false);
-  assert.equal(deliveryLogVisible("error", can("email.bulkSend")), false);
+  const HAS = { state: "NEW", schemaVersion: 1, roles: [], features: ["notificationDeliveries"] };
+  const mode = (over) => deliveryLogMode({ detection: HAS, detectionLoading: false, permissionsStatus: "ready", can: can("email.bulkSend"), ...over });
+  assert.equal(mode({}), "visible");
+  assert.equal(mode({ can: can("users.manage") }), "forbidden");
+  // L5: still loading is a loading state, a failed permission load is an error — neither is "no permission".
+  assert.equal(mode({ permissionsStatus: "loading" }), "loading");
+  assert.equal(mode({ detectionLoading: true, detection: undefined }), "loading");
+  assert.equal(mode({ permissionsStatus: "error" }), "error");
+  // L6: a backend without the delivery log (older backend, legacy, unknown) — no page, no menu item.
+  for (const detection of [{ ...HAS, features: [] }, { state: "LEGACY" }, { state: "UNKNOWN" }]) {
+    assert.equal(mode({ detection }), "unsupported");
+    assert.equal(notificationDeliveriesNavVisible(detection, new Set(["email.bulkSend"])), false);
+  }
+  assert.equal(notificationDeliveriesNavVisible(HAS, new Set(["email.bulkSend"])), true);
+  assert.equal(notificationDeliveriesNavVisible(HAS, new Set(["users.manage"])), false);
+  assert.equal(notificationDeliveriesNavVisible(HAS, null), false, "permissions not known yet");
 
   assert.equal(canSeeNavItem(ADMIN_NOTIFICATION_DELIVERIES, new Set(["email.bulkSend"])), true);
   assert.equal(canSeeNavItem(ADMIN_NOTIFICATION_DELIVERIES, new Set(["users.manage"])), false, "a DENY override hides it");

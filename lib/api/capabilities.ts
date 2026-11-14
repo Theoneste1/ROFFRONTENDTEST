@@ -45,6 +45,11 @@ export const KNOWN_FEATURES = [
    */
   "reviewQueueFilters",
   /**
+   * The decision-notification delivery log (`GET /admin/notification-deliveries`, retry of a failed
+   * row; email.bulkSend). Without it the backend has no delivery log: the menu item is hidden.
+   */
+  "notificationDeliveries",
+  /**
    * Optional (listed only while the TEACHER role is enabled): the backend implements the public
    * teacher application (GET/POST /auth/register/teacher…) and its review
    * (/admin/teacher-applications, users.manageTeachers). Whether registration is currently OPEN

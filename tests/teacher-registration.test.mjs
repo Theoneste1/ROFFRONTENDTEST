@@ -319,7 +319,9 @@ test("review page: needs the feature AND users.manageTeachers; waits while loadi
   assert.equal(mode({ detection: NEW(["teacherAccounts"]) }), "hidden");
   assert.equal(mode({ detection: { state: "LEGACY" } }), "hidden");
   assert.equal(mode({ can: permits("users.manage") }), "hidden");
-  assert.equal(mode({ permissionsStatus: "error" }), "hidden");
+  // L5: a failed permission load is an error state, not "you lack the permission".
+  assert.equal(mode({ permissionsStatus: "error" }), "error");
+  assert.equal(mode({ permissionsStatus: "error", detection: NEW(["teacherAccounts"]) }), "hidden");
 });
 
 test("menu: Teacher Applications only with the feature and the known permission; never in the frozen ADMIN_NAV", () => {

@@ -18,11 +18,13 @@ export const TEACHER_APPLICATION_STATUSES: readonly { label: string; value: Teac
   { label: "Rejected", value: "REJECTED" },
 ];
 
-export type TeacherReviewMode = "loading" | "hidden" | "review";
+export type TeacherReviewMode = "loading" | "hidden" | "error" | "review";
 
 /**
- * "loading" while the detection or the permission list is still loading; "review" only when
- * the backend advertises the feature and the caller holds the permission; otherwise "hidden".
+ * "loading" while the detection or the permission list is still loading; "error" when the backend
+ * advertises the feature but the permission list failed to load (not the same as lacking the
+ * permission); "review" only when the backend advertises the feature and the caller holds the
+ * permission; otherwise "hidden".
  */
 export function teacherReviewMode(opts: {
   detection: BackendDetection | undefined;
@@ -32,7 +34,8 @@ export function teacherReviewMode(opts: {
 }): TeacherReviewMode {
   if (opts.detectionLoading || opts.permissionsStatus === "loading") return "loading";
   if (!hasFeature(opts.detection, "teacherSelfRegistration")) return "hidden";
-  if (opts.permissionsStatus !== "ready" || !opts.can(TEACHER_APPLICATIONS_PERMISSION)) return "hidden";
+  if (opts.permissionsStatus === "error") return "error";
+  if (!opts.can(TEACHER_APPLICATIONS_PERMISSION)) return "hidden";
   return "review";
 }
 

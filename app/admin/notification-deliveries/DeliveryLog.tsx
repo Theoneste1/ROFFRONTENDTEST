@@ -19,19 +19,22 @@ import {
   DELIVERY_TYPE_FILTERS,
   canRetryDelivery,
   deliveryEntityLabel,
-  deliveryLogVisible,
+  deliveryLogMode,
   deliveryQuery,
   deliveryStatusLabel,
   deliveryTypeLabel,
   retryErrorMessage,
 } from "@/lib/admin/notification-deliveries";
-import { ErrorState, Spinner } from "@/app/components/ui/feedback";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, Badge, FilterPills, Notice, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
 
 export default function DeliveryLog() {
-  const { permissionsStatus, can } = useSession();
-  const visible = deliveryLogVisible(permissionsStatus, can);
+  const { permissionsStatus, can, retry: retrySession } = useSession();
+  const caps = useBackendCapabilities();
+  const mode = deliveryLogMode({ detection: caps.detection, detectionLoading: caps.loading, permissionsStatus, can });
+  const visible = mode === "visible";
   const qc = useQueryClient();
   const [status, setStatus] = useState<DeliveryStatus | "">("");
   const [type, setType] = useState("");
@@ -61,7 +64,10 @@ export default function DeliveryLog() {
   if (!visible) {
     return (
       <AdminPage title="Notification deliveries">
-        <Notice tone="info">The delivery log needs the email.bulkSend permission.</Notice>
+        {mode === "loading" && <LoadingBlock />}
+        {mode === "error" && <ErrorState error={null} title="Couldn't load your permissions" onRetry={retrySession} />}
+        {mode === "unsupported" && <Notice tone="info">This server does not provide a notification delivery log yet.</Notice>}
+        {mode === "forbidden" && <Notice tone="info">The delivery log needs the email.bulkSend permission.</Notice>}
       </AdminPage>
     );
   }
