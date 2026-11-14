@@ -9,6 +9,7 @@ import { useAdminUser, useUserAction, type UserAction } from "@/lib/queries/admi
 import { isApiError } from "@/lib/api/errors";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { roleLabel } from "@/lib/auth/roles";
+import { courseAccessTarget } from "@/lib/programmes/programme-rules";
 import type { UpdateUserInput } from "@/lib/api/admin";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { AdminPage, Card, ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, btnSecondary } from "../../components/adminUi";
@@ -105,6 +106,15 @@ export default function UserDetail({ userId }: { userId: string }) {
               Course access for this coach is managed on the{" "}
               <Link href={`/admin/mentors?mentor=${u.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
                 Coaches page
+              </Link>
+              .
+            </p>
+          )}
+          {u.role === "HEAD_COACH" && courseAccessTarget(me?.role, can, u.role) === "headCoach" && (
+            <p className="mt-4 text-xs text-gray-500" data-testid="head-coach-course-access">
+              To let this Head Coach prepare and grade work, give them course access on a course of a programme they head:{" "}
+              <Link href={`/admin/mentors?mentor=${u.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
+                Course access
               </Link>
               .
             </p>

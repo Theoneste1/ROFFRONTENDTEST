@@ -58,6 +58,15 @@ export const queryKeys = {
     all: ["programmes"] as const,
     list: () => [...queryKeys.programmes.all, "list"] as const,
     members: (programmeId: string, filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "members", programmeId, filters] as const,
+    /** Programme-scoped monitoring (dashboard, participation, activity, analytics) of the signed-in Head Coach. */
+    dashboard: () => [...queryKeys.programmes.all, "dashboard"] as const,
+    participation: () => [...queryKeys.programmes.all, "participation"] as const,
+    activity: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "activity", filters] as const,
+    activitySummary: () => [...queryKeys.programmes.all, "activity-summary"] as const,
+    analytics: (courseId: string, divisionId: string) => [...queryKeys.programmes.all, "analytics", courseId, divisionId] as const,
+    /** Coach course × division assignments the caller may manage. */
+    coachAccess: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "coach-access", filters] as const,
+    peopleSearch: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "people", filters] as const,
   },
   /** Backend-wide information (`GET /api/v1`), the same for every user. */
   backend: {

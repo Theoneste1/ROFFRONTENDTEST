@@ -10,6 +10,8 @@
  *
  * - heads     GET / PUT /admin/programmes/:id/heads (programmes.manageHeads: Administrators):
  *             PUT replaces the whole list with exactly these HEAD_COACH users
+ * - add       POST /admin/programmes/:id/members { userId } (programmes.manageMembers;
+ *             Head Coach: students only, own programmes; 409 ALREADY_MEMBER)
  * - end       DELETE /admin/programmes/:id/members/:userId (programmes.manageMembers;
  *             Head Coach: students only, own programmes)
  * - invite    POST /admin/programmes/:id/coach-invitations (users.manageCoaches): a new
@@ -48,6 +50,8 @@ export interface ProgrammeMember {
 
 export interface ProgrammeMemberFilters {
   role?: "STUDENT" | "MENTOR";
+  /** false: former members (administrators only; a Head Coach gets 403). */
+  isActive?: boolean;
   page?: number;
   limit?: number;
   [key: string]: QueryValue;
@@ -82,6 +86,9 @@ export const programmesApi = {
   list: () => api<Programme[]>("/programmes"),
   members: (programmeId: string, filters: ProgrammeMemberFilters = {}) =>
     api<Page<ProgrammeMember>>(`/admin/programmes/${programmeId}/members`, { query: filters }),
+  /** Add (or re-activate) a membership (programmes.manageMembers; Head Coach: students only). */
+  addMember: (programmeId: string, userId: string) =>
+    api<ProgrammeMember>(`/admin/programmes/${programmeId}/members`, { method: "POST", body: { userId } }),
   endMember: (programmeId: string, userId: string) =>
     api<unknown>(`/admin/programmes/${programmeId}/members/${userId}`, { method: "DELETE" }),
   heads: (programmeId: string) => api<ProgrammeHead[]>(`/admin/programmes/${programmeId}/heads`),
@@ -92,4 +99,35 @@ export const programmesApi = {
       method: "POST",
       body: Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined && v !== "")),
     }),
+};
+
+// ─── Activity (activity.view; a Head Coach: members of the programmes they head) ──
+
+export interface ActivityEntry {
+  id: string;
+  type: string;
+  courseId: string | null;
+  createdAt: string;
+  user: { id: string; username: string; firstName: string; lastName: string; role: string };
+}
+
+export interface ActivitySummary {
+  from: string;
+  to: string;
+  activeUsers: number;
+  byType: Record<string, number>;
+}
+
+export interface ActivityFilters {
+  type?: string;
+  courseId?: string;
+  page?: number;
+  limit?: number;
+  [key: string]: QueryValue;
+}
+
+export const activityApi = {
+  list: (filters: ActivityFilters = {}) => api<Page<ActivityEntry>>("/admin/activity", { query: filters }),
+  /** Default period: the last 30 days. */
+  summary: () => api<ActivitySummary>("/admin/activity/summary"),
 };
