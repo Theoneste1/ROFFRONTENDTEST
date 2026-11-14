@@ -170,15 +170,32 @@ export function isNewBackend(detection: BackendDetection | null | undefined): bo
 /**
  * Caching (shared, one request for the whole app): a definite answer is kept
  * for 5 minutes (a deployment can change it); UNKNOWN is never considered
- * fresh and is retried every 30 seconds while something uses it.
+ * fresh and is retried while something uses it — soon at first (a sleeping
+ * Render backend answers within about a minute; Netlify's proxy gives up after
+ * ~26 s with a 502/504), then every 30 seconds.
  */
 export const DEFINITE_STALE_MS = 5 * 60_000;
 export const UNKNOWN_RETRY_MS = 30_000;
+/** Delay before the n-th consecutive retry after UNKNOWN answers (1-based); then UNKNOWN_RETRY_MS. */
+export const UNKNOWN_RETRY_STEPS_MS = [3_000, 5_000, 10_000, 15_000] as const;
+/** How long after the first UNKNOWN answer the app still treats the backend as "waking up". */
+export const WAKING_WINDOW_MS = 90_000;
+
+export function unknownRetryDelay(consecutiveUnknown: number): number {
+  if (consecutiveUnknown < 1) return UNKNOWN_RETRY_MS;
+  return UNKNOWN_RETRY_STEPS_MS[consecutiveUnknown - 1] ?? UNKNOWN_RETRY_MS;
+}
+
+/** Still within the wake-up window: keep waiting quietly instead of showing a failure. */
+export function isWaking(firstUnknownAt: number | null, now: number): boolean {
+  return firstUnknownAt !== null && now - firstUnknownAt < WAKING_WINDOW_MS;
+}
 
 export function staleTimeFor(detection: BackendDetection | undefined): number {
   return detection && detection.state !== "UNKNOWN" ? DEFINITE_STALE_MS : 0;
 }
 
-export function refetchIntervalFor(detection: BackendDetection | undefined): number | false {
-  return detection?.state === "UNKNOWN" ? UNKNOWN_RETRY_MS : false;
+/** `consecutiveUnknown`: how many UNKNOWN answers in a row so far (retries back off; 0 = the 30 s cadence). */
+export function refetchIntervalFor(detection: BackendDetection | undefined, consecutiveUnknown = 0): number | false {
+  return detection?.state === "UNKNOWN" ? unknownRetryDelay(consecutiveUnknown) : false;
 }

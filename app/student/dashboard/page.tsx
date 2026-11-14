@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
 import { Bell, BookOpen, Calculator, CheckCircle2, ChevronRight, FileText, MessageSquare, Trophy } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { useCourses, useMyCourses } from "@/lib/queries/learning";
 import { useMyAssignments } from "@/lib/queries/assessment";
 import { dayStart, monthWindow } from "@/lib/assessment/my-assignments-query";
+import { HIDDEN_TEXT, leaderboardHidden, rankLabel } from "@/lib/community/leaderboard";
 import { useEntryAbove, useMyRank, useNotifications } from "@/lib/queries/community";
 import { daysUntil, formatDate, formatNumber, formatRelative } from "@/lib/format";
 import type { AppNotification, NotificationCategory, StudentAssignment } from "@/lib/api/types";
@@ -18,6 +21,12 @@ import { useNow } from "@/lib/hooks/useNow";
 
 export default function StudentDashboard() {
   const { user } = useSession();
+  // Points and problems solved come from the profile, cached for minutes: refresh it whenever the
+  // dashboard opens, so newly published results show at once.
+  const qc = useQueryClient();
+  useEffect(() => {
+    void qc.invalidateQueries({ queryKey: queryKeys.me.profile() });
+  }, [qc]);
 
   return (
     <div className="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -199,7 +208,7 @@ function CurrentAssignments() {
 
 function RankingCard({ divisionName }: { divisionName?: string }) {
   const rank = useMyRank();
-  const above = useEntryAbove(rank.data?.rank);
+  const above = useEntryAbove(rank.data?.rank ?? undefined);
 
   return (
     <div className="rounded-3xl bg-white p-6 shadow-sm border border-slate-100 flex flex-col justify-between min-h-[200px]">
@@ -215,11 +224,20 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
             <Spinner />
           </div>
         ) : rank.isError ? (
-          <p className="mt-4 text-xs text-red-600">Couldn&apos;t load your ranking.</p>
+          leaderboardHidden(rank.error) ? (
+            <p className="mt-4 text-xs text-slate-500">{HIDDEN_TEXT}</p>
+          ) : (
+            <p className="mt-4 text-xs text-red-600">Couldn&apos;t load your ranking.</p>
+          )
+        ) : rank.data.rank === null ? (
+          <>
+            <h2 className="text-2xl font-black text-[#03045e] mt-2">{rankLabel(null)}</h2>
+            <p className="mt-4 text-xs font-medium text-slate-500">{formatNumber(rank.data.points)} points so far.</p>
+          </>
         ) : (
           <>
             <h2 className="text-5xl font-black text-[#03045e] mt-2">
-              #{rank.data.rank}
+              {rankLabel(rank.data.rank)}
               <span className="text-base font-bold text-slate-400 ml-2">of {formatNumber(rank.data.outOf)}</span>
             </h2>
             <p className="mt-4 text-xs font-medium text-slate-500">

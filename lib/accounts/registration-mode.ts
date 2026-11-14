@@ -19,14 +19,20 @@ import { hasFeature, type BackendDetection } from "../api/capabilities";
 export type RegistrationSchoolMode = "directory" | "legacy";
 
 export type RegistrationGate =
-  | { state: "loading" }
+  | { state: "loading"; waking?: boolean }
   | { state: "failed"; reason: string; retrying: boolean }
   | { state: "ready"; mode: RegistrationSchoolMode };
 
-/** `fetching`: a request is in flight (first load or a retry). */
-export function registrationGate(detection: BackendDetection | undefined, fetching: boolean): RegistrationGate {
+/**
+ * `fetching`: a request is in flight (first load or a retry). `waking`: the first UNKNOWN answers
+ * came less than a minute and a half ago — a sleeping server is still starting, so keep the waiting
+ * state (retries continue quickly) instead of announcing a failure.
+ */
+export function registrationGate(detection: BackendDetection | undefined, fetching: boolean, waking = false): RegistrationGate {
   if (!detection) return { state: "loading" };
-  if (detection.state === "UNKNOWN") return { state: "failed", reason: detection.reason, retrying: fetching };
+  if (detection.state === "UNKNOWN") {
+    return waking ? { state: "loading", waking: true } : { state: "failed", reason: detection.reason, retrying: fetching };
+  }
   if (detection.state === "LEGACY") return { state: "ready", mode: "legacy" };
   return { state: "ready", mode: hasFeature(detection, "schoolAffiliations") ? "directory" : "legacy" };
 }

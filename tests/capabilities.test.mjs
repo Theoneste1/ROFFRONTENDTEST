@@ -214,7 +214,7 @@ test("detectBackend: a cancelled request (caller's signal) is UNKNOWN", async ()
 
 // ─── Caching ────────────────────────────────────────────────────────────────
 
-test("caching: definite answers stay fresh for 5 minutes; UNKNOWN is never fresh and is retried every 30 s", () => {
+test("caching: definite answers stay fresh for 5 minutes; UNKNOWN is never fresh and is retried (30 s cadence without a count)", () => {
   assert.equal(staleTimeFor({ state: "LEGACY" }), DEFINITE_STALE_MS);
   assert.equal(staleTimeFor({ state: "NEW", schemaVersion: 1, roles: [], features: [] }), DEFINITE_STALE_MS);
   assert.equal(staleTimeFor({ state: "UNKNOWN", reason: "timeout" }), 0);

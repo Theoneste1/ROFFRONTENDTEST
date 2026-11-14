@@ -426,7 +426,8 @@ export interface LeaderboardPage extends Page<LeaderboardEntry> {
 
 export interface MyRank {
   divisionId: string;
-  rank: number;
+  /** null while the student is not in the division ranking (e.g. no division yet). */
+  rank: number | null;
   outOf: number;
   points: number;
   problemsSolved: number;

@@ -61,7 +61,7 @@ export default function RegisterForm() {
   const [schools, setSchools] = useState<{ id: string; name: string; location: string }[]>([]);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
   const caps = useBackendCapabilities();
-  const gate = registrationGate(caps.detection, caps.fetching);
+  const gate = registrationGate(caps.detection, caps.fetching, caps.waking);
   const [schoolMode, setSchoolMode] = useState<RegistrationSchoolMode | null>(null);
   // Adopt the first definite answer and keep it (state adjusted during render, not in an effect).
   if (schoolMode === null && gate.state === "ready") setSchoolMode(gate.mode);
@@ -175,7 +175,7 @@ export default function RegisterForm() {
           </div>
         ) : (
           <div data-testid="register-loading">
-            <LoadingBlock label="Preparing the registration form…" />
+            <LoadingBlock label={gate.state === "loading" && gate.waking ? "The server is waking up…" : "Preparing the registration form…"} />
             <p className="text-center text-xs text-slate-500">This can take up to a minute while the server wakes up.</p>
           </div>
         )}

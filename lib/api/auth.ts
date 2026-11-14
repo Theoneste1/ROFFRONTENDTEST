@@ -1,5 +1,6 @@
 /** Auth and current-user endpoints. */
 import { api, setAccessToken } from "./client";
+import { isApiError } from "./errors";
 import type {
   ActivateResponse,
   ActivationInfo,
@@ -12,14 +13,34 @@ import type {
   UpdateMeInput,
 } from "./types";
 
+/**
+ * Sign-in after a sleeping backend: Netlify's proxy answers 502/504 (or the request fails) while
+ * Render starts (~30 s). Those answers mean the request never reached a running server, so it is
+ * retried a few times with a short wait; any real answer (401, 403, 429, …) is returned at once.
+ */
+export const LOGIN_RETRY_DELAYS_MS = [3_000, 6_000, 10_000] as const;
+export function isGatewayFailure(e: unknown): boolean {
+  return isApiError(e) && (e.status === 0 || e.status === 502 || e.status === 503 || e.status === 504);
+}
+
 export const authApi = {
   /** `username` may also be the e-mail address. */
-  async login(username: string, password: string): Promise<LoginResponse> {
-    const res = await api<LoginResponse>("/auth/login", {
+  async login(username: string, password: string, wait: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms))): Promise<LoginResponse> {
+    const attempt = () => api<LoginResponse>("/auth/login", {
       method: "POST",
       body: { username: username.trim(), password },
       auth: false,
     });
+    let res: LoginResponse | undefined;
+    for (let i = 0; ; i++) {
+      try {
+        res = await attempt();
+        break;
+      } catch (e) {
+        if (!isGatewayFailure(e) || i >= LOGIN_RETRY_DELAYS_MS.length) throw e;
+        await wait(LOGIN_RETRY_DELAYS_MS[i]);
+      }
+    }
     setAccessToken(res.access_token);
     return res;
   },

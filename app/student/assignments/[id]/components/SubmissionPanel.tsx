@@ -5,7 +5,7 @@
  * files). Whether the form is offered comes from the backend's `canSubmit`;
  * the backend re-checks deadline, late and resubmission rules on every call.
  */
-import React, { useRef, useState, type DragEvent } from 'react';
+import React, { useEffect, useRef, useState, type DragEvent } from 'react';
 import { UploadCloud, AlertCircle, Check, X, FileText, RotateCcw } from 'lucide-react';
 import type { StudentAssignment, Submission, SubmissionHistory } from '@/lib/api/types';
 import { SUBMISSION_UPLOAD, submissionsApi } from '@/lib/api/assessment';
@@ -28,6 +28,15 @@ interface Props {
 }
 
 export default function SubmissionPanel({ assignment: a, submission, openRequest, onShowResults }: Props) {
+  // The confirmation lives here, not in the form: after a successful submit the assignment reloads,
+  // canSubmit usually turns false and the form is replaced by the status card — the confirmation
+  // must survive that (it used to vanish with the form).
+  const [confirmed, setConfirmed] = useState(false);
+  useEffect(() => {
+    if (!confirmed) return;
+    const t = setTimeout(() => setConfirmed(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirmed]);
   const hasSubmission = !!a.submission;
   const resubmissionRequested = a.displayStatus === 'Resubmission Requested';
   const request = openRequest ?? submission?.resubmissionRequest ?? null;
@@ -45,10 +54,26 @@ export default function SubmissionPanel({ assignment: a, submission, openRequest
       )}
 
       {a.canSubmit ? (
-        <SubmissionForm assignment={a} isResubmission={hasSubmission} />
+        <SubmissionForm assignment={a} isResubmission={hasSubmission} onSubmitted={() => setConfirmed(true)} />
       ) : (
         <SubmissionStatusCard assignment={a} submission={submission} onShowResults={onShowResults} />
       )}
+      {confirmed && <SubmissionConfirmed onClose={() => setConfirmed(false)} />}
+    </div>
+  );
+}
+
+function SubmissionConfirmed({ onClose }: { onClose: () => void }) {
+  return (
+    <div onClick={onClose} className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-50 flex items-center justify-center p-4" role="status" data-testid="submission-confirmed">
+      <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6 transition-all">
+        <div className="w-24 h-24 rounded-full border-4 border-emerald-500 text-emerald-500 flex items-center justify-center mx-auto">
+          <Check className="w-14 h-14 stroke-[2.5]" />
+        </div>
+        <hr className="border-gray-100 my-4" />
+        <h3 className="text-2xl font-bold text-gray-900">Submission confirmed!</h3>
+        <p className="text-sm text-gray-500">Your work has been received.</p>
+      </div>
     </div>
   );
 }
@@ -112,14 +137,13 @@ function SubmissionStatusCard({ assignment: a, submission, onShowResults }: { as
   );
 }
 
-function SubmissionForm({ assignment: a, isResubmission }: { assignment: StudentAssignment; isResubmission: boolean }) {
+function SubmissionForm({ assignment: a, isResubmission, onSubmitted }: { assignment: StudentAssignment; isResubmission: boolean; onSubmitted: () => void }) {
   const [answer, setAnswer] = useState('');
   const [note, setNote] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const submit = useSubmitAssignment();
   const qc = useQueryClient();
@@ -179,8 +203,7 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
           setAnswer('');
           setNote('');
           setFiles([]);
-          setShowSuccessModal(true);
-          setTimeout(() => setShowSuccessModal(false), 2500);
+          onSubmitted();
         },
         onError: (err) => {
           setShowConfirmModal(false);
@@ -337,18 +360,6 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
         </div>
       )}
 
-      {/* Success */}
-      {showSuccessModal && (
-        <div onClick={() => setShowSuccessModal(false)} className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-50 flex items-center justify-center p-4" role="status">
-          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6 transition-all">
-            <div className="w-24 h-24 rounded-full border-4 border-emerald-500 text-emerald-500 flex items-center justify-center mx-auto">
-              <Check className="w-14 h-14 stroke-[2.5]" />
-            </div>
-            <hr className="border-gray-100 my-4" />
-            <h3 className="text-2xl font-bold text-gray-900">Submission confirmed!</h3>
-          </div>
-        </div>
-      )}
     </>
   );
 }
