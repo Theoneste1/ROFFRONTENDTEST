@@ -56,6 +56,12 @@ export const KNOWN_FEATURES = [
    * once). Without it those parameters are refused, so the page filters what it loaded.
    */
   "studentAssignmentFilters",
+  /**
+   * The official-directory sync (`/admin/school-sync`): dry-run runs from a source export, their
+   * report and review (schools.manage); approve and apply only with schools.syncDirectory (Super
+   * Admins). Without it the Schools pages offer no directory sync.
+   */
+  "schoolDirectorySync",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

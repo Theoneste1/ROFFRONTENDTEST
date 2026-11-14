@@ -14,7 +14,7 @@ import { hasFeature } from "@/lib/api/capabilities";
 import type { DirectorySchoolRecord, SchoolSource } from "@/lib/api/school-directory";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
-import { invalidateAfterSchoolChange, useDirectorySchools, useSchoolLocations } from "@/lib/queries/school-directory";
+import { invalidateAfterSchoolChange, useDirectorySchools, useSchoolLocations, useSyncAccess } from "@/lib/queries/school-directory";
 import { formatNumber } from "@/lib/format";
 import { RWANDA, SOURCE_LABEL, initialListState, isFiltered, listFilters, placeLabel, type ListState } from "@/lib/admin/school-directory";
 import { ErrorState } from "@/app/components/ui/feedback";
@@ -35,6 +35,7 @@ export default function SchoolDirectoryList() {
   const locations = useSchoolLocations();
   const { can } = useSession();
   const review = hasFeature(useBackendCapabilities().detection, "schoolAffiliations") && can("schools.manage");
+  const sync = useSyncAccess().visible;
 
   const [otherCountry, setOtherCountry] = useState(false);
   /** Remounts the search box on "Clear filters" (it keeps its own text while typing). */
@@ -58,6 +59,14 @@ export default function SchoolDirectoryList() {
               School verification
             </Link>
           )}
+          {sync && (
+            <Link href="/admin/schools/sync" className={btnSecondary}>
+              Directory sync
+            </Link>
+          )}
+          <Link href="/admin/schools/import" className={btnSecondary}>
+            Import schools
+          </Link>
           <button type="button" className={btnPrimary} onClick={() => setDialog({ kind: "create" })}>
             <Plus className="h-4 w-4" aria-hidden="true" /> Add school
           </button>

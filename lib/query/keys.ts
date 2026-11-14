@@ -33,8 +33,21 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.schoolDirectory.all, "detail", id] as const,
     students: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "students", id, page] as const,
     history: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "history", id, page] as const,
+    contacts: (id: string, includeRemoved: boolean) => [...queryKeys.schoolDirectory.all, "contacts", id, includeRemoved] as const,
+    offerings: (id: string) => [...queryKeys.schoolDirectory.all, "offerings", id] as const,
+    referenceData: () => [...queryKeys.schoolDirectory.all, "reference-data"] as const,
     /** The public province → district → sector list (the same key the claim form uses). */
     locations: () => ["schools", "locations"] as const,
+  },
+  /** Official-directory sync runs (lib/api/school-sync.ts). */
+  schoolSync: {
+    all: ["school-sync"] as const,
+    runs: (page: number) => [...queryKeys.schoolSync.all, "runs", page] as const,
+    run: (id: string) => [...queryKeys.schoolSync.all, "run", id] as const,
+    review: (id: string) => [...queryKeys.schoolSync.all, "review", id] as const,
+    categories: (id: string) => [...queryKeys.schoolSync.all, "categories", id] as const,
+    items: (id: string, filters: object) => [...queryKeys.schoolSync.all, "items", id, filters] as const,
+    changes: (id: string, filters: object) => [...queryKeys.schoolSync.all, "changes", id, filters] as const,
   },
   /** Account administration added with the school and role work (lib/api/accounts.ts). */
   accounts: {
