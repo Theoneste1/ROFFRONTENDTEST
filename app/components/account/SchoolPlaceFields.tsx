@@ -10,7 +10,7 @@ import { useId } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { schoolDirectoryApi, type DirectorySchool } from "@/lib/api/accounts";
 import { errorMessage } from "@/lib/api/errors";
-import { officialSchoolsOnly, sortSchools } from "@/lib/accounts/teacher-registration";
+import { sortSchools, teacherSchoolQuery } from "@/lib/accounts/teacher-registration";
 import { queryKeys } from "@/lib/query/keys";
 
 export const selectCls = (bad: boolean) =>
@@ -81,10 +81,10 @@ export function PlaceSelect({
 }
 
 /** The active official schools of one district, sorted by name (only once both are chosen). */
-export function useSchoolsInDistrict(province: string, district: string) {
+export function useSchoolsInDistrict(province: string, district: string, teacherEligible = false) {
   return useQuery({
-    queryKey: queryKeys.schoolDirectory.byPlace(province, district),
-    queryFn: async () => sortSchools(await schoolDirectoryApi.search({ province, district })),
+    queryKey: [...queryKeys.schoolDirectory.byPlace(province, district), teacherEligible ? "teacher" : "all"],
+    queryFn: async () => sortSchools(await schoolDirectoryApi.search({ province, district, ...teacherSchoolQuery(teacherEligible) })),
     enabled: !!province && !!district,
     staleTime: 5 * 60_000,
   });
@@ -110,14 +110,12 @@ export function DistrictSchoolSelect({
   error?: string;
   label?: string;
   /**
-   * Only schools with an official code (teacher self-registration accepts no other). Since the
-   * codeless-schools release the public search also returns schools without a code (`code: null`);
-   * an Administrator's approval may still pick those.
+   * Only schools a Teacher may choose (owner decision 2026-11-14): the backend's teacherEligible list —
+   * official-code schools, and schools without a code that an administrator created and verified.
    */
   officialOnly?: boolean;
 }) {
-  const all = useSchoolsInDistrict(province, district);
-  const schools = officialOnly && all.data ? { ...all, data: officialSchoolsOnly(all.data) } : all;
+  const schools = useSchoolsInDistrict(province, district, officialOnly);
   if (!province || !district) {
     return <PlaceSelect label={label} value="" onChange={() => undefined} options={[]} placeholder="Choose the province and district first" disabled error={error} />;
   }

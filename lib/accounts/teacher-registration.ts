@@ -144,12 +144,12 @@ export function sortSchools<T extends Pick<DirectorySchool, "name" | "code">>(sc
 }
 
 /**
- * Only schools with an official code. Teacher self-registration accepts no other (the backend answers
- * UNKNOWN_SCHOOL), while the public search also returns schools without a code since the
- * codeless-schools release (owner decision 2026-11-14).
+ * The school-search parameters for the teacher form (owner decision 2026-11-14): the backend lists
+ * only schools a Teacher may choose — an official code, or created and verified by an administrator
+ * (chosen by id; a code is never invented). Students' searches send nothing extra.
  */
-export function officialSchoolsOnly<T extends Pick<DirectorySchool, "code">>(schools: readonly T[]): T[] {
-  return schools.filter((s) => !!s.code);
+export function teacherSchoolQuery(teacherEligible: boolean): { teacherEligible?: "true" } {
+  return teacherEligible ? { teacherEligible: "true" } : {};
 }
 
 // ─── Draft ──────────────────────────────────────────────────────────────────

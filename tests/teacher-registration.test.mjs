@@ -23,7 +23,7 @@ import {
   setSchoolDistrict,
   setSchoolMode,
   setSchoolProvince,
-  officialSchoolsOnly,
+  teacherSchoolQuery,
   sortSchools,
   subjectLabel,
   teacherRegistrationGate,
@@ -143,10 +143,9 @@ test("schools: sorted by name (case- and accent-insensitive), whatever the serve
   assert.deepEqual(sorted.map((x) => `${x.name}/${x.code}`), ["École Ste Bernadette/2", "GS Zebra/0", "GS Zebra/1", "lycée de Butare/3"]);
 });
 
-test("officialSchoolsOnly: the teacher form offers only schools with an official code (codeless ones are refused)", () => {
-  const rows = [{ id: "a", name: "GS Coded", code: "310001" }, { id: "b", name: "Ecole Sans Code", code: null }, { id: "c", name: "Empty", code: "" }];
-  assert.deepEqual(officialSchoolsOnly(rows).map((x) => x.id), ["a"]);
-  assert.deepEqual(officialSchoolsOnly([]), []);
+test("teacherSchoolQuery: the teacher form asks the backend for teacher-eligible schools; students' searches add nothing", () => {
+  assert.deepEqual(teacherSchoolQuery(true), { teacherEligible: "true" });
+  assert.deepEqual(teacherSchoolQuery(false), {});
 });
 
 // ─── Cascade ────────────────────────────────────────────────────────────────
