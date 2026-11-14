@@ -71,6 +71,13 @@ test("teacherAccounts / headCoachAccounts are optional features", () => {
   assert.ok(KNOWN_FEATURES.includes("teacherAccounts") && KNOWN_FEATURES.includes("headCoachAccounts"));
 });
 
+test("teacherSelfRegistration is a known feature, enabled only when listed", () => {
+  assert.ok(KNOWN_FEATURES.includes("teacherSelfRegistration"));
+  const d = classifyApiInfo(200, body({ ...BASE, capabilities: { ...NEW_CAPS, features: [...NEW_CAPS.features, "teacherAccounts", "teacherSelfRegistration"] } }));
+  assert.equal(hasFeature(d, "teacherSelfRegistration"), true);
+  assert.equal(hasFeature(classifyApiInfo(200, body({ ...BASE, capabilities: NEW_CAPS })), "teacherSelfRegistration"), false);
+});
+
 test("LEGACY and UNKNOWN never enable a feature", () => {
   for (const d of [{ state: "LEGACY" }, { state: "UNKNOWN", reason: "x" }, undefined, null]) {
     for (const f of KNOWN_FEATURES) assert.equal(hasFeature(d, f), false, `${d?.state} ${f}`);
