@@ -3,6 +3,9 @@
  * (backend develop 9fd1942: register-student.dto.ts and school-affiliation.dto.ts):
  *
  *   directory   a school from GET /schools/search  → { schoolCode }   (6 digits)
+ *               or, for a result WITHOUT an official code (code null) → { schoolId }
+ *               (owner decision 2026-11-14; only backends that support it return
+ *               such results, so a school with a code is always sent by its code)
  *   notListed   a Rwandan school that isn't listed → { schoolName, schoolProvince, schoolDistrict, schoolSector }
  *               (place values from GET /schools/locations)
  *   abroad      a school in another country        → { country, schoolName } (ISO 3166-1 alpha-2, not RW)
@@ -13,7 +16,7 @@
 import type { DirectorySchool, SchoolClaimInput } from "../api/accounts";
 
 export type SchoolClaimDraft =
-  | { mode: "directory"; school: Pick<DirectorySchool, "code" | "name"> | null }
+  | { mode: "directory"; school: (Pick<DirectorySchool, "code" | "name"> & { id?: string; place?: string }) | null }
   | { mode: "notListed"; name: string; province: string; district: string; sector: string }
   | { mode: "abroad"; country: string; name: string };
 
@@ -26,7 +29,7 @@ export function validateSchoolClaim(d: SchoolClaimDraft): Partial<Record<SchoolC
   const e: Partial<Record<SchoolClaimField, string>> = {};
   const nameOk = (n: string) => n.trim().length >= SCHOOL_CLAIM_RULES.nameMin && n.trim().length <= SCHOOL_CLAIM_RULES.nameMax;
   if (d.mode === "directory") {
-    if (!d.school || !SCHOOL_CLAIM_RULES.codePattern.test(d.school.code)) e.school = "Search for your school and choose it from the list.";
+    if (!d.school || !directoryReference(d.school)) e.school = "Search for your school and choose it from the list.";
   } else if (d.mode === "notListed") {
     if (!nameOk(d.name)) e.schoolName = "Enter your school's name (2–200 characters).";
     if (!d.province) e.province = "Choose the province.";
@@ -41,9 +44,20 @@ export function validateSchoolClaim(d: SchoolClaimDraft): Partial<Record<SchoolC
   return e;
 }
 
+/** How a chosen directory school is sent: its official code when it has one, otherwise its id; null when neither is usable. */
+function directoryReference(s: { id?: string; code: string | null }): SchoolClaimInput | null {
+  if (s.code !== null) return SCHOOL_CLAIM_RULES.codePattern.test(s.code) ? { schoolCode: s.code } : null;
+  return s.id ? { schoolId: s.id } : null;
+}
+
+/** True for a directory school without an official code (it is sent by its id). */
+export function hasNoOfficialCode(s: { code: string | null }): boolean {
+  return s.code === null;
+}
+
 /** The request fields for a valid draft (call validateSchoolClaim first). */
 export function schoolClaimPayload(d: SchoolClaimDraft): SchoolClaimInput {
-  if (d.mode === "directory") return { schoolCode: d.school!.code };
+  if (d.mode === "directory") return directoryReference(d.school!)!;
   if (d.mode === "notListed") {
     return { schoolName: d.name.trim(), schoolProvince: d.province, schoolDistrict: d.district, schoolSector: d.sector };
   }
@@ -51,18 +65,21 @@ export function schoolClaimPayload(d: SchoolClaimDraft): SchoolClaimInput {
 }
 
 /**
- * True when a directory draft names the same official school as the current claim
- * (same school code): the backend would refuse it (CLAIM_ALREADY_PENDING /
- * ALREADY_VERIFIED). Name-only and abroad drafts are left to the backend, which
- * compares its own normalised identity.
+ * True when a directory draft names the same school as the current claim (same
+ * school id, or the same official code): the backend would refuse it
+ * (CLAIM_ALREADY_PENDING / ALREADY_VERIFIED). Name-only and abroad drafts are
+ * left to the backend, which compares its own normalised identity.
  */
-export function sameClaimedSchool(d: SchoolClaimDraft, current: { school: { code: string | null } | null }): boolean {
-  return d.mode === "directory" && !!d.school && !!current.school?.code && d.school.code === current.school.code;
+export function sameClaimedSchool(d: SchoolClaimDraft, current: { school: { id?: string; code: string | null } | null }): boolean {
+  if (d.mode !== "directory" || !d.school || !current.school) return false;
+  if (d.school.id && current.school.id) return d.school.id === current.school.id;
+  return !!current.school.code && d.school.code === current.school.code;
 }
 
 /** Backend error fields → the draft field they belong to (for showing server field errors). */
 export const SCHOOL_CLAIM_SERVER_FIELDS: Readonly<Record<string, SchoolClaimField>> = {
   schoolCode: "school",
+  schoolId: "school",
   schoolName: "schoolName",
   schoolProvince: "province",
   schoolDistrict: "district",
@@ -73,6 +90,7 @@ export const SCHOOL_CLAIM_SERVER_FIELDS: Readonly<Record<string, SchoolClaimFiel
 /** Messages for the backend's school-claim error codes (registration and /me/school-affiliation). */
 export const SCHOOL_CLAIM_ERRORS: Readonly<Record<string, string>> = {
   UNKNOWN_SCHOOL_CODE: "That school isn't in the directory any more. Search again and choose it from the list.",
+  UNKNOWN_SCHOOL: "That school isn't in the list any more. Search again and choose it from the list.",
   SCHOOL_INACTIVE: "That school is no longer active on ROF LMS. Choose another school or contact us.",
   UNKNOWN_SCHOOL_LOCATION: "That province, district and sector don't match the official list. Choose them again.",
   SCHOOL_CODE_RWANDA_ONLY: "School codes are only for schools in Rwanda.",

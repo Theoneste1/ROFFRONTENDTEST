@@ -97,3 +97,39 @@ test("registration gate: no form until detection answers; UNKNOWN is a visible f
   assert.deepEqual(registrationGate(NEW(["schoolAffiliations"]), false), { state: "ready", mode: "directory" });
   assert.deepEqual(registrationGate(NEW([]), false), { state: "ready", mode: "legacy" });
 });
+
+// ─── Schools without an official code (owner decision 2026-11-14) ───────────
+
+import { hasNoOfficialCode, SCHOOL_CLAIM_ERRORS, SCHOOL_CLAIM_SERVER_FIELDS } from "../lib/accounts/school-claim.ts";
+
+const CODELESS_ID = "6f1d3c1e-2b1a-4c3d-9e8f-0a1b2c3d4e5f";
+
+test("school claim, directory: a school without an official code is valid and sent by its id only (never a made-up code)", () => {
+  const d = { mode: "directory", school: { id: CODELESS_ID, code: null, name: "Ecole Saint Gabriel", place: "Ngoma, Huye" } };
+  assert.deepEqual(validateSchoolClaim(d), {});
+  assert.deepEqual(schoolClaimPayload(d), { schoolId: CODELESS_ID });
+  assert.ok(hasNoOfficialCode(d.school));
+  // Without an id there is nothing to send.
+  assert.ok(validateSchoolClaim({ mode: "directory", school: { code: null, name: "X" } }).school);
+});
+
+test("school claim, directory: a school WITH a code is still sent by its code (older backends keep working), even when its id is known", () => {
+  const d = { mode: "directory", school: { id: CODELESS_ID, code: "220001", name: "GS Ngoma", place: "Ngoma, Huye" } };
+  assert.deepEqual(validateSchoolClaim(d), {});
+  assert.deepEqual(schoolClaimPayload(d), { schoolCode: "220001" });
+  assert.equal(hasNoOfficialCode(d.school), false);
+  // A malformed code is never replaced by the id.
+  assert.ok(validateSchoolClaim({ mode: "directory", school: { id: CODELESS_ID, code: "12345", name: "X" } }).school);
+});
+
+test("pending claims: the same school by id (codeless) is a duplicate; a different id is not", () => {
+  const current = { school: { id: CODELESS_ID, code: null } };
+  assert.equal(sameClaimedSchool({ mode: "directory", school: { id: CODELESS_ID, code: null, name: "A" } }, current), true);
+  assert.equal(sameClaimedSchool({ mode: "directory", school: { id: "11111111-2222-4333-8444-555555555555", code: null, name: "B" } }, current), false);
+  assert.equal(sameClaimedSchool({ mode: "directory", school: { code: null, name: "A" } }, { school: { code: null } }), false, "two null codes are not the same school");
+});
+
+test("school claim errors: schoolId field errors and UNKNOWN_SCHOOL have a message", () => {
+  assert.equal(SCHOOL_CLAIM_SERVER_FIELDS.schoolId, "school");
+  assert.match(SCHOOL_CLAIM_ERRORS.UNKNOWN_SCHOOL, /list/);
+});

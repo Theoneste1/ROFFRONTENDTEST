@@ -307,7 +307,13 @@ export default function SchoolFormDialog({
           </Field>
         )}
 
-        {!school && <p className="text-[11px] text-gray-500">The school is created active. Students, invitations and CSV imports can then refer to it.</p>}
+        {!school && (
+          <p className="text-[11px] text-gray-500" data-testid="school-create-note">
+            {rwanda
+              ? "The school is created active. Students can find it by its name or place when they register or change their school; without an official code it is listed without one (no code is made up). Invitations and CSV imports name it by its official code or its id."
+              : "The school is created active. Students at a school outside Rwanda type its name, and an administrator links their request to this school. Invitations and CSV imports name it by its id."}
+          </p>
+        )}
         {formError && <Alert tone={formError.tone}>{formError.text}</Alert>}
         <div className="flex justify-end gap-3">
           <button type="button" className={btnSecondary} onClick={onClose} disabled={save.isPending}>
