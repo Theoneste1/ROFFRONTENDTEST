@@ -50,6 +50,12 @@ export const KNOWN_FEATURES = [
    * exports refuse the filters (400), so the page disables them with the reason instead.
    */
   "reportExportFilters",
+  /**
+   * Assignment lists filter, sort and total in the database: My Assignments takes `progress`
+   * (the student's status, incl. OVERDUE) and `sort`; staff lists take `statuses` (several at
+   * once). Without it those parameters are refused, so the page filters what it loaded.
+   */
+  "studentAssignmentFilters",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

@@ -69,11 +69,12 @@ export function useDivisionTop(divisionId: string | undefined, limit = 5) {
 
 // ─── Assignments ────────────────────────────────────────────────────────────
 
-export function useMentorAssignments(filters: AssignmentFilters = {}) {
+export function useMentorAssignments(filters: AssignmentFilters = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.mentor.assignments(filters),
     queryFn: () => mentorAssignmentsApi.list(filters),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   });
 }
 

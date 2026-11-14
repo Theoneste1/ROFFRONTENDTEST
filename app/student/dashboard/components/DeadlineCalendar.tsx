@@ -16,10 +16,20 @@ function dayKey(d: Date) {
  * Month calendar (original widget design) marking assignment deadlines:
  * blue = open, red = due within 3 days and not yet submitted.
  */
-export default function DeadlineCalendar({ assignments }: { assignments: StudentAssignment[] }) {
+export default function DeadlineCalendar({ assignments, cursor: controlled, onCursorChange }: {
+  assignments: StudentAssignment[];
+  /** The month shown (first day); when given, the parent loads that month's deadlines. */
+  cursor?: Date;
+  onCursorChange?: (d: Date) => void;
+}) {
   const now = useNow();
   const today = new Date(now);
-  const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [own, setOwn] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const cursor = controlled ?? own;
+  const setCursor = (next: Date | ((d: Date) => Date)) => {
+    const value = typeof next === "function" ? next(cursor) : next;
+    if (onCursorChange) onCursorChange(value); else setOwn(value);
+  };
 
   const deadlines = useMemo(() => {
     const map = new Map<string, { urgent: boolean; titles: string[] }>();

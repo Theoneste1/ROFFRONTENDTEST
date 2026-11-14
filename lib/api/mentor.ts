@@ -67,6 +67,10 @@ export interface AssignmentFilters {
   courseId?: string;
   divisionId?: string;
   status?: AssignmentStatus;
+  /** Several statuses, comma-separated (backend feature `studentAssignmentFilters`; not with `status`). */
+  statuses?: string;
+  deadlineFrom?: string;
+  deadlineTo?: string;
   createdById?: string;
   q?: string;
   page?: number;

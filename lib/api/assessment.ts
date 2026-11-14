@@ -12,6 +12,13 @@ import type {
 export interface MyAssignmentFilters {
   q?: string;
   courseId?: string;
+  /** With the backend feature `studentAssignmentFilters` only. */
+  progress?: "NOT_STARTED" | "SUBMITTED" | "PENDING_REVIEW" | "RESUBMISSION_REQUESTED" | "REVIEWED" | "OVERDUE";
+  /** With the backend feature `studentAssignmentFilters` only (default: deadline, soonest first). */
+  sort?: "-deadline" | "title";
+  status?: "PUBLISHED" | "CLOSED";
+  deadlineFrom?: string;
+  deadlineTo?: string;
   page?: number;
   limit?: number;
   [key: string]: QueryValue;

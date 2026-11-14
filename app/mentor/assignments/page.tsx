@@ -1,7 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useQueries } from "@tanstack/react-query";
+import { reviewsApi } from "@/lib/api/mentor";
+import { hasFeature } from "@/lib/api/capabilities";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { queryKeys } from "@/lib/query/keys";
 import { FileText, Plus, ChevronRight, Search } from "lucide-react";
 import { useMentorAssignments, useReviewQueue, useTeachingScopes } from "@/lib/queries/mentor";
 import type { AssignmentStatus, MentorAssignment } from "@/lib/api/types";
@@ -23,9 +28,12 @@ const TABS: { id: TabType; label: string; statuses?: AssignmentStatus[] }[] = [
 const PAGE_SIZE = 20;
 
 /**
- * Assignments in the mentor's course × division scopes. The API filters by
- * one status at a time, so tabs that group two statuses (Drafts, Closed)
- * filter the loaded page.
+ * Assignments in the mentor's course × division scopes.
+ * - With the backend feature `studentAssignmentFilters` every tab (also Drafts and Closed, which
+ *   group two statuses) is filtered and paged by the server (`statuses`).
+ * - With `reviewQueueFilters` each card's "to review / reviewed" figures are the server's totals
+ *   for that assignment (`counts`), not counted from a page of submissions.
+ * - Older backends: one status at a time and the first 100 queue rows (said on the page).
  */
 export default function AssignmentsDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("all");
@@ -37,19 +45,40 @@ export default function AssignmentsDashboard() {
   const tab = TABS.find((t) => t.id === activeTab)!;
   const sc = parseScopeKey(scope);
   const single = tab.statuses?.length === 1 ? tab.statuses[0] : undefined;
+  const caps = useBackendCapabilities();
+  const serverList = hasFeature(caps.detection, "studentAssignmentFilters");
+  const serverCounts = hasFeature(caps.detection, "reviewQueueFilters");
+  const grouped = !!tab.statuses && !single;
   const query = useMentorAssignments({
     courseId: sc?.courseId,
     divisionId: sc?.divisionId,
-    status: single,
+    ...(single ? { status: single } : grouped && serverList ? { statuses: tab.statuses!.join(",") } : {}),
     q: search.trim() || undefined,
     page,
-    limit: tab.statuses && !single ? 100 : PAGE_SIZE,
-  });
-  // The mentor's own review queue gives per-assignment review counts.
-  const queue = useReviewQueue({ limit: 100 });
+    limit: grouped && !serverList ? 100 : PAGE_SIZE,
+  }, { enabled: !caps.loading });
 
-  const counts = useMemo(() => {
+  const rows = (query.data?.data ?? []).filter((a) => !tab.statuses || tab.statuses.includes(a.status));
+
+  // Server totals per shown assignment (one small request each; shared with the assignment page's cache).
+  const perAssignment = useQueries({
+    queries: rows.map((a) => {
+      const filters = { assignmentId: a.id, group: "all" as const, limit: 1 };
+      return { queryKey: queryKeys.mentor.reviews(filters), queryFn: () => reviewsApi.queue(filters), enabled: serverCounts && !caps.loading };
+    }),
+  });
+  // Older backends: counted from the mentor's first 100 queue rows.
+  const queue = useReviewQueue({ limit: 100 }, { enabled: !serverCounts && !caps.loading });
+
+  const counts = (() => {
     const map = new Map<string, { toReview: number; done: number }>();
+    if (serverCounts) {
+      rows.forEach((a, i) => {
+        const c = perAssignment[i]?.data?.counts;
+        if (c) map.set(a.id, { toReview: c.open, done: c.done });
+      });
+      return map;
+    }
     for (const s of queue.data?.data ?? []) {
       const c = map.get(s.assignment.id) ?? { toReview: 0, done: 0 };
       if (OPEN_REVIEW_STATUSES.includes(s.status)) c.toReview++;
@@ -57,9 +86,7 @@ export default function AssignmentsDashboard() {
       map.set(s.assignment.id, c);
     }
     return map;
-  }, [queue.data]);
-
-  const rows = (query.data?.data ?? []).filter((a) => !tab.statuses || tab.statuses.includes(a.status));
+  })();
 
   const reset = (fn: () => void) => {
     fn();
@@ -136,7 +163,7 @@ export default function AssignmentsDashboard() {
         )}
       </div>
 
-      {query.data && (!tab.statuses || single) && (
+      {query.data && (!grouped || serverList) && (
         <div className="max-w-5xl">
           <Pagination page={page} totalPages={query.data.meta.totalPages} total={query.data.meta.total} onPage={setPage} disabled={query.isFetching} />
         </div>

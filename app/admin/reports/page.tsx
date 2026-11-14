@@ -91,8 +91,11 @@ export default function ReportsContent() {
 
   const d = dashboard.data;
   const rows = assignments.data?.data;
-  const expected = rows?.reduce((n, r) => n + r.expectedStudents, 0);
-  const submitted = rows?.reduce((n, r) => n + r.submitted, 0);
+  // Totals over every matching assignment from the summary; older backends lack summary.expectedStudents,
+  // and then the first 100 rows are summed (R-04).
+  const summary = assignments.data?.summary as { expectedStudents?: number; submissions?: number } | undefined;
+  const expected = summary?.expectedStudents ?? rows?.reduce((n, r) => n + r.expectedStudents, 0);
+  const submitted = summary?.expectedStudents !== undefined ? summary.submissions : rows?.reduce((n, r) => n + r.submitted, 0);
   const stage = assignments.data?.summary as { submissions: number; byStage: { approved: number; published: number } } | undefined;
   const reviewed = stage ? stage.byStage.approved + stage.byStage.published : undefined;
   const avgScore = results.data ? results.data.summary.averagePublishedScore : undefined;

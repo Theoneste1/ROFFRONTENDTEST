@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Bell, BookOpen, Calculator, CheckCircle2, ChevronRight, FileText, MessageSquare, Trophy } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { useCourses, useMyCourses } from "@/lib/queries/learning";
 import { useMyAssignments } from "@/lib/queries/assessment";
+import { dayStart, monthWindow } from "@/lib/assessment/my-assignments-query";
 import { useEntryAbove, useMyRank, useNotifications } from "@/lib/queries/community";
 import { daysUntil, formatDate, formatNumber, formatRelative } from "@/lib/format";
 import type { AppNotification, NotificationCategory, StudentAssignment } from "@/lib/api/types";
@@ -133,9 +135,11 @@ function deadlineChip(a: StudentAssignment, now: number) {
 }
 
 function CurrentAssignments() {
-  // Assignments still to act on: open and not yet reviewed, soonest deadline first.
-  const query = useMyAssignments({ limit: 50 });
+  // Assignments still to act on: open and not yet reviewed, soonest deadline first. Asked of the
+  // server as PUBLISHED with a deadline from 30 days ago on (oldest first), so older history can
+  // never push current work out of the first page.
   const now = useNow();
+  const query = useMyAssignments({ status: "PUBLISHED", deadlineFrom: dayStart(now, -30), limit: 50 });
   const current = (query.data?.data ?? [])
     .filter((a) => a.status === "PUBLISHED" && a.displayStatus !== "Reviewed")
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
@@ -244,8 +248,11 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
 }
 
 function CalendarSection() {
-  const query = useMyAssignments({ limit: 50 });
-  return <DeadlineCalendar assignments={query.data?.data ?? []} />;
+  const now = useNow();
+  const [cursor, setCursor] = useState(() => { const d = new Date(now); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  // Only the deadlines of the month shown (the server filters by deadline window).
+  const query = useMyAssignments({ ...monthWindow(cursor), limit: 100 });
+  return <DeadlineCalendar assignments={query.data?.data ?? []} cursor={cursor} onCursorChange={setCursor} />;
 }
 
 const ALERT_ICON: Record<NotificationCategory, { icon: typeof Bell; tone: string }> = {
