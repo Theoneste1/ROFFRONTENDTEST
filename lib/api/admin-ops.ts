@@ -70,7 +70,27 @@ export interface EmailUserFilters {
   limit?: number;
 }
 
+/** One delivery from GET /admin/email/deliveries (never with its body). */
+export interface EmailDeliveryRow {
+  id: string;
+  jobId: string | null;
+  kind: "TRANSACTIONAL" | "BULK";
+  recipientEmail: string;
+  recipientId: string | null;
+  subject: string | null;
+  status: EmailDeliveryStatus;
+  attempts: number;
+  errorMessage: string | null;
+  attemptedAt: string | null;
+  createdAt: string;
+}
+export type DeliveryKind = "TRANSACTIONAL" | "BULK";
+
 export const emailApi = {
+  /** Every delivery (account and bulk e-mails); backends before it answer 404. */
+  allDeliveries: (params: { status?: EmailDeliveryStatus; kind?: DeliveryKind; page?: number; limit?: number } = {}) =>
+    api<Page<EmailDeliveryRow>>("/admin/email/deliveries", { query: { ...params } }),
+  retryDelivery: (id: string) => api<{ message: string; deliveryId: string }>(`/admin/email/deliveries/${id}/retry`, { method: "POST" }),
   users: (filters: EmailUserFilters = {}) => api<Page<EmailUser>>("/admin/email/users", { query: { ...filters } }),
   send: (payload: SendEmailPayload) => api<SendEmailResult>("/admin/email/send", { method: "POST", body: payload }),
   jobs: (params: { page?: number; limit?: number } = {}) => api<Page<EmailJob>>("/admin/email/jobs", { query: params }),
