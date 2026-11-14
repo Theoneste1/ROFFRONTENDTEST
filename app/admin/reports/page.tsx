@@ -8,11 +8,12 @@ import { useAdminDashboard, useAdminDivisions, useAssignmentReport, useCoursePar
 import { useCourses } from "@/lib/queries/learning";
 import { useNow } from "@/lib/hooks/useNow";
 import { formatNumber } from "@/lib/format";
-import { ErrorState } from "@/app/components/ui/feedback";
+import { ErrorState, Spinner } from "@/app/components/ui/feedback";
 import { CsvButton } from "../components/adminUi";
 
 interface ReportItemProps {
   label: string;
+  /** undefined = still loading (shown as a placeholder). */
   value: string | number | undefined;
   total?: number;
   hasProgressBar?: boolean;
@@ -21,7 +22,7 @@ interface ReportItemProps {
 const ReportItem: React.FC<ReportItemProps> = ({ label, value, total, hasProgressBar }) => {
   const numericVal = typeof value === "number" ? value : parseInt(String(value ?? ""), 10);
   const progressPct = hasProgressBar && total && !isNaN(numericVal) ? Math.min(100, Math.round((numericVal / total) * 100)) : 0;
-  const shown = value === undefined ? "…" : typeof value === "number" ? formatNumber(value) : value;
+  const shown = value === undefined ? <span className="inline-block h-3 w-8 rounded bg-gray-100 animate-pulse align-middle" aria-label="Loading" /> : typeof value === "number" ? formatNumber(value) : value;
   return (
     <div className="py-3 border-b border-gray-100 last:border-0 text-xs">
       <div className="flex items-center justify-between gap-3">
@@ -99,7 +100,10 @@ export default function ReportsContent() {
     const avg = r.length ? Math.round(r.reduce((n, x) => n + x.participationRate, 0) / r.length) : 0;
     return { div, students, avg, loaded: !!participation.data };
   });
-  const error = dashboard.error ?? assignments.error ?? reviews.error ?? participation.error;
+  const error = dashboard.error ?? assignments.error ?? reviews.error ?? results.error ?? participation.error;
+  const loading = [dashboard, assignments, reviews, results, participation, divisions].some((q) => q.isPending && !q.isError);
+  // A figure whose request failed shows "—" (the error banner explains), not a loader that never ends.
+  const shown = <T,>(failed: boolean, v: T): T | string => (failed ? "—" : v);
   const exportQuery = { courseId: filters.courseId, divisionId: filters.divisionId, from: filters.from };
 
   return (
@@ -137,8 +141,14 @@ export default function ReportsContent() {
 
       {error && (
         <div className="mb-6">
-          <ErrorState error={error} title="Some figures couldn't be loaded" onRetry={() => [dashboard, assignments, reviews, participation].forEach((q) => q.refetch())} />
+          <ErrorState error={error} title="Some figures couldn't be loaded" onRetry={() => [dashboard, assignments, reviews, results, participation].forEach((q) => q.refetch())} />
         </div>
+      )}
+
+      {loading && !error && (
+        <p className="mb-4 inline-flex items-center gap-2 text-xs font-medium text-gray-500" role="status">
+          <Spinner className="h-3.5 w-3.5" /> Loading figures…
+        </p>
       )}
 
       {/* Grid Container for Report Cards */}
@@ -148,9 +158,9 @@ export default function ReportsContent() {
             Student Activity
           </h2>
           <div className="divide-y divide-gray-100">
-            <ReportItem label="Active students" value={d?.students.active} total={d?.students.total} hasProgressBar />
-            <ReportItem label="Assignment submissions" value={d?.submissions.total} />
-            <ReportItem label="Late submissions" value={d?.submissions.late} />
+            <ReportItem label="Active students" value={shown(dashboard.isError, d?.students.active)} total={d?.students.total} hasProgressBar />
+            <ReportItem label="Assignment submissions" value={shown(dashboard.isError, d?.submissions.total)} />
+            <ReportItem label="Late submissions" value={shown(dashboard.isError, d?.submissions.late)} />
           </div>
         </section>
 
@@ -159,9 +169,9 @@ export default function ReportsContent() {
             Assignment Performance
           </h2>
           <div className="divide-y divide-gray-100">
-            <ReportItem label="Submission rate" value={expected === undefined ? undefined : expected ? pct((submitted! / expected) * 100) : "—"} />
-            <ReportItem label="Review completion" value={reviewed} total={stage?.submissions} hasProgressBar />
-            <ReportItem label="Average published score" value={pct(avgScore)} />
+            <ReportItem label="Submission rate" value={shown(assignments.isError, expected === undefined ? undefined : expected ? pct((submitted! / expected) * 100) : "—")} />
+            <ReportItem label="Review completion" value={shown(assignments.isError, reviewed)} total={stage?.submissions} hasProgressBar />
+            <ReportItem label="Average published score" value={shown(results.isError, pct(avgScore))} />
           </div>
         </section>
 
@@ -170,12 +180,12 @@ export default function ReportsContent() {
             Coach Review Activity
           </h2>
           <div className="divide-y divide-gray-100">
-            <ReportItem label="With coaches" value={d?.reviews.pendingMentorReview} />
-            <ReportItem label="Awaiting your approval" value={reviews.data?.pending.awaitingAdminApproval} />
-            <ReportItem label="Completed reviews" value={reviews.data?.completed.total} />
+            <ReportItem label="With coaches" value={shown(dashboard.isError, d?.reviews.pendingMentorReview)} />
+            <ReportItem label="Awaiting your approval" value={shown(reviews.isError, reviews.data?.pending.awaitingAdminApproval)} />
+            <ReportItem label="Completed reviews" value={shown(reviews.isError, reviews.data?.completed.total)} />
             <ReportItem
               label="Average review time"
-              value={reviews.data ? (reviews.data.completed.averageTurnaroundHours == null ? "—" : `${Math.round(reviews.data.completed.averageTurnaroundHours)} h`) : undefined}
+              value={reviews.isError ? "—" : reviews.data ? (reviews.data.completed.averageTurnaroundHours == null ? "—" : `${Math.round(reviews.data.completed.averageTurnaroundHours)} h`) : undefined}
             />
           </div>
         </section>
@@ -185,9 +195,17 @@ export default function ReportsContent() {
             Division Overview
           </h2>
           <div className="divide-y divide-gray-100">
-            {byDivision.map(({ div, students, avg, loaded }) => (
-              <ReportItem key={div.id} label={`${div.name.replace(/ division$/i, "")} participation (avg. across courses, ${formatNumber(students)} students)`} value={loaded ? avg : undefined} total={100} hasProgressBar />
-            ))}
+            {divisions.isPending ? (
+              <ReportItem label="Divisions" value={undefined} />
+            ) : divisions.isError ? (
+              <p className="py-3 text-xs text-gray-400">Couldn&apos;t load the divisions.</p>
+            ) : byDivision.length === 0 ? (
+              <p className="py-3 text-xs text-gray-400">No divisions yet.</p>
+            ) : (
+              byDivision.map(({ div, students, avg, loaded }) => (
+                <ReportItem key={div.id} label={`${div.name.replace(/ division$/i, "")} participation (avg. across courses, ${formatNumber(students)} students)`} value={shown(participation.isError, loaded ? avg : undefined)} total={100} hasProgressBar />
+              ))
+            )}
           </div>
         </section>
 

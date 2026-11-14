@@ -262,7 +262,7 @@ test("menus: a DENY override hides exactly its own item", () => {
 test("menus: unknown permissions (loading or failed) show every item; an empty list keeps the always-on items", () => {
   assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, null)), hrefs(ADMIN_NAV));
   assert.equal(canSeeNavItem(ADMIN_SETTINGS, null), true);
-  assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, new Set())), ["/admin/dashboard", "/admin/messages"]);
+  assert.deepEqual(hrefs(visibleNav(ADMIN_NAV, new Set())), ["/admin/dashboard", "/admin/schools", "/admin/messages"]);
 });
 
 // ─── Role options and filters from the backend's capabilities ───────────────

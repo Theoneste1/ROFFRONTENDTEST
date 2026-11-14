@@ -25,6 +25,9 @@ export const ADMIN_NAV: readonly NavItem[] = [
   { href: "/admin/users", label: "Users", permission: "users.manage" },
   { href: "/admin/mentors", label: "Coaches", permission: "mentorAssignments.manage" },
   { href: "/admin/students", label: "Students", permission: "users.manage" },
+  // The school list is served to ADMIN and SUPER_ADMIN by role (GET /schools, no permission);
+  // the page itself chooses the managed directory (schools.manage) or the read-only list.
+  { href: "/admin/schools", label: "Schools" },
   { href: "/admin/divisions", label: "Divisions", permission: "divisions.manage" },
   { href: "/admin/academic-years", label: "Academic Years", permission: "academicYears.manage" },
   { href: "/admin/courses", label: "Courses", permission: "courses.manage" },

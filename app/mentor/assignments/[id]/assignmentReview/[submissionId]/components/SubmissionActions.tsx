@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { CheckCircle, X, PlayCircle, Save, Send, RotateCcw, Undo2 } from 'lucide-react';
 import type { ReviewStatus } from '@/lib/api/types';
 import { REVIEW_RULES } from '@/lib/api/mentor';
 import { Spinner } from '@/app/components/ui/feedback';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 /**
  * Review actions for the current review status (backend pipeline):
@@ -38,6 +39,11 @@ export default function SubmissionActions({
   const [note, setNote] = useState('');
   const [dueAt, setDueAt] = useState('');
   const [noteError, setNoteError] = useState<string | null>(null);
+  // Dialog focus: initial focus inside, Tab trapped, Escape closes, focus back to the opener.
+  const requestRef = useRef<HTMLFormElement>(null);
+  const successRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(requestRef, showRequest, { onEscape: () => setShowRequest(false) });
+  useFocusTrap(successRef, !!successMessage, { onEscape: onCloseSuccess });
 
   const btnSecondary =
     'flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold rounded-xl border border-gray-200 shadow-sm transition-colors text-center disabled:opacity-50';
@@ -103,12 +109,12 @@ export default function SubmissionActions({
       {/* Return for revision: note + optional due date */}
       {showRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="req-title">
-          <form onSubmit={submitRequest} className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full space-y-4">
+          <form ref={requestRef} onSubmit={submitRequest} className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full space-y-4">
             <div className="flex items-start justify-between">
               <h3 id="req-title" className="text-lg font-bold text-gray-900">
                 Ask for a new attempt
               </h3>
-              <button type="button" onClick={() => setShowRequest(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+              <button type="button" onClick={() => setShowRequest(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close" data-dialog-close>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -144,7 +150,7 @@ export default function SubmissionActions({
       {/* Success popup (original design) */}
       {successMessage && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="status">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4">
+          <div ref={successRef} className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4">
             <div className="flex items-start justify-between mb-4 gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0">
