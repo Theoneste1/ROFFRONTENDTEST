@@ -54,6 +54,8 @@ export interface DirectorySchoolRecord {
   updatedAt: string;
   lastSourceSyncAt: string | null;
   lastVerifiedAt: string | null;
+  /** Who last verified the school (absent from backends before school verification). */
+  lastVerifiedBy?: { id: string; username: string } | null;
   createdBy: { id: string; username: string } | null;
 }
 
@@ -202,6 +204,9 @@ export const adminSchoolsApi = {
   update: (id: string, input: UpdateSchoolInput) => api<DirectorySchoolRecord>(`/admin/schools/${id}`, { method: "PATCH", body: input }),
   setActive: (id: string, input: { isActive: boolean; reason: string }) =>
     api<SetActiveResult>(`/admin/schools/${id}/active`, { method: "PATCH", body: input }),
+  /** Record that an administrator checked the school's name and place (audited). */
+  verify: (id: string, input: { note?: string } = {}) =>
+    api<DirectorySchoolRecord>(`/admin/schools/${id}/verify`, { method: "POST", body: input }),
 
   /** Saves the import template (CSV: header row; XLSX: a Schools sheet and an Instructions sheet). */
   downloadImportTemplate: async (format: "csv" | "xlsx") =>
