@@ -17,7 +17,12 @@ import type { GradeLevel, Page } from "./types";
 /** `GET /schools/search` row (new backend): active official Rwandan schools only. */
 export interface DirectorySchool {
   id: string;
-  code: string;
+  /**
+   * The official 6-digit code, or null for a school without one (owner decision
+   * 2026-11-14: such schools are searchable and chosen by `id`; only backends
+   * that support this return them, so older backends always send a code).
+   */
+  code: string | null;
   name: string;
   location: string;
   district: string | null;
@@ -41,9 +46,10 @@ export const schoolDirectoryApi = {
 
 export type AffiliationStatus = "PENDING" | "VERIFIED" | "REJECTED" | "REVOKED";
 
-/** Exactly one of the three shapes the backend accepts. */
+/** Exactly one of the shapes the backend accepts. */
 export type SchoolClaimInput =
   | { schoolCode: string }
+  | { schoolId: string }
   | { schoolName: string; schoolProvince: string; schoolDistrict: string; schoolSector: string }
   | { country: string; schoolName: string };
 
