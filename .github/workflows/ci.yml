@@ -3,11 +3,14 @@ name: Frontend CI
 # Lint, route types, type-check, unit tests and the production build with the
 # same settings as Netlify (netlify.toml): a broken build is caught on the PR.
 
+# develop is the integration branch (feature PRs target it); main is the
+# production release branch. CI checks both, on pushes and on PRs into them.
+# This workflow only checks code — it never deploys.
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: read

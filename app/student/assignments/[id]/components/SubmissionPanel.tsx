@@ -5,17 +5,21 @@
  * files). Whether the form is offered comes from the backend's `canSubmit`;
  * the backend re-checks deadline, late and resubmission rules on every call.
  */
-import React, { useRef, useState, type DragEvent } from 'react';
+import React, { useEffect, useRef, useState, type DragEvent } from 'react';
 import { UploadCloud, AlertCircle, Check, X, FileText, RotateCcw } from 'lucide-react';
 import type { StudentAssignment, Submission, SubmissionHistory } from '@/lib/api/types';
 import { SUBMISSION_UPLOAD, submissionsApi } from '@/lib/api/assessment';
 import { useSubmitAssignment } from '@/lib/queries/assessment';
-import { errorMessage, isApiError } from '@/lib/api/errors';
+import { errorMessage } from '@/lib/api/errors';
 import { formatDateTime, formatFileSize, hasAcceptedExtension } from '@/lib/format';
 import { Alert, Spinner } from '@/app/components/ui/feedback';
 import FileButton from '@/app/components/ui/FileButton';
 import { StatusBadge } from '../../../components/studentUi';
 import { useNow } from '@/lib/hooks/useNow';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query/keys';
+import { submitErrorMessage, submitErrorStale } from '@/lib/assessment/student-state';
 
 interface Props {
   assignment: StudentAssignment;
@@ -25,6 +29,15 @@ interface Props {
 }
 
 export default function SubmissionPanel({ assignment: a, submission, openRequest, onShowResults }: Props) {
+  // The confirmation lives here, not in the form: after a successful submit the assignment reloads,
+  // canSubmit usually turns false and the form is replaced by the status card — the confirmation
+  // must survive that (it used to vanish with the form).
+  const [confirmed, setConfirmed] = useState(false);
+  useEffect(() => {
+    if (!confirmed) return;
+    const t = setTimeout(() => setConfirmed(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirmed]);
   const hasSubmission = !!a.submission;
   const resubmissionRequested = a.displayStatus === 'Resubmission Requested';
   const request = openRequest ?? submission?.resubmissionRequest ?? null;
@@ -42,10 +55,26 @@ export default function SubmissionPanel({ assignment: a, submission, openRequest
       )}
 
       {a.canSubmit ? (
-        <SubmissionForm assignment={a} isResubmission={hasSubmission} />
+        <SubmissionForm assignment={a} isResubmission={hasSubmission} onSubmitted={() => setConfirmed(true)} />
       ) : (
         <SubmissionStatusCard assignment={a} submission={submission} onShowResults={onShowResults} />
       )}
+      {confirmed && <SubmissionConfirmed onClose={() => setConfirmed(false)} />}
+    </div>
+  );
+}
+
+function SubmissionConfirmed({ onClose }: { onClose: () => void }) {
+  return (
+    <div onClick={onClose} className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-50 flex items-center justify-center p-4" role="status" data-testid="submission-confirmed">
+      <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6 transition-all">
+        <div className="w-24 h-24 rounded-full border-4 border-emerald-500 text-emerald-500 flex items-center justify-center mx-auto">
+          <Check className="w-14 h-14 stroke-[2.5]" />
+        </div>
+        <hr className="border-gray-100 my-4" />
+        <h3 className="text-2xl font-bold text-gray-900">Submission confirmed!</h3>
+        <p className="text-sm text-gray-500">Your work has been received.</p>
+      </div>
     </div>
   );
 }
@@ -109,16 +138,19 @@ function SubmissionStatusCard({ assignment: a, submission, onShowResults }: { as
   );
 }
 
-function SubmissionForm({ assignment: a, isResubmission }: { assignment: StudentAssignment; isResubmission: boolean }) {
+function SubmissionForm({ assignment: a, isResubmission, onSubmitted }: { assignment: StudentAssignment; isResubmission: boolean; onSubmitted: () => void }) {
   const [answer, setAnswer] = useState('');
   const [note, setNote] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  // Confirmation dialog focus: inside on open, Tab trapped, Escape cancels, back to the Submit button on close.
+  const confirmRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const submit = useSubmitAssignment();
+  useFocusTrap(confirmRef, showConfirmModal, { onEscape: () => !submit.isPending && setShowConfirmModal(false) });
+  const qc = useQueryClient();
   const now = useNow();
 
   const late = new Date(a.deadline).getTime() < now;
@@ -134,6 +166,10 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
     for (const f of Array.from(list)) {
       if (!hasAcceptedExtension(f.name, SUBMISSION_UPLOAD.accept)) {
         setFileError(`"${f.name}" is not an accepted file type (PDF, images, Word, ZIP or plain text).`);
+        continue;
+      }
+      if (f.size === 0) {
+        setFileError(`"${f.name}" is empty.`);
         continue;
       }
       if (f.size > SUBMISSION_UPLOAD.maxFileBytes) {
@@ -171,16 +207,22 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
           setAnswer('');
           setNote('');
           setFiles([]);
-          setShowSuccessModal(true);
-          setTimeout(() => setShowSuccessModal(false), 2500);
+          onSubmitted();
         },
-        onError: () => setShowConfirmModal(false),
+        onError: (err) => {
+          setShowConfirmModal(false);
+          // The answer and files stay in the form, so the student can retry after fixing the problem.
+          // A state refusal means this page is out of date: reload the assignment and submission.
+          if (submitErrorStale(err)) {
+            void qc.invalidateQueries({ queryKey: queryKeys.assignments.all });
+            void qc.invalidateQueries({ queryKey: queryKeys.submissions.all });
+          }
+        },
       },
     );
   }
 
   const submitError = submit.error;
-  const fileTypeError = isApiError(submitError) && (submitError.code === 'FILE_TYPE_NOT_ALLOWED' || submitError.status === 415);
 
   return (
     <>
@@ -190,9 +232,7 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
         <div className="space-y-5">
           {late && a.allowLateSubmission && <Alert tone="info">The deadline has passed. Your work will be accepted but marked as late.</Alert>}
           {submitError != null && (
-            <Alert tone="error">
-              {fileTypeError ? `One of the files isn't an accepted type. Accepted: ${SUBMISSION_UPLOAD.label}.` : errorMessage(submitError)}
-            </Alert>
+            <Alert tone="error">{submitErrorMessage(submitError) ?? errorMessage(submitError, "Your work couldn't be sent. Check your connection and try again — your answer and files are still here.")}</Alert>
           )}
 
           <div>
@@ -278,7 +318,7 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
       {/* Confirm submission */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl transition-all">
+          <div ref={confirmRef} className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl transition-all">
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
                 <AlertCircle className="w-10 h-10 stroke-[1.75]" />
@@ -324,18 +364,6 @@ function SubmissionForm({ assignment: a, isResubmission }: { assignment: Student
         </div>
       )}
 
-      {/* Success */}
-      {showSuccessModal && (
-        <div onClick={() => setShowSuccessModal(false)} className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-50 flex items-center justify-center p-4" role="status">
-          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6 transition-all">
-            <div className="w-24 h-24 rounded-full border-4 border-emerald-500 text-emerald-500 flex items-center justify-center mx-auto">
-              <Check className="w-14 h-14 stroke-[2.5]" />
-            </div>
-            <hr className="border-gray-100 my-4" />
-            <h3 className="text-2xl font-bold text-gray-900">Submission confirmed!</h3>
-          </div>
-        </div>
-      )}
     </>
   );
 }

@@ -4,8 +4,10 @@
  * Coach application (`POST /mentor-requests`). Coaches are the people who
  * mentor ROF students (the platform's MENTOR accounts). An administrator reviews
  * the request (Coaches → Applications) and the applicant is e-mailed the decision.
- * School teachers have no accounts yet: `?as=teacher` explains that and links
- * to the contact form instead.
+ * Teachers cannot register themselves on any backend: `?as=teacher` explains
+ * that. When the backend advertises `teacherAccounts`, Teacher accounts exist but
+ * only ROF administrators create them (and assign the teacher's schools), so
+ * the page says so and links to the contact form either way.
  */
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -15,6 +17,8 @@ import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
 import { Alert } from "@/app/components/ui/feedback";
 import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
+import { hasFeature } from "@/lib/api/capabilities";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 const USERNAME = /^[a-z0-9._-]{3,30}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -23,6 +27,7 @@ type F = (typeof FIELDS)[number] | "confirm";
 
 export default function ApplyForm() {
   const teacher = useSearchParams().get("as") === "teacher";
+  const teacherAccounts = hasFeature(useBackendCapabilities().detection, "teacherAccounts");
   const role = "Coach";
   const [v, setV] = useState({ firstName: "", lastName: "", username: "", email: "" });
   const [password, setPassword] = useState("");
@@ -63,10 +68,21 @@ export default function ApplyForm() {
     return (
       <div className="space-y-5" data-testid="apply-teacher">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a teacher</h1>
-        <Alert tone="info">Teacher accounts are not available on ROF LMS yet.</Alert>
-        <p className="text-sm text-slate-700">
-          If you teach at a school and would like to connect your students with the Rwanda Olympiad Foundation, send us a message and we will get in touch.
-        </p>
+        {teacherAccounts ? (
+          <>
+            <Alert tone="info">Teacher accounts are created by ROF administrators. There is no self-registration for teachers.</Alert>
+            <p className="text-sm text-slate-700">
+              Send us a message with your name, your school and its school code. An administrator creates your account, links it to your school and e-mails you an activation link.
+            </p>
+          </>
+        ) : (
+          <>
+            <Alert tone="info">Teacher accounts are not available on ROF LMS yet.</Alert>
+            <p className="text-sm text-slate-700">
+              If you teach at a school and would like to connect your students with the Rwanda Olympiad Foundation, send us a message and we will get in touch.
+            </p>
+          </>
+        )}
         <Link href="/?subject=teacher#contact" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
           Contact us
         </Link>

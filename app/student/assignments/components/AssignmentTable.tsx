@@ -4,8 +4,10 @@ import { Clock } from 'lucide-react';
 import type { StudentAssignment } from '@/lib/api/types';
 import { formatDateTime } from '@/lib/format';
 import { StatusBadge } from '../../components/studentUi';
+import { assignmentTiming } from '@/lib/assessment/student-state';
+import { TimingBadge } from '../../components/AccessDenied';
 
-export default function AssignmentTable({ assignments }: { assignments: StudentAssignment[] }) {
+export default function AssignmentTable({ assignments, now }: { assignments: StudentAssignment[]; now: number }) {
   return (
     <div className="border border-blue-200/80 rounded-2xl overflow-hidden bg-white shadow-sm">
       <div className="overflow-x-auto relative">
@@ -39,7 +41,10 @@ export default function AssignmentTable({ assignments }: { assignments: StudentA
                   </div>
                 </td>
                 <td className="py-4 px-6">
-                  <StatusBadge status={item.displayStatus} />
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <StatusBadge status={item.displayStatus} />
+                    <TimingBadge timing={assignmentTiming(item, now)} />
+                  </div>
                 </td>
                 <td className="py-4 px-6 text-right">
                   <Link href={`/student/assignments/${item.id}`} className="text-xs font-bold text-gray-600 hover:text-gray-900 transition">

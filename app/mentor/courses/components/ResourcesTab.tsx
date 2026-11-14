@@ -7,15 +7,19 @@
  * the row menu to the real resource actions.
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpDown, BookOpen, Download, Edit, Eye, EyeOff, FileText, MoreHorizontal, NotebookPen, Plus, RotateCcw, Archive, Trash2 } from "lucide-react";
 import type { CourseResource, ResourceType } from "@/lib/api/types";
 import { mentorResourcesApi } from "@/lib/api/mentor";
+import { useSession } from "@/lib/auth/session";
+import { actionAllowed } from "@/lib/auth/navigation";
 import { saveFile } from "@/lib/api/client";
 import { useMentorResources, useResourceAction } from "@/lib/queries/mentor";
+import { resourceSavedMessage } from "@/lib/mentor/resource-saved";
 import { errorMessage } from "@/lib/api/errors";
 import { formatDate, formatFileSize, personName } from "@/lib/format";
 import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
+import { ConfirmDialog } from "@/app/admin/components/adminUi";
 
 export type ResourceKind = "books" | "papers" | "notes";
 
@@ -59,14 +63,30 @@ export default function ResourcesTab({
   basePath?: string;
 }) {
   const router = useRouter();
+  // Coaches and administrators manage resources; a Head Coach (resources.view only) reads them.
+  // If the permission list failed to load, the buttons stay and the backend decides.
+  const { can, permissionsStatus } = useSession();
+  const canManage = actionAllowed("resources.manage", permissionsStatus, can);
   const cfg = KIND[kind];
   const resources = useMentorResources(courseId, divisionId);
   const action = useResourceAction(courseId);
+  const [deleting, setDeleting] = useState<CourseResource | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [year, setYear] = useState("all");
   const [sortOrder, setSortOrder] = useState<"Newest" | "Oldest">("Newest");
   const [notice, setNotice] = useState<string | null>(null);
+  // Back from the upload / edit form: confirm once, then drop `saved` from the URL.
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const savedParam = params.get("saved");
+  const [saved] = useState<string | null>(() => resourceSavedMessage(savedParam));
+  useEffect(() => {
+    if (!savedParam) return;
+    const next = new URLSearchParams(params.toString());
+    next.delete("saved");
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+  }, [savedParam, params, pathname, router]);
 
   const all = useMemo(() => (resources.data ?? []).filter((r) => cfg.types.includes(r.type)), [resources.data, cfg.types]);
   const years = useMemo(() => [...new Set(all.map((r) => r.year).filter((y): y is number => !!y))].sort((a, b) => b - a), [all]);
@@ -82,7 +102,10 @@ export default function ResourcesTab({
   const addHref = `${basePath}/upload-book?scope=${encodeURIComponent(scopeKeyValue)}&type=${cfg.defaultType}&tab=${kind}`;
 
   function run(r: CourseResource, act: "publish" | "unpublish" | "archive" | "restore" | "delete") {
-    if (act === "delete" && !window.confirm(`Delete “${r.title}”? This cannot be undone.`)) return;
+    if (act === "delete") {
+      setDeleting(r);
+      return;
+    }
     setNotice(null);
     action.mutate(
       { resourceId: r.id, action: act },
@@ -104,16 +127,23 @@ export default function ResourcesTab({
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{cfg.title}</h2>
           <p className="text-gray-500 text-sm mt-1">{cfg.subtitle}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => router.push(addHref)}
-          className="flex items-center gap-2.5 bg-[#2522A5] hover:bg-[#1d1a88] text-white px-6 py-3 rounded-2xl font-medium shadow-sm transition-all text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{cfg.add}</span>
-        </button>
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => router.push(addHref)}
+            className="flex items-center gap-2.5 bg-[#2522A5] hover:bg-[#1d1a88] text-white px-6 py-3 rounded-2xl font-medium shadow-sm transition-all text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{cfg.add}</span>
+          </button>
+        )}
       </div>
 
+      {saved && !notice && (
+        <div role="status" data-testid="resource-saved">
+          <Alert tone="success">{saved}</Alert>
+        </div>
+      )}
       {notice && <Alert tone="success">{notice}</Alert>}
       {action.isError && <Alert tone="error">{errorMessage(action.error)}</Alert>}
 
@@ -219,6 +249,7 @@ export default function ResourcesTab({
                           <RowMenu
                             resource={r}
                             state={st}
+                            canManage={canManage}
                             onEdit={() => router.push(`${basePath}/upload-book?scope=${encodeURIComponent(scopeKeyValue)}&resourceId=${r.id}&tab=${kind}`)}
                             onDownload={async () => {
                               for (const a of r.attachments) saveFile(await mentorResourcesApi.file(courseId, r.id, a.id, a.file.originalName));
@@ -235,6 +266,21 @@ export default function ResourcesTab({
           </div>
         </div>
       )}
+
+      {deleting && (
+        <ConfirmDialog
+          title="Delete this resource?"
+          body={<>“{deleting.title}” is deleted for everyone. This cannot be undone.</>}
+          confirmLabel="Delete"
+          tone="danger"
+          onClose={() => setDeleting(null)}
+          onConfirm={async () => {
+            setNotice(null);
+            await action.mutateAsync({ resourceId: deleting.id, action: "delete" });
+            setNotice("Deleted.");
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -242,12 +288,15 @@ export default function ResourcesTab({
 function RowMenu({
   resource,
   state,
+  canManage,
   onEdit,
   onDownload,
   onAction,
 }: {
   resource: CourseResource;
   state: "published" | "draft" | "archived";
+  /** resources.manage: edit, publish, archive, delete. Without it only the download is offered. */
+  canManage: boolean;
   onEdit: () => void;
   onDownload: () => Promise<void>;
   onAction: (a: "publish" | "unpublish" | "archive" | "restore" | "delete") => void;
@@ -294,6 +343,8 @@ function RowMenu({
               <Download className="w-3.5 h-3.5" /> Download file{resource.attachments.length > 1 ? "s" : ""}
             </button>
           )}
+          {canManage && (
+          <>
           <button type="button" className={item} onClick={choose(onEdit)}>
             <Edit className="w-3.5 h-3.5" /> Edit
           </button>
@@ -319,6 +370,8 @@ function RowMenu({
           <button type="button" className={`${item} !text-red-600`} onClick={choose(() => onAction("delete"))}>
             <Trash2 className="w-3.5 h-3.5" /> Delete
           </button>
+          </>
+          )}
         </div>
       )}
     </div>

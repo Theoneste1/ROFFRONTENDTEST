@@ -8,6 +8,8 @@ import { useCourses } from "@/lib/queries/learning";
 import { formatDate } from "@/lib/format";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
+import { studentAccessDenied } from "@/lib/assessment/student-state";
+import AccessDenied from "../../components/AccessDenied";
 
 type Arrange = "date" | "score" | "name";
 
@@ -107,7 +109,11 @@ export default function ResultsPage() {
             <LoadingBlock label="Loading results…" />
           ) : query.isError ? (
             <div className="p-4">
-              <ErrorState error={query.error} title="Couldn't load your results" onRetry={() => query.refetch()} />
+              {studentAccessDenied(query.error) ? (
+                <AccessDenied {...studentAccessDenied(query.error)!} />
+              ) : (
+                <ErrorState error={query.error} title="Couldn't load your results" onRetry={() => query.refetch()} />
+              )}
             </div>
           ) : rows.length === 0 ? (
             <EmptyState

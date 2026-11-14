@@ -9,7 +9,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, Clock, ExternalLink, Mail, MessageSquare, Phone } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
-import { portalHome } from "@/lib/auth/roles";
+import { hasPortal, isAdministrative, portalHome } from "@/lib/auth/roles";
 import { useSupportInfo } from "@/lib/queries/account";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 
@@ -90,7 +90,7 @@ export default function SupportInfo() {
       ) : (
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600" data-testid="support-not-configured">
           Support contact details haven&apos;t been published yet.
-          {role === "ADMIN" ? (
+          {isAdministrative(role) ? (
             <>
               {" "}
               You can add them under{" "}
@@ -105,7 +105,7 @@ export default function SupportInfo() {
         </div>
       )}
 
-      {role && role !== "ADMIN" && (
+      {role && hasPortal(role) && !isAdministrative(role) && (
         <div className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 text-sm text-slate-700">
           <MessageSquare className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
           <p>

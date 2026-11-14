@@ -8,12 +8,15 @@
  */
 import React, { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "@/lib/auth/session";
+import { actionAllowed } from "@/lib/auth/navigation";
 import { ArrowLeft, ChevronDown, Trash2 } from "lucide-react";
 import type { CourseResource, ResourceType, TeachingScope } from "@/lib/api/types";
 import { RESOURCE_RULES, RESOURCE_UPLOAD } from "@/lib/api/mentor";
 import { scopeKey, scopeLabel, useMentorResource, useSaveResource, useTeachingScopes } from "@/lib/queries/mentor";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
 import { formatFileSize } from "@/lib/format";
+import { resourceSavedOutcome } from "@/lib/mentor/resource-saved";
 import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import FilePicker from "@/app/components/ui/FilePicker";
 import { parseScopeKey } from "../../components/mentorUi";
@@ -29,6 +32,7 @@ const inputCls =
  */
 export default function ResourceForm({ scopeList, basePath = "/mentor/courses" }: { scopeList?: TeachingScope[]; basePath?: string } = {}) {
   const params = useSearchParams();
+  const { can, permissionsStatus } = useSession();
   const teaching = useTeachingScopes(!scopeList);
   const scopes = scopeList ? { data: scopeList, isPending: false, isError: false as const, error: null, refetch: () => undefined } : teaching;
   const resourceId = params.get("resourceId") ?? undefined;
@@ -36,6 +40,14 @@ export default function ResourceForm({ scopeList, basePath = "/mentor/courses" }
   const scope = list.find((s) => scopeKey(s) === params.get("scope")) ?? list[0];
   const existing = useMentorResource(resourceId ? scope?.course.id : undefined, resourceId);
 
+  // Uploading and editing need resources.manage (a Head Coach views resources only).
+  if (permissionsStatus === "loading") return <LoadingBlock />;
+  if (!actionAllowed("resources.manage", permissionsStatus, can))
+    return (
+      <div className="p-8 bg-white rounded-2xl m-8">
+        <EmptyState title="You can't add or edit resources" description="Your role can view this course's resources but not change them." />
+      </div>
+    );
   if (scopes.isPending || (resourceId && existing.isPending)) return <LoadingBlock />;
   if (scopes.isError) return <ErrorState error={scopes.error} onRetry={() => scopes.refetch()} />;
   if (!scope)
@@ -92,7 +104,7 @@ function Form({
   const save = useSaveResource(sc.courseId);
   const server = fieldErrors(save.error, ["title", "description", "author", "source", "year", "tags", "type"]);
   const kept = (existing?.attachments ?? []).filter((a) => !removed.includes(a.id));
-  const back = () => router.push(`${basePath}?scope=${encodeURIComponent(scopeValue)}&tab=${backTab}`);
+  const back = (saved?: string) => router.push(`${basePath}?scope=${encodeURIComponent(scopeValue)}&tab=${backTab}${saved ? `&saved=${saved}` : ""}`);
   const set = (k: keyof typeof form, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
   function validate() {
@@ -134,7 +146,8 @@ function Form({
         removeAttachmentIds: removed,
         publish: form.publish,
       },
-      { onSuccess: back },
+      // The list confirms what happened (and whether students can see it yet).
+      { onSuccess: (res) => back(resourceSavedOutcome(isEdit, form.publish && res.isPublished)) },
     );
   }
 
@@ -143,7 +156,7 @@ function Form({
   return (
     <div className="min-h-screen bg-[#E6EBF2] p-4 md:p-8 lg:p-12 text-[#2D3748]">
       <div className="max-w-6xl mx-auto">
-        <button type="button" onClick={back} className="flex items-center text-xs font-semibold text-gray-600 hover:text-gray-900 mb-4 md:mb-6 transition-colors">
+        <button type="button" onClick={() => back()} className="flex items-center text-xs font-semibold text-gray-600 hover:text-gray-900 mb-4 md:mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" />
           Go Back
         </button>
@@ -262,7 +275,7 @@ function Form({
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4">
-            <button type="button" onClick={back} className="px-6 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            <button type="button" onClick={() => back()} className="px-6 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
               Cancel
             </button>
             <button

@@ -8,6 +8,7 @@ import type { LeaderboardEntry } from '@/lib/api/types';
 import { EmptyState, ErrorState, LoadingBlock } from '@/app/components/ui/feedback';
 import Pagination from '@/app/components/ui/Pagination';
 import LeaderboardFilter, { type LeaderboardView } from './LeaderboardFilter';
+import { HIDDEN_TEXT, HIDDEN_TITLE, leaderboardHidden, rankLabel } from '@/lib/community/leaderboard';
 import { divisionLabel } from '../../components/studentUi';
 
 const PAGE_SIZE = 20;
@@ -53,7 +54,7 @@ function StudentsBoard() {
   const board = useLeaderboard({ page, limit: PAGE_SIZE });
   const firstPage = useLeaderboard({ page: 1, limit: PAGE_SIZE });
   const me = useMyRank();
-  const above = useEntryAbove(me.data?.rank);
+  const above = useEntryAbove(me.data?.rank ?? undefined);
 
   const top = (firstPage.data?.data ?? []).slice(0, 3);
   // Page 1 starts below the podium.
@@ -62,7 +63,8 @@ function StudentsBoard() {
   // Progress towards the student directly above (by points).
   let milestone: { text: string; pct: number } | null = null;
   if (me.data) {
-    if (me.data.rank === 1) milestone = { text: 'Top of the division', pct: 100 };
+    if (me.data.rank === null) milestone = null;
+    else if (me.data.rank === 1) milestone = { text: 'Top of the division', pct: 100 };
     else if (above.data) {
       const gap = Math.max(above.data.points - me.data.points, 0) + 1;
       milestone = {
@@ -73,6 +75,13 @@ function StudentsBoard() {
   }
 
   if (board.isPending || firstPage.isPending) return <LoadingBlock label="Loading leaderboard…" />;
+  if (board.isError && leaderboardHidden(board.error)) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-100">
+        <EmptyState title={HIDDEN_TITLE} description={HIDDEN_TEXT} />
+      </div>
+    );
+  }
   if (board.isError) return <ErrorState error={board.error} title="Couldn't load the leaderboard" onRetry={() => board.refetch()} />;
   if (board.data.meta.total === 0) {
     return (
@@ -138,8 +147,8 @@ function StudentsBoard() {
           <>
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Current Rank</span>
-              <span className="text-2xl font-extrabold text-white">{me.data ? `#${me.data.rank}` : '—'}</span>
-              {me.data && <span className="text-xs text-slate-400">of {formatNumber(me.data.outOf)}</span>}
+              <span className="text-2xl font-extrabold text-white">{me.data ? rankLabel(me.data.rank) : '—'}</span>
+              {me.data?.rank != null && <span className="text-xs text-slate-400">of {formatNumber(me.data.outOf)}</span>}
             </div>
             <div className="h-8 w-[1px] bg-slate-800 hidden md:block" />
             <div className="flex items-center gap-3">

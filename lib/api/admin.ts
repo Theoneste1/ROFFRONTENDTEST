@@ -144,7 +144,15 @@ export interface InviteUserInput {
   homeLocation?: string;
 }
 
-export type UpdateUserInput = Partial<Omit<CreateUserInput, "password">>;
+/**
+ * `PATCH /admin/users/:id`: only the changed fields. `schoolId: null` removes the school (new
+ * backends). `currentPassword` is the editor's own password, required by the backend for a
+ * role change to or from ADMIN / SUPER_ADMIN (403 STEP_UP_REQUIRED otherwise).
+ */
+export type UpdateUserInput = Partial<Omit<CreateUserInput, "password" | "schoolId">> & {
+  schoolId?: string | null;
+  currentPassword?: string;
+};
 
 /** Drop empty strings so optional fields are omitted, not sent as "". */
 function compact<T extends object>(input: T): Partial<T> {

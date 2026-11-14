@@ -1,45 +1,14 @@
 'use client';
 
-import { useState, ReactNode } from "react";
-import Navbar from "../dashboard/components/Navbar";
+import type { ReactNode } from "react";
+import PortalShell from "@/app/components/shell/PortalShell";
 import Sidebar from "../dashboard/components/Sidebar";
 
-interface StudentShellProps {
-    children: ReactNode;
-}
-
-/** Sidebar starts collapsed on phones so the content keeps the screen. */
-function initialSidebarOpen(): boolean {
-    return typeof window === "undefined" || window.matchMedia("(min-width: 768px)").matches;
-}
-
-export default function StudentShell({ children }: StudentShellProps) {
-    // The shell renders only on the client (after the session check in RoleGate).
-    const [isSidebarOpen, setIsSidebarOpen] = useState(initialSidebarOpen);
-
-    const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
-    };
-
+/** The student portal frame (shared PortalShell: rail on desktop, drawer on phones). */
+export default function StudentShell({ children }: { children: ReactNode }) {
     return (
-        <div className="min-h-screen w-full bg-[#e2e8f0] overflow-x-hidden flex flex-col">
-            {/* Navbar - Scrolls with content */}
-            <div className="w-full flex-shrink-0">
-                <Navbar onMenuClick={toggleSidebar} />
-            </div>
-
-            {/* Main content area with sidebar */}
-            <div className="flex w-full flex-1">
-                {/* Sidebar - Scrolls with content, extends to match content height */}
-                <div className="flex-shrink-0 self-stretch">
-                    <Sidebar isOpen={isSidebarOpen} />
-                </div>
-
-                {/* Main content */}
-                <main className="flex-1 min-w-0 w-full">
-                    {children}
-                </main>
-            </div>
-        </div>
+        <PortalShell avatarClassName="bg-blue-600" renderSidebar={(isOpen) => <Sidebar isOpen={isOpen} />}>
+            {children}
+        </PortalShell>
     );
 }

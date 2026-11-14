@@ -12,7 +12,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth/session";
-import { portalHome } from "@/lib/auth/roles";
+import { hasPortal, portalHome, portalPath } from "@/lib/auth/roles";
 import { resolveLink } from "@/lib/notifications/links";
 import { useResult } from "@/lib/queries/assessment";
 import { isApiError } from "@/lib/api/errors";
@@ -74,14 +74,16 @@ export default function DeepLinkRedirect() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Link href={portalHome(role)} className="px-5 py-2.5 rounded-lg bg-[#2B2BB2] text-white text-sm font-semibold hover:bg-[#232c94]">
-              Go to my dashboard
+              {hasPortal(role) ? "Go to my dashboard" : "Continue"}
             </Link>
-            <Link
-              href={`${portalHome(role).replace(/\/dashboard$/, "")}/notifications`}
-              className="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50"
-            >
-              My notifications
-            </Link>
+            {hasPortal(role) && (
+              <Link
+                href={portalPath(role, "notifications")}
+                className="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50"
+              >
+                My notifications
+              </Link>
+            )}
           </div>
         </div>
       </PublicCard>

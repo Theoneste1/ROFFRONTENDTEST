@@ -15,6 +15,9 @@ import { StatusBadge } from '../../components/studentUi';
 import SubmissionPanel from './components/SubmissionPanel';
 import SubmissionHistoryCard from './components/SubmissionHistoryCard';
 import ResultPanel from './components/ResultPanel';
+import { useNow } from '@/lib/hooks/useNow';
+import { assignmentTiming, studentAccessDenied } from '@/lib/assessment/student-state';
+import AccessDenied, { TimingBadge } from '../../components/AccessDenied';
 
 type Tab = 'assignment' | 'discussion' | 'results';
 const TABS: { id: Tab; label: string }[] = [
@@ -34,6 +37,7 @@ export default function AssignmentDetail({ assignmentId }: { assignmentId: strin
   const submissionId = assignment.data?.submission?.id ?? null;
   const submission = useSubmission(submissionId);
   const history = useSubmissionHistory(submissionId);
+  const now = useNow();
 
   if (assignment.isPending) return <LoadingBlock label="Loading assignment…" />;
 
@@ -46,7 +50,9 @@ export default function AssignmentDetail({ assignmentId }: { assignmentId: strin
           <Link href="/student/assignments" className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900">
             <ArrowLeft className="w-4 h-4" /> Back to assignments
           </Link>
-          {notFound ? (
+          {studentAccessDenied(assignment.error) ? (
+            <AccessDenied {...studentAccessDenied(assignment.error)!} />
+          ) : notFound ? (
             <div className="bg-white rounded-3xl border border-gray-200">
               <EmptyState title="Assignment not found" description="This assignment doesn't exist or isn't available to you." />
             </div>
@@ -81,6 +87,7 @@ export default function AssignmentDetail({ assignmentId }: { assignmentId: strin
               <span>Due {formatDateTime(a.deadline)}</span>
             </div>
             <StatusBadge status={a.displayStatus} />
+            <TimingBadge timing={assignmentTiming(a, now)} />
             {a.status === 'CLOSED' && <span className="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-semibold">Closed</span>}
           </div>
         </div>

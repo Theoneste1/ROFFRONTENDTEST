@@ -8,7 +8,12 @@
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
-export type Role = "STUDENT" | "MENTOR" | "ADMIN";
+/**
+ * The backend's six user types (MENTOR is shown as "Coach"). The production
+ * backend still returns only STUDENT, MENTOR and ADMIN; code that branches on
+ * a role must also cope with an unknown value (see lib/auth/role-rules.ts).
+ */
+export type Role = "STUDENT" | "TEACHER" | "MENTOR" | "HEAD_COACH" | "ADMIN" | "SUPER_ADMIN";
 export type DivisionCode = "JUNIOR" | "SENIOR";
 export type GradeLevel = "S1" | "S2" | "S3" | "S4" | "S5" | "S6";
 
@@ -23,7 +28,17 @@ export type Permission =
   | "users.manage" | "academicYears.manage" | "enrollments.manage"
   | "divisions.manage" | "courses.manage" | "mentorAssignments.manage"
   | "mentorRequests.decide" | "settings.manage" | "email.bulkSend"
-  | "audit.view" | "activity.view";
+  | "audit.view" | "activity.view"
+  // Phase 1 names (backend develop, src/auth/permissions.ts). The production backend never
+  // returns them; for ADMIN / MENTOR / STUDENT the backend keeps the original lists above.
+  | "reports.view" | "students.viewScoped" | "users.view"
+  | "users.manageStudents" | "users.manageCoaches" | "users.manageTeachers"
+  | "users.manageHeadCoaches" | "users.manageAdmins"
+  | "programmes.manageHeads" | "programmes.manageMembers" | "coaches.monitor"
+  | "settings.manageSystem" | "permissions.view" | "permissions.manageOverrides"
+  // Teacher delegations: granted to an individual Teacher by an Administrator.
+  | "students.viewProfile" | "students.viewProgress" | "submissions.submitOnBehalf"
+  | "schools.manage" | "schools.syncDirectory";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
@@ -83,9 +98,27 @@ export interface CurrentUser {
   createdAt: string;
 }
 
+/**
+ * `GET /me/permissions`. Production returns `{ role, permissions }`; the next
+ * backend adds `roleLabel`, `scopes` and `overrides` (optional here, so both work).
+ * For STUDENT, MENTOR and ADMIN the backend keeps the original permission list,
+ * which does not list newer administrative permissions — do not rely on it for those.
+ */
 export interface MePermissions {
   role: Role;
   permissions: Permission[];
+  roleLabel?: string | null;
+  scopes?: {
+    courseDivisions?: { courseId: string; divisionId: string }[];
+    programmes?: string[];
+  };
+  overrides?: {
+    permission: string;
+    effect: "GRANT" | "DENY";
+    courseId: string | null;
+    divisionId: string | null;
+    expiresAt: string | null;
+  }[];
 }
 
 // ─── Auth ───────────────────────────────────────────────────────────────────
@@ -369,7 +402,8 @@ export interface ResultDetail extends ResultSummary {
     mentor: { firstName: string; lastName: string } | null;
     files: Attachment[];
   };
-  previousVersions: Array<{ score: number; maximumMarks: number; percentage: number; publishedAt: string; supersededAt?: string }>;
+  /** Earlier published versions of a corrected result (backend: score, percentage, publishedAt, withdrawnAt — no maximum). */
+  previousVersions: Array<{ score: number; percentage: number; publishedAt: string; withdrawnAt: string | null }>;
   repliesAllowed: boolean;
 }
 
@@ -392,7 +426,8 @@ export interface LeaderboardPage extends Page<LeaderboardEntry> {
 
 export interface MyRank {
   divisionId: string;
-  rank: number;
+  /** null while the student is not in the division ranking (e.g. no division yet). */
+  rank: number | null;
   outOf: number;
   points: number;
   problemsSolved: number;
@@ -724,7 +759,7 @@ export interface ReportsOverview {
     studentsAwaitingApproval: number;
     failedEmails: number;
   };
-  activeUsers: Record<Role, number>;
+  activeUsers: Partial<Record<Role, number>>;
   assignments: Partial<Record<AssignmentStatus, number>>;
   submissions: Partial<Record<SubmissionStatus, number>>;
   studentsByDivision: { id: string; code: DivisionCode; name: string; students: number }[];

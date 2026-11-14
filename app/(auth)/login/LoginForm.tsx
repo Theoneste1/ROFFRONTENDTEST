@@ -53,6 +53,13 @@ export default function LoginForm() {
   }
 
   const notActivated = isApiError(error) && error.code === "ACCOUNT_NOT_ACTIVATED";
+  // Backend login checks, in order: suspended, not activated, awaiting approval (all 403 after a correct password).
+  const statusMessage =
+    isApiError(error) && error.code === "ACCOUNT_SUSPENDED"
+      ? "Your account is suspended. Contact ROF support if you think this is a mistake."
+      : isApiError(error) && error.code === "ACCOUNT_PENDING_APPROVAL"
+        ? "Your account is waiting for an administrator's approval. You'll receive an e-mail once it is approved."
+        : null;
 
   return (
     <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
@@ -72,6 +79,13 @@ export default function LoginForm() {
                 send a new activation link
               </Link>
               .
+            </>
+          ) : statusMessage ? (
+            <>
+              {statusMessage}{" "}
+              <Link href="/support" className="font-semibold underline">
+                Get help
+              </Link>
             </>
           ) : isApiError(error) && error.status === 401 ? (
             <>

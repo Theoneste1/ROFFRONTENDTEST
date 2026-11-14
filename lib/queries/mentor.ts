@@ -69,11 +69,12 @@ export function useDivisionTop(divisionId: string | undefined, limit = 5) {
 
 // ─── Assignments ────────────────────────────────────────────────────────────
 
-export function useMentorAssignments(filters: AssignmentFilters = {}) {
+export function useMentorAssignments(filters: AssignmentFilters = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.mentor.assignments(filters),
     queryFn: () => mentorAssignmentsApi.list(filters),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   });
 }
 
@@ -148,11 +149,13 @@ export function useAssignmentTransition(id: string) {
 
 // ─── Reviews ────────────────────────────────────────────────────────────────
 
-export function useReviewQueue(filters: ReviewFilters = {}) {
+/** `enabled: false` holds the request back (e.g. until the backend's capabilities decide which query to send). */
+export function useReviewQueue(filters: ReviewFilters = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.mentor.reviews(filters),
     queryFn: () => reviewsApi.queue(filters),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   });
 }
 

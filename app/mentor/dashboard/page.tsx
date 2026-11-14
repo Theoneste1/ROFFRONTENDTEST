@@ -12,8 +12,11 @@ import { Users, FileText, BookOpen, TrendingUp, Clock, CheckCircle2, AlertCircle
 import { useSession } from '@/lib/auth/session';
 import { useMentorAssignments, useReviewQueue, useScopesAnalytics, useTeachingScopes } from '@/lib/queries/mentor';
 import { useNotifications } from '@/lib/queries/community';
+import { useBackendCapabilities } from '@/lib/queries/capabilities';
+import { hasFeature } from '@/lib/api/capabilities';
 import { NotificationLink } from '@/app/components/notifications/notificationUi';
 import { useNow } from '@/lib/hooks/useNow';
+import { dayStart } from '@/lib/assessment/my-assignments-query';
 import { formatDate, formatRelative } from '@/lib/format';
 import { ErrorState, Spinner } from '@/app/components/ui/feedback';
 import { OPEN_REVIEW_STATUSES } from '../components/mentorUi';
@@ -23,8 +26,18 @@ export default function MentorDashboard() {
   const now = useNow();
   const scopes = useTeachingScopes();
   const analytics = useScopesAnalytics(scopes.data);
-  const assignments = useMentorAssignments({ limit: 100 });
-  const queue = useReviewQueue({ limit: 100 });
+  // Totals come from the server's counts (meta.total of one-row queries), never from a loaded page (F4).
+  const total = (q: { data?: { meta: { total: number } } }) => q.data?.meta.total ?? 0;
+  const publishedQ = useMentorAssignments({ status: 'PUBLISHED', limit: 1 });
+  const pendingQ = useMentorAssignments({ status: 'PENDING_APPROVAL', limit: 1 });
+  const draftQ = useMentorAssignments({ status: 'DRAFT', limit: 1 });
+  const rejectedQ = useMentorAssignments({ status: 'REJECTED', limit: 1 });
+  // Published with a deadline from today on (the upcoming list and "due this week").
+  const upcomingQ = useMentorAssignments({ status: 'PUBLISHED', deadlineFrom: dayStart(now), limit: 100 });
+  // With reviewQueueFilters the totals come from the server (`counts`); otherwise from the first 100 rows (L3).
+  const caps = useBackendCapabilities();
+  const serverCounts = hasFeature(caps.detection, 'reviewQueueFilters');
+  const queue = useReviewQueue(serverCounts ? { group: 'all', limit: 1 } : { limit: 100 }, { enabled: !caps.loading });
   const notifications = useNotifications({ limit: 5 });
 
   const loadedAnalytics = analytics.map((q) => q.data).filter((d): d is NonNullable<typeof d> => !!d);
@@ -32,15 +45,12 @@ export default function MentorDashboard() {
   const withAvg = loadedAnalytics.flatMap((a) => a.assignments).filter((a) => a.averagePercentage !== null);
   const avgScore = withAvg.length ? Math.round(withAvg.reduce((s, a) => s + (a.averagePercentage ?? 0), 0) / withAvg.length) : null;
 
-  const list = assignments.data?.data ?? [];
-  const published = list.filter((a) => a.status === 'PUBLISHED');
-  const dueThisWeek = published.filter((a) => {
-    const t = new Date(a.deadline).getTime();
-    return t > now && t - now < 7 * 86_400_000;
-  }).length;
-  const drafts = list.filter((a) => a.status === 'DRAFT' || a.status === 'REJECTED').length;
-  const pendingApproval = list.filter((a) => a.status === 'PENDING_APPROVAL').length;
-  const toReview = (queue.data?.data ?? []).filter((s) => OPEN_REVIEW_STATUSES.includes(s.status)).length;
+  const upcomingList = (upcomingQ.data?.data ?? []).filter((a) => new Date(a.deadline).getTime() > now);
+  const dueThisWeek = upcomingList.filter((a) => new Date(a.deadline).getTime() - now < 7 * 86_400_000).length;
+  const drafts = total(draftQ) + total(rejectedQ);
+  const pendingApproval = total(pendingQ);
+  const assignments = { isPending: publishedQ.isPending || pendingQ.isPending || upcomingQ.isPending };
+  const toReview = queue.data?.counts?.open ?? (queue.data?.data ?? []).filter((s) => OPEN_REVIEW_STATUSES.includes(s.status)).length;
 
   const loading = scopes.isPending || assignments.isPending || queue.isPending;
   const stats = [
@@ -53,7 +63,7 @@ export default function MentorDashboard() {
     },
     {
       title: 'Active Assignments',
-      value: loading ? '…' : String(published.length),
+      value: loading ? '…' : String(total(publishedQ)),
       change: `${dueThisWeek} due this week · ${pendingApproval} awaiting approval`,
       icon: <FileText className="w-6 h-6" />,
       color: 'bg-purple-500',
@@ -61,7 +71,7 @@ export default function MentorDashboard() {
     {
       title: 'Reviews To Do',
       value: loading ? '…' : String(toReview),
-      change: `${queue.data?.meta.total ?? 0} assigned to you in total`,
+      change: `${queue.data?.counts?.all ?? queue.data?.meta.total ?? 0} assigned to you in total`,
       icon: <ClipboardCheck className="w-6 h-6" />,
       color: 'bg-emerald-500',
     },
@@ -74,8 +84,8 @@ export default function MentorDashboard() {
     },
   ];
 
-  const upcoming = published
-    .filter((a) => new Date(a.deadline).getTime() > now)
+  const upcoming = upcomingList
+    .slice()
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
     .slice(0, 4);
 

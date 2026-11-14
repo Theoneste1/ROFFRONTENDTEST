@@ -1,6 +1,6 @@
 # ROF LMS — Integration Progress
 
-Last updated: 2026-11-06
+Last updated: 2026-11-13 (release readiness section below; earlier sections describe the state on 2026-11-06)
 
 This is the short, current-status version. The full step-by-step history of phases 1–6 (implementation details, endpoint lists, every test table) is in Git: `git show 1a1ca98:INTEGRATION_PROGRESS.md`. Plans: `PHASE5_ADMIN_PLAN.md`, `PHASE6_PLAN.md`, `VERIFICATION_PLAN.md`, `PHASE7_QA_PLAN.md`.
 
@@ -101,6 +101,19 @@ Phases 3 and 4 flows that waited for the admin (student submission, mentor gradi
 - Tests: homepage 61/61, auth 19/19. Not committed (owner: no commit yet).
 - **Fixed (owner report):** student registration always failed with "homeLocation must be longer than or equal to 2 characters": the backend requires a home location but `/register` never asked for it. Added a required "Home location" field (validated in the browser; server errors shown under the field). Verified without creating an account: a complete form with an existing username now passes server validation and gets the friendly "already in use" answer (409). Homepage suite 63/65: the 2 failures are the contact form hourly limit (429) reached by the day's test runs, i.e. the spam protection working.
 
+## School directory administration — slice 1 (2026-11-12, branch `feature/admin-school-directory`)
+
+`/admin/schools` and `/admin/schools/:id` show the school directory only when **both** hold: the backend advertises `schoolAdministration` (`GET /api/v1`) and the user's `GET /me/permissions` lists `schools.manage`. Otherwise (legacy backend, UNKNOWN detection, no permission, permissions not loaded) the existing read-only pages are shown, unchanged. Never decided by role. Code: `lib/admin/school-directory.ts` (rules), `lib/api/school-directory.ts` (client), `app/admin/schools/directory/*`.
+
+- List (`GET /admin/schools`): search by name or code; country, Rwandan province → district → sector, status, source and code filters; pagination; total, students and verified students per school.
+- Create and edit (`POST` / `PATCH /admin/schools`): Rwanda (official place, optional 6-digit code whose first digit must match the province, cell, village) or another country (two-letter code and a location). Editing sends only the changed fields. A reason is asked for when the backend requires it (code set or changed; name, country or place of an official-directory school). `POSSIBLE_DUPLICATE` lists the nearby schools and offers "Create / Save anyway" (`confirmPossibleDuplicate`). `SCHOOL_CODE_TAKEN` links to the school that has the code.
+- Deactivate / reactivate (`PATCH /admin/schools/:id/active`): shows what refers to the school (students, verified students, pending claims, Teacher assignments, enrolments) and what the change means; a 3–500 character reason is required.
+- Detail: the record, the counts, the students with their claim for this school, and the history (changes only with `audit.view`; official-directory records), paginated.
+- The students' school-claim review (`/admin/schools/affiliations`) is unchanged.
+- Not in this slice: contacts, education levels and programmes, CSV/XLSX import, the official-directory sync.
+- Tests: unit 153/153 (school directory 13). Mocked browser scenarios on the production build 14/14 (every `/api` call answered in the browser; no backend): Administrator without `schools.manage`, Administrator with it, Super Administrator, legacy backend, UNKNOWN backend, new backend without the capability, create (Rwanda, international, duplicate), edit (reason, code conflict), deactivate, detail and history, invalid id, claim review.
+- **Backend dependency:** on backend `develop` (`9fd1942`) an Administrator's `/me/permissions` does not yet list `schools.manage` (it holds it; the list under-reports it). Administrators therefore see the read-only pages until the backend fix `fix(auth): report schools.manage for administrators` (`356af7d`, not yet merged) is released; Super Administrators see the directory. Neither backend change is deployed: production still runs the legacy backend, which shows the read-only pages.
+
 ## Owner actions required
 
 | # | Action | Unblocks |
@@ -112,7 +125,12 @@ Phases 3 and 4 flows that waited for the admin (student submission, mentor gradi
 | 3 | Optional: fill in support contact details in platform settings; update the stale student-test count; rotate the admin password before any real use (it appears in the chat) | — |
 
 ## Known limitations (backend)
-No push notifications (60 s polling); no teacher accounts (teachers use the contact form); contact messages cannot be answered from the platform (reply by e-mail); e-mail is DRY_RUN locally; no avatar upload, and username/e-mail/school are not user-editable; no school create/edit; no assignment delete.
+No push notifications (60 s polling); teacher accounts only on the new backend with TEACHERS_ENABLED (see release readiness); contact messages cannot be answered from the platform (reply by e-mail); e-mail is DRY_RUN locally; no avatar upload, and username/e-mail/school are not user-editable; no school create/edit on the legacy backend (see the school directory section for the new backend); no assignment delete.
+
+**Starting an academic year is not idempotent (backend requirement, open).** `POST /admin/academic-years/:id/activate` is one request whose transaction can run for up to 120 s, while the Netlify proxy gives up after about 26 s. If the browser gets no answer, the outcome is unknown. A second request still sees the year as PLANNED, waits behind the first, and then runs the rollover again (re-closing the previous year, a duplicate audit entry, and promotion on top of promotion if the choices differ). The admin page prevents this only in the same browser: after an unanswered start it locks "Start year" for 5 minutes, through closing the dialog and reloading the page (unless browser storage is blocked), until the list shows the result (`lib/admin/academic-years.ts`). Other administrators, browsers and devices are not covered. The 5-minute window is an estimate: it can't cover a request that reaches a sleeping backend later than that. To make retries safe, the backend needs one of:
+- single-flight activation: a lock, or a conditional `PLANNED → ACTIVE` update inside the transaction that refuses with 409 when the year is no longer PLANNED;
+- an idempotency key; or
+- an asynchronous job whose status the page can poll.
 
 ## Environment
 Backend `node dist/main.js` on `:3000` with the local `prisma dev` database `rof`; frontend on `:3001` (`/api` proxy). `APP_URL=http://localhost:3001` ✅. Admin credentials are read from the user environment variables `ROF_ADMIN_USER` / `ROF_ADMIN_PASSWORD`, never stored in files. Test scripts are kept outside the repository, in the session scratchpads.
@@ -130,7 +148,7 @@ Production backend: `https://rofbackendtest.onrender.com` (health: database up, 
 | `netlify.toml` | Backend URL pinned (`API_PROXY_TARGET`, upload origin); `/api/*` CDN proxy rule added (no function cold start, large downloads stream) | Completed, not yet tested on Netlify |
 | CI | **Added** `.github/workflows/ci.yml` (lint, type-check, build with Netlify settings) — the repository had none | Completed, runs on the first push |
 | Quizzes, online exams, automatic marking | Not part of either application (assessment = uploaded solutions marked by coaches) | Not completed — product decision |
-| Admin pages for academic years, bulk e-mail, activity log | Backend APIs exist; no frontend pages (planned as optional in `INTEGRATION_MAPPING.md`). An academic year is active in production until 2027-07 | Not completed |
+| Bulk e-mail, activity log | Backend APIs exist; no frontend pages (planned as optional in `INTEGRATION_MAPPING.md`). Academic-year pages: done (PR #13; starting a year only with `academicYearActivation`) | Not completed |
 
 Changes: `lib/api/upload-origin.ts` (new), `lib/api/client.ts`, `lib/security/headers.ts`, `netlify.toml`, `.env.example`, `.github/workflows/ci.yml` (new), `DEPLOYMENT.md`, `INTEGRATION.md` (new), `README.md`.
 
@@ -145,3 +163,50 @@ Changes: `lib/api/upload-origin.ts` (new), `lib/api/client.ts`, `lib/security/he
 | Real-browser checks on the production build against the live backend | 39/39 (see `INTEGRATION.md`) | Completed and tested |
 
 Full report: `FINALIZATION-REPORT.md`.
+
+## Release readiness (2026-11-13, branch `fix/release-readiness`)
+
+Audit of `develop` → `main` for both repositories, fixes, and verification against a **real** backend.
+
+Frontend fixes (`b2105b7`): "Start year" only with the backend capability `academicYearActivation`
+(sends `expectedCurrentYearId`; explains CURRENT_YEAR_CHANGED / ACTIVATION_OPTIONS_DIFFER / replayed);
+CSV import follows the backend (schoolCode / schoolId where schools must exist); the admin school picker
+searches `/admin/schools` with the directory; "new school name" on invitations only on a LEGACY backend;
+registration keeps its fallback during detection retries; resource actions defer to the backend when
+`/me/permissions` failed; read-only schools copy per backend.
+
+Verification (local, disposable PostgreSQL; no request mocked):
+- Real integration, frontend production build → `/api` proxy → backend `fix/release-readiness`: all six
+  roles sign in and reach their portal; Teacher cross-school isolation (with a delegation: own school's
+  student opens, the other school's is refused); negative authorization for every role; registration with
+  an official code → claim verified in School verification; school directory create / edit (PATCH carries
+  only the change) / deactivate (backend warning shown) / reactivate / detail and history; invitation
+  picking an administrator-created school; CSV import with schoolCode; assignment lifecycle with the
+  student's submission and result in the UI; two administrators starting the same year at once (one
+  rollover, one audit entry).
+- Real integration against the backend that runs in production today (`main`, LEGACY): planning works and
+  Start year is not offered; read-only schools; invitation with a new school name; legacy CSV format;
+  role change without a password step; legacy registration; student and coach portals; no call to a
+  new-backend-only endpoint.
+- Known behaviour after the backend release: every existing claim is PENDING, so Teachers see no students
+  and the school leaderboard is empty until administrators verify claims.
+
+## Release permissions (2026-11-14, branch `feat/release-permissions`)
+
+Owner decisions of 2026-11-14, with the backend branch of the same name:
+
+- **D-5 — Administrators manage Head Coaches.** The backend's ADMIN `/me/permissions` list now also ends with
+  `users.manageHeadCoaches`, `programmes.manageHeads`, `programmes.manageMembers`, `coaches.monitor`,
+  `reports.view` (additive). With it, an Administrator is offered the Head Coach role (only while the backend
+  advertises `headCoachAccounts`), the "Programmes headed" card on a Head Coach's account and
+  `/admin/programmes` (members). Super Administrator is still never offered. On the production backend (frozen
+  list) nothing changes.
+- **Head Coaches add students.** The Head Coach's Programme → Students tab has "Add a student": it searches
+  `GET /admin/programmes/:id/student-candidates` (students in no programme yet; name, username, grade, division,
+  school). A student of another programme is never listed, and adding one is refused (409
+  `STUDENT_IN_OTHER_PROGRAMME`, shown as "an administrator moves students between programmes").
+  Administrators keep their account search (`GET /admin/users`). Rule: `peopleSearch()` in
+  `lib/programmes/programme-rules.ts`.
+- **Teachers.** The backend no longer grants Teachers the unused course permissions (`courses.view`,
+  `resources.view`, `assignments.view`, `discussions.*`); the teacher portal never used them (unit test
+  lists updated).

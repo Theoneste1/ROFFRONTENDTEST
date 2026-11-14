@@ -8,11 +8,15 @@ import { useAdminDashboard, useAdminDivisions, useAssignmentReport, useCoursePar
 import { useCourses } from "@/lib/queries/learning";
 import { useNow } from "@/lib/hooks/useNow";
 import { formatNumber } from "@/lib/format";
-import { ErrorState } from "@/app/components/ui/feedback";
+import { ErrorState, Spinner } from "@/app/components/ui/feedback";
 import { CsvButton } from "../components/adminUi";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { hasFeature } from "@/lib/api/capabilities";
+import { exportPlan } from "@/lib/admin/report-exports";
 
 interface ReportItemProps {
   label: string;
+  /** undefined = still loading (shown as a placeholder). */
   value: string | number | undefined;
   total?: number;
   hasProgressBar?: boolean;
@@ -21,7 +25,7 @@ interface ReportItemProps {
 const ReportItem: React.FC<ReportItemProps> = ({ label, value, total, hasProgressBar }) => {
   const numericVal = typeof value === "number" ? value : parseInt(String(value ?? ""), 10);
   const progressPct = hasProgressBar && total && !isNaN(numericVal) ? Math.min(100, Math.round((numericVal / total) * 100)) : 0;
-  const shown = value === undefined ? "…" : typeof value === "number" ? formatNumber(value) : value;
+  const shown = value === undefined ? <span className="inline-block h-3 w-8 rounded bg-gray-100 animate-pulse align-middle" aria-label="Loading" /> : typeof value === "number" ? formatNumber(value) : value;
   return (
     <div className="py-3 border-b border-gray-100 last:border-0 text-xs">
       <div className="flex items-center justify-between gap-3">
@@ -88,8 +92,11 @@ export default function ReportsContent() {
 
   const d = dashboard.data;
   const rows = assignments.data?.data;
-  const expected = rows?.reduce((n, r) => n + r.expectedStudents, 0);
-  const submitted = rows?.reduce((n, r) => n + r.submitted, 0);
+  // Totals over every matching assignment from the summary; older backends lack summary.expectedStudents,
+  // and then the first 100 rows are summed (R-04).
+  const summary = assignments.data?.summary as { expectedStudents?: number; submissions?: number } | undefined;
+  const expected = summary?.expectedStudents ?? rows?.reduce((n, r) => n + r.expectedStudents, 0);
+  const submitted = summary?.expectedStudents !== undefined ? summary.submissions : rows?.reduce((n, r) => n + r.submitted, 0);
   const stage = assignments.data?.summary as { submissions: number; byStage: { approved: number; published: number } } | undefined;
   const reviewed = stage ? stage.byStage.approved + stage.byStage.published : undefined;
   const avgScore = results.data ? results.data.summary.averagePublishedScore : undefined;
@@ -99,8 +106,12 @@ export default function ReportsContent() {
     const avg = r.length ? Math.round(r.reduce((n, x) => n + x.participationRate, 0) / r.length) : 0;
     return { div, students, avg, loaded: !!participation.data };
   });
-  const error = dashboard.error ?? assignments.error ?? reviews.error ?? participation.error;
-  const exportQuery = { courseId: filters.courseId, divisionId: filters.divisionId, from: filters.from };
+  const error = dashboard.error ?? assignments.error ?? reviews.error ?? results.error ?? participation.error;
+  const loading = [dashboard, assignments, reviews, results, participation, divisions].some((q) => q.isPending && !q.isError);
+  // A figure whose request failed shows "—" (the error banner explains), not a loader that never ends.
+  const shown = <T,>(failed: boolean, v: T): T | string => (failed ? "—" : v);
+  const caps = useBackendCapabilities();
+  const serverFilters = hasFeature(caps.detection, "reportExportFilters");
 
   return (
     <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800 font-sans">
@@ -137,8 +148,14 @@ export default function ReportsContent() {
 
       {error && (
         <div className="mb-6">
-          <ErrorState error={error} title="Some figures couldn't be loaded" onRetry={() => [dashboard, assignments, reviews, participation].forEach((q) => q.refetch())} />
+          <ErrorState error={error} title="Some figures couldn't be loaded" onRetry={() => [dashboard, assignments, reviews, results, participation].forEach((q) => q.refetch())} />
         </div>
+      )}
+
+      {loading && !error && (
+        <p className="mb-4 inline-flex items-center gap-2 text-xs font-medium text-gray-500" role="status">
+          <Spinner className="h-3.5 w-3.5" /> Loading figures…
+        </p>
       )}
 
       {/* Grid Container for Report Cards */}
@@ -148,9 +165,9 @@ export default function ReportsContent() {
             Student Activity
           </h2>
           <div className="divide-y divide-gray-100">
-            <ReportItem label="Active students" value={d?.students.active} total={d?.students.total} hasProgressBar />
-            <ReportItem label="Assignment submissions" value={d?.submissions.total} />
-            <ReportItem label="Late submissions" value={d?.submissions.late} />
+            <ReportItem label="Active students" value={shown(dashboard.isError, d?.students.active)} total={d?.students.total} hasProgressBar />
+            <ReportItem label="Assignment submissions" value={shown(dashboard.isError, d?.submissions.total)} />
+            <ReportItem label="Late submissions" value={shown(dashboard.isError, d?.submissions.late)} />
           </div>
         </section>
 
@@ -159,9 +176,9 @@ export default function ReportsContent() {
             Assignment Performance
           </h2>
           <div className="divide-y divide-gray-100">
-            <ReportItem label="Submission rate" value={expected === undefined ? undefined : expected ? pct((submitted! / expected) * 100) : "—"} />
-            <ReportItem label="Review completion" value={reviewed} total={stage?.submissions} hasProgressBar />
-            <ReportItem label="Average published score" value={pct(avgScore)} />
+            <ReportItem label="Submission rate" value={shown(assignments.isError, expected === undefined ? undefined : expected ? pct((submitted! / expected) * 100) : "—")} />
+            <ReportItem label="Review completion" value={shown(assignments.isError, reviewed)} total={stage?.submissions} hasProgressBar />
+            <ReportItem label="Average published score" value={shown(results.isError, pct(avgScore))} />
           </div>
         </section>
 
@@ -170,12 +187,12 @@ export default function ReportsContent() {
             Coach Review Activity
           </h2>
           <div className="divide-y divide-gray-100">
-            <ReportItem label="With coaches" value={d?.reviews.pendingMentorReview} />
-            <ReportItem label="Awaiting your approval" value={reviews.data?.pending.awaitingAdminApproval} />
-            <ReportItem label="Completed reviews" value={reviews.data?.completed.total} />
+            <ReportItem label="With coaches" value={shown(dashboard.isError, d?.reviews.pendingMentorReview)} />
+            <ReportItem label="Awaiting your approval" value={shown(reviews.isError, reviews.data?.pending.awaitingAdminApproval)} />
+            <ReportItem label="Completed reviews" value={shown(reviews.isError, reviews.data?.completed.total)} />
             <ReportItem
               label="Average review time"
-              value={reviews.data ? (reviews.data.completed.averageTurnaroundHours == null ? "—" : `${Math.round(reviews.data.completed.averageTurnaroundHours)} h`) : undefined}
+              value={reviews.isError ? "—" : reviews.data ? (reviews.data.completed.averageTurnaroundHours == null ? "—" : `${Math.round(reviews.data.completed.averageTurnaroundHours)} h`) : undefined}
             />
           </div>
         </section>
@@ -185,9 +202,17 @@ export default function ReportsContent() {
             Division Overview
           </h2>
           <div className="divide-y divide-gray-100">
-            {byDivision.map(({ div, students, avg, loaded }) => (
-              <ReportItem key={div.id} label={`${div.name.replace(/ division$/i, "")} participation (avg. across courses, ${formatNumber(students)} students)`} value={loaded ? avg : undefined} total={100} hasProgressBar />
-            ))}
+            {divisions.isPending ? (
+              <ReportItem label="Divisions" value={undefined} />
+            ) : divisions.isError ? (
+              <p className="py-3 text-xs text-gray-400">Couldn&apos;t load the divisions.</p>
+            ) : byDivision.length === 0 ? (
+              <p className="py-3 text-xs text-gray-400">No divisions yet.</p>
+            ) : (
+              byDivision.map(({ div, students, avg, loaded }) => (
+                <ReportItem key={div.id} label={`${div.name.replace(/ division$/i, "")} participation (avg. across courses, ${formatNumber(students)} students)`} value={shown(participation.isError, loaded ? avg : undefined)} total={100} hasProgressBar />
+              ))
+            )}
           </div>
         </section>
 
@@ -197,11 +222,20 @@ export default function ReportsContent() {
           </h2>
           <p className="text-xs text-gray-500 mb-4">CSV files with the filters above. Exports contain personal data; each download is recorded in the audit log.</p>
           <div className="flex flex-wrap gap-2">
-            {REPORT_EXPORTS.map((x) => (
-              <CsvButton key={x.key} label={x.label} onDownload={() => downloadCsv(x.path, "noFilters" in x ? {} : exportQuery, `${x.key}.csv`)} />
-            ))}
+            {REPORT_EXPORTS.map((x) => {
+              const plan = exportPlan({ key: x.key, noFilters: "noFilters" in x }, filters, serverFilters);
+              return (
+                <CsvButton
+                  key={x.key}
+                  label={x.label}
+                  disabledReason={caps.loading ? "Checking the server…" : plan.disabledReason}
+                  note={plan.note}
+                  onDownload={() => downloadCsv(x.path, plan.query ?? {}, `${x.key}.csv`)}
+                />
+              );
+            })}
             {(divisions.data ?? []).map((x) => (
-              <CsvButton key={x.id} label={`Student progress · ${x.name.replace(/ division$/i, "")}`} onDownload={() => reportsApi.studentProgressCsv(x.id)} />
+              <CsvButton key={x.id} label={`Student progress · ${x.name.replace(/ division$/i, "")}`} note={filters.courseId || filters.from ? "Whole division, all courses and dates" : undefined} onDownload={() => reportsApi.studentProgressCsv(x.id)} />
             ))}
           </div>
         </section>

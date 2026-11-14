@@ -17,8 +17,9 @@ import { useCommentActions, useCreateThread, useReplies, useReportThread, useThr
 import { useSession } from "@/lib/auth/session";
 import { errorMessage } from "@/lib/api/errors";
 import { formatDateTime, formatRelative, personName } from "@/lib/format";
-import { ROLE_LABEL } from "@/lib/auth/roles";
+import { roleLabel } from "@/lib/auth/roles";
 import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
+import { ConfirmDialog } from "@/app/admin/components/adminUi";
 
 const REACTIONS: { type: ReactionType; label: string; icon: typeof ThumbsUp; tone: string }[] = [
   { type: "LIKE", label: "Like", icon: ThumbsUp, tone: "bg-blue-500" },
@@ -324,6 +325,7 @@ function CommentCard({
   const [editText, setEditText] = useState(comment.content);
   const [reporting, setReporting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const replies = useReplies(comment.id, showReplies && !isReply);
 
   const deleted = comment.status === "DELETED" || !comment.author;
@@ -364,7 +366,7 @@ function CommentCard({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-gray-900 text-sm">{deleted ? "Deleted" : personName(comment.author)}</span>
               {!deleted && comment.author!.role !== "STUDENT" && (
-                <span className="bg-[#EFF6FF] text-[#3B82F6] text-[11px] font-semibold px-2 py-0.5 rounded-md">{ROLE_LABEL[comment.author!.role]}</span>
+                <span className="bg-[#EFF6FF] text-[#3B82F6] text-[11px] font-semibold px-2 py-0.5 rounded-md">{roleLabel(comment.author!.role)}</span>
               )}
               {mine && <span className="bg-indigo-900 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">You</span>}
             </div>
@@ -382,9 +384,7 @@ function CommentCard({
               setEditText(comment.content);
               setEditing(true);
             }}
-            onDelete={() => {
-              if (window.confirm("Delete this comment?")) actions.remove.mutate({ commentId: comment.id, parentId });
-            }}
+            onDelete={() => setConfirmingDelete(true)}
             onReport={() => setReporting(true)}
           />
         )}
@@ -501,6 +501,17 @@ function CommentCard({
             replies.data.data.map((r) => <CommentCard key={r.id} comment={r} threadId={threadId} canPost={canPost} isReply />)
           )}
         </div>
+      )}
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title="Delete this comment?"
+          body="The comment is removed from the discussion. This cannot be undone."
+          confirmLabel="Delete"
+          tone="danger"
+          onClose={() => setConfirmingDelete(false)}
+          onConfirm={() => actions.remove.mutateAsync({ commentId: comment.id, parentId })}
+        />
       )}
     </div>
   );

@@ -13,9 +13,8 @@
  * Returning null means "nothing to open for this role". Never a page of
  * another portal: the backend would refuse it anyway.
  */
-import type { AppNotification, Role } from "@/lib/api/types";
-
-const PREFIX: Record<Role, string> = { STUDENT: "/student", MENTOR: "/mentor", ADMIN: "/admin" };
+import type { AppNotification } from "@/lib/api/types";
+import { portalPrefix, type PortalPrefix } from "@/lib/auth/role-rules";
 
 const ID = "([A-Za-z0-9-]{1,64})";
 const RE = {
@@ -25,11 +24,12 @@ const RE = {
   discussion: new RegExp(`^/discussions/${ID}/?$`),
 };
 
-/** Role-prefixed paths the backend links to, per role (all exist in this app). */
-const ROLE_PATHS: Record<Role, RegExp[]> = {
-  STUDENT: [/^\/student\//],
-  MENTOR: [/^\/mentor\/assignments\/[\w-]+\/?$/, /^\/mentor\/reviews\/?$/, /^\/mentor\/reviews\/[\w-]+\/?$/],
-  ADMIN: [/^\/admin\/assignments\/[\w-]+\/?$/, /^\/admin\/submissions\/[\w-]+\/?$/, /^\/admin\/moderation\/reports\/[\w-]+\/?$/],
+/** Portal-prefixed paths the backend links to, per portal (all exist in this app). */
+const PORTAL_PATHS: Record<PortalPrefix, RegExp[]> = {
+  "/student": [/^\/student\//],
+  "/teacher": [/^\/teacher\/students\/[\w-]+\/?$/],
+  "/mentor": [/^\/mentor\/assignments\/[\w-]+\/?$/, /^\/mentor\/reviews\/?$/, /^\/mentor\/reviews\/[\w-]+\/?$/],
+  "/admin": [/^\/admin\/assignments\/[\w-]+\/?$/, /^\/admin\/submissions\/[\w-]+\/?$/, /^\/admin\/moderation\/reports\/[\w-]+\/?$/],
 };
 
 /** The role-neutral paths that have redirect routes (also allowed as `?next=` after sign-in). */
@@ -37,42 +37,57 @@ export function isDeepLinkPath(path: string): boolean {
   return Object.values(RE).some((re) => re.test(path));
 }
 
-export function discussionHref(role: Role, threadId: string): string {
-  return `${PREFIX[role]}/discussions/${threadId}`;
+/**
+ * Portals that have no course, assignment or discussion pages: the teacher
+ * portal shows students only, so such links open nothing there.
+ */
+const WITHOUT_COURSE_PAGES: readonly PortalPrefix[] = ["/teacher"];
+
+/** The discussion page in the role's portal, or null when the portal has none (teacher, unknown role). */
+export function discussionHref(role: string | null | undefined, threadId: string): string | null {
+  const prefix = portalPrefix(role);
+  return prefix && !WITHOUT_COURSE_PAGES.includes(prefix) ? `${prefix}/discussions/${threadId}` : null;
 }
 
 /**
  * Maps a backend path (with optional query) to this app's route for `role`.
  * `/results/:id` for a student without a known assignment returns the
- * redirect route, which looks the assignment up.
+ * redirect route, which looks the assignment up. An unknown role has nothing
+ * to open here, and a teacher only the student pages of the teacher portal: null otherwise.
  */
-export function resolveLink(link: string, role: Role, data?: Record<string, string | undefined> | null): string | null {
+export function resolveLink(link: string, role: string | null | undefined, data?: Record<string, string | undefined> | null): string | null {
+  const prefix = portalPrefix(role);
+  if (!prefix) return null;
+  if (WITHOUT_COURSE_PAGES.includes(prefix)) {
+    const path = link.split("?", 1)[0];
+    return !link.startsWith("//") && PORTAL_PATHS[prefix].some((re) => re.test(path)) ? link : null;
+  }
   if (!link.startsWith("/") || link.startsWith("//")) return null;
   const [path, query = ""] = link.split("?", 2);
   const qs = query ? `?${query}` : "";
   let m: RegExpMatchArray | null;
 
-  if ((m = path.match(RE.assignment))) return `${PREFIX[role]}/assignments/${m[1]}`;
+  if ((m = path.match(RE.assignment))) return `${prefix}/assignments/${m[1]}`;
 
   if ((m = path.match(RE.result))) {
-    if (role !== "STUDENT") return null;
+    if (prefix !== "/student") return null;
     return data?.assignmentId ? `/student/assignments/${data.assignmentId}?tab=results` : `/results/${m[1]}`;
   }
 
   if ((m = path.match(RE.resource))) {
-    if (role === "STUDENT") return `/student/courses/${m[1]}?resource=${m[2]}`;
-    if (role === "ADMIN") return `/admin/courses/resources?scope=${m[1]}`;
+    if (prefix === "/student") return `/student/courses/${m[1]}?resource=${m[2]}`;
+    if (prefix === "/admin") return `/admin/courses/resources?scope=${m[1]}`;
     return "/mentor/courses";
   }
 
   if ((m = path.match(RE.discussion))) return discussionHref(role, m[1]);
 
-  if (ROLE_PATHS[role].some((re) => re.test(path))) return path + qs;
+  if (PORTAL_PATHS[prefix].some((re) => re.test(path))) return path + qs;
   return null;
 }
 
 /** Destination of a notification, or null when it has nothing to open. */
-export function notificationHref(n: Pick<AppNotification, "link" | "data">, role: Role): string | null {
+export function notificationHref(n: Pick<AppNotification, "link" | "data">, role: string | null | undefined): string | null {
   if (n.link) return resolveLink(n.link, role, n.data);
   // Moderation notices carry the thread id but no link.
   if (n.data?.threadId) return discussionHref(role, n.data.threadId);

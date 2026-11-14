@@ -6,6 +6,7 @@ import { School } from "lucide-react";
 import { studentsApi, type UserReportFilters } from "@/lib/api/admin";
 import type { ReportUserStatus } from "@/lib/api/types";
 import { useAdminDivisions, useStudentReport } from "@/lib/queries/admin";
+import { useSession } from "@/lib/auth/session";
 import { formatDate, formatNumber } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
@@ -30,6 +31,7 @@ export default function StudentsClient() {
 
   const filters: UserReportFilters = { divisionId: divisionId || undefined, status: status || undefined, q: q || undefined, page, limit: PAGE_SIZE };
   const students = useStudentReport(filters);
+  const { can } = useSession();
   const divisions = useAdminDivisions();
 
   function setParam(key: string, value: string) {
@@ -51,6 +53,11 @@ export default function StudentsClient() {
           <Link href="/admin/schools" className={btnSecondary}>
             <School className="h-3.5 w-3.5" aria-hidden="true" /> Schools
           </Link>
+          {can("programmes.manageMembers") && (
+            <Link href="/admin/programmes" className={btnSecondary}>
+              Programmes
+            </Link>
+          )}
           <CsvButton onDownload={() => studentsApi.exportCsv(filters)} />
         </div>
       </div>
