@@ -14,7 +14,8 @@ import { isApiError } from "@/lib/api/errors";
 import type { DirectorySchoolDetail, SchoolClaimStatus } from "@/lib/api/school-directory";
 import { invalidateAfterSchoolChange, useDirectorySchool, useDirectorySchoolHistory, useDirectorySchoolStudents } from "@/lib/queries/school-directory";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
-import { ACCOMMODATION_LABEL, CLAIM_LABEL, OWNERSHIP_LABEL, RWANDA, SOURCE_LABEL, describeAuditEntry, isUuid, placeLabel } from "@/lib/admin/school-directory";
+import { ACCOMMODATION_LABEL, CLAIM_LABEL, OWNERSHIP_LABEL, RWANDA, SOURCE_LABEL, describeAuditEntry, isUuid, placeLabel, schoolVerification } from "@/lib/admin/school-directory";
+import { adminSchoolsApi } from "@/lib/api/school-directory";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, Badge, Card, MetricCard, Notice, TableCard, TableMessage, btnDanger, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
@@ -38,6 +39,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
   const school = useDirectorySchool(schoolId, valid);
   const [tab, setTab] = useState<Tab>("students");
   const [dialog, setDialog] = useState<"edit" | "active" | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null);
   const qc = useQueryClient();
   const back = (
@@ -65,6 +67,19 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
 
   const s = school.data;
   const refresh = () => invalidateAfterSchoolChange(qc);
+  const verification = schoolVerification(s);
+  const verify = async () => {
+    setVerifying(true);
+    try {
+      await adminSchoolsApi.verify(s.id);
+      setNotice({ text: verification.verified ? "The school was verified again." : "The school is now verified." });
+      void refresh();
+    } catch (err) {
+      setNotice({ text: isApiError(err) ? err.message : "Couldn't verify the school. Please try again." });
+    } finally {
+      setVerifying(false);
+    }
+  };
   return (
     <AdminPage
       title={s.name}
@@ -74,6 +89,11 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
           <button type="button" className={btnSecondary} onClick={() => setDialog("edit")}>
             Edit
           </button>
+          {verification.canVerify && (
+            <button type="button" className={btnSecondary} onClick={() => void verify()} disabled={verifying} data-testid="verify-school">
+              {verifying ? "Verifying…" : verification.verified ? "Verify again" : "Mark as verified"}
+            </button>
+          )}
           <button type="button" className={s.isActive ? btnDanger : btnPrimary} onClick={() => setDialog("active")}>
             {s.isActive ? "Deactivate" : "Reactivate"}
           </button>
@@ -179,6 +199,10 @@ function SchoolRecord({ school: s }: { school: DirectorySchoolDetail }) {
     ["Added", `${formatDate(s.createdAt)}${s.createdBy ? ` by @${s.createdBy.username}` : ""}`],
     ["Last changed", formatDateTime(s.updatedAt)],
     ...(s.lastSourceSyncAt ? ([["Last directory sync", formatDateTime(s.lastSourceSyncAt)]] as Array<[string, string]>) : []),
+    ["Verified", s.lastVerifiedAt ? `${formatDateTime(s.lastVerifiedAt)}${s.lastVerifiedBy ? ` by @${s.lastVerifiedBy.username}` : ""}` : "Not verified"],
+    ...(s.countryCode === RWANDA && s.code === null
+      ? ([["Teachers", schoolVerification(s).teacherEligible ? "Can choose this school" : "Not offered (needs an administrator-created, verified school)"]] as Array<[string, string]>)
+      : []),
   ];
   return (
     <Card>

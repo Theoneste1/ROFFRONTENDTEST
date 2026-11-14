@@ -44,6 +44,23 @@ export function schoolDirectoryMode(input: {
 
 // ─── Rwanda rules (backend school-rules.ts) ─────────────────────────────────
 
+/**
+ * The school's verification as shown to administrators, and whether it can be verified now
+ * (active Rwandan schools). A school without an official code is open to Teachers only when an
+ * administrator created it and verified it (owner decision 2026-11-14).
+ */
+export function schoolVerification(s: {
+  isActive: boolean; countryCode: string; code: string | null; source: string;
+  lastVerifiedAt: string | null; lastVerifiedBy?: { username: string } | null;
+}): { verified: boolean; canVerify: boolean; teacherEligible: boolean } {
+  const verified = s.lastVerifiedAt !== null;
+  return {
+    verified,
+    canVerify: s.isActive && s.countryCode === "RW",
+    teacherEligible: s.isActive && s.countryCode === "RW" && (s.code !== null || (s.source === "ADMIN" && verified)),
+  };
+}
+
 export const RWANDA = "RW";
 
 /** Province of each code prefix, exactly as the backend stores it. */
