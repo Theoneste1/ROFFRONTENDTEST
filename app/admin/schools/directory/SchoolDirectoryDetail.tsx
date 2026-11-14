@@ -3,7 +3,8 @@
 /**
  * /admin/schools/:id in "manage" mode: the school record (`GET /admin/schools/:id`), what refers
  * to it (counts), its students with their claim for this school (`/students`) and its history
- * (`/history`: source records, and audit entries when the user holds `audit.view`).
+ * (`/history`: source records, and audit entries when the user holds `audit.view`), its contacts
+ * (view, edit, verify) and its offerings (education levels and programmes).
  */
 import { useState } from "react";
 import Link from "next/link";
@@ -18,7 +19,12 @@ import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, Badge, Card, MetricCard, Notice, TableCard, TableMessage, btnDanger, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
 import SchoolActiveDialog from "./SchoolActiveDialog";
+import SchoolContactsTab from "./SchoolContactsTab";
 import SchoolFormDialog from "./SchoolFormDialog";
+import SchoolOfferingsTab from "./SchoolOfferingsTab";
+
+type Tab = "students" | "contacts" | "offerings" | "history";
+const TAB_LABEL: Record<Tab, string> = { students: "Students", contacts: "Contacts", offerings: "Offerings", history: "History" };
 
 const CLAIM_BADGE: Record<SchoolClaimStatus, string> = {
   PENDING: "bg-amber-50 text-amber-700",
@@ -30,7 +36,7 @@ const CLAIM_BADGE: Record<SchoolClaimStatus, string> = {
 export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }) {
   const valid = isUuid(schoolId);
   const school = useDirectorySchool(schoolId, valid);
-  const [tab, setTab] = useState<"students" | "history">("students");
+  const [tab, setTab] = useState<Tab>("students");
   const [dialog, setDialog] = useState<"edit" | "active" | null>(null);
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null);
   const qc = useQueryClient();
@@ -100,7 +106,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       <SchoolRecord school={s} />
 
       <div role="tablist" aria-label="School information" className="flex gap-2 my-4">
-        {(["students", "history"] as const).map((t) => (
+        {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
@@ -109,11 +115,19 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
             onClick={() => setTab(t)}
             className={`px-4 py-1.5 rounded-full text-xs font-semibold ${tab === t ? "bg-indigo-600 text-white" : "bg-white text-gray-600 border border-gray-200"}`}
           >
-            {t === "students" ? "Students" : "History"}
+            {TAB_LABEL[t]}
           </button>
         ))}
       </div>
-      {tab === "students" ? <StudentsTab schoolId={s.id} /> : <HistoryTab schoolId={s.id} />}
+      {tab === "students" ? (
+        <StudentsTab schoolId={s.id} />
+      ) : tab === "contacts" ? (
+        <SchoolContactsTab schoolId={s.id} />
+      ) : tab === "offerings" ? (
+        <SchoolOfferingsTab schoolId={s.id} />
+      ) : (
+        <HistoryTab schoolId={s.id} />
+      )}
 
       {dialog === "edit" && (
         <SchoolFormDialog
