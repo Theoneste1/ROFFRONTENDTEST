@@ -7,9 +7,12 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Download, Search, X } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
-import { Alert, Spinner } from "@/app/components/ui/feedback";
+import { Alert, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
+import { PageFrame } from "@/app/components/ui/PageFrame";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
-import type { AssignmentStatus, SubmissionStatus } from "@/lib/api/types";
+import { useSession } from "@/lib/auth/session";
+import { actionAllowed } from "@/lib/auth/navigation";
+import type { AssignmentStatus, Permission, SubmissionStatus } from "@/lib/api/types";
 
 // ─── Page layout ────────────────────────────────────────────────────────────
 
@@ -336,4 +339,24 @@ export function MetricCard({ label, value, subtext }: { label: string; value: Re
       {subtext && <p className="text-xs text-gray-400 mt-2 font-medium">{subtext}</p>}
     </div>
   );
+}
+
+// ─── Permission gate ────────────────────────────────────────────────────────
+
+/**
+ * A page that needs one permission from `GET /me/permissions`: waits while the
+ * list loads, explains when it is missing, and otherwise renders the page. If
+ * the list failed to load the page is shown and the API decides (as elsewhere).
+ */
+export function RequirePermission({ permission, title, children }: { permission: Permission; title: string; children: ReactNode }) {
+  const { can, permissionsStatus } = useSession();
+  if (permissionsStatus === "loading") return <LoadingBlock />;
+  if (!actionAllowed(permission, permissionsStatus, can)) {
+    return (
+      <PageFrame title={title}>
+        <Notice tone="info">This page needs the {permission} permission.</Notice>
+      </PageFrame>
+    );
+  }
+  return <>{children}</>;
 }

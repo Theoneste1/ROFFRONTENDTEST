@@ -180,5 +180,19 @@ export const queryKeys = {
     mentorReport: (filters: UserReportFilters = {}) => [...queryKeys.admin.all, "mentors", "report", filters] as const,
     mentorScopes: (mentorId: string) => [...queryKeys.admin.all, "mentors", "scopes", mentorId] as const,
     mentorRequests: (params: { status?: string; page?: number } = {}) => [...queryKeys.admin.all, "mentor-requests", params] as const,
+    /** Bulk e-mail (lib/api/admin-ops.ts, `/admin/email`). */
+    emailAll: ["admin", "email"] as const,
+    emailUsers: (filters: object) => [...queryKeys.admin.emailAll, "users", filters] as const,
+    emailJobs: (params: object) => [...queryKeys.admin.emailAll, "jobs", params] as const,
+    emailJob: (id: string) => [...queryKeys.admin.emailAll, "job", id] as const,
+    emailDeliveries: (id: string, params: object) => [...queryKeys.admin.emailAll, "deliveries", id, params] as const,
+    /** Learning-activity log (`/admin/activity`). */
+    activity: (filters: object) => [...queryKeys.admin.all, "activity", "list", filters] as const,
+    activitySummary: (range: object) => [...queryKeys.admin.all, "activity", "summary", range] as const,
+    /** Permission overrides and effective permissions of one user. */
+    permissionsOf: (userId: string) => [...queryKeys.admin.all, "permissions", userId] as const,
+    overrides: (userId: string) => [...queryKeys.admin.permissionsOf(userId), "overrides"] as const,
+    effectivePermissions: (userId: string) => [...queryKeys.admin.permissionsOf(userId), "effective"] as const,
+    permissionCatalogue: () => [...queryKeys.admin.all, "permission-catalogue"] as const,
   },
 };
