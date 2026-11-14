@@ -8,6 +8,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { Download, Search, X } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
 import { Alert, Spinner } from "@/app/components/ui/feedback";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 import type { AssignmentStatus, SubmissionStatus } from "@/lib/api/types";
 
 // ─── Page layout ────────────────────────────────────────────────────────────
@@ -34,7 +35,7 @@ export function SearchInput({ value, onChange, placeholder = "Search…", label 
     return () => clearTimeout(t);
   }, [text, value, delay]);
   return (
-    <div className="relative flex-1 min-w-[200px] max-w-xs">
+    <div className="relative flex-1 min-w-[min(200px,100%)] max-w-xs">
       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
       <input
         type="search"
@@ -196,14 +197,17 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  // Initial focus inside the dialog, Tab stays inside, focus returns to the opener on close.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef, true);
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <div className={`bg-white rounded-2xl shadow-2xl w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-[90vh] overflow-y-auto`}>
+      <div ref={panelRef} className={`bg-white rounded-2xl shadow-2xl w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-[90vh] overflow-y-auto`}>
         <div className="flex items-start justify-between gap-4 px-6 pt-6">
           <h2 id={titleId} className="text-lg font-bold text-gray-900">
             {title}
           </h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close" data-dialog-close>
             <X className="w-5 h-5" />
           </button>
         </div>

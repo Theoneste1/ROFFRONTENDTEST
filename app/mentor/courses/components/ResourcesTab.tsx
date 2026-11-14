@@ -18,6 +18,7 @@ import { useMentorResources, useResourceAction } from "@/lib/queries/mentor";
 import { errorMessage } from "@/lib/api/errors";
 import { formatDate, formatFileSize, personName } from "@/lib/format";
 import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
+import { ConfirmDialog } from "@/app/admin/components/adminUi";
 
 export type ResourceKind = "books" | "papers" | "notes";
 
@@ -68,6 +69,7 @@ export default function ResourcesTab({
   const cfg = KIND[kind];
   const resources = useMentorResources(courseId, divisionId);
   const action = useResourceAction(courseId);
+  const [deleting, setDeleting] = useState<CourseResource | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [year, setYear] = useState("all");
@@ -88,7 +90,10 @@ export default function ResourcesTab({
   const addHref = `${basePath}/upload-book?scope=${encodeURIComponent(scopeKeyValue)}&type=${cfg.defaultType}&tab=${kind}`;
 
   function run(r: CourseResource, act: "publish" | "unpublish" | "archive" | "restore" | "delete") {
-    if (act === "delete" && !window.confirm(`Delete “${r.title}”? This cannot be undone.`)) return;
+    if (act === "delete") {
+      setDeleting(r);
+      return;
+    }
     setNotice(null);
     action.mutate(
       { resourceId: r.id, action: act },
@@ -243,6 +248,21 @@ export default function ResourcesTab({
             </table>
           </div>
         </div>
+      )}
+
+      {deleting && (
+        <ConfirmDialog
+          title="Delete this resource?"
+          body={<>“{deleting.title}” is deleted for everyone. This cannot be undone.</>}
+          confirmLabel="Delete"
+          tone="danger"
+          onClose={() => setDeleting(null)}
+          onConfirm={async () => {
+            setNotice(null);
+            await action.mutateAsync({ resourceId: deleting.id, action: "delete" });
+            setNotice("Deleted.");
+          }}
+        />
       )}
     </div>
   );

@@ -17,7 +17,8 @@ import {
   BarChart3,
   ScrollText,
   ShieldAlert,
-  Inbox
+  Inbox,
+  School
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import { useSession } from "@/lib/auth/session";
@@ -32,6 +33,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/users": Users,
   "/admin/mentors": GraduationCap,
   "/admin/students": UserCircle,
+  "/admin/schools": School,
   "/admin/divisions": FolderTree,
   "/admin/academic-years": CalendarRange,
   "/admin/courses": BookOpen,

@@ -16,6 +16,7 @@ import { Alert, Spinner } from '@/app/components/ui/feedback';
 import FileButton from '@/app/components/ui/FileButton';
 import { StatusBadge } from '../../../components/studentUi';
 import { useNow } from '@/lib/hooks/useNow';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query/keys';
 import { submitErrorMessage, submitErrorStale } from '@/lib/assessment/student-state';
@@ -144,8 +145,11 @@ function SubmissionForm({ assignment: a, isResubmission, onSubmitted }: { assign
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  // Confirmation dialog focus: inside on open, Tab trapped, Escape cancels, back to the Submit button on close.
+  const confirmRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const submit = useSubmitAssignment();
+  useFocusTrap(confirmRef, showConfirmModal, { onEscape: () => !submit.isPending && setShowConfirmModal(false) });
   const qc = useQueryClient();
   const now = useNow();
 
@@ -314,7 +318,7 @@ function SubmissionForm({ assignment: a, isResubmission, onSubmitted }: { assign
       {/* Confirm submission */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-[1px] z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl transition-all">
+          <div ref={confirmRef} className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl transition-all">
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
                 <AlertCircle className="w-10 h-10 stroke-[1.75]" />

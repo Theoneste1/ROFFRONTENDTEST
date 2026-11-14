@@ -19,6 +19,7 @@ import { errorMessage } from "@/lib/api/errors";
 import { formatDateTime, formatRelative, personName } from "@/lib/format";
 import { roleLabel } from "@/lib/auth/roles";
 import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
+import { ConfirmDialog } from "@/app/admin/components/adminUi";
 
 const REACTIONS: { type: ReactionType; label: string; icon: typeof ThumbsUp; tone: string }[] = [
   { type: "LIKE", label: "Like", icon: ThumbsUp, tone: "bg-blue-500" },
@@ -324,6 +325,7 @@ function CommentCard({
   const [editText, setEditText] = useState(comment.content);
   const [reporting, setReporting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const replies = useReplies(comment.id, showReplies && !isReply);
 
   const deleted = comment.status === "DELETED" || !comment.author;
@@ -382,9 +384,7 @@ function CommentCard({
               setEditText(comment.content);
               setEditing(true);
             }}
-            onDelete={() => {
-              if (window.confirm("Delete this comment?")) actions.remove.mutate({ commentId: comment.id, parentId });
-            }}
+            onDelete={() => setConfirmingDelete(true)}
             onReport={() => setReporting(true)}
           />
         )}
@@ -501,6 +501,17 @@ function CommentCard({
             replies.data.data.map((r) => <CommentCard key={r.id} comment={r} threadId={threadId} canPost={canPost} isReply />)
           )}
         </div>
+      )}
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title="Delete this comment?"
+          body="The comment is removed from the discussion. This cannot be undone."
+          confirmLabel="Delete"
+          tone="danger"
+          onClose={() => setConfirmingDelete(false)}
+          onConfirm={() => actions.remove.mutateAsync({ commentId: comment.id, parentId })}
+        />
       )}
     </div>
   );
