@@ -87,9 +87,9 @@ function attentionItems(a: ReportsOverview['actionRequired'], canSeeEmail: boole
     {
       count: a.failedEmails,
       title: 'Failed e-mails',
-      // The count covers bulk and account e-mails; only bulk-job failures can be listed (and retried), per job.
-      description: `${plural(a.failedEmails, 'e-mail')} could not be delivered.${canSeeEmail ? ' Bulk e-mail failures can be retried from their job.' : ''}`,
-      href: canSeeEmail ? '/admin/email' : undefined,
+      // The count covers bulk and account e-mails; the Failed e-mails page lists (and retries) both.
+      description: `${plural(a.failedEmails, 'e-mail')} could not be delivered.${canSeeEmail ? ' See which, and retry them.' : ''}`,
+      href: canSeeEmail ? '/admin/email/failed' : undefined,
     },
   ];
   return items.filter((i) => i.count > 0);

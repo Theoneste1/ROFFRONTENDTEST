@@ -2,7 +2,7 @@
 
 /** TanStack Query hooks for bulk e-mail, the activity log and permission overrides (lib/api/admin-ops.ts). */
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { activityApi, emailApi, permissionOverridesApi, type EmailUserFilters } from "@/lib/api/admin-ops";
+import { activityApi, emailApi, permissionOverridesApi, type DeliveryKind, type EmailUserFilters } from "@/lib/api/admin-ops";
 import type { ActivityQuery } from "@/lib/admin-ops/activity";
 import type { EmailDeliveryStatus, SendEmailPayload } from "@/lib/admin-ops/email";
 import { isJobRunning } from "@/lib/admin-ops/email";
@@ -46,6 +46,24 @@ export function useEmailDeliveries(id: string, params: { status?: EmailDeliveryS
     placeholderData: keepPreviousData,
     enabled,
     refetchInterval: running ? 3000 : false,
+  });
+}
+
+/** Failed deliveries of every kind (no retries on error: older backends answer 404). */
+export function useFailedDeliveries(params: { kind?: DeliveryKind; page?: number; limit?: number }) {
+  return useQuery({
+    queryKey: [...queryKeys.admin.emailAll, "failed", params],
+    queryFn: () => emailApi.allDeliveries({ ...params, status: "FAILED" }),
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+}
+
+export function useRetryDelivery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => emailApi.retryDelivery(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.admin.emailAll }),
   });
 }
 

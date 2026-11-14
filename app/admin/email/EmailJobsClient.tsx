@@ -37,7 +37,11 @@ function EmailJobs() {
       }
     >
       <Notice tone="info">
-        Failed deliveries of a bulk e-mail are listed in its job and can be retried there. Account e-mails (invitations, password resets, notifications) are not listed here.
+        Failed deliveries of a bulk e-mail are listed in its job and can be retried there. Failed account e-mails (invitations, password resets, notices) are on the{" "}
+        <Link href="/admin/email/failed" className={linkBtn}>
+          Failed e-mails
+        </Link>{" "}
+        page.
       </Notice>
       {jobs.isError ? (
         <ErrorState error={jobs.error} title="Couldn't load the e-mail jobs" onRetry={() => jobs.refetch()} />
