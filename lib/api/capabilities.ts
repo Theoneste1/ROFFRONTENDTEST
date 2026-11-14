@@ -44,6 +44,12 @@ export const KNOWN_FEATURES = [
    * list loads one page of 100 and filters in the browser (older backends refuse the new parameters).
    */
   "reviewQueueFilters",
+  /**
+   * The Reports CSV exports apply the page's filters: `results.csv` the period (submitted between)
+   * and the academic year besides course × division; enrolment the course. Without it those
+   * exports refuse the filters (400), so the page disables them with the reason instead.
+   */
+  "reportExportFilters",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

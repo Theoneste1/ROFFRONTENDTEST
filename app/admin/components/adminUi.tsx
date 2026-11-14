@@ -148,9 +148,10 @@ export const btnDanger =
 export const linkBtn = "text-indigo-600 hover:text-indigo-800 font-medium transition-colors text-xs";
 
 /** Download an authenticated CSV export. */
-export function CsvButton({ onDownload, label = "Export CSV" }: { onDownload: () => Promise<void>; label?: string }) {
+export function CsvButton({ onDownload, label = "Export CSV", disabledReason, note }: { onDownload: () => Promise<void>; label?: string; disabledReason?: string; note?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hintId = `csv-hint-${label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
   async function run() {
     setBusy(true);
     setError(null);
@@ -164,10 +165,15 @@ export function CsvButton({ onDownload, label = "Export CSV" }: { onDownload: ()
   }
   return (
     <span className="inline-flex flex-col items-end gap-1">
-      <button type="button" onClick={run} disabled={busy} className={btnSecondary}>
+      <button type="button" onClick={run} disabled={busy || !!disabledReason} title={disabledReason} aria-describedby={disabledReason || note ? hintId : undefined} className={btnSecondary}>
         {busy ? <Spinner className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" aria-hidden="true" />}
         {label}
       </button>
+      {(disabledReason || note) && (
+        <span id={hintId} className="text-[11px] text-gray-500 max-w-[16rem] text-right">
+          {disabledReason ?? note}
+        </span>
+      )}
       {error && (
         <span className="text-[11px] text-red-600" role="alert">
           {error}

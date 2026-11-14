@@ -10,6 +10,9 @@ import { useNow } from "@/lib/hooks/useNow";
 import { formatNumber } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import { CsvButton } from "../components/adminUi";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { hasFeature } from "@/lib/api/capabilities";
+import { exportPlan } from "@/lib/admin/report-exports";
 
 interface ReportItemProps {
   label: string;
@@ -100,7 +103,8 @@ export default function ReportsContent() {
     return { div, students, avg, loaded: !!participation.data };
   });
   const error = dashboard.error ?? assignments.error ?? reviews.error ?? participation.error;
-  const exportQuery = { courseId: filters.courseId, divisionId: filters.divisionId, from: filters.from };
+  const caps = useBackendCapabilities();
+  const serverFilters = hasFeature(caps.detection, "reportExportFilters");
 
   return (
     <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800 font-sans">
@@ -197,11 +201,20 @@ export default function ReportsContent() {
           </h2>
           <p className="text-xs text-gray-500 mb-4">CSV files with the filters above. Exports contain personal data; each download is recorded in the audit log.</p>
           <div className="flex flex-wrap gap-2">
-            {REPORT_EXPORTS.map((x) => (
-              <CsvButton key={x.key} label={x.label} onDownload={() => downloadCsv(x.path, "noFilters" in x ? {} : exportQuery, `${x.key}.csv`)} />
-            ))}
+            {REPORT_EXPORTS.map((x) => {
+              const plan = exportPlan({ key: x.key, noFilters: "noFilters" in x }, filters, serverFilters);
+              return (
+                <CsvButton
+                  key={x.key}
+                  label={x.label}
+                  disabledReason={caps.loading ? "Checking the server…" : plan.disabledReason}
+                  note={plan.note}
+                  onDownload={() => downloadCsv(x.path, plan.query ?? {}, `${x.key}.csv`)}
+                />
+              );
+            })}
             {(divisions.data ?? []).map((x) => (
-              <CsvButton key={x.id} label={`Student progress · ${x.name.replace(/ division$/i, "")}`} onDownload={() => reportsApi.studentProgressCsv(x.id)} />
+              <CsvButton key={x.id} label={`Student progress · ${x.name.replace(/ division$/i, "")}`} note={filters.courseId || filters.from ? "Whole division, all courses and dates" : undefined} onDownload={() => reportsApi.studentProgressCsv(x.id)} />
             ))}
           </div>
         </section>
