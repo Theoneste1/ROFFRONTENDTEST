@@ -13,6 +13,9 @@ import OverviewTab from "./OverviewTab";
 import ResourcesTab, { type ResourceKind } from "./ResourcesTab";
 import DiscussionPanel from "@/app/components/discussions/DiscussionPanel";
 import { useCourse } from "@/lib/queries/learning";
+import { useSession } from "@/lib/auth/session";
+import { useHeadedProgrammes } from "@/lib/queries/programmes";
+import ProgrammeCourses from "../../programme/ProgrammeCourses";
 
 type Tab = "overview" | ResourceKind | "discussion";
 const TABS: { id: Tab; label: string }[] = [
@@ -48,14 +51,7 @@ export default function CoursesContent() {
         <ErrorState error={scopes.error} title="Couldn't load your courses" onRetry={() => scopes.refetch()} />
       </div>
     );
-  if (!scope)
-    return (
-      <div className="p-6 lg:p-10">
-        <div className="bg-white rounded-2xl border border-slate-200">
-          <EmptyState title="You are not assigned to a course yet" description="An administrator assigns coaches to a course and division." />
-        </div>
-      </div>
-    );
+  if (!scope) return <NoTeachingScope />;
 
   const sc = parseScopeKey(scopeKey(scope))!;
 
@@ -106,5 +102,38 @@ function CourseDiscussion({ courseId, divisionId, title, division }: { courseId:
       banner={`Discussion for ${title} (${division} division). Students in this division can read and reply.`}
       disabledReason={course.data && !course.data.discussionsEnabled ? "Discussions are turned off for this course. You can still read earlier topics." : null}
     />
+  );
+}
+
+/**
+ * No course × division assignment. A Head Coach (reports.view, programme scope) sees the
+ * courses of the programmes they head, read-only: GET /courses and the course pages
+ * answer only for assigned courses (the backend's courses.view for a Head Coach covers
+ * the programme list and reports, not course content). Anyone else: the empty state.
+ */
+function NoTeachingScope() {
+  const { can } = useSession();
+  const headed = useHeadedProgrammes();
+  const headCoach = can("reports.view") && headed.programmes.length > 0;
+  if (can("reports.view") && headed.loading) return <LoadingBlock label="Loading your courses…" />;
+  return (
+    <div className="p-6 lg:p-10 space-y-6">
+      {headCoach ? (
+        <>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Programme courses</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              The courses of {headed.programmes.map((p) => p.name).join(", ")}. To prepare or review work in a course, an administrator gives you course access;
+              participation per division and course analytics are under Programme → Courses.
+            </p>
+          </div>
+          <ProgrammeCourses compact />
+        </>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200">
+          <EmptyState title="You are not assigned to a course yet" description="An administrator assigns coaches to a course and division." />
+        </div>
+      )}
+    </div>
   );
 }

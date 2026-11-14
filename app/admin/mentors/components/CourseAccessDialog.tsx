@@ -2,7 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { Plus, X } from "lucide-react";
-import { errorMessage } from "@/lib/api/errors";
+import { errorMessage, isApiError } from "@/lib/api/errors";
+import { useSession } from "@/lib/auth/session";
+import { courseAccessError, courseAccessTarget } from "@/lib/programmes/programme-rules";
 import { useAdminDivisions, useAdminUser, useMentorScopes, useScopeAction } from "@/lib/queries/admin";
 import { useCourses } from "@/lib/queries/learning";
 import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
@@ -12,7 +14,13 @@ import { Modal, btnPrimary } from "../../components/adminUi";
  * A mentor's course × division access (`/admin/mentor-assignments`). Adding
  * re-activates an earlier grant; removing deactivates it and reports open
  * reviews that should be reassigned.
+ *
+ * Targets (lib/programmes/programme-rules.ts courseAccessTarget, the backend's rule in
+ * mentor-assignments.service): a Coach for any caller with mentorAssignments.manage; a
+ * Head Coach only for an Administrator (ADMIN / SUPER_ADMIN with mentorAssignments.manage,
+ * H4), and only on courses of a programme that Head Coach heads (400 NOT_PROGRAMME_HEAD).
  */
+const changeError = (e: unknown) => (isApiError(e) && courseAccessError(e.code, e.status)) || errorMessage(e);
 export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { mentorId: string; mentorName?: string; onClose: () => void }) {
   const scopes = useMentorScopes(mentorId);
   const mentor = useAdminUser(mentorName ? undefined : mentorId);
@@ -24,8 +32,12 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
   const [message, setMessage] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
 
+  const { role: callerRole, can } = useSession();
   const name = mentorName ?? (mentor.data ? `${mentor.data.firstName} ${mentor.data.lastName}` : "this coach");
-  const isMentor = mentorName !== undefined || !mentor.data || mentor.data.role === "MENTOR";
+  // A name from the coaches list means a Coach; otherwise the account's role decides (while it loads, assume a coach).
+  const targetRole = mentorName !== undefined || !mentor.data ? "MENTOR" : mentor.data.role;
+  const target = courseAccessTarget(callerRole, can, targetRole);
+  const isHeadCoach = target === "headCoach";
   const active = scopes.data?.data ?? [];
   const has = (c: string, d: string) => active.some((s) => s.course.id === c && s.division.id === d);
 
@@ -39,7 +51,7 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
       setMessage({ tone: "success", text: `Access added: ${s.course.title} · ${s.division.name}.` });
       setCourseId("");
     } catch (err) {
-      setMessage({ tone: "error", text: errorMessage(err) });
+      setMessage({ tone: "error", text: changeError(err) });
     }
   }
 
@@ -55,7 +67,7 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
           : { tone: "success", text: `Access to ${label} removed.` },
       );
     } catch (err) {
-      setMessage({ tone: "error", text: errorMessage(err) });
+      setMessage({ tone: "error", text: changeError(err) });
     } finally {
       setRemoving(null);
     }
@@ -63,9 +75,17 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
 
   return (
     <Modal wide title={`Course access — ${name}`} onClose={action.isPending ? () => undefined : onClose}>
-      <p className="text-xs text-gray-500 mb-4">A coach prepares assignments, reviews submissions and manages resources only in the courses and divisions listed here.</p>
-      {!isMentor ? (
-        <Alert tone="error">This account is not a coach. Change its role on the user page first.</Alert>
+      <p className="text-xs text-gray-500 mb-4">
+        {isHeadCoach
+          ? "A Head Coach prepares assignments and reviews submissions only in the courses and divisions listed here — and only on courses of a programme they head (set on their user page)."
+          : "A coach prepares assignments, reviews submissions and manages resources only in the courses and divisions listed here."}
+      </p>
+      {target === "notEligible" ? (
+        <Alert tone="error">
+          {targetRole === "HEAD_COACH"
+            ? "Only an administrator can give a Head Coach course access."
+            : "This account is not a coach. Change its role on the user page first."}
+        </Alert>
       ) : scopes.isPending ? (
         <LoadingBlock />
       ) : scopes.isError ? (
