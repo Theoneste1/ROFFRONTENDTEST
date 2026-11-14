@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { COURSE_RULES } from "@/lib/api/admin";
@@ -11,6 +11,7 @@ import { useCourses } from "@/lib/queries/learning";
 import { formatNumber } from "@/lib/format";
 import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import { ConfirmDialog, MetricCard } from "../components/adminUi";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 const STATUS: Record<CourseStatus, { label: string; badge: string }> = {
   PUBLISHED: { label: "Published", badge: "bg-emerald-50 text-emerald-700" },
@@ -34,6 +35,8 @@ function EditCourseModal({ course, onClose }: { course: Course; onClose: () => v
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<StateAction | null>(null);
   const server = fieldErrors(action.error, ["title", "description"]);
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusTrap(formRef, true);
 
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -59,13 +62,13 @@ function EditCourseModal({ course, onClose }: { course: Course; onClose: () => v
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4" role="dialog" aria-modal="true" aria-labelledby="edit-course-title">
-      <form onSubmit={save} className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+      <form ref={formRef} onSubmit={save} className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-4">
           <h2 id="edit-course-title" className="text-xl font-bold text-gray-900">
             Edit {course.title}
           </h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100" aria-label="Close">
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100" aria-label="Close" data-dialog-close>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -181,7 +184,7 @@ export default function CoursesWithEditModal() {
 
       {/* Top Metric Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <MetricCard label="Published courses" value={courses.data ? list.filter((c) => c.status === "PUBLISHED").length : "…"} subtext={`Of ${list.length || 4} curriculum areas`} />
+        <MetricCard label="Published courses" value={courses.data ? list.filter((c) => c.status === "PUBLISHED").length : "…"} subtext={courses.data ? `Of ${formatNumber(list.length)} curriculum ${list.length === 1 ? "area" : "areas"}` : "…"} />
         <MetricCard label="Students" value={dash(dashboard.data?.students.total)} subtext="Across both divisions" />
         <MetricCard label="Assigned coaches" value={dash(allMentors)} subtext="With course access" />
         <MetricCard label="Open assignments" value={dash(dashboard.data?.assignments.published)} subtext="Currently accepting submissions" />
@@ -207,6 +210,13 @@ export default function CoursesWithEditModal() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/80">
+                {list.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-xs text-gray-400 font-medium">
+                      No courses yet.
+                    </td>
+                  </tr>
+                )}
                 {list.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50/60 transition-colors text-xs">
                     <td className="px-4 sm:px-6 py-4 font-bold text-gray-900 whitespace-nowrap">

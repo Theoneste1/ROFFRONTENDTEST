@@ -111,8 +111,8 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
               Checked {checked.totalRows} row{checked.totalRows === 1 ? "" : "s"}: {checked.valid} valid, {checked.failed} with errors. Nothing has been created yet.
             </Alert>
             {checked.errors.length > 0 && (
-              <div className="max-h-48 overflow-y-auto border border-red-100 rounded-lg">
-                <table className="w-full text-[11px]">
+              <div className="max-h-48 overflow-auto border border-red-100 rounded-lg">
+                <table className="w-full min-w-[420px] text-[11px]">
                   <thead>
                     <tr className="text-left text-gray-400 uppercase">
                       <th className="px-3 py-2">Row</th>
@@ -124,7 +124,7 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
                     {checked.errors.map((e) => (
                       <tr key={`${e.row}-${e.email}`}>
                         <td className="px-3 py-1.5">{e.row}</td>
-                        <td className="px-3 py-1.5 break-all">{e.email || "—"}</td>
+                        <td className="px-3 py-1.5 break-all min-w-[140px]">{e.email || "—"}</td>
                         <td className="px-3 py-1.5 text-red-700">{e.errors.join("; ")}</td>
                       </tr>
                     ))}

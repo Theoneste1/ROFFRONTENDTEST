@@ -8,7 +8,7 @@ import type { AdminDivision } from "@/lib/api/types";
 import { useActiveScopes, useAdminDivisions, useUpdateDivision } from "@/lib/queries/admin";
 import { useCourses } from "@/lib/queries/learning";
 import { formatNumber } from "@/lib/format";
-import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
+import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 
 /**
  * The two fixed divisions (`GET /admin/divisions`). Name and description can
@@ -22,7 +22,8 @@ function DivisionCard({ division, courses, mentors }: { division: AdminDivision;
   const [description, setDescription] = useState(division.description ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const grades = `${division.gradeLevels[0]}–${division.gradeLevels[division.gradeLevels.length - 1]}`;
+  const levels = division.gradeLevels ?? [];
+  const grades = levels.length ? `${levels[0]}–${levels[levels.length - 1]}` : "No grades";
   const server = fieldErrors(update.error, ["name", "description"]);
 
   async function save(e: FormEvent) {
@@ -58,6 +59,7 @@ function DivisionCard({ division, courses, mentors }: { division: AdminDivision;
         <div className="mb-6">
           <span className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">Available mathematics courses</span>
           <div className="flex flex-wrap gap-2">
+            {courses.length === 0 && <span className="text-xs text-gray-400">No courses yet.</span>}
             {courses.map((course) => (
               <span key={course} className="px-3 py-1 bg-indigo-50/70 text-indigo-700 text-xs font-semibold rounded-full">
                 {course}
@@ -146,6 +148,8 @@ export default function DivisionsContent() {
         <LoadingBlock />
       ) : divisions.isError ? (
         <ErrorState error={divisions.error} title="Couldn't load divisions" onRetry={() => divisions.refetch()} />
+      ) : divisions.data.length === 0 ? (
+        <EmptyState title="No divisions yet" description="The Junior and Senior divisions are created when the platform is set up." />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {divisions.data.map((d) => (

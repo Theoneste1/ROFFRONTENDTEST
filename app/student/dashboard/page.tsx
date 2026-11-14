@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
 import { Bell, BookOpen, Calculator, CheckCircle2, ChevronRight, FileText, MessageSquare, Trophy } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { useCourses, useMyCourses } from "@/lib/queries/learning";
 import { useMyAssignments } from "@/lib/queries/assessment";
+import { dayStart, monthWindow } from "@/lib/assessment/my-assignments-query";
+import { HIDDEN_TEXT, leaderboardHidden, rankLabel } from "@/lib/community/leaderboard";
 import { useEntryAbove, useMyRank, useNotifications } from "@/lib/queries/community";
 import { daysUntil, formatDate, formatNumber, formatRelative } from "@/lib/format";
 import type { AppNotification, NotificationCategory, StudentAssignment } from "@/lib/api/types";
@@ -16,6 +21,12 @@ import { useNow } from "@/lib/hooks/useNow";
 
 export default function StudentDashboard() {
   const { user } = useSession();
+  // Points and problems solved come from the profile, cached for minutes: refresh it whenever the
+  // dashboard opens, so newly published results show at once.
+  const qc = useQueryClient();
+  useEffect(() => {
+    void qc.invalidateQueries({ queryKey: queryKeys.me.profile() });
+  }, [qc]);
 
   return (
     <div className="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -133,9 +144,11 @@ function deadlineChip(a: StudentAssignment, now: number) {
 }
 
 function CurrentAssignments() {
-  // Assignments still to act on: open and not yet reviewed, soonest deadline first.
-  const query = useMyAssignments({ limit: 50 });
+  // Assignments still to act on: open and not yet reviewed, soonest deadline first. Asked of the
+  // server as PUBLISHED with a deadline from 30 days ago on (oldest first), so older history can
+  // never push current work out of the first page.
   const now = useNow();
+  const query = useMyAssignments({ status: "PUBLISHED", deadlineFrom: dayStart(now, -30), limit: 50 });
   const current = (query.data?.data ?? [])
     .filter((a) => a.status === "PUBLISHED" && a.displayStatus !== "Reviewed")
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
@@ -195,7 +208,7 @@ function CurrentAssignments() {
 
 function RankingCard({ divisionName }: { divisionName?: string }) {
   const rank = useMyRank();
-  const above = useEntryAbove(rank.data?.rank);
+  const above = useEntryAbove(rank.data?.rank ?? undefined);
 
   return (
     <div className="rounded-3xl bg-white p-6 shadow-sm border border-slate-100 flex flex-col justify-between min-h-[200px]">
@@ -211,11 +224,20 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
             <Spinner />
           </div>
         ) : rank.isError ? (
-          <p className="mt-4 text-xs text-red-600">Couldn&apos;t load your ranking.</p>
+          leaderboardHidden(rank.error) ? (
+            <p className="mt-4 text-xs text-slate-500">{HIDDEN_TEXT}</p>
+          ) : (
+            <p className="mt-4 text-xs text-red-600">Couldn&apos;t load your ranking.</p>
+          )
+        ) : rank.data.rank === null ? (
+          <>
+            <h2 className="text-2xl font-black text-[#03045e] mt-2">{rankLabel(null)}</h2>
+            <p className="mt-4 text-xs font-medium text-slate-500">{formatNumber(rank.data.points)} points so far.</p>
+          </>
         ) : (
           <>
             <h2 className="text-5xl font-black text-[#03045e] mt-2">
-              #{rank.data.rank}
+              {rankLabel(rank.data.rank)}
               <span className="text-base font-bold text-slate-400 ml-2">of {formatNumber(rank.data.outOf)}</span>
             </h2>
             <p className="mt-4 text-xs font-medium text-slate-500">
@@ -244,8 +266,11 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
 }
 
 function CalendarSection() {
-  const query = useMyAssignments({ limit: 50 });
-  return <DeadlineCalendar assignments={query.data?.data ?? []} />;
+  const now = useNow();
+  const [cursor, setCursor] = useState(() => { const d = new Date(now); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  // Only the deadlines of the month shown (the server filters by deadline window).
+  const query = useMyAssignments({ ...monthWindow(cursor), limit: 100 });
+  return <DeadlineCalendar assignments={query.data?.data ?? []} cursor={cursor} onCursorChange={setCursor} />;
 }
 
 const ALERT_ICON: Record<NotificationCategory, { icon: typeof Bell; tone: string }> = {

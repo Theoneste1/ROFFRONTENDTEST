@@ -11,12 +11,20 @@
  *   POST  /admin/schools                create (409 SCHOOL_CODE_TAKEN / POSSIBLE_DUPLICATE)
  *   PATCH /admin/schools/:id            edit (reason required for code / official-place changes)
  *   PATCH /admin/schools/:id/active     deactivate / reactivate (reason required)
+ *   GET   /admin/schools/import-template  CSV / XLSX template
+ *   POST  /admin/schools/import         CSV / XLSX import: dry run, then all-or-nothing import
+ *   GET   /admin/schools/reference-data education levels and programmes
+ *   GET   /admin/schools/:id/contacts   contacts (full values: these routes only)
+ *   PUT   /admin/schools/:id/contacts   replace the active contacts
+ *   POST  /admin/schools/:id/contacts/:contactId/verify
+ *   GET   /admin/schools/:id/offerings  education levels and programmes
+ *   PUT   /admin/schools/:id/offerings  replace them
  *
  * Use these only when the backend advertises `schoolAdministration` AND the user holds
  * `schools.manage` (lib/admin/school-directory.ts → schoolDirectoryMode). Not to be confused with
  * `schoolDirectoryApi` in lib/api/accounts.ts (the public search and locations).
  */
-import { api, type QueryValue } from "./client";
+import { api, apiBlob, saveFile, type QueryValue } from "./client";
 import type { GradeLevel, Page } from "./types";
 
 export type SchoolSource = "OFFICIAL_LIST" | "ADMIN" | "LEGACY";
@@ -46,6 +54,8 @@ export interface DirectorySchoolRecord {
   updatedAt: string;
   lastSourceSyncAt: string | null;
   lastVerifiedAt: string | null;
+  /** Who last verified the school (absent from backends before school verification). */
+  lastVerifiedBy?: { id: string; username: string } | null;
   createdBy: { id: string; username: string } | null;
 }
 
@@ -194,4 +204,154 @@ export const adminSchoolsApi = {
   update: (id: string, input: UpdateSchoolInput) => api<DirectorySchoolRecord>(`/admin/schools/${id}`, { method: "PATCH", body: input }),
   setActive: (id: string, input: { isActive: boolean; reason: string }) =>
     api<SetActiveResult>(`/admin/schools/${id}/active`, { method: "PATCH", body: input }),
+  /** Record that an administrator checked the school's name and place (audited). */
+  verify: (id: string, input: { note?: string } = {}) =>
+    api<DirectorySchoolRecord>(`/admin/schools/${id}/verify`, { method: "POST", body: input }),
+
+  /** Saves the import template (CSV: header row; XLSX: a Schools sheet and an Instructions sheet). */
+  downloadImportTemplate: async (format: "csv" | "xlsx") =>
+    saveFile(await apiBlob("/admin/schools/import-template", { query: { format } }, `schools-import-template.${format}`)),
+  /** Dry run (200, nothing created) or import (201). Refusals: 422 IMPORT_INVALID, 409 POSSIBLE_DUPLICATES_UNCONFIRMED / IMPORT_REVIEW_OUTDATED. */
+  importSchools: (file: File, query: SchoolImportQuery) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api<SchoolImportDryRun | SchoolImportDone>("/admin/schools/import", { method: "POST", body: form, query: { ...query } });
+  },
+
+  referenceData: () => api<SchoolReferenceData>("/admin/schools/reference-data"),
+  contacts: (id: string, includeRemoved = false) =>
+    api<{ schoolId: string; contacts: SchoolContact[] }>(`/admin/schools/${id}/contacts`, { query: { includeRemoved } }),
+  putContacts: (id: string, input: PutSchoolContactsInput) =>
+    api<{ schoolId: string; changed: boolean; contacts: SchoolContact[] }>(`/admin/schools/${id}/contacts`, { method: "PUT", body: input }),
+  verifyContact: (id: string, contactId: string, input: VerifySchoolContactInput) =>
+    api<SchoolContact>(`/admin/schools/${id}/contacts/${contactId}/verify`, { method: "POST", body: input }),
+  offerings: (id: string) => api<SchoolOfferings>(`/admin/schools/${id}/offerings`),
+  putOfferings: (id: string, input: PutSchoolOfferingsInput) =>
+    api<SchoolOfferings & { changed: boolean }>(`/admin/schools/${id}/offerings`, { method: "PUT", body: input }),
 };
+
+// ─── Import ─────────────────────────────────────────────────────────────────
+
+export interface SchoolImportQuery {
+  dryRun?: boolean;
+  confirmPossibleDuplicates?: boolean;
+  reviewToken?: string;
+}
+
+/** A school that may be the same as an imported row (same name in the same district, or country). */
+export interface ImportDuplicateCandidate {
+  id: string;
+  name: string;
+  code: string | null;
+  countryCode: string;
+  district: string | null;
+  isActive: boolean;
+}
+
+export interface ImportRowErrors {
+  row: number;
+  errors: string[];
+}
+
+export interface ImportPossibleDuplicate {
+  row: number;
+  name: string;
+  candidates: ImportDuplicateCandidate[];
+}
+
+/** `POST /admin/schools/import?dryRun=true` (200). */
+export interface SchoolImportDryRun {
+  dryRun: true;
+  totalRows: number;
+  valid: number;
+  failed: number;
+  errors: ImportRowErrors[];
+  possibleDuplicates: ImportPossibleDuplicate[];
+  /** Only when every row is valid and some have possible duplicates (valid 15 minutes). */
+  reviewToken?: string;
+  reviewExpiresAt?: string;
+  canImport: boolean;
+}
+
+/** `POST /admin/schools/import` (201): every school was created, or none. */
+export interface SchoolImportDone {
+  dryRun: false;
+  importId: string;
+  totalRows: number;
+  created: number;
+  confirmedPossibleDuplicates: number;
+  schools: Array<{ row: number; id: string; name: string; code: string | null }>;
+}
+
+// ─── Contacts and offerings ─────────────────────────────────────────────────
+
+export type SchoolContactType = "EMAIL" | "PHONE" | "OTHER";
+export type SchoolContactVisibility = "ADMIN_ONLY" | "REPRESENTATIVES";
+
+export interface SchoolContact {
+  id: string;
+  type: SchoolContactType;
+  /** Normalised (e-mail lower case; phone E.164 where recognisable). */
+  value: string;
+  rawValue: string | null;
+  label: string | null;
+  isPrimary: boolean;
+  visibility: SchoolContactVisibility;
+  verifiedAt: string | null;
+  verifiedBy: { id: string; username: string } | null;
+  /** null: entered by an administrator. */
+  dataSource: { key: string } | null;
+  createdAt: string;
+  updatedAt: string;
+  removedAt: string | null;
+  removedBy: { id: string; username: string } | null;
+}
+
+export interface ContactInput {
+  /** An existing active contact (keeps its verification while type and value are unchanged); omitted for a new one. */
+  id?: string;
+  type: SchoolContactType;
+  value: string;
+  label?: string;
+  isPrimary?: boolean;
+}
+
+/** `PUT /admin/schools/:id/contacts`: the complete list of active contacts (left out → removed, kept as removed). */
+export interface PutSchoolContactsInput {
+  contacts: ContactInput[];
+  reason?: string;
+}
+
+export interface VerifySchoolContactInput {
+  visibility?: SchoolContactVisibility;
+  reason?: string;
+}
+
+export type ProgrammeCategory = "A_LEVEL_COMBINATION" | "TVET_TRADE" | "OTHER";
+
+export interface DirectoryProgramme {
+  id: string;
+  code: string | null;
+  name: string;
+  category: ProgrammeCategory;
+  tvetLevel: number | null;
+  /** Not yet reviewed: never presented as a verified offering. */
+  needsReview: boolean;
+}
+
+export interface SchoolReferenceData {
+  educationLevels: Array<{ code: string; name: string; sortOrder: number }>;
+  programmes: DirectoryProgramme[];
+}
+
+export interface SchoolOfferings {
+  schoolId: string;
+  levels: Array<{ code: string; name: string; qualifier: string | null; sourceToken: string | null }>;
+  programmes: Array<DirectoryProgramme & { sourceToken: string | null }>;
+}
+
+export interface PutSchoolOfferingsInput {
+  levels: Array<{ code: string; qualifier?: string }>;
+  programmes: Array<{ id: string }>;
+  reason?: string;
+}

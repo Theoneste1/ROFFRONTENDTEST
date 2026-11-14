@@ -33,8 +33,21 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.schoolDirectory.all, "detail", id] as const,
     students: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "students", id, page] as const,
     history: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "history", id, page] as const,
+    contacts: (id: string, includeRemoved: boolean) => [...queryKeys.schoolDirectory.all, "contacts", id, includeRemoved] as const,
+    offerings: (id: string) => [...queryKeys.schoolDirectory.all, "offerings", id] as const,
+    referenceData: () => [...queryKeys.schoolDirectory.all, "reference-data"] as const,
     /** The public province → district → sector list (the same key the claim form uses). */
     locations: () => ["schools", "locations"] as const,
+  },
+  /** Official-directory sync runs (lib/api/school-sync.ts). */
+  schoolSync: {
+    all: ["school-sync"] as const,
+    runs: (page: number) => [...queryKeys.schoolSync.all, "runs", page] as const,
+    run: (id: string) => [...queryKeys.schoolSync.all, "run", id] as const,
+    review: (id: string) => [...queryKeys.schoolSync.all, "review", id] as const,
+    categories: (id: string) => [...queryKeys.schoolSync.all, "categories", id] as const,
+    items: (id: string, filters: object) => [...queryKeys.schoolSync.all, "items", id, filters] as const,
+    changes: (id: string, filters: object) => [...queryKeys.schoolSync.all, "changes", id, filters] as const,
   },
   /** Account administration added with the school and role work (lib/api/accounts.ts). */
   accounts: {
@@ -58,6 +71,16 @@ export const queryKeys = {
     all: ["programmes"] as const,
     list: () => [...queryKeys.programmes.all, "list"] as const,
     members: (programmeId: string, filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "members", programmeId, filters] as const,
+    /** Programme-scoped monitoring (dashboard, participation, activity, analytics) of the signed-in Head Coach. */
+    dashboard: () => [...queryKeys.programmes.all, "dashboard"] as const,
+    participation: () => [...queryKeys.programmes.all, "participation"] as const,
+    activity: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "activity", filters] as const,
+    activitySummary: () => [...queryKeys.programmes.all, "activity-summary"] as const,
+    analytics: (courseId: string, divisionId: string) => [...queryKeys.programmes.all, "analytics", courseId, divisionId] as const,
+    /** Coach course × division assignments the caller may manage. */
+    coachAccess: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "coach-access", filters] as const,
+    peopleSearch: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "people", filters] as const,
+    studentCandidates: (programmeId: string, q: string) => [...queryKeys.programmes.all, "candidates", programmeId, q] as const,
   },
   /** Backend-wide information (`GET /api/v1`), the same for every user. */
   backend: {
@@ -180,5 +203,19 @@ export const queryKeys = {
     mentorReport: (filters: UserReportFilters = {}) => [...queryKeys.admin.all, "mentors", "report", filters] as const,
     mentorScopes: (mentorId: string) => [...queryKeys.admin.all, "mentors", "scopes", mentorId] as const,
     mentorRequests: (params: { status?: string; page?: number } = {}) => [...queryKeys.admin.all, "mentor-requests", params] as const,
+    /** Bulk e-mail (lib/api/admin-ops.ts, `/admin/email`). */
+    emailAll: ["admin", "email"] as const,
+    emailUsers: (filters: object) => [...queryKeys.admin.emailAll, "users", filters] as const,
+    emailJobs: (params: object) => [...queryKeys.admin.emailAll, "jobs", params] as const,
+    emailJob: (id: string) => [...queryKeys.admin.emailAll, "job", id] as const,
+    emailDeliveries: (id: string, params: object) => [...queryKeys.admin.emailAll, "deliveries", id, params] as const,
+    /** Learning-activity log (`/admin/activity`). */
+    activity: (filters: object) => [...queryKeys.admin.all, "activity", "list", filters] as const,
+    activitySummary: (range: object) => [...queryKeys.admin.all, "activity", "summary", range] as const,
+    /** Permission overrides and effective permissions of one user. */
+    permissionsOf: (userId: string) => [...queryKeys.admin.all, "permissions", userId] as const,
+    overrides: (userId: string) => [...queryKeys.admin.permissionsOf(userId), "overrides"] as const,
+    effectivePermissions: (userId: string) => [...queryKeys.admin.permissionsOf(userId), "effective"] as const,
+    permissionCatalogue: () => [...queryKeys.admin.all, "permission-catalogue"] as const,
   },
 };

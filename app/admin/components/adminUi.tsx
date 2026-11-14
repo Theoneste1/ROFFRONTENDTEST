@@ -7,8 +7,12 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Download, Search, X } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
-import { Alert, Spinner } from "@/app/components/ui/feedback";
-import type { AssignmentStatus, SubmissionStatus } from "@/lib/api/types";
+import { Alert, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
+import { PageFrame } from "@/app/components/ui/PageFrame";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
+import { useSession } from "@/lib/auth/session";
+import { actionAllowed } from "@/lib/auth/navigation";
+import type { AssignmentStatus, Permission, SubmissionStatus } from "@/lib/api/types";
 
 // ─── Page layout ────────────────────────────────────────────────────────────
 
@@ -34,7 +38,7 @@ export function SearchInput({ value, onChange, placeholder = "Search…", label 
     return () => clearTimeout(t);
   }, [text, value, delay]);
   return (
-    <div className="relative flex-1 min-w-[200px] max-w-xs">
+    <div className="relative flex-1 min-w-[min(200px,100%)] max-w-xs">
       <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
       <input
         type="search"
@@ -148,9 +152,10 @@ export const btnDanger =
 export const linkBtn = "text-indigo-600 hover:text-indigo-800 font-medium transition-colors text-xs";
 
 /** Download an authenticated CSV export. */
-export function CsvButton({ onDownload, label = "Export CSV" }: { onDownload: () => Promise<void>; label?: string }) {
+export function CsvButton({ onDownload, label = "Export CSV", disabledReason, note }: { onDownload: () => Promise<void>; label?: string; disabledReason?: string; note?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hintId = `csv-hint-${label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
   async function run() {
     setBusy(true);
     setError(null);
@@ -164,10 +169,15 @@ export function CsvButton({ onDownload, label = "Export CSV" }: { onDownload: ()
   }
   return (
     <span className="inline-flex flex-col items-end gap-1">
-      <button type="button" onClick={run} disabled={busy} className={btnSecondary}>
+      <button type="button" onClick={run} disabled={busy || !!disabledReason} title={disabledReason} aria-describedby={disabledReason || note ? hintId : undefined} className={btnSecondary}>
         {busy ? <Spinner className="h-3.5 w-3.5" /> : <Download className="h-3.5 w-3.5" aria-hidden="true" />}
         {label}
       </button>
+      {(disabledReason || note) && (
+        <span id={hintId} className="text-[11px] text-gray-500 max-w-[16rem] text-right">
+          {disabledReason ?? note}
+        </span>
+      )}
       {error && (
         <span className="text-[11px] text-red-600" role="alert">
           {error}
@@ -190,14 +200,17 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  // Initial focus inside the dialog, Tab stays inside, focus returns to the opener on close.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef, true);
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <div className={`bg-white rounded-2xl shadow-2xl w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-[90vh] overflow-y-auto`}>
+      <div ref={panelRef} className={`bg-white rounded-2xl shadow-2xl w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-[90vh] overflow-y-auto`}>
         <div className="flex items-start justify-between gap-4 px-6 pt-6">
           <h2 id={titleId} className="text-lg font-bold text-gray-900">
             {title}
           </h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close" data-dialog-close>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -326,4 +339,24 @@ export function MetricCard({ label, value, subtext }: { label: string; value: Re
       {subtext && <p className="text-xs text-gray-400 mt-2 font-medium">{subtext}</p>}
     </div>
   );
+}
+
+// ─── Permission gate ────────────────────────────────────────────────────────
+
+/**
+ * A page that needs one permission from `GET /me/permissions`: waits while the
+ * list loads, explains when it is missing, and otherwise renders the page. If
+ * the list failed to load the page is shown and the API decides (as elsewhere).
+ */
+export function RequirePermission({ permission, title, children }: { permission: Permission; title: string; children: ReactNode }) {
+  const { can, permissionsStatus } = useSession();
+  if (permissionsStatus === "loading") return <LoadingBlock />;
+  if (!actionAllowed(permission, permissionsStatus, can)) {
+    return (
+      <PageFrame title={title}>
+        <Notice tone="info">This page needs the {permission} permission.</Notice>
+      </PageFrame>
+    );
+  }
+  return <>{children}</>;
 }

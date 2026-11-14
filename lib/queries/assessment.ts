@@ -11,11 +11,12 @@ import {
 } from "@/lib/api/assessment";
 import { queryKeys } from "@/lib/query/keys";
 
-export function useMyAssignments(filters: MyAssignmentFilters = {}) {
+export function useMyAssignments(filters: MyAssignmentFilters = {}, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.assignments.mine(filters),
     queryFn: () => assignmentsApi.mine(filters),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   });
 }
 

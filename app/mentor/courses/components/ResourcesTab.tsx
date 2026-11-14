@@ -7,7 +7,7 @@
  * the row menu to the real resource actions.
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpDown, BookOpen, Download, Edit, Eye, EyeOff, FileText, MoreHorizontal, NotebookPen, Plus, RotateCcw, Archive, Trash2 } from "lucide-react";
 import type { CourseResource, ResourceType } from "@/lib/api/types";
 import { mentorResourcesApi } from "@/lib/api/mentor";
@@ -15,9 +15,11 @@ import { useSession } from "@/lib/auth/session";
 import { actionAllowed } from "@/lib/auth/navigation";
 import { saveFile } from "@/lib/api/client";
 import { useMentorResources, useResourceAction } from "@/lib/queries/mentor";
+import { resourceSavedMessage } from "@/lib/mentor/resource-saved";
 import { errorMessage } from "@/lib/api/errors";
 import { formatDate, formatFileSize, personName } from "@/lib/format";
 import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
+import { ConfirmDialog } from "@/app/admin/components/adminUi";
 
 export type ResourceKind = "books" | "papers" | "notes";
 
@@ -68,11 +70,23 @@ export default function ResourcesTab({
   const cfg = KIND[kind];
   const resources = useMentorResources(courseId, divisionId);
   const action = useResourceAction(courseId);
+  const [deleting, setDeleting] = useState<CourseResource | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [year, setYear] = useState("all");
   const [sortOrder, setSortOrder] = useState<"Newest" | "Oldest">("Newest");
   const [notice, setNotice] = useState<string | null>(null);
+  // Back from the upload / edit form: confirm once, then drop `saved` from the URL.
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const savedParam = params.get("saved");
+  const [saved] = useState<string | null>(() => resourceSavedMessage(savedParam));
+  useEffect(() => {
+    if (!savedParam) return;
+    const next = new URLSearchParams(params.toString());
+    next.delete("saved");
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+  }, [savedParam, params, pathname, router]);
 
   const all = useMemo(() => (resources.data ?? []).filter((r) => cfg.types.includes(r.type)), [resources.data, cfg.types]);
   const years = useMemo(() => [...new Set(all.map((r) => r.year).filter((y): y is number => !!y))].sort((a, b) => b - a), [all]);
@@ -88,7 +102,10 @@ export default function ResourcesTab({
   const addHref = `${basePath}/upload-book?scope=${encodeURIComponent(scopeKeyValue)}&type=${cfg.defaultType}&tab=${kind}`;
 
   function run(r: CourseResource, act: "publish" | "unpublish" | "archive" | "restore" | "delete") {
-    if (act === "delete" && !window.confirm(`Delete “${r.title}”? This cannot be undone.`)) return;
+    if (act === "delete") {
+      setDeleting(r);
+      return;
+    }
     setNotice(null);
     action.mutate(
       { resourceId: r.id, action: act },
@@ -122,6 +139,11 @@ export default function ResourcesTab({
         )}
       </div>
 
+      {saved && !notice && (
+        <div role="status" data-testid="resource-saved">
+          <Alert tone="success">{saved}</Alert>
+        </div>
+      )}
       {notice && <Alert tone="success">{notice}</Alert>}
       {action.isError && <Alert tone="error">{errorMessage(action.error)}</Alert>}
 
@@ -243,6 +265,21 @@ export default function ResourcesTab({
             </table>
           </div>
         </div>
+      )}
+
+      {deleting && (
+        <ConfirmDialog
+          title="Delete this resource?"
+          body={<>“{deleting.title}” is deleted for everyone. This cannot be undone.</>}
+          confirmLabel="Delete"
+          tone="danger"
+          onClose={() => setDeleting(null)}
+          onConfirm={async () => {
+            setNotice(null);
+            await action.mutateAsync({ resourceId: deleting.id, action: "delete" });
+            setNotice("Deleted.");
+          }}
+        />
       )}
     </div>
   );

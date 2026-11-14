@@ -46,7 +46,7 @@ function AttentionItem({ title, description, href }: AttentionItemProps) {
 }
 
 /** Items from `GET /admin/reports/overview` → `actionRequired`; only non-zero ones are shown. */
-function attentionItems(a: ReportsOverview['actionRequired']): AttentionItemProps[] {
+function attentionItems(a: ReportsOverview['actionRequired'], canSeeEmail: boolean): AttentionItemProps[] {
   const items: (AttentionItemProps & { count: number })[] = [
     {
       count: a.assignmentsAwaitingApproval,
@@ -87,14 +87,16 @@ function attentionItems(a: ReportsOverview['actionRequired']): AttentionItemProp
     {
       count: a.failedEmails,
       title: 'Failed e-mails',
-      description: `${plural(a.failedEmails, 'e-mail')} could not be delivered.`,
+      // The count covers bulk and account e-mails; the Failed e-mails page lists (and retries) both.
+      description: `${plural(a.failedEmails, 'e-mail')} could not be delivered.${canSeeEmail ? ' See which, and retry them.' : ''}`,
+      href: canSeeEmail ? '/admin/email/failed' : undefined,
     },
   ];
   return items.filter((i) => i.count > 0);
 }
 
 export default function DashboardMain() {
-  const { user } = useSession();
+  const { user, can } = useSession();
   const now = useNow();
   const dashboard = useAdminDashboard();
   const overview = useReportsOverview();
@@ -151,7 +153,7 @@ export default function DashboardMain() {
             <ErrorState error={overview.error} onRetry={() => overview.refetch()} />
           ) : (
             (() => {
-              const items = attentionItems(overview.data.actionRequired);
+              const items = attentionItems(overview.data.actionRequired, can('email.bulkSend'));
               const reported = d?.reportedContent.open ?? 0;
               if (reported > 0)
                 items.push({

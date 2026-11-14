@@ -2,7 +2,8 @@
 
 /**
  * Choosing a school, in the three ways the backend accepts (lib/accounts/school-claim):
- * from the official directory (`GET /schools/search`), "my school is not listed"
+ * from the school list (`GET /schools/search`: by name, code or place; a school
+ * without an official code is shown without one and sent by its id), "my school is not listed"
  * (name + province / district / sector from `GET /schools/locations`), or a school
  * outside Rwanda. Used by student registration and the student's profile, only
  * when the backend advertises `schoolAffiliations`.
@@ -11,7 +12,8 @@ import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { schoolDirectoryApi } from "@/lib/api/accounts";
 import { errorMessage } from "@/lib/api/errors";
-import { countryLabel, SCHOOL_CLAIM_RULES, type SchoolClaimDraft, type SchoolClaimField } from "@/lib/accounts/school-claim";
+import { countryLabel, hasNoOfficialCode, SCHOOL_CLAIM_RULES, type SchoolClaimDraft, type SchoolClaimField } from "@/lib/accounts/school-claim";
+import type { DirectorySchool } from "@/lib/api/accounts";
 import { TextField } from "@/app/components/ui/form";
 
 const MODES: { value: SchoolClaimDraft["mode"]; label: string }[] = [
@@ -22,6 +24,12 @@ const MODES: { value: SchoolClaimDraft["mode"]; label: string }[] = [
 
 export const emptyDraft = (mode: SchoolClaimDraft["mode"]): SchoolClaimDraft =>
   mode === "directory" ? { mode, school: null } : mode === "notListed" ? { mode, name: "", province: "", district: "", sector: "" } : { mode, country: "", name: "" };
+
+/** "Ngoma, Huye", or the school's location text when it has no sector / district. */
+export const schoolPlace = (s: Pick<DirectorySchool, "sector" | "district" | "location">) => [s.sector, s.district].filter(Boolean).join(", ") || s.location;
+
+/** "School code 123456", or a hint for a school without an official code (none is ever shown or invented). */
+const codeLabel = (s: { code: string | null }) => (hasNoOfficialCode(s) ? "No official code" : `School code ${s.code}`);
 
 const selectCls = (bad: boolean) =>
   `w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 ${bad ? "border-red-400 focus:ring-red-500/20" : "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500"}`;
@@ -120,7 +128,9 @@ function DirectoryPicker({ value, onChange, error }: { value: Extract<SchoolClai
         <div className={`flex items-center justify-between gap-3 border rounded-lg px-4 py-3 text-sm ${error ? "border-red-400" : "border-slate-300"}`} data-testid="school-chosen">
           <span className="min-w-0">
             <span className="font-semibold text-slate-800">{value.school.name}</span>
-            <span className="block text-xs text-slate-500">School code {value.school.code}</span>
+            <span className="block text-xs text-slate-500" data-testid="school-chosen-code">
+              {[value.school.place, codeLabel(value.school)].filter(Boolean).join(" · ")}
+            </span>
           </span>
           <button type="button" onClick={() => onChange({ mode: "directory", school: null })} className="text-xs font-semibold text-[#2B2BB2] hover:underline shrink-0">
             Change
@@ -137,7 +147,7 @@ function DirectoryPicker({ value, onChange, error }: { value: Extract<SchoolClai
   }
   return (
     <div>
-      <TextField label="Search by school name or code" name="schoolSearch" type="search" autoComplete="off" maxLength={100} value={q} onChange={(e) => setQ(e.target.value)} error={error} hint="Type at least 2 letters." />
+      <TextField label="Search by school name, code or place" name="schoolSearch" type="search" autoComplete="off" maxLength={100} value={q} onChange={(e) => setQ(e.target.value)} error={error} hint="Type at least 2 letters: the school's name, its code, or its sector or district." />
       {term.length >= 2 && (
         <div className="mt-2 border border-slate-200 rounded-lg max-h-56 overflow-y-auto" data-testid="school-results">
           {results.isPending ? (
@@ -148,10 +158,10 @@ function DirectoryPicker({ value, onChange, error }: { value: Extract<SchoolClai
             <p className="px-4 py-3 text-xs text-slate-500">No school matches “{term}”. Try another spelling, or choose “My school is not listed”.</p>
           ) : (
             results.data.map((s) => (
-              <button key={s.id} type="button" onClick={() => onChange({ mode: "directory", school: { code: s.code, name: s.name } })} className="block w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-0">
+              <button key={s.id} type="button" onClick={() => onChange({ mode: "directory", school: { id: s.id, code: s.code, name: s.name, place: schoolPlace(s) } })} className="block w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-0">
                 <span className="font-medium text-slate-800">{s.name}</span>
                 <span className="block text-xs text-slate-500">
-                  {[s.sector, s.district].filter(Boolean).join(", ") || s.location} · code {s.code}
+                  {schoolPlace(s)} · {hasNoOfficialCode(s) ? <span className="italic">no official code</span> : <>code {s.code}</>}
                 </span>
               </button>
             ))
