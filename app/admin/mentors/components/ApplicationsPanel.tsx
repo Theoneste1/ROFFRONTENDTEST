@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { MentorRequest, MentorRequestStatus } from "@/lib/api/types";
 import { useDecideMentorRequest, useMentorRequests } from "@/lib/queries/admin";
 import { formatDateTime } from "@/lib/format";
+import { coachDetailsText } from "@/lib/accounts/coach-application";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { Badge, ConfirmDialog, FilterPills, Notice, TableCard, TableMessage, td, th } from "../../components/adminUi";
@@ -74,6 +75,11 @@ export default function ApplicationsPanel() {
                   <td className={`${td} font-semibold text-gray-800 whitespace-nowrap`}>
                     {r.firstName} {r.lastName}
                     <span className="block text-[11px] font-normal text-gray-400">@{r.username}</span>
+                    {coachDetailsText(r) && (
+                      <span className="mt-1 block max-w-xs whitespace-normal text-[11px] font-normal text-gray-500" data-testid="coach-application-details">
+                        {coachDetailsText(r)}
+                      </span>
+                    )}
                   </td>
                   <td className={`${td} text-gray-500`}>{r.email}</td>
                   <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDateTime(r.createdAt)}</td>

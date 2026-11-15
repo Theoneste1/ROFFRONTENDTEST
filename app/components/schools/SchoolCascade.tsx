@@ -108,12 +108,15 @@ export function CountrySelect({ value, onChange, error, variant = "public", labe
  * Changing a level clears every level after it.
  */
 export function PlaceSelects({
-  value, onChange, errors = {}, variant = "public",
+  value, onChange, errors = {}, variant = "public", labelPrefix = "", testIdPrefix = "cascade",
 }: {
   value: Place;
   onChange: (p: Place) => void;
   errors?: Partial<Record<PlaceLevel, string>>;
   variant?: CascadeVariant;
+  /** e.g. "Home " → "Home province" (a home location next to a school's place). */
+  labelPrefix?: string;
+  testIdPrefix?: string;
 }) {
   const locations = useSchoolLocations();
   if (locations.isError) {
@@ -122,11 +125,12 @@ export function PlaceSelects({
   const set = (level: PlaceLevel) => (v: string) => onChange(setPlaceLevel(value, level, v));
   const opts = (xs: string[]) => xs.map((x) => ({ value: x, label: x }));
   const loading = locations.isPending;
+  const lbl = (s: string) => (labelPrefix ? `${labelPrefix}${s.toLowerCase()}` : s);
   return (
     <div className="grid gap-4">
-      <CascadeSelect label="Province" value={value.province} onChange={set("province")} options={opts(provincesOf(locations.data))} placeholder={loading ? "Loading…" : "Choose the province"} disabled={loading} error={errors.province} variant={variant} testId="cascade-province" />
-      <CascadeSelect label="District" value={value.district} onChange={set("district")} options={opts(districtsOf(locations.data, value.province))} placeholder={value.province ? "Choose the district" : "Choose the province first"} disabled={!value.province} error={errors.district} variant={variant} testId="cascade-district" />
-      <CascadeSelect label="Sector" value={value.sector} onChange={set("sector")} options={opts(sectorsOf(locations.data, value.province, value.district))} placeholder={value.district ? "Choose the sector" : "Choose the district first"} disabled={!value.district} error={errors.sector} variant={variant} testId="cascade-sector" />
+      <CascadeSelect label={lbl("Province")} value={value.province} onChange={set("province")} options={opts(provincesOf(locations.data))} placeholder={loading ? "Loading…" : "Choose the province"} disabled={loading} error={errors.province} variant={variant} testId={`${testIdPrefix}-province`} />
+      <CascadeSelect label={lbl("District")} value={value.district} onChange={set("district")} options={opts(districtsOf(locations.data, value.province))} placeholder={value.province ? "Choose the district" : "Choose the province first"} disabled={!value.province} error={errors.district} variant={variant} testId={`${testIdPrefix}-district`} />
+      <CascadeSelect label={lbl("Sector")} value={value.sector} onChange={set("sector")} options={opts(sectorsOf(locations.data, value.province, value.district))} placeholder={value.district ? "Choose the sector" : "Choose the district first"} disabled={!value.district} error={errors.sector} variant={variant} testId={`${testIdPrefix}-sector`} />
     </div>
   );
 }

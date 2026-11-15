@@ -100,6 +100,14 @@ export interface CurrentUser {
   createdAt: string;
   /** Students' Olympiad interests (backends with `studentOlympiadInterests`; absent on older ones). */
   olympiadInterests?: OlympiadSubject[];
+  // Students, backends with `studentRegistrationDetails` (absent or null otherwise):
+  dateOfBirth?: string | null;
+  phone?: string | null;
+  guardianPhone?: string | null;
+  country?: string | null;
+  homeProvince?: string | null;
+  homeDistrict?: string | null;
+  homeSector?: string | null;
 }
 
 /**
@@ -903,6 +911,11 @@ export interface MentorRequest {
   status: MentorRequestStatus;
   createdAt: string;
   updatedAt: string;
+  /** Backends with `coachApplicationDetails` (absent or null on older ones). */
+  country?: string | null;
+  occupation?: string | null;
+  educationLevel?: string | null;
+  olympiadInterests?: string[] | null;
 }
 
 export interface MentorRequestApproval {

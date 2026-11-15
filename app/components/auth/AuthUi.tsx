@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { GraduationCap, Presentation, Trophy } from "lucide-react";
+import { hasFeature } from "@/lib/api/capabilities";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 /**
  * Shared pieces of the sign-in and account pages (inside app/components/shell/AuthShell):
@@ -26,11 +30,21 @@ const ROLES: { role: JoinRole; label: string; href: string; icon: typeof Graduat
   { role: "coach", label: "Coach", href: "/apply", icon: Trophy },
 ];
 
+/**
+ * Where each kind of account is created. Teachers: the teacher application (/register/teacher) on a
+ * backend with `teacherSelfRegistration`; otherwise the page that explains how teachers join.
+ */
+function useJoinRoles() {
+  const selfRegistration = hasFeature(useBackendCapabilities().detection, "teacherSelfRegistration");
+  return ROLES.map((r) => (r.role === "teacher" && selfRegistration ? { ...r, href: "/register/teacher" } : r));
+}
+
 /** Which kind of account to create: each is its own page and workflow; this only links between them. */
 export function JoinSwitch({ active }: { active: JoinRole }) {
+  const roles = useJoinRoles();
   return (
     <nav aria-label="Choose your account type" className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1" data-testid="join-switch">
-      {ROLES.map(({ role, label, href, icon: Icon }) => {
+      {roles.map(({ role, label, href, icon: Icon }) => {
         const on = role === active;
         return (
           <Link
@@ -52,6 +66,7 @@ export function JoinSwitch({ active }: { active: JoinRole }) {
 
 /** "New to ROF?": the three ways to join, under the sign-in form. */
 export function JoinLinks() {
+  const roles = useJoinRoles();
   return (
     <div className="space-y-3" data-testid="signup-links">
       <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-slate-400">
@@ -60,7 +75,7 @@ export function JoinLinks() {
         <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
       </div>
       <ul className="grid grid-cols-3 gap-2">
-        {ROLES.map(({ role, label, href, icon: Icon }) => (
+        {roles.map(({ role, label, href, icon: Icon }) => (
           <li key={role}>
             <Link
               href={href}

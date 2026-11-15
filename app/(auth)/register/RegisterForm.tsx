@@ -14,12 +14,17 @@
  * Olympiad interests (Mathematics, Computing, Physics; at least one) are asked for, and sent, only
  * when the backend advertises `studentOlympiadInterests` (older backends refuse the field).
  *
+ * Personal details (lib/accounts/student-details.ts) — date of birth, the student's phone (optional),
+ * a close-family phone, the country where the student lives and the home location (Rwanda:
+ * Province → District → Sector dropdowns; elsewhere free text) — only when the backend advertises
+ * `studentRegistrationDetails`; otherwise the free-text home location as before.
+ *
  * Until the backend has been detected the form is not shown (its school fields
  * and validation depend on it). If detection fails the page says so, offers a
  * retry, and lets the student continue with the legacy fields. Once a form is
  * chosen it is kept, so a later re-check can't swap fields while someone types.
  */
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { AuthHeading, FormSection, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
 import { publicApi, type RegisterStudentResult } from "@/lib/api/auth";
@@ -33,6 +38,21 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
 import { studentInterestsSupported, validateInterests, type OlympiadSubject } from "@/lib/accounts/olympiad-interests";
 import { registrationGate, type RegistrationSchoolMode } from "@/lib/accounts/registration-mode";
+import {
+  birthDateBounds,
+  emptyStudentDetails,
+  setHomeCountry,
+  studentDetailsPayload,
+  studentDetailsSupported,
+  STUDENT_DETAILS_ERRORS,
+  STUDENT_DETAILS_SERVER_FIELDS,
+  validateStudentDetails,
+  type StudentDetailsDraft,
+  type StudentDetailsField,
+} from "@/lib/accounts/student-details";
+import { PHONE_HINT } from "@/lib/accounts/phone";
+import { countryOptions, RWANDA } from "@/lib/schools/countries";
+import { CascadeSelect, PlaceSelects } from "@/app/components/schools/SchoolCascade";
 import {
   SCHOOL_CLAIM_ERRORS,
   SCHOOL_CLAIM_SERVER_FIELDS,
@@ -71,10 +91,21 @@ export default function RegisterForm() {
   // Olympiad interests: asked for only when the backend accepts them (decided with the school mode).
   const [interestsOn, setInterestsOn] = useState(false);
   const [interests, setInterests] = useState<OlympiadSubject[]>([]);
+  // Personal details: asked for only when the backend accepts them (decided with the school mode).
+  const [detailsOn, setDetailsOn] = useState(false);
+  const [details, setDetails] = useState<StudentDetailsDraft>(emptyStudentDetails);
+  const [detailErrors, setDetailErrors] = useState<Partial<Record<StudentDetailsField, string>>>({});
+  const countries = useMemo(() => countryOptions(), []);
+  const bounds = useMemo(() => birthDateBounds(new Date()), []);
+  const setDetail = (next: StudentDetailsDraft, field?: StudentDetailsField) => {
+    setDetails(next);
+    if (field) setDetailErrors((s) => ({ ...s, [field]: undefined }));
+  };
   // Adopt the first definite answer and keep it (state adjusted during render, not in an effect).
   if (schoolMode === null && gate.state === "ready") {
     setSchoolMode(gate.mode);
     setInterestsOn(studentInterestsSupported(caps.detection));
+    setDetailsOn(studentDetailsSupported(caps.detection));
   }
   const directory = schoolMode === "directory";
   const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
@@ -92,7 +123,7 @@ export default function RegisterForm() {
       if (v.schoolName.trim().length < 2) e.schoolName = "Enter your school's name.";
       if (v.schoolLocation.trim().length < 2) e.schoolLocation = "Enter your school's location (e.g. district).";
     }
-    if (v.homeLocation.trim().length < 2) e.homeLocation = "Enter where you live (e.g. district).";
+    if (!detailsOn && v.homeLocation.trim().length < 2) e.homeLocation = "Enter where you live (e.g. district).";
     if (interestsOn) {
       const i = validateInterests(interests);
       if (i) e.olympiadInterests = i;
@@ -108,10 +139,12 @@ export default function RegisterForm() {
     if (submitting || schoolMode === null) return;
     const e = validate();
     const ce = directory ? validateSchoolClaim(claim) : {};
+    const de = detailsOn ? validateStudentDetails(details) : {};
     setErrors(e);
     setClaimErrors(ce);
+    setDetailErrors(de);
     setError(null);
-    if (Object.keys(e).length || Object.keys(ce).length) return;
+    if (Object.keys(e).length || Object.keys(ce).length || Object.keys(de).length) return;
     setSubmitting(true);
     try {
       const res = await publicApi.registerStudent({
@@ -122,13 +155,19 @@ export default function RegisterForm() {
         password,
         gradeLevel: v.gradeLevel as GradeLevel,
         ...(directory ? schoolClaimPayload(claim) : { schoolName: v.schoolName.trim(), schoolLocation: v.schoolLocation.trim() }),
-        homeLocation: v.homeLocation.trim(),
+        ...(detailsOn ? studentDetailsPayload(details) : { homeLocation: v.homeLocation.trim() }),
         ...(interestsOn && { olympiadInterests: interests }),
       });
       setDone(res);
     } catch (err) {
       setError(err);
       setErrors(fieldErrors(err, FIELDS));
+      if (detailsOn) {
+        const server: Partial<Record<StudentDetailsField, string>> = fieldErrors(err, STUDENT_DETAILS_SERVER_FIELDS);
+        const coded = isApiError(err) && err.code ? STUDENT_DETAILS_ERRORS[err.code] : undefined;
+        if (coded) server[coded.field] = coded.message;
+        setDetailErrors(server);
+      }
       if (directory) {
         const server = fieldErrors(err, CLAIM_SERVER_FIELDS);
         setClaimErrors(Object.fromEntries(Object.entries(server).map(([k, m]) => [SCHOOL_CLAIM_SERVER_FIELDS[k], m])));
@@ -183,26 +222,80 @@ export default function RegisterForm() {
     );
   }
 
+  const coded = isApiError(error) && error.code ? STUDENT_DETAILS_ERRORS[error.code] : undefined;
   const known = isApiError(error) && error.code ? REGISTER_ERRORS[error.code] : undefined;
-  const fieldErr = Object.keys(fieldErrors(error, directory ? [...FIELDS, ...CLAIM_SERVER_FIELDS] : FIELDS)).length > 0;
+  const fieldErr =
+    !!coded || Object.keys(fieldErrors(error, [...(directory ? [...FIELDS, ...CLAIM_SERVER_FIELDS] : FIELDS), ...(detailsOn ? STUDENT_DETAILS_SERVER_FIELDS : [])])).length > 0;
+  const homeInRwanda = details.homeCountry === RWANDA;
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
       <JoinSwitch active="student" />
       <AuthHeading title="Join as a student" subtitle="Create your free ROF account and start preparing for the Olympiads. It only takes a few minutes." />
+      <p className="text-xs text-slate-500">
+        Fields marked <span className="text-red-500">*</span> are required.
+      </p>
 
-      {error != null && !fieldErr && (
-        <Alert tone="error">
-          {known ?? errorMessage(error)}
-        </Alert>
-      )}
+      {error != null && !fieldErr && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
+      {error != null && fieldErr && <Alert tone="error">Please check the highlighted fields.</Alert>}
 
       <FormSection step={1} title="About you">
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />
           <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />
         </div>
+        {detailsOn && (
+          <>
+            <TextField
+              label="Date of birth"
+              name="dateOfBirth"
+              type="date"
+              autoComplete="bday"
+              required
+              min={bounds.min}
+              max={bounds.max}
+              value={details.dateOfBirth}
+              onChange={(e) => setDetail({ ...details, dateOfBirth: e.target.value }, "dateOfBirth")}
+              error={detailErrors.dateOfBirth}
+            />
+            <CascadeSelect
+              label="Country where you live"
+              value={details.homeCountry}
+              onChange={(c) => setDetail(setHomeCountry(details, c), "homeCountry")}
+              options={countries}
+              placeholder="Choose your country"
+              error={detailErrors.homeCountry}
+              testId="home-country"
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                label="Your phone (optional)"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                maxLength={30}
+                value={details.phone}
+                onChange={(e) => setDetail({ ...details, phone: e.target.value }, "phone")}
+                error={detailErrors.phone}
+                hint="Leave empty if you don't have one."
+              />
+              <TextField
+                label="Close-family phone"
+                name="guardianPhone"
+                type="tel"
+                required
+                maxLength={30}
+                value={details.guardianPhone}
+                onChange={(e) => setDetail({ ...details, guardianPhone: e.target.value }, "guardianPhone")}
+                error={detailErrors.guardianPhone}
+                hint={`A parent or close family member. ${PHONE_HINT}`}
+              />
+            </div>
+          </>
+        )}
+      </FormSection>
 
+      <FormSection step={2} title="Your studies">
         <div>
           <label htmlFor="gradeLevel" className="block text-sm font-semibold text-slate-700 mb-2">
             Grade <span className="text-red-500">*</span>
@@ -231,8 +324,6 @@ export default function RegisterForm() {
           )}
         </div>
 
-        <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
-
         {interestsOn && (
           <OlympiadInterestsField
             value={interests}
@@ -245,7 +336,7 @@ export default function RegisterForm() {
         )}
       </FormSection>
 
-      <FormSection step={2} title="Your school">
+      <FormSection step={3} title="Your school">
         {directory ? (
           <SchoolClaimFields
             value={claim}
@@ -257,16 +348,43 @@ export default function RegisterForm() {
             hideLegend
           />
         ) : (
-          <>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="School" name="schoolName" required maxLength={200} autoComplete="off" value={v.schoolName} onChange={(e) => set("schoolName")(e.target.value)} error={errors.schoolName} />
-          <TextField label="School location" name="schoolLocation" required maxLength={200} value={v.schoolLocation} onChange={(e) => set("schoolLocation")(e.target.value)} error={errors.schoolLocation} hint="District or city" />
-        </div>
-          </>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField label="School" name="schoolName" required maxLength={200} autoComplete="off" value={v.schoolName} onChange={(e) => set("schoolName")(e.target.value)} error={errors.schoolName} />
+            <TextField label="School location" name="schoolLocation" required maxLength={200} value={v.schoolLocation} onChange={(e) => set("schoolLocation")(e.target.value)} error={errors.schoolLocation} hint="District or city" />
+          </div>
         )}
       </FormSection>
 
-      <FormSection step={3} title="Your account">
+      <FormSection step={4} title="Where you live">
+        {detailsOn && homeInRwanda ? (
+          // Province → District → Sector of the official list; each step clears the ones after it.
+          <PlaceSelects
+            labelPrefix="Home "
+            testIdPrefix="home"
+            value={details.home}
+            onChange={(home) => {
+              setDetails({ ...details, home });
+              setDetailErrors((s) => ({ ...s, homeProvince: undefined, homeDistrict: undefined, homeSector: undefined }));
+            }}
+            errors={{ province: detailErrors.homeProvince, district: detailErrors.homeDistrict, sector: detailErrors.homeSector }}
+          />
+        ) : detailsOn ? (
+          <TextField
+            label="Home city or region"
+            name="homeLocation"
+            autoComplete="address-level2"
+            required
+            maxLength={200}
+            value={details.homeLocation}
+            onChange={(e) => setDetail({ ...details, homeLocation: e.target.value }, "homeLocation")}
+            error={detailErrors.homeLocation}
+          />
+        ) : (
+          <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
+        )}
+      </FormSection>
+
+      <FormSection step={5} title="Your account">
         <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />
         <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} />
         <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
