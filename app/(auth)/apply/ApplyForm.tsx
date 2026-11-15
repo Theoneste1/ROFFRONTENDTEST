@@ -11,6 +11,7 @@
  */
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { AuthHeading, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
 import { useSearchParams } from "next/navigation";
 import { publicApi } from "@/lib/api/auth";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
@@ -67,7 +68,8 @@ export default function ApplyForm() {
   if (teacher) {
     return (
       <div className="space-y-5" data-testid="apply-teacher">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a teacher</h1>
+        <JoinSwitch active="teacher" />
+        <AuthHeading title="Join as a teacher" />
         {teacherAccounts ? (
           <>
             <Alert tone="info">Teacher accounts are created by ROF administrators. There is no self-registration for teachers.</Alert>
@@ -96,7 +98,7 @@ export default function ApplyForm() {
   if (done) {
     return (
       <div className="space-y-5" data-testid="apply-done">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Application received</h1>
+        <AuthHeading title="Application received" />
         <Alert tone="success">Thank you for applying to join ROF LMS as a {role.toLowerCase()}.</Alert>
         <p className="text-sm text-slate-700">
           An administrator will review your application. You will receive an e-mail at <strong>{v.email.trim()}</strong> with the decision. Once approved, sign in with the username and password you chose.
@@ -113,9 +115,10 @@ export default function ApplyForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
+      <JoinSwitch active="coach" />
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a {role.toLowerCase()}</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <AuthHeading title={`Join as a ${role.toLowerCase()}`} />
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">
           Coaches mentor ROF students: you prepare assignments, share resources and review student work for the courses you are assigned. An administrator reviews every application.
         </p>
         <p className="mt-2 text-xs text-slate-500">
@@ -141,12 +144,7 @@ export default function ApplyForm() {
         {submitting ? "Sending your application…" : `Apply as a ${role.toLowerCase()}`}
       </Button>
 
-      <p className="text-center text-sm text-slate-500">
-        Already have an account?{" "}
-        <Link href="/login" className="font-medium text-[#2B2BB2] hover:underline">Sign in</Link>
-        {" · "}
-        <Link href="/" className="font-medium text-[#2B2BB2] hover:underline">Home</Link>
-      </p>
+      <SignInInstead />
     </form>
   );
 }

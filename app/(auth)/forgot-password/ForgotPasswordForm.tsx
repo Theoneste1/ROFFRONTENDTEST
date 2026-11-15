@@ -32,8 +32,8 @@ export default function ForgotPasswordForm() {
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Forgot your password?</h1>
-        <p className="mt-1 text-sm text-slate-500">Enter the e-mail address of your account and we&apos;ll send you a link to choose a new password.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Forgot your password?</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">Enter the e-mail address of your account and we&apos;ll send you a link to choose a new password.</p>
       </div>
 
       {mutation.isSuccess ? (

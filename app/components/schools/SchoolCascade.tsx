@@ -120,7 +120,7 @@ export function PlaceSelects({
   const opts = (xs: string[]) => xs.map((x) => ({ value: x, label: x }));
   const loading = locations.isPending;
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4">
       <CascadeSelect label="Province" value={value.province} onChange={set("province")} options={opts(provincesOf(locations.data))} placeholder={loading ? "Loading…" : "Choose the province"} disabled={loading} error={errors.province} variant={variant} testId="cascade-province" />
       <CascadeSelect label="District" value={value.district} onChange={set("district")} options={opts(districtsOf(locations.data, value.province))} placeholder={value.province ? "Choose the district" : "Choose the province first"} disabled={!value.province} error={errors.district} variant={variant} testId="cascade-district" />
       <CascadeSelect label="Sector" value={value.sector} onChange={set("sector")} options={opts(sectorsOf(locations.data, value.province, value.district))} placeholder={value.district ? "Choose the sector" : "Choose the district first"} disabled={!value.district} error={errors.sector} variant={variant} testId="cascade-sector" />
