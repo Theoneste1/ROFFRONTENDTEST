@@ -11,7 +11,10 @@ import { roleLabel } from "@/lib/auth/roles";
 import { assignableRoles, canPromoteToSuperAdmin, roleChangeNeedsPassword, roleChangeStepUp } from "@/lib/auth/role-rules";
 import { useSession } from "@/lib/auth/session";
 import { hasFeature, isLegacyBackend } from "@/lib/api/capabilities";
-import { adminSchoolsApi } from "@/lib/api/school-directory";
+import { adminSchoolsApi, type DirectorySchoolRow } from "@/lib/api/school-directory";
+import { countryName, RWANDA } from "@/lib/schools/countries";
+import { byName, emptyPlace, placeComplete, schoolFacts, type Place } from "@/lib/schools/school-cascade";
+import { CascadeSelect, CountrySelect, PlaceSelects, SchoolFactsPanel } from "@/app/components/schools/SchoolCascade";
 import { schoolRefFromDirectoryRow } from "@/lib/admin/school-directory";
 import { useSchoolDirectoryMode } from "@/lib/queries/school-directory";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -111,21 +114,121 @@ export function SelectInput({ label, value, onChange, options, error, required }
 }
 
 /**
- * Pick an existing school, 2–100 characters.
- * - With the school directory (`schoolAdministration` + `schools.manage`): `GET /admin/schools`
- *   (active schools of every kind — official, administrator-created, legacy, other countries).
- *   The public `/schools/search` lists only official Rwandan schools on those backends, so a
- *   school an Administrator has just created could not otherwise be picked.
- * - Otherwise: `GET /schools/search` (both backends).
+ * Pick an existing school with the standard selection (lib/schools/school-cascade.ts):
+ *
+ *   Country → Province → District → Sector → School   (Rwanda)
+ *   Country → School                                    (another country)
+ *
+ * Plain dropdowns only; each lists what belongs to the step before it and changing a step clears
+ * the steps after it. Schools come from the school directory (`GET /admin/schools`, active schools
+ * of every kind — official, administrator-created, legacy — filtered by that place or country), so a
+ * school an Administrator has just created can be picked. Once chosen, its official details show.
+ * A backend without the school directory (no places) keeps the former name search (LegacySchoolSearch).
  */
 export function SchoolPicker({ value, onChange, label = "School" }: { value: SchoolRef | null; onChange: (s: SchoolRef | null) => void; label?: string }) {
+  const directory = useSchoolDirectoryMode() === "manage";
+  if (!directory) return <LegacySchoolSearch value={value} onChange={onChange} label={label} />;
+  return <SchoolCascadePicker value={value} onChange={onChange} label={label} />;
+}
+
+function SchoolCascadePicker({ value, onChange, label }: { value: SchoolRef | null; onChange: (s: SchoolRef | null) => void; label: string }) {
+  const [country, setCountry] = useState<string>(RWANDA);
+  const [place, setPlace] = useState<Place>(emptyPlace);
+  const [chosen, setChosen] = useState<DirectorySchoolRow | null>(null);
+  const rwanda = country === RWANDA;
+  const ready = !!country && (!rwanda || placeComplete(place));
+  const schools = useQuery({
+    queryKey: ["schools", "picker", country, place.province, place.district, place.sector],
+    queryFn: () =>
+      adminSchoolsApi.list({ countryCode: country, ...(rwanda && { province: place.province, district: place.district, sector: place.sector }), isActive: true, limit: 100 }),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const list = byName(schools.data?.data ?? []);
+  const reset = () => {
+    setChosen(null);
+    onChange(null);
+  };
+
+  // A school already set by the form (e.g. an account being edited): show it, with Change.
+  if (value && !chosen) {
+    return (
+      <Field label={label}>
+        {(id) => (
+          <div id={id} className="flex items-center justify-between gap-2 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            <span className="min-w-0 truncate">
+              {value.name} <span className="text-gray-400">· {value.location}</span>
+            </span>
+            <button type="button" onClick={reset} className="text-xs font-medium text-indigo-600 hover:text-indigo-800 shrink-0">
+              Change
+            </button>
+          </div>
+        )}
+      </Field>
+    );
+  }
+  return (
+    <fieldset className="space-y-3" data-testid="school-picker">
+      <legend className="block text-xs font-semibold text-gray-600 mb-1">{label}</legend>
+      <CountrySelect
+        variant="admin"
+        value={country}
+        onChange={(c) => {
+          setCountry(c);
+          setPlace(emptyPlace());
+          reset();
+        }}
+      />
+      {rwanda && (
+        <PlaceSelects
+          variant="admin"
+          value={place}
+          onChange={(p) => {
+            setPlace(p);
+            reset();
+          }}
+        />
+      )}
+      {ready &&
+        (schools.isError ? (
+          <p className="text-[11px] text-red-600" role="alert">
+            {errorMessage(schools.error)}
+          </p>
+        ) : (
+          <CascadeSelect
+            variant="admin"
+            label="School"
+            value={chosen?.id ?? ""}
+            disabled={schools.isPending}
+            placeholder={schools.isPending ? "Loading schools…" : list.length ? "Choose the school" : "No active school here"}
+            options={list.map((s) => ({ value: s.id, label: s.code ? `${s.name} (${s.code})` : s.name }))}
+            onChange={(id) => {
+              const s = list.find((x) => x.id === id) ?? null;
+              setChosen(s);
+              onChange(s ? schoolRefFromDirectoryRow(s) : null);
+            }}
+            hint={
+              (schools.data?.meta.total ?? 0) > list.length
+                ? `Showing the first ${list.length} of ${schools.data?.meta.total} schools.`
+                : !schools.isPending && list.length === 0
+                  ? "Add the school in Schools → Directory first."
+                  : undefined
+            }
+            testId="cascade-school"
+          />
+        ))}
+      {chosen && <SchoolFactsPanel variant="admin" facts={schoolFacts(chosen, undefined, rwanda ? undefined : countryName(chosen.countryCode))} />}
+    </fieldset>
+  );
+}
+
+/** The former name search, only for a backend without the school directory (no official places to choose from). */
+function LegacySchoolSearch({ value, onChange, label }: { value: SchoolRef | null; onChange: (s: SchoolRef | null) => void; label: string }) {
   const [q, setQ] = useState("");
   const term = q.trim().slice(0, 100);
-  const directory = useSchoolDirectoryMode() === "manage";
   const results = useQuery({
-    queryKey: ["schools", "search", directory ? "directory" : "public", term],
-    queryFn: async (): Promise<SchoolRef[]> =>
-      directory ? (await adminSchoolsApi.list({ q: term, isActive: true, limit: 20 })).data.map(schoolRefFromDirectoryRow) : schoolsApi.search(term),
+    queryKey: ["schools", "search", "public", term],
+    queryFn: (): Promise<SchoolRef[]> => schoolsApi.search(term),
     enabled: term.length >= 2,
     staleTime: 60_000,
   });
