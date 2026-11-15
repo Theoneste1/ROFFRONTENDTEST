@@ -101,6 +101,7 @@ export interface CurrentUser {
   /** Students' Olympiad interests (backends with `studentOlympiadInterests`; absent on older ones). */
   olympiadInterests?: OlympiadSubject[];
   // Students, backends with `studentRegistrationDetails` (absent or null otherwise):
+  /** An ISO instant ("2012-05-01T00:00:00.000Z"): use the first 10 characters (a date, never shifted by a time zone). */
   dateOfBirth?: string | null;
   phone?: string | null;
   guardianPhone?: string | null;

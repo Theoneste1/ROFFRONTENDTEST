@@ -85,7 +85,7 @@ export default function ProfilePage() {
                   {interestsOn && <Detail label="Olympiad interests">{interestsText(user.olympiadInterests) || "None chosen yet"}</Detail>}
                   {detailsOn && (
                     <>
-                      <Detail label="Date of birth">{user.dateOfBirth ? formatDate(user.dateOfBirth) : null}</Detail>
+                      <Detail label="Date of birth">{user.dateOfBirth ? formatDate(user.dateOfBirth.slice(0, 10)) : null}</Detail>
                       <Detail label="Country">{user.country ? countryName(user.country) : null}</Detail>
                       <Detail label="Phone">{user.phone}</Detail>
                       <Detail label="Close-family phone">{user.guardianPhone}</Detail>
