@@ -80,6 +80,17 @@ export const KNOWN_FEATURES = [
    * and profiles return it. Without it older backends refuse the field (400): neither shown nor sent.
    */
   "studentOlympiadInterests",
+  /**
+   * Student sign-up details: `POST /auth/register/student` takes `dateOfBirth`, `phone` (optional),
+   * `guardianPhone`, `homeCountry` and, in Rwanda, `homeProvince` / `homeDistrict` / `homeSector`
+   * (official list; then `homeLocation` is optional). Profiles return them. Without it: not asked.
+   */
+  "studentRegistrationDetails",
+  /**
+   * Coach application details: `POST /mentor-requests` takes `country`, `occupation`,
+   * `educationLevel` and `olympiadInterests`; the administrators' list returns them. Without it: not asked.
+   */
+  "coachApplicationDetails",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

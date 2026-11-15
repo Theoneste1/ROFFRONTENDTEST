@@ -22,6 +22,7 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [failures, setFailures] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
   // A one-time message from the previous page (e.g. after a password change).
   const [notice] = useState(peekLoginNotice);
   useEffect(() => clearLoginNotice(), []);
@@ -36,6 +37,12 @@ export default function LoginForm() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (submitting) return;
+    // Required fields: explained beside each field (the button stays enabled so the reason is shown).
+    const fe: { username?: string; password?: string } = {};
+    if (username.trim().length < 3) fe.username = "Enter your username or e-mail address.";
+    if (!password) fe.password = "Enter your password.";
+    setFieldErrors(fe);
+    if (fe.username || fe.password) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -112,7 +119,11 @@ export default function LoginForm() {
         minLength={3}
         maxLength={254}
         value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        onChange={(e) => {
+          setUsername(e.target.value);
+          setFieldErrors((s) => ({ ...s, username: undefined }));
+        }}
+        error={fieldErrors.username}
         placeholder="e.g. student.s2"
       />
 
@@ -124,7 +135,11 @@ export default function LoginForm() {
           required
           maxLength={100}
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setFieldErrors((s) => ({ ...s, password: undefined }));
+          }}
+          error={fieldErrors.password}
         />
         <div className="mt-2 text-right">
           <Link href="/forgot-password" className="text-xs font-medium text-[#2B2BB2] hover:underline">
@@ -133,7 +148,7 @@ export default function LoginForm() {
         </div>
       </div>
 
-      <Button type="submit" loading={submitting} disabled={username.trim().length < 3 || password.length === 0} className="w-full">
+      <Button type="submit" loading={submitting} className="w-full">
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
 

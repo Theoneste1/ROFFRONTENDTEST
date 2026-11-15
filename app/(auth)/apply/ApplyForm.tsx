@@ -10,7 +10,7 @@
  * administrators create Teacher accounts, so the page says so and links to the
  * contact form either way.
  */
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { AuthHeading, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
 import { useSearchParams } from "next/navigation";
@@ -21,11 +21,25 @@ import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import {
+  coachDetailsPayload,
+  coachDetailsSupported,
+  EDUCATION_LEVELS,
+  emptyCoachDetails,
+  validateCoachDetails,
+  type CoachDetailsDraft,
+  type CoachDetailsField,
+} from "@/lib/accounts/coach-application";
+import { countryOptions } from "@/lib/schools/countries";
+import { CascadeSelect } from "@/app/components/schools/SchoolCascade";
+import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
+import { FormSection } from "@/app/components/auth/AuthUi";
 
 const USERNAME = /^[a-z0-9._-]{3,30}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const FIELDS = ["firstName", "lastName", "username", "email", "password"] as const;
 type F = (typeof FIELDS)[number] | "confirm";
+const DETAIL_FIELDS = ["country", "occupation", "educationLevel", "olympiadInterests"] as const;
 
 export default function ApplyForm() {
   const teacher = useSearchParams().get("as") === "teacher";
@@ -34,6 +48,15 @@ export default function ApplyForm() {
   // The backend implements the teacher application (whether it is open is checked on that page).
   const teacherSelfRegistration = hasFeature(detection, "teacherSelfRegistration");
   const role = "Coach";
+  // Country, occupation, education and interests: only when the backend accepts them.
+  const detailsOn = coachDetailsSupported(detection);
+  const [details, setDetails] = useState<CoachDetailsDraft>(emptyCoachDetails);
+  const [detailErrors, setDetailErrors] = useState<Partial<Record<CoachDetailsField, string>>>({});
+  const countries = useMemo(() => countryOptions(), []);
+  const setDetail = <K extends keyof CoachDetailsDraft>(k: K, val: CoachDetailsDraft[K], field: CoachDetailsField) => {
+    setDetails((s) => ({ ...s, [k]: val }));
+    setDetailErrors((s) => ({ ...s, [field]: undefined }));
+  };
   const [v, setV] = useState({ firstName: "", lastName: "", username: "", email: "" });
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -54,16 +77,26 @@ export default function ApplyForm() {
     const p = validateNewPassword(password, confirm);
     if (p.password) e.password = p.password;
     if (p.confirm) e.confirm = p.confirm;
+    const de = detailsOn ? validateCoachDetails(details) : {};
     setErrors(e);
+    setDetailErrors(de);
     setError(null);
-    if (Object.keys(e).length) return;
+    if (Object.keys(e).length || Object.keys(de).length) return;
     setSubmitting(true);
     try {
-      await publicApi.applyAsMentor({ firstName: v.firstName.trim(), lastName: v.lastName.trim(), username: v.username, email: v.email.trim(), password });
+      await publicApi.applyAsMentor({
+        firstName: v.firstName.trim(),
+        lastName: v.lastName.trim(),
+        username: v.username,
+        email: v.email.trim(),
+        password,
+        ...(detailsOn && coachDetailsPayload(details)),
+      });
       setDone(true);
     } catch (err) {
       setError(err);
       setErrors(fieldErrors(err, FIELDS));
+      if (detailsOn) setDetailErrors(fieldErrors(err, DETAIL_FIELDS));
     } finally {
       setSubmitting(false);
     }
@@ -130,7 +163,8 @@ export default function ApplyForm() {
   }
 
   const taken = isApiError(error) && error.code === "IDENTITY_TAKEN";
-  const fieldErr = Object.keys(fieldErrors(error, FIELDS)).length > 0;
+  const fieldErr = Object.keys(fieldErrors(error, detailsOn ? [...FIELDS, ...DETAIL_FIELDS] : FIELDS)).length > 0;
+  const teacherHref = teacherSelfRegistration ? "/register/teacher" : "/apply?as=teacher";
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
@@ -141,7 +175,11 @@ export default function ApplyForm() {
           Coaches mentor ROF students: you prepare assignments, share resources and review student work for the courses you are assigned. An administrator reviews every application.
         </p>
         <p className="mt-2 text-xs text-slate-500">
-          A school teacher? <Link href="/?subject=teacher#contact" className="font-medium text-[#2B2BB2] hover:underline">Contact us</Link> to connect your school.
+          A school teacher?{" "}
+          <Link href={teacherHref} className="font-medium text-[#2B2BB2] hover:underline">
+            Join as a teacher
+          </Link>{" "}
+          instead.
         </p>
       </div>
 
@@ -151,13 +189,54 @@ export default function ApplyForm() {
         </Alert>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />
-        <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />
-      </div>
-      <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />
-      <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />
-      <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
+      {error != null && fieldErr && <Alert tone="error">Please check the highlighted fields.</Alert>}
+
+      <FormSection step={1} title="About you">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />
+          <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />
+        </div>
+        {detailsOn && (
+          <CascadeSelect label="Country" value={details.country} onChange={(c) => setDetail("country", c, "country")} options={countries} placeholder="Choose your country" error={detailErrors.country} testId="coach-country" />
+        )}
+      </FormSection>
+
+      {detailsOn && (
+        <FormSection step={2} title="Your background">
+          <TextField
+            label="Current or most recent occupation"
+            name="occupation"
+            required
+            maxLength={200}
+            value={details.occupation}
+            onChange={(e) => setDetail("occupation", e.target.value, "occupation")}
+            error={detailErrors.occupation}
+            hint="For example: mathematics teacher, engineering student, software developer."
+          />
+          <CascadeSelect
+            label="Highest level of education"
+            value={details.educationLevel}
+            onChange={(l) => setDetail("educationLevel", l as CoachDetailsDraft["educationLevel"], "educationLevel")}
+            options={EDUCATION_LEVELS}
+            placeholder="Choose your level of education"
+            error={detailErrors.educationLevel}
+            hint="Completed or in progress."
+            testId="coach-education"
+          />
+          <OlympiadInterestsField
+            value={details.interests}
+            onChange={(next) => setDetail("interests", next, "olympiadInterests")}
+            error={detailErrors.olympiadInterests}
+            hint="The Olympiads you would like to coach. Choose one or more."
+          />
+        </FormSection>
+      )}
+
+      <FormSection step={detailsOn ? 3 : 2} title="Your account">
+        <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />
+        <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />
+        <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
+      </FormSection>
 
       <Button type="submit" loading={submitting} className="w-full">
         {submitting ? "Sending your application…" : `Apply as a ${role.toLowerCase()}`}
