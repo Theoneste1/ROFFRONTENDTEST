@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AuthHeading, JoinLinks } from "@/app/components/auth/AuthUi";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth/session";
@@ -63,10 +64,7 @@ export default function LoginForm() {
 
   return (
     <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Sign in</h1>
-        <p className="mt-1 text-sm text-slate-500">Use your ROF username or e-mail address.</p>
-      </div>
+      <AuthHeading eyebrow="Sign in" title="Welcome back" subtitle="Sign in with your ROF username or e-mail address to continue learning." />
 
       {notice && error == null && <Alert tone="success">{LOGIN_NOTICE_TEXT[notice]}</Alert>}
 
@@ -139,20 +137,7 @@ export default function LoginForm() {
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
 
-      <div className="text-center text-sm text-slate-600" data-testid="signup-links">
-        <p>
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-semibold text-[#2B2BB2] hover:underline">
-            Sign up
-          </Link>
-        </p>
-        <p className="mt-1 text-xs text-slate-500">
-          Want to mentor ROF students?{" "}
-          <Link href="/apply" className="font-medium text-[#2B2BB2] hover:underline">
-            Apply as a coach
-          </Link>
-        </p>
-      </div>
+      <JoinLinks />
 
       <p className="text-center text-xs text-slate-500">
         Need help?{" "}

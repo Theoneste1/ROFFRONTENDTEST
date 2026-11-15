@@ -66,7 +66,7 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
   if (mutation.isSuccess) {
     return (
       <div className="space-y-5">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Account activated</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Account activated</h1>
         <Alert tone="success">
           Welcome, {info.firstName}! Your account is ready. Sign in with the username <strong>{mutation.data.username}</strong>.
         </Alert>
@@ -82,8 +82,8 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
   return (
     <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome, {info.firstName}</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Welcome, {info.firstName}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">
           {info.requiresPassword
             ? "Choose a password to activate your account."
             : "Confirm your e-mail address to activate your account."}
@@ -123,8 +123,8 @@ function ResendActivation({ invalidLink = false }: { invalidLink?: boolean }) {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{invalidLink ? "Link not valid" : "Activate your account"}</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{invalidLink ? "Link not valid" : "Activate your account"}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">
           {invalidLink
             ? "This activation link is invalid, has already been used, or has expired."
             : "Open the activation link from your e-mail, or request a new one below."}

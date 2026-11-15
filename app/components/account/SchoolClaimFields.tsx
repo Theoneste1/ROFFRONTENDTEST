@@ -42,16 +42,19 @@ export default function SchoolClaimFields({
   value,
   onChange,
   errors,
+  hideLegend = false,
 }: {
   value: SchoolClaimDraft;
   onChange: (d: SchoolClaimDraft) => void;
   errors: Partial<Record<SchoolClaimField, string>>;
+  /** The form already titles this part (e.g. "Your school"): the legend stays for screen readers only. */
+  hideLegend?: boolean;
 }) {
   const country = value.mode === "abroad" ? value.country : RWANDA;
   const place = placeOf(value);
   return (
     <fieldset className="space-y-4" data-testid="school-claim">
-      <legend className="block text-sm font-semibold text-slate-700 mb-2">
+      <legend className={hideLegend ? "sr-only" : "mb-2 block text-sm font-semibold text-slate-700"}>
         School <span className="text-red-500">*</span>
       </legend>
       <CountrySelect
