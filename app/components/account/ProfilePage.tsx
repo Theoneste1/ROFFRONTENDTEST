@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * "My profile" for every role: `/student|mentor|admin/profile`.
+ * "My Profile" for every role: `/student|mentor|teacher|admin/profile` (Head Coaches use the coach
+ * portal, Super Administrators the administrator portal).
  *
  * What can change is exactly what the backend allows:
+ * - the profile picture, on a backend advertising `profilePictures` (`PUT`/`DELETE /me/avatar`,
+ *   AvatarEditor.tsx); otherwise the generated avatar ("Theoneste N") is shown;
  * - `PATCH /me`: first name, last name, home location. Username, e-mail,
  *   role, division, grade and school are read-only here (administrators
  *   manage them);
- * - `PATCH /auth/password`, which signs out every session;
- * - `POST /auth/logout-all`;
- * - notification e-mail preferences and, for mentors and admins, per-type
- *   switches (NotificationPreferences.tsx);
+ * - password, sessions and notification preferences are in Settings (AccountSettingsPage.tsx);
  * - students, on a backend advertising `schoolAffiliations`: their school and its
  *   verification, and asking for another school (SchoolAffiliationCard.tsx);
  * - students, on a backend advertising `studentOlympiadInterests`: their Olympiad interests
@@ -19,7 +19,7 @@
 import { homePlaceText, studentDetailsSupported } from "@/lib/accounts/student-details";
 import { countryName } from "@/lib/schools/countries";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { KeyRound, LogOut, Trophy, UserRound } from "lucide-react";
+import { ArrowRight, Settings, Trophy, UserRound } from "lucide-react";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import {
   interestsText,
@@ -31,18 +31,16 @@ import {
 } from "@/lib/accounts/olympiad-interests";
 import OlympiadInterestsField from "./OlympiadInterestsField";
 import { useSession } from "@/lib/auth/session";
-import { roleLabel } from "@/lib/auth/roles";
-import { clearLoginNotice, setLoginNotice } from "@/lib/auth/notice";
-import { useChangePassword, useUpdateMe } from "@/lib/queries/account";
-import { PASSWORD_RULE } from "@/lib/api/auth";
-import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
+import { portalPath, roleLabel } from "@/lib/auth/roles";
+import Link from "next/link";
+import AvatarEditor from "./AvatarEditor";
+import { useUpdateMe } from "@/lib/queries/account";
+import { errorMessage, fieldErrors } from "@/lib/api/errors";
 import type { CurrentUser, UpdateMeInput } from "@/lib/api/types";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
-import { Button, PasswordField, TextField } from "@/app/components/ui/form";
+import { Button, TextField } from "@/app/components/ui/form";
 import { PageFrame } from "@/app/components/ui/PageFrame";
-import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
-import NotificationPreferences from "./NotificationPreferences";
 import SchoolAffiliationCard from "./SchoolAffiliationCard";
 import { Section } from "./Section";
 
@@ -64,15 +62,13 @@ export default function ProfilePage() {
 
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
   return (
-    <PageFrame title="My profile" description="Your account details, password and notification preferences.">
+    <PageFrame title="My Profile" description="Your picture and account details. Password, sessions and notifications are in Settings.">
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         <div className="space-y-6 min-w-0">
           <section className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6 flex flex-col items-center text-center">
-            <div className="h-20 w-20 rounded-full bg-indigo-600 text-white flex items-center justify-center text-3xl font-bold" aria-hidden="true">
-              {(user.firstName || user.username).charAt(0).toUpperCase()}
-            </div>
-            <p className="mt-3 text-lg font-bold text-gray-900">{fullName}</p>
-            <p className="text-sm text-gray-500">{roleLabel(user.role)}</p>
+            <AvatarEditor user={user} />
+            <p className="mt-4 text-lg font-bold text-gray-900" data-testid="profile-name">{fullName}</p>
+            <p className="text-sm font-medium text-amber-700" data-testid="profile-title">{roleLabel(user.role)}</p>
             <dl className="mt-6 w-full grid grid-cols-1 gap-4 text-left">
               <Detail label="Username">{user.username}</Detail>
               <Detail label="E-mail">{user.email}</Detail>
@@ -108,9 +104,11 @@ export default function ProfilePage() {
           <DetailsForm user={user} />
           {interestsOn && <InterestsCard user={user} />}
           {user.role === "STUDENT" && <SchoolAffiliationCard />}
-          <PasswordForm />
-          <SessionsCard />
-          <NotificationPreferences role={user.role} />
+          <Section title="Settings" icon={<Settings className="w-5 h-5" />} description="Your password, signed-in devices and notification e-mails.">
+            <Link href={portalPath(user.role, "account")} className="inline-flex items-center gap-2 text-sm font-semibold text-[#2B2BB2] hover:underline" data-testid="profile-settings-link">
+              Open Settings <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Section>
         </div>
       </div>
     </PageFrame>
@@ -265,122 +263,6 @@ function InterestsCard({ user }: { user: CurrentUser }) {
           </Button>
         </div>
       </form>
-    </Section>
-  );
-}
-
-// ─── Password (PATCH /auth/password) ────────────────────────────────────────
-
-function PasswordForm() {
-  const { endSession } = useSession();
-  const change = useChangePassword();
-  const [current, setCurrent] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [errors, setErrors] = useState<{ current?: string; password?: string; confirm?: string }>({});
-
-  const wrongCurrent = isApiError(change.error) && change.error.code === "WRONG_PASSWORD";
-  const policy = fieldErrors(change.error, ["newPassword"]).newPassword;
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    const errs: typeof errors = { ...validateNewPassword(password, confirm) };
-    if (!current) errs.current = "Enter your current password.";
-    else if (password && password === current) errs.password = "Choose a password different from your current one.";
-    setErrors(errs);
-    if (Object.keys(errs).length || change.isPending) return;
-    change.mutate(
-      { currentPassword: current, newPassword: password },
-      {
-        onSuccess: () => {
-          // The backend revoked every session, this one included.
-          setLoginNotice("password-changed");
-          endSession();
-        },
-      },
-    );
-  }
-
-  return (
-    <Section
-      title="Change password"
-      icon={<KeyRound className="w-5 h-5" />}
-      description="After the change you are signed out everywhere, including here, and sign in again with the new password."
-    >
-      <form onSubmit={onSubmit} noValidate className="space-y-4">
-        {change.isError && !wrongCurrent && !policy && <Alert tone="error">{errorMessage(change.error)}</Alert>}
-        <PasswordField
-          label="Current password"
-          name="current-password"
-          autoComplete="current-password"
-          required
-          maxLength={PASSWORD_RULE.max}
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-          error={errors.current ?? (wrongCurrent ? "Your current password is incorrect." : undefined)}
-        />
-        <NewPasswordFields
-          password={password}
-          confirm={confirm}
-          onPassword={setPassword}
-          onConfirm={setConfirm}
-          errors={{ password: errors.password ?? policy, confirm: errors.confirm }}
-        />
-        <div className="flex justify-end">
-          <Button type="submit" loading={change.isPending}>
-            Change password
-          </Button>
-        </div>
-      </form>
-    </Section>
-  );
-}
-
-// ─── Sessions (POST /auth/logout-all) ───────────────────────────────────────
-
-function SessionsCard() {
-  const { logoutEverywhere } = useSession();
-  const [confirming, setConfirming] = useState(false);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<unknown>(null);
-
-  async function onConfirm() {
-    setPending(true);
-    setError(null);
-    try {
-      setLoginNotice("signed-out-everywhere");
-      await logoutEverywhere(); // RoleGate then opens the sign-in page
-    } catch (err) {
-      clearLoginNotice();
-      setError(err);
-      setPending(false);
-    }
-  }
-
-  return (
-    <Section title="Sessions" icon={<LogOut className="w-5 h-5" />} description="Signed in on a shared or lost device? Sign out of every browser and device at once.">
-      {error != null && (
-        <div className="mb-4">
-          <Alert tone="error">{errorMessage(error)}</Alert>
-        </div>
-      )}
-      {confirming ? (
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <span className="text-sm text-gray-600 mr-auto">You will be signed out here too.</span>
-          <Button type="button" variant="secondary" onClick={() => setConfirming(false)} disabled={pending}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={onConfirm} loading={pending} className="!bg-red-600 hover:!bg-red-700">
-            Sign out everywhere
-          </Button>
-        </div>
-      ) : (
-        <div className="flex justify-end">
-          <Button type="button" variant="secondary" onClick={() => setConfirming(true)}>
-            Sign out of all devices
-          </Button>
-        </div>
-      )}
     </Section>
   );
 }

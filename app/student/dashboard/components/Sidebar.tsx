@@ -156,7 +156,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       </div>
 
       {/* BOTTOM UTILITY LINKS */}
-      <SidebarUtilities isOpen={isOpen} settingsHref="/student/profile" />
+      <SidebarUtilities isOpen={isOpen} settingsHref="/student/account" />
     </aside>
   );
 }

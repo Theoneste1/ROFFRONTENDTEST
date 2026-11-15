@@ -37,7 +37,7 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
           </Link>
         ))}
       </div>
-      <SidebarUtilities isOpen={isOpen} settingsHref="/teacher/profile" />
+      <SidebarUtilities isOpen={isOpen} settingsHref="/teacher/account" />
     </aside>
   );
 }

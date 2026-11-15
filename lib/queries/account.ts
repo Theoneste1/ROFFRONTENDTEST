@@ -6,6 +6,24 @@ import { authApi, meApi, publicApi, type ContactInput } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/query/keys";
 import type { UpdateMeInput } from "@/lib/api/types";
 
+/** `PUT /me/avatar`: the profile (with the new avatarUrl) replaces the session's user everywhere. */
+export function useUploadAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => meApi.uploadAvatar(file),
+    onSuccess: (me) => qc.setQueryData(queryKeys.me.profile(), me),
+  });
+}
+
+/** `DELETE /me/avatar`: every place falls back to the generated avatar. */
+export function useRemoveAvatar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => meApi.removeAvatar(),
+    onSuccess: (me) => qc.setQueryData(queryKeys.me.profile(), me),
+  });
+}
+
 /** `PATCH /me` (firstName, lastName, homeLocation; olympiadInterests on backends that accept them). The navbar and pages update from the response. */
 export function useUpdateMe() {
   const qc = useQueryClient();

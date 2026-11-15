@@ -81,6 +81,13 @@ export const KNOWN_FEATURES = [
    */
   "studentOlympiadInterests",
   /**
+   * Profile pictures: `PUT /me/avatar` (multipart `file`: JPEG, PNG or WebP, at most 2 MB) and
+   * `DELETE /me/avatar`; `avatarUrl` is then an authenticated API path
+   * (`/api/v1/users/:id/avatar?v=…`). Without it My Profile offers no upload (the generated avatar is
+   * shown everywhere).
+   */
+  "profilePictures",
+  /**
    * Student sign-up details: `POST /auth/register/student` takes `dateOfBirth`, `phone` (optional),
    * `guardianPhone`, `homeCountry` and, in Rwanda, `homeProvince` / `homeDistrict` / `homeSector`
    * (official list; then `homeLocation` is optional). Profiles return them. Without it: not asked.

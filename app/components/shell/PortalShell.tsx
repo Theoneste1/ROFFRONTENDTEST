@@ -27,6 +27,10 @@ function useIsDesktop(): boolean {
  * The authenticated portal frame shared by the student, administrator, coach
  * and teacher portals: the top bar, the sidebar and the page.
  *
+ * Fixed navigation: the top bar sticks to the top of the window, and on md and up the sidebar sticks
+ * below it at the window's height, scrolling on its own when its list is longer than the screen. Only
+ * the page scrolls (the window, so pages and the browser keep their scrolling behaviour).
+ *
  * - md and up: the sidebar sits beside the page; the hamburger collapses it to
  *   the 80 px icon rail and back.
  * - below md: the sidebar is an off-canvas drawer over the page (hidden by
@@ -34,11 +38,9 @@ function useIsDesktop(): boolean {
  *   or Escape closes it. Focus moves into the drawer and back to the hamburger.
  */
 export default function PortalShell({
-  avatarClassName,
   renderSidebar,
   children,
 }: {
-  avatarClassName: string;
   /** The portal's sidebar; `isOpen` false renders the collapsed icon rail. */
   renderSidebar: (isOpen: boolean) => ReactNode;
   children: ReactNode;
@@ -81,20 +83,23 @@ export default function PortalShell({
   const toggle = () => (isDesktop ? setRailOpen((o) => !o) : setDrawerOpen((o) => !o));
 
   return (
-    <div className="min-h-screen w-full bg-[#e2e8f0] overflow-x-hidden flex flex-col">
-      <div className="w-full flex-shrink-0">
+    <div className="min-h-screen w-full bg-[#e2e8f0] overflow-x-clip flex flex-col">
+      <header className="sticky top-0 z-30 w-full flex-shrink-0 shadow-[0_1px_0_rgba(148,163,184,0.55)] bg-[#e2e8f0]/95 backdrop-blur supports-[backdrop-filter]:bg-[#e2e8f0]/85" data-testid="portal-topbar">
         <PortalNavbar
           onMenuClick={toggle}
-          avatarClassName={avatarClassName}
           menuButtonRef={menuButtonRef}
           menuExpanded={isDesktop ? railOpen : drawerOpen}
           menuControls={SIDEBAR_ID}
         />
-      </div>
+      </header>
 
       <div className="flex w-full flex-1">
         {isDesktop ? (
-          <div id={SIDEBAR_ID} className="flex-shrink-0 self-stretch">
+          <div
+            id={SIDEBAR_ID}
+            className="sticky top-20 h-[calc(100dvh-5rem)] flex-shrink-0 self-start overflow-y-auto overflow-x-hidden overscroll-contain bg-[#001E4E] [&>aside]:h-auto [&>aside]:min-h-full"
+            data-testid="portal-sidebar"
+          >
             {renderSidebar(railOpen)}
           </div>
         ) : (
