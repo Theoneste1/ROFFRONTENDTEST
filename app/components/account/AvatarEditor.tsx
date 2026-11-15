@@ -14,10 +14,10 @@
 import { useRef, useState, useSyncExternalStore } from "react";
 import { Camera, Trash2 } from "lucide-react";
 import type { CurrentUser } from "@/lib/api/types";
-import { errorMessage } from "@/lib/api/errors";
+import { errorMessage, isApiError } from "@/lib/api/errors";
 import { hasFeature } from "@/lib/api/capabilities";
 import { getServerUploads, getUploads, subscribeUploads, summarise } from "@/lib/api/upload-progress";
-import { AVATAR_RULES, avatarFileProblem } from "@/lib/accounts/avatar";
+import { AVATAR_RULES, avatarFileProblem, avatarUploadErrorText } from "@/lib/accounts/avatar";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { useRemoveAvatar, useUploadAvatar } from "@/lib/queries/account";
 import { Alert } from "@/app/components/ui/feedback";
@@ -62,7 +62,8 @@ export default function AvatarEditor({ user }: { user: CurrentUser }) {
     setMessage(null);
     upload.mutate(file, {
       onSuccess: () => setMessage({ tone: "success", text: hasPicture ? "Your picture was changed." : "Your picture was added." }),
-      onError: (e) => setMessage({ tone: "error", text: errorMessage(e) }),
+      // 415 FILE_TYPE_NOT_ALLOWED, 413 PAYLOAD_TOO_LARGE, 400 FILE_REQUIRED / EMPTY_FILE: clear messages.
+      onError: (e) => setMessage({ tone: "error", text: (isApiError(e) ? avatarUploadErrorText(e) : null) ?? errorMessage(e) }),
     });
   }
 

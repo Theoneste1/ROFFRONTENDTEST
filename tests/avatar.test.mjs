@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { AVATAR_RULES, AVATAR_TONES, avatarFileProblem, avatarInitials, avatarLabel, avatarSource, avatarTone, displayName } from "../lib/accounts/avatar.ts";
+import { avatarUploadErrorText, AVATAR_RULES, AVATAR_TONES, avatarFileProblem, avatarInitials, avatarLabel, avatarSource, avatarTone, displayName } from "../lib/accounts/avatar.ts";
 
 test("label: first name and last-name initial (\"Theoneste N\")", () => {
   assert.equal(avatarLabel({ firstName: "Theoneste", lastName: "Nsanzabarinda" }), "Theoneste N");
@@ -57,4 +57,14 @@ test("picture source: API paths go through the authenticated client; only https 
   assert.equal(avatarSource("javascript:alert(1)"), null);
   assert.equal(avatarSource(""), null);
   assert.equal(avatarSource(null), null);
+});
+
+test("upload refusals from the backend get clear messages (415, 413, 400 codes)", () => {
+  assert.equal(avatarUploadErrorText({ status: 415, code: "FILE_TYPE_NOT_ALLOWED" }), "Use a JPEG, PNG or WEBP image.");
+  assert.equal(avatarUploadErrorText({ status: 413, code: "PAYLOAD_TOO_LARGE" }), "The picture must be 2 MB or smaller.");
+  assert.equal(avatarUploadErrorText({ status: 413 }), "The picture must be 2 MB or smaller.");
+  assert.equal(avatarUploadErrorText({ status: 400, code: "FILE_REQUIRED" }), "Choose a picture.");
+  assert.equal(avatarUploadErrorText({ status: 400, code: "EMPTY_FILE" }), "That file is empty.");
+  assert.equal(avatarUploadErrorText({ status: 500, code: "INTERNAL_ERROR" }), null);
+  assert.equal(avatarUploadErrorText(null), null);
 });

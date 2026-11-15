@@ -110,3 +110,16 @@ export function avatarSource(avatarUrl: string | null | undefined): { kind: "api
   if (/^https:\/\//i.test(v)) return { kind: "url", url: v };
   return null;
 }
+
+/**
+ * A clear message for a refused upload (`PUT /me/avatar`), by status and code: 415 FILE_TYPE_NOT_ALLOWED,
+ * 413 PAYLOAD_TOO_LARGE, 400 FILE_REQUIRED / EMPTY_FILE. Null for anything else (the generic message is used).
+ */
+export function avatarUploadErrorText(err: { status?: number; code?: string } | null | undefined): string | null {
+  if (!err) return null;
+  if (err.status === 415 || err.code === "FILE_TYPE_NOT_ALLOWED") return "Use a JPEG, PNG or WEBP image.";
+  if (err.status === 413 || err.code === "PAYLOAD_TOO_LARGE") return "The picture must be 2 MB or smaller.";
+  if (err.code === "FILE_REQUIRED") return "Choose a picture.";
+  if (err.code === "EMPTY_FILE") return "That file is empty.";
+  return null;
+}
