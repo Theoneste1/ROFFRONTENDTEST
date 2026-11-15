@@ -63,6 +63,10 @@ export function errorMessage(error: unknown, fallback = "Something went wrong. P
         return "Can't reach the server to renew your session. You are still signed in — please try again in a moment.";
       case "VALIDATION_FAILED":
         return error.validationMessages[0] ?? error.message;
+      // Phase 1 backend: every pooled database connection stayed busy (503, Retry-After: 2).
+      // The request was refused before anything changed, so saying so lets people retry safely.
+      case "DATABASE_BUSY":
+        return "The server is busy right now. Nothing was changed — please try again in a moment.";
       default:
         if (error.status === 429) return "Too many requests. Please wait a moment and try again.";
         if (error.status >= 500) return "The server had a problem. Please try again shortly.";
