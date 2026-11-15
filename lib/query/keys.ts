@@ -38,6 +38,22 @@ export const queryKeys = {
     referenceData: () => [...queryKeys.schoolDirectory.all, "reference-data"] as const,
     /** The public province → district → sector list (the same key the claim form uses). */
     locations: () => ["schools", "locations"] as const,
+    /** The public search filtered by place (GET /schools/search?province=&district=). */
+  },
+  /** Teacher self-registration (lib/api/teacher-registration.ts). */
+  teacherRegistration: {
+    availability: () => ["teacher-registration", "availability"] as const,
+  },
+  /** Teacher application review (`/admin/teacher-applications`). */
+  teacherApplications: {
+    all: ["teacher-applications"] as const,
+    list: (filters: object) => [...queryKeys.teacherApplications.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.teacherApplications.all, "detail", id] as const,
+  },
+  /** Admin delivery log of the decision notifications (lib/api/notification-deliveries.ts). */
+  notificationDeliveries: {
+    all: ["notification-deliveries"] as const,
+    list: (filters: object) => [...queryKeys.notificationDeliveries.all, "list", filters] as const,
   },
   /** Official-directory sync runs (lib/api/school-sync.ts). */
   schoolSync: {

@@ -1,6 +1,6 @@
 /**
- * Portal menus and the permission each item needs (type-only imports; unit-tested in
- * tests/roles.test.mjs).
+ * Portal menus and the permission each item needs (unit-tested in tests/roles.test.mjs and
+ * tests/notifications.test.mjs).
  *
  * Every permission named here is in the list `GET /me/permissions` returns
  * for that portal's roles today — including the frozen ADMIN / MENTOR lists
@@ -12,6 +12,7 @@
  * Hiding is navigation only: the API refuses everything not permitted.
  */
 import type { Permission } from "../api/types";
+import { NOTIFICATION_DELIVERIES_PERMISSION } from "../admin/notification-deliveries";
 
 export interface NavItem {
   href: string;
@@ -41,6 +42,21 @@ export const ADMIN_NAV: readonly NavItem[] = [
   // Contact messages are served to ADMIN and SUPER_ADMIN by role, not by a permission.
   { href: "/admin/messages", label: "Messages" },
 ];
+
+/**
+ * Teacher applications (teacher self-registration review). Not part of ADMIN_NAV: its permission
+ * (users.manageTeachers) is not in the frozen ADMIN list, and the page exists only on a backend
+ * advertising `teacherSelfRegistration`. The Sidebar shows it only when both are definitely known
+ * (lib/admin/teacher-applications.ts → teacherApplicationsNavVisible).
+ */
+export const ADMIN_TEACHER_APPLICATIONS: NavItem = { href: "/admin/teacher-applications", label: "Teacher Applications", permission: "users.manageTeachers" };
+
+/**
+ * Notification delivery log. Kept out of the frozen ADMIN_NAV and shown after it, like the other
+ * separately gated items; its permission is the single constant NOTIFICATION_DELIVERIES_PERMISSION
+ * (email.bulkSend, held by ADMIN and SUPER_ADMIN).
+ */
+export const ADMIN_NOTIFICATION_DELIVERIES: NavItem = { href: "/admin/notification-deliveries", label: "Notification Deliveries", permission: NOTIFICATION_DELIVERIES_PERMISSION };
 
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };

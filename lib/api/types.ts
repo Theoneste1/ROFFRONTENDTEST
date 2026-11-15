@@ -6,6 +6,8 @@
  * Add types here as modules are integrated; keep them in one place.
  */
 
+import type { OlympiadSubject } from "./teacher-registration";
+
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
 /**
@@ -96,6 +98,8 @@ export interface CurrentUser {
   problemsSolved: number;
   lastLoginAt: string | null;
   createdAt: string;
+  /** Students' Olympiad interests (backends with `studentOlympiadInterests`; absent on older ones). */
+  olympiadInterests?: OlympiadSubject[];
 }
 
 /**
@@ -552,6 +556,8 @@ export interface UpdateMeInput {
   firstName?: string;
   lastName?: string;
   homeLocation?: string;
+  /** Only on a backend with `studentOlympiadInterests`; at least one. */
+  olympiadInterests?: OlympiadSubject[];
 }
 
 // ─── Mentor ─────────────────────────────────────────────────────────────────
@@ -807,6 +813,8 @@ export interface AdminUser {
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt?: string;
+  /** Students' Olympiad interests (backends with studentOlympiadInterests). */
+  olympiadInterests?: string[];
 }
 
 /** `POST /admin/users/import` (multipart CSV, `?dryRun=`). */

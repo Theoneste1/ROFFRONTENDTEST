@@ -4,10 +4,11 @@
  * Coach application (`POST /mentor-requests`). Coaches are the people who
  * mentor ROF students (the platform's MENTOR accounts). An administrator reviews
  * the request (Coaches → Applications) and the applicant is e-mailed the decision.
- * Teachers cannot register themselves on any backend: `?as=teacher` explains
- * that. When the backend advertises `teacherAccounts`, Teacher accounts exist but
- * only ROF administrators create them (and assign the teacher's schools), so
- * the page says so and links to the contact form either way.
+ * `?as=teacher`: on a backend advertising `teacherSelfRegistration` it links to
+ * the teacher application (/register/teacher, which checks whether it is open).
+ * Otherwise teachers cannot register themselves: with `teacherAccounts`, only ROF
+ * administrators create Teacher accounts, so the page says so and links to the
+ * contact form either way.
  */
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -28,7 +29,10 @@ type F = (typeof FIELDS)[number] | "confirm";
 
 export default function ApplyForm() {
   const teacher = useSearchParams().get("as") === "teacher";
-  const teacherAccounts = hasFeature(useBackendCapabilities().detection, "teacherAccounts");
+  const detection = useBackendCapabilities().detection;
+  const teacherAccounts = hasFeature(detection, "teacherAccounts");
+  // The backend implements the teacher application (whether it is open is checked on that page).
+  const teacherSelfRegistration = hasFeature(detection, "teacherSelfRegistration");
   const role = "Coach";
   const [v, setV] = useState({ firstName: "", lastName: "", username: "", email: "" });
   const [password, setPassword] = useState("");
@@ -70,7 +74,16 @@ export default function ApplyForm() {
       <div className="space-y-5" data-testid="apply-teacher">
         <JoinSwitch active="teacher" />
         <AuthHeading title="Join as a teacher" />
-        {teacherAccounts ? (
+        {teacherSelfRegistration ? (
+          <>
+            <p className="text-sm text-slate-700">
+              Teachers apply for an account with their school and contact details. An administrator reviews every application and links the account to your school.
+            </p>
+            <Link href="/register/teacher" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]" data-testid="apply-teacher-register">
+              Apply as a teacher
+            </Link>
+          </>
+        ) : teacherAccounts ? (
           <>
             <Alert tone="info">Teacher accounts are created by ROF administrators. There is no self-registration for teachers.</Alert>
             <p className="text-sm text-slate-700">
@@ -85,9 +98,15 @@ export default function ApplyForm() {
             </p>
           </>
         )}
-        <Link href="/?subject=teacher#contact" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
-          Contact us
-        </Link>
+        {teacherSelfRegistration ? (
+          <p className="text-center text-sm text-slate-500">
+            Questions? <Link href="/?subject=teacher#contact" className="font-medium text-[#2B2BB2] hover:underline">Contact us</Link>
+          </p>
+        ) : (
+          <Link href="/?subject=teacher#contact" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
+            Contact us
+          </Link>
+        )}
         <p className="text-center text-sm text-slate-500">
           Want to mentor ROF students? <Link href="/apply" className="font-medium text-[#2B2BB2] hover:underline">Apply as a coach</Link>
         </p>

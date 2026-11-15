@@ -27,6 +27,8 @@ export interface DirectorySchool {
   location: string;
   district: string | null;
   sector: string | null;
+  /** Newer backends add the school's province (additive; absent on older ones). */
+  province?: string | null;
 }
 
 /** `GET /schools/locations`: the official province → district → sector list. */
@@ -37,7 +39,8 @@ export interface SchoolProvince {
 
 export const schoolDirectoryApi = {
   /** `q` (2–100, name or code prefix), or a district / sector filter. Up to 10 results (200 when filtered). */
-  search: (params: { q?: string; province?: string; district?: string; sector?: string }) =>
+  /** `teacherEligible`: only schools a Teacher may choose (official code, or administrator-created and verified). */
+  search: (params: { q?: string; province?: string; district?: string; sector?: string; teacherEligible?: "true" }) =>
     api<DirectorySchool[]>("/schools/search", { query: params, auth: false }),
   locations: () => api<SchoolProvince[]>("/schools/locations", { auth: false }),
 };
