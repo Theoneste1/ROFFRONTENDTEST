@@ -14,6 +14,8 @@
 import type { DirectorySchool, SchoolProvince } from "../api/accounts";
 import { hasFeature, type BackendDetection } from "../api/capabilities";
 import type { OlympiadSubject, TeacherRegistrationInput } from "../api/teacher-registration";
+import { normalisePhone, PHONE_HINT } from "./phone";
+import { RWANDA as DEFAULT_COUNTRY } from "../schools/countries";
 
 // ─── Subjects ───────────────────────────────────────────────────────────────
 
@@ -59,54 +61,10 @@ export function teacherRegistrationGate(
   return availability.open === true ? { state: "open" } : { state: "unavailable" };
 }
 
-// ─── Phone ──────────────────────────────────────────────────────────────────
+// ─── Phone and countries (shared: lib/accounts/phone.ts, lib/schools/countries.ts) ───
 
-const PHONE_SEPARATORS = /[\s().\-/]/g;
-
-/**
- * The backend's normalisePhone (src/schools/directory/school-contacts.ts): E.164, or null.
- * Rwanda: 9 national digits starting with 2 (landline) or 7 (mobile), written 07…, 7…, 2507…,
- * +2507… or 002507…; elsewhere the international form +[1-9] and 8–15 digits.
- */
-export function normalisePhone(raw: string): string | null {
-  let s = raw.replace(PHONE_SEPARATORS, "");
-  if (s.startsWith("00")) s = `+${s.slice(2)}`;
-  if (/^0[27]\d{8}$/.test(s)) return `+250${s.slice(1)}`;
-  if (/^250[27]\d{8}$/.test(s)) return `+${s}`;
-  if (/^[27]\d{8}$/.test(s)) return `+250${s}`;
-  if (s.startsWith("+250")) return /^\+250[27]\d{8}$/.test(s) ? s : null;
-  return /^\+[1-9]\d{7,14}$/.test(s) ? s : null;
-}
-
-export const PHONE_HINT = "Rwanda: 07XXXXXXXX or +2507XXXXXXXX. Elsewhere: + country code and number.";
-
-// ─── Countries ──────────────────────────────────────────────────────────────
-
-/** ISO 3166-1 alpha-2 codes offered in the country list (Rwanda first). */
-export const COUNTRY_CODES: readonly string[] = (
-  "RW AF AX AL DZ AS AD AO AI AQ AG AR AM AW AU AT AZ BS BH BD BB BY BE BZ BJ BM BT BO BQ BA BW BV BR IO BN BG BF BI CV KH CM CA KY CF TD CL CN CX CC CO KM CG CD CK CR CI HR CU CW CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FK FO FJ FI FR GF PF TF GA GM GE DE GH GI GR GL GD GP GU GT GG GN GW GY HT HM VA HN HK HU IS IN ID IR IQ IE IM IL IT JM JP JE JO KZ KE KI KP KR KW KG LA LV LB LS LR LY LI LT LU MO MG MW MY MV ML MT MH MQ MR MU YT MX FM MD MC MN ME MS MA MZ MM NA NR NP NL NC NZ NI NE NG NU NF MK MP NO OM PK PW PS PA PG PY PE PH PN PL PT PR QA RE RO RU BL SH KN LC MF PM VC WS SM ST SA SN RS SC SL SG SX SK SI SB SO ZA GS SS ES LK SD SR SJ SE CH SY TW TJ TZ TH TL TG TK TO TT TN TR TM TC TV UG UA AE GB US UM UY UZ VU VE VN VG VI WF EH YE ZM ZW"
-).split(" ");
-
-export const DEFAULT_COUNTRY = "RW";
-
-/** The country's English name, or the code when the runtime has no name for it. */
-export function countryName(code: string): string {
-  try {
-    const name = new Intl.DisplayNames(["en"], { type: "region" }).of(code);
-    return name && name !== code ? name : code;
-  } catch {
-    return code;
-  }
-}
-
-/** Options for the country select: Rwanda first, then every other country by name. */
-export function countryOptions(): { value: string; label: string }[] {
-  const collator = new Intl.Collator("en", { sensitivity: "base" });
-  const rest = COUNTRY_CODES.filter((c) => c !== DEFAULT_COUNTRY)
-    .map((c) => ({ value: c, label: countryName(c) }))
-    .sort((a, b) => collator.compare(a.label, b.label));
-  return [{ value: DEFAULT_COUNTRY, label: countryName(DEFAULT_COUNTRY) }, ...rest];
-}
+export { normalisePhone, PHONE_HINT } from "./phone";
+export { COUNTRY_CODES, countryName, countryOptions, RWANDA as DEFAULT_COUNTRY } from "../schools/countries";
 
 // ─── Places and schools ─────────────────────────────────────────────────────
 

@@ -16,6 +16,8 @@
  * - students, on a backend advertising `studentOlympiadInterests`: their Olympiad interests
  *   (`PATCH /me` olympiadInterests; at least one).
  */
+import { homePlaceText, studentDetailsSupported } from "@/lib/accounts/student-details";
+import { countryName } from "@/lib/schools/countries";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { KeyRound, LogOut, Trophy, UserRound } from "lucide-react";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -58,6 +60,7 @@ export default function ProfilePage() {
   const caps = useBackendCapabilities();
   if (!user) return <LoadingBlock />;
   const interestsOn = user.role === "STUDENT" && studentInterestsSupported(caps.detection);
+  const detailsOn = user.role === "STUDENT" && studentDetailsSupported(caps.detection);
 
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
   return (
@@ -80,12 +83,24 @@ export default function ProfilePage() {
                   <Detail label="School">{user.school ? `${user.school.name}${user.school.location ? `, ${user.school.location}` : ""}` : null}</Detail>
                   <Detail label="Points">{`${formatNumber(user.points)} · ${formatNumber(user.problemsSolved)} problems solved`}</Detail>
                   {interestsOn && <Detail label="Olympiad interests">{interestsText(user.olympiadInterests) || "None chosen yet"}</Detail>}
+                  {detailsOn && (
+                    <>
+                      <Detail label="Date of birth">{user.dateOfBirth ? formatDate(user.dateOfBirth.slice(0, 10)) : null}</Detail>
+                      <Detail label="Country">{user.country ? countryName(user.country) : null}</Detail>
+                      <Detail label="Phone">{user.phone}</Detail>
+                      <Detail label="Close-family phone">{user.guardianPhone}</Detail>
+                      {homePlaceText(user) && <Detail label="Home">{homePlaceText(user)}</Detail>}
+                    </>
+                  )}
                 </>
               )}
               <Detail label="Member since">{formatDate(user.createdAt)}</Detail>
               <Detail label="Last sign-in">{user.lastLoginAt ? formatDateTime(user.lastLoginAt) : null}</Detail>
             </dl>
-            <p className="mt-5 text-xs text-gray-400">Username, e-mail{user.role === "STUDENT" ? ", grade and school" : ""} are managed by the administrators.</p>
+            <p className="mt-5 text-xs text-gray-400">
+              Username, e-mail{user.role === "STUDENT" ? ", grade and school" : ""} are managed by the administrators.
+              {detailsOn && " To correct your date of birth, phones or home, contact ROF support."}
+            </p>
           </section>
         </div>
 
@@ -177,6 +192,8 @@ function DetailsForm({ user }: { user: CurrentUser }) {
             error={errors.lastName ?? serverErrors.lastName}
           />
         </div>
+        {/* A home chosen from the official Province → District → Sector list is shown above, not typed here. */}
+        {!homePlaceText(user) && (
         <TextField
           label="Home location"
           name="homeLocation"
@@ -187,6 +204,7 @@ function DetailsForm({ user }: { user: CurrentUser }) {
           error={errors.homeLocation ?? serverErrors.homeLocation}
           hint="City or district, e.g. Kigali."
         />
+        )}
         <div className="flex justify-end">
           <Button type="submit" loading={update.isPending}>
             Save details
