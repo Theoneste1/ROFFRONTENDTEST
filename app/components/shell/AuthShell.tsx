@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { BookOpenCheck, Medal, MessagesSquare } from "lucide-react";
 import Image from "@/app/components/ui/Image";
+import { SITE } from "@/lib/site/content";
 
 /**
  * The layout of every sign-in and account page (app/(auth)): sign in, student / coach / teacher
@@ -12,6 +13,7 @@ import Image from "@/app/components/ui/Image";
  * - Tablets and phones: a compact brand bar above the form; the form takes the full width.
  *
  * Images use explicit sizes and classes (no `fill`): the CSP blocks inline style attributes.
+ * The ROF logo (both wordmarks) opens the ROF website; "Home" links keep going to the LMS home page.
  */
 const HIGHLIGHTS = [
   { icon: BookOpenCheck, title: "Learn and practise", text: "Lessons, resources and assignments prepared by ROF coaches." },
@@ -24,7 +26,7 @@ function Wordmark({ tone }: { tone: "light" | "dark" }) {
   const sub = tone === "light" ? "text-white/85" : "text-slate-700";
   const rule = tone === "light" ? "bg-white/40" : "bg-slate-300";
   return (
-    <Link href="/" className="inline-flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300" aria-label="Rwanda Olympiad Foundation: home">
+    <a href={SITE.website} className="inline-flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300" aria-label="Rwanda Olympiad Foundation website" data-testid="rof-logo-link">
       <span className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-full bg-white ring-2 ring-white/70">
         <Image src="/logo.png" alt="" width={44} height={44} className="h-full w-full object-cover" priority />
       </span>
@@ -37,7 +39,7 @@ function Wordmark({ tone }: { tone: "light" | "dark" }) {
           <span className="block">Foundation</span>
         </span>
       </span>
-    </Link>
+    </a>
   );
 }
 

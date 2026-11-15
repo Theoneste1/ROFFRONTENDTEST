@@ -1,5 +1,5 @@
 /** Auth and current-user endpoints. */
-import { api, setAccessToken } from "./client";
+import { api, apiBlob, setAccessToken } from "./client";
 import type { OlympiadSubject } from "./teacher-registration";
 import { isApiError } from "./errors";
 import type {
@@ -98,6 +98,16 @@ export const meApi = {
   /** Only firstName, lastName and homeLocation can be changed. */
   update: (input: UpdateMeInput) => api<CurrentUser>("/me", { method: "PATCH", body: input }),
   permissions: () => api<MePermissions>("/me/permissions"),
+  /** `PUT /me/avatar` (capability `profilePictures`): the new picture; returns the profile. Upload progress is tracked by the client. */
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api<CurrentUser>("/me/avatar", { method: "PUT", body: form });
+  },
+  /** `DELETE /me/avatar`: back to the generated avatar; returns the profile. */
+  removeAvatar: () => api<CurrentUser>("/me/avatar", { method: "DELETE" }),
+  /** A picture behind authentication (`/users/:id/avatar?v=…`), as a blob (the token is never put in a URL). */
+  avatarImage: (path: string) => apiBlob(path, {}, "avatar"),
 };
 
 /**

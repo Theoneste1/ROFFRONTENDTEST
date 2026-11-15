@@ -9,6 +9,7 @@
  * level of replies. Reactions toggle (LIKE, HELPFUL, CONFUSED). Authors edit or
  * delete their own comments; anyone can report a comment.
  */
+import { AvatarBadge } from "@/app/components/account/UserAvatar";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Flag, HelpCircle, Info, Lightbulb, Lock, MessageSquare, MoreVertical, Pencil, Plus, ThumbsUp, Trash2 } from "lucide-react";
 import type { ThreadScope } from "@/lib/api/community";
@@ -252,9 +253,8 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
       {/* Comment bar */}
       {canPost && (
         <form onSubmit={onPost} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200/80 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#1E1B4B] text-white flex items-center justify-center font-bold text-sm shrink-0" aria-hidden="true">
-            {user?.firstName?.charAt(0).toUpperCase()}
-          </div>
+          {/* Your own avatar: your picture, or your generated avatar. */}
+          <AvatarBadge user={user} size="md" />
           <input
             type="text"
             placeholder="Write a comment..."
@@ -359,9 +359,12 @@ function CommentCard({
     <div className={`${isReply ? "bg-[#F8FAFC] border-gray-200/60" : "bg-white shadow-sm border-gray-200/80"} rounded-2xl p-5 border relative`}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white flex items-center justify-center font-bold text-sm shrink-0" aria-hidden="true">
-            {deleted ? "?" : comment.author!.firstName.charAt(0).toUpperCase()}
-          </div>
+          {/* Other people: the generated avatar only — no one else's photo (many authors are minors). */}
+          {deleted ? (
+            <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white flex items-center justify-center font-bold text-sm shrink-0" aria-hidden="true">?</div>
+          ) : (
+            <AvatarBadge user={{ id: comment.author!.id, firstName: comment.author!.firstName, lastName: comment.author!.lastName, username: comment.author!.username }} size="md" />
+          )}
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-gray-900 text-sm">{deleted ? "Deleted" : personName(comment.author)}</span>

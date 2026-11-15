@@ -20,6 +20,10 @@ export const queryKeys = {
     /** Students: GET /me/school-affiliation. */
     schoolAffiliation: () => [...queryKeys.me.all, "school-affiliation"] as const,
   },
+  /** Profile pictures by their API path (the path changes with every new picture: ?v=<file id>). */
+  avatars: {
+    image: (path: string) => ["avatars", path] as const,
+  },
   /** Academic years and enrolments (lib/api/academic-years.ts). */
   academicYears: {
     all: ["academic-years"] as const,

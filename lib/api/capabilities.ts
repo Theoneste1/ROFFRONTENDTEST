@@ -80,6 +80,13 @@ export const KNOWN_FEATURES = [
    * and profiles return it. Without it older backends refuse the field (400): neither shown nor sent.
    */
   "studentOlympiadInterests",
+  /**
+   * Profile pictures: `PUT /me/avatar` (multipart `file`: JPEG, PNG or WebP, at most 2 MB) and
+   * `DELETE /me/avatar`; `avatarUrl` is then an authenticated API path
+   * (`/api/v1/users/:id/avatar?v=…`). Without it My Profile offers no upload (the generated avatar is
+   * shown everywhere).
+   */
+  "profilePictures",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

@@ -7,7 +7,7 @@ import Sidebar from "../dashboard/components/Sidebar";
 /** The student portal frame (shared PortalShell: rail on desktop, drawer on phones). */
 export default function StudentShell({ children }: { children: ReactNode }) {
     return (
-        <PortalShell avatarClassName="bg-blue-600" renderSidebar={(isOpen) => <Sidebar isOpen={isOpen} />}>
+        <PortalShell renderSidebar={(isOpen) => <Sidebar isOpen={isOpen} />}>
             {children}
         </PortalShell>
     );

@@ -77,7 +77,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
             </div>
 
             {/* BOTTOM UTILITY LINKS */}
-            <SidebarUtilities isOpen={isOpen} settingsHref="/mentor/profile" />
+            <SidebarUtilities isOpen={isOpen} settingsHref="/mentor/account" />
         </aside>
     );
 }

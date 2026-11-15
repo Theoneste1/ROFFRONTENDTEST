@@ -7,8 +7,9 @@ import SignOutButton from "./SignOutButton";
 
 /**
  * The bottom block of every portal sidebar: Help (`/support`), Settings and
- * Sign Out. Settings opens the user's profile for students and mentors, and
- * the platform settings for administrators (their profile is in the navbar).
+ * Sign Out. Settings opens the user's own settings (`/<portal>/account`) for
+ * students, coaches and teachers, and the platform settings for administrators
+ * (their own settings are in the profile menu).
  */
 export default function SidebarUtilities({ isOpen, settingsHref }: { isOpen: boolean; settingsHref?: string }) {
   const pathname = usePathname();
