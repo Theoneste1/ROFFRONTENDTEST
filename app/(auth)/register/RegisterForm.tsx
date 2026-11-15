@@ -16,7 +16,7 @@
  * retry, and lets the student continue with the legacy fields. Once a form is
  * chosen it is kept, so a later re-check can't swap fields while someone types.
  */
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { publicApi, type RegisterStudentResult } from "@/lib/api/auth";
 import type { GradeLevel } from "@/lib/api/types";
@@ -58,7 +58,6 @@ export default function RegisterForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [done, setDone] = useState<RegisterStudentResult | null>(null);
-  const [schools, setSchools] = useState<{ id: string; name: string; location: string }[]>([]);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
   const caps = useBackendCapabilities();
   const gate = registrationGate(caps.detection, caps.fetching, caps.waking);
@@ -69,21 +68,6 @@ export default function RegisterForm() {
   const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
   const [claimErrors, setClaimErrors] = useState<Partial<Record<SchoolClaimField, string>>>({});
 
-  // School name suggestions from the public search (2+ characters, debounced).
-  useEffect(() => {
-    const q = v.schoolName.trim();
-    if (q.length < 2) return;
-    const t = setTimeout(() => {
-      publicApi.searchSchools(q).then(setSchools, () => setSchools([]));
-    }, 300);
-    return () => clearTimeout(t);
-  }, [v.schoolName]);
-
-  function onSchool(name: string) {
-    set("schoolName")(name);
-    const match = schools.find((s) => s.name === name);
-    if (match && !v.schoolLocation) set("schoolLocation")(match.location);
-  }
 
   function validate() {
     const e: Partial<Record<F, string>> = {};
@@ -252,14 +236,9 @@ export default function RegisterForm() {
       ) : (
         <>
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="School" name="schoolName" required maxLength={200} list="school-suggestions" autoComplete="off" value={v.schoolName} onChange={(e) => onSchool(e.target.value)} error={errors.schoolName} />
+        <TextField label="School" name="schoolName" required maxLength={200} autoComplete="off" value={v.schoolName} onChange={(e) => set("schoolName")(e.target.value)} error={errors.schoolName} />
         <TextField label="School location" name="schoolLocation" required maxLength={200} value={v.schoolLocation} onChange={(e) => set("schoolLocation")(e.target.value)} error={errors.schoolLocation} hint="District or city" />
       </div>
-      <datalist id="school-suggestions">
-        {schools.map((s) => (
-          <option key={s.id} value={s.name}>{s.location}</option>
-        ))}
-      </datalist>
         </>
       )}
       <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />

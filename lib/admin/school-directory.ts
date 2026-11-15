@@ -5,6 +5,7 @@
  * every refusal it sends is mapped to a field or a message here.
  */
 import { hasFeature, type BackendDetection } from "../api/capabilities";
+import { isCountryCode as isKnownCountry, RWANDA } from "../schools/countries";
 import { ApiError, errorMessage, isApiError } from "../api/errors";
 import type {
   CreateSchoolInput,
@@ -61,7 +62,8 @@ export function schoolVerification(s: {
   };
 }
 
-export const RWANDA = "RW";
+// One definition of Rwanda and of the accepted country codes: lib/schools/countries.ts.
+export { RWANDA };
 
 /** Province of each code prefix, exactly as the backend stores it. */
 export const PROVINCE_BY_CODE_PREFIX: Readonly<Record<string, string>> = {
@@ -95,7 +97,8 @@ export const cleanPlace = (value: string) => value.trim().replace(/\s+/g, " ");
 
 const CONTROL = /\p{Cc}/u;
 const HAS_LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
-export const isCountryCode = (v: string) => /^[A-Z]{2}$/.test(v);
+/** A country code the backend accepts (ISO 3166-1 alpha-2). */
+export const isCountryCode = (v: string) => isKnownCountry(v);
 
 export const OWNERSHIP_OPTIONS: readonly SchoolOwnership[] = ["PUBLIC", "GOVERNMENT_AIDED", "PRIVATE"];
 export const ACCOMMODATION_OPTIONS: readonly SchoolAccommodation[] = ["DAY", "BOARDING", "MIXED"];
@@ -149,7 +152,7 @@ export function validateSchoolForm(f: SchoolForm, school: DirectorySchoolRecord 
   else if (!HAS_LETTER_OR_DIGIT.test(name)) e.name = "The name must contain letters or digits.";
 
   const country = f.countryCode.trim().toUpperCase();
-  if (!isCountryCode(country)) e.countryCode = "Use a two-letter country code, e.g. KE or UG.";
+  if (!isCountryCode(country)) e.countryCode = "Choose the country.";
 
   const code = f.code.trim();
   if (country === RWANDA) {

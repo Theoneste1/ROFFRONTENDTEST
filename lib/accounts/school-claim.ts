@@ -1,22 +1,30 @@
 /**
  * How a student names their school, in the three shapes the backend accepts
- * (backend develop 9fd1942: register-student.dto.ts and school-affiliation.dto.ts):
+ * (register-student.dto.ts and school-affiliation.dto.ts), chosen with the standard selection
+ * Country → Province → District → Sector → School (lib/schools/school-cascade.ts):
  *
- *   directory   a school from GET /schools/search  → { schoolCode }   (6 digits)
- *               or, for a result WITHOUT an official code (code null) → { schoolId }
- *               (owner decision 2026-11-14; only backends that support it return
- *               such results, so a school with a code is always sent by its code)
- *   notListed   a Rwandan school that isn't listed → { schoolName, schoolProvince, schoolDistrict, schoolSector }
- *               (place values from GET /schools/locations)
- *   abroad      a school in another country        → { country, schoolName } (ISO 3166-1 alpha-2, not RW)
+ *   directory   Rwanda: a school of the chosen sector (official directory)
+ *               → { schoolCode } (6 digits), or { schoolId } for a school without an
+ *               official code (a code is never invented)
+ *   notListed   Rwanda: "my school is not listed" in that sector
+ *               → { schoolName, schoolProvince, schoolDistrict, schoolSector }
+ *   abroad      another country (dropdown) → { country, schoolName } (ISO 3166-1 alpha-2, not RW)
  *
  * Every claim starts PENDING until an Administrator verifies it; the backend
  * decides whether and how a school is linked.
  */
 import type { DirectorySchool, SchoolClaimInput } from "../api/accounts";
+import { isCountryCode } from "../schools/countries";
 
 export type SchoolClaimDraft =
-  | { mode: "directory"; school: (Pick<DirectorySchool, "code" | "name"> & { id?: string; place?: string }) | null }
+  | {
+      mode: "directory";
+      /** The place the school was chosen in (each level from the one before it). */
+      province?: string;
+      district?: string;
+      sector?: string;
+      school: (Pick<DirectorySchool, "code" | "name"> & Partial<Pick<DirectorySchool, "location" | "district" | "sector">> & { id?: string; place?: string }) | null;
+    }
   | { mode: "notListed"; name: string; province: string; district: string; sector: string }
   | { mode: "abroad"; country: string; name: string };
 
@@ -29,7 +37,11 @@ export function validateSchoolClaim(d: SchoolClaimDraft): Partial<Record<SchoolC
   const e: Partial<Record<SchoolClaimField, string>> = {};
   const nameOk = (n: string) => n.trim().length >= SCHOOL_CLAIM_RULES.nameMin && n.trim().length <= SCHOOL_CLAIM_RULES.nameMax;
   if (d.mode === "directory") {
-    if (!d.school || !directoryReference(d.school)) e.school = "Search for your school and choose it from the list.";
+    // The dropdowns, in order: each one is only offered once the one before it is chosen.
+    if (d.province !== undefined && !d.province) e.province = "Choose the province.";
+    else if (d.district !== undefined && !d.district) e.district = "Choose the district.";
+    else if (d.sector !== undefined && !d.sector) e.sector = "Choose the sector.";
+    else if (!d.school || !directoryReference(d.school)) e.school = "Choose your school from the list, or “My school is not listed”.";
   } else if (d.mode === "notListed") {
     if (!nameOk(d.name)) e.schoolName = "Enter your school's name (2–200 characters).";
     if (!d.province) e.province = "Choose the province.";
@@ -37,8 +49,8 @@ export function validateSchoolClaim(d: SchoolClaimDraft): Partial<Record<SchoolC
     if (!d.sector) e.sector = "Choose the sector.";
   } else {
     const c = d.country.trim().toUpperCase();
-    if (!SCHOOL_CLAIM_RULES.countryPattern.test(c)) e.country = "Enter the two-letter country code (for example KE or UG).";
-    else if (c === "RW") e.country = "For a school in Rwanda, search the directory or choose “My school is not listed”.";
+    if (!isCountryCode(c)) e.country = "Choose the country.";
+    else if (c === "RW") e.country = "For a school in Rwanda, choose its province, district, sector and school.";
     if (!nameOk(d.name)) e.schoolName = "Enter your school's name (2–200 characters).";
   }
   return e;
@@ -89,8 +101,8 @@ export const SCHOOL_CLAIM_SERVER_FIELDS: Readonly<Record<string, SchoolClaimFiel
 
 /** Messages for the backend's school-claim error codes (registration and /me/school-affiliation). */
 export const SCHOOL_CLAIM_ERRORS: Readonly<Record<string, string>> = {
-  UNKNOWN_SCHOOL_CODE: "That school isn't in the directory any more. Search again and choose it from the list.",
-  UNKNOWN_SCHOOL: "That school isn't in the list any more. Search again and choose it from the list.",
+  UNKNOWN_SCHOOL_CODE: "That school isn't in the directory any more. Choose the sector again and pick your school from the list.",
+  UNKNOWN_SCHOOL: "That school isn't in the list any more. Choose the sector again and pick your school from the list.",
   SCHOOL_INACTIVE: "That school is no longer active on ROF LMS. Choose another school or contact us.",
   UNKNOWN_SCHOOL_LOCATION: "That province, district and sector don't match the official list. Choose them again.",
   SCHOOL_CODE_RWANDA_ONLY: "School codes are only for schools in Rwanda.",

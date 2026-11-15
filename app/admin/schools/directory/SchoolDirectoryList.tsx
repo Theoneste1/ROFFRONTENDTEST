@@ -6,7 +6,8 @@
  * edit / deactivate / reactivate. The students' school-claim review stays where it was
  * (/admin/schools/affiliations, `schoolAffiliations` + `schools.manage`).
  */
-import { useState } from "react";
+import { countryOptions } from "@/lib/schools/countries";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -37,12 +38,12 @@ export default function SchoolDirectoryList() {
   const review = hasFeature(useBackendCapabilities().detection, "schoolAffiliations") && can("schools.manage");
   const sync = useSyncAccess().visible;
 
-  const [otherCountry, setOtherCountry] = useState(false);
   /** Remounts the search box on "Clear filters" (it keeps its own text while typing). */
   const [searchKey, setSearchKey] = useState(0);
   const update = (patch: Partial<ListState>) => setState((s) => ({ ...s, ...patch, page: patch.page ?? 1 }));
-  const countryMode = otherCountry ? "OTHER" : state.countryCode === RWANDA ? RWANDA : "";
-  const showPlaces = countryMode !== "OTHER";
+  // Province / district / sector belong to Rwanda: offered for "Any" and Rwanda, not for another country.
+  const showPlaces = !state.countryCode || state.countryCode === RWANDA;
+  const countries = useMemo(() => countryOptions(), []);
   const provinces = locations.data ?? [];
   const districts = provinces.find((p) => p.province === state.province)?.districts ?? [];
   const sectors = districts.find((d) => d.district === state.district)?.sectors ?? [];
@@ -96,27 +97,11 @@ export default function SchoolDirectoryList() {
         <SearchInput key={searchKey} value={state.q} onChange={(q) => update({ q })} placeholder="Name or code…" label="Search schools by name or code" />
         <SelectFilter
           label="Country"
-          value={countryMode}
-          onChange={(v) => {
-            setOtherCountry(v === "OTHER");
-            update({ countryCode: v === "OTHER" ? "" : v, province: "", district: "", sector: "" });
-          }}
-          options={[
-            { label: "Any", value: "" },
-            { label: "Rwanda", value: RWANDA },
-            { label: "Another country…", value: "OTHER" },
-          ]}
+          value={state.countryCode}
+          // A new country clears the place filters (they belong to Rwanda).
+          onChange={(v) => update({ countryCode: v, province: "", district: "", sector: "" })}
+          options={[{ label: "Any", value: "" }, ...countries]}
         />
-        {countryMode === "OTHER" && (
-          <input
-            aria-label="Country code"
-            value={state.countryCode}
-            onChange={(e) => update({ countryCode: e.target.value.toUpperCase().slice(0, 2) })}
-            maxLength={2}
-            placeholder="KE"
-            className="w-16 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs font-medium uppercase"
-          />
-        )}
         <SelectFilter
           label="Status"
           value={state.status}
@@ -165,12 +150,11 @@ export default function SchoolDirectoryList() {
           )}
         </div>
       )}
-      {(isFiltered(state) || otherCountry) && (
+      {isFiltered(state) && (
         <button
           type="button"
           className={`${linkBtn} mb-4`}
           onClick={() => {
-            setOtherCountry(false);
             setSearchKey((k) => k + 1);
             setState(initialListState());
           }}

@@ -11,6 +11,7 @@
  *   back or save anyway (confirmPossibleDuplicate, recorded in the audit log).
  * - 409 SCHOOL_CODE_TAKEN points to the school that has the code.
  */
+import { countryOptions } from "@/lib/schools/countries";
 import { useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
@@ -61,6 +62,7 @@ export default function SchoolFormDialog({
   const locations = useSchoolLocations();
   const rwanda = f.countryCode.trim().toUpperCase() === RWANDA;
   const countryLocked = !!school?.code; // a school with a code stays in Rwanda (a code cannot be removed)
+  const countries = useMemo(() => countryOptions(), []);
   const payload = school ? updatePayload(school, f) : null;
   const needsReason = !!school && !!payload && reasonRequired(school, payload);
 
@@ -156,39 +158,27 @@ export default function SchoolFormDialog({
           {(p) => <input {...p} value={f.name} onChange={(e) => set("name", e.target.value)} maxLength={200} className={cls(input, errors.name)} />}
         </Field>
 
-        <fieldset>
-          <legend className="block text-xs font-semibold text-gray-600 mb-1">
-            Country <span className="text-red-500">*</span>
-          </legend>
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="radio" name="country" checked={rwanda} disabled={countryLocked} onChange={() => set("countryCode", RWANDA)} /> Rwanda
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="country"
-                checked={!rwanda}
-                disabled={countryLocked}
-                onChange={() => set("countryCode", school && school.countryCode !== RWANDA ? school.countryCode : "")}
-              />{" "}
-              Another country
-            </label>
-            {!rwanda && (
-              <input
-                aria-label="Country code"
-                value={f.countryCode}
-                onChange={(e) => set("countryCode", e.target.value.toUpperCase().slice(0, 2))}
-                placeholder="KE"
-                maxLength={2}
-                className={`${cls(input, errors.countryCode)} !w-20 uppercase`}
-                aria-invalid={errors.countryCode ? true : undefined}
-              />
-            )}
-          </div>
-          {countryLocked && <p className="mt-1 text-[11px] text-gray-500">A school with an official code stays in Rwanda.</p>}
-          {errors.countryCode && <p className="mt-1 text-[11px] text-red-600">{errors.countryCode}</p>}
-        </fieldset>
+        <Field id="countryCode" label="Country" required error={errors.countryCode}>
+          {(p) => (
+            <select
+              {...p}
+              value={f.countryCode.trim().toUpperCase()}
+              disabled={countryLocked}
+              // A new country clears the Rwandan place (province, district and sector belong to Rwanda only).
+              onChange={(e) => setF((s) => ({ ...s, countryCode: e.target.value, province: "", district: "", sector: "" }))}
+              className={cls(input, errors.countryCode)}
+              data-testid="school-country"
+            >
+              <option value="">Choose the country</option>
+              {countries.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+        {countryLocked && <p className="-mt-2 text-[11px] text-gray-500">A school with an official code stays in Rwanda.</p>}
 
         {rwanda ? (
           <>
