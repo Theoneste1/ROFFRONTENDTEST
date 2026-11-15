@@ -19,8 +19,9 @@
  * retry, and lets the student continue with the legacy fields. Once a form is
  * chosen it is kept, so a later re-check can't swap fields while someone types.
  */
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { AuthHeading, FormSection, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
 import { publicApi, type RegisterStudentResult } from "@/lib/api/auth";
 import type { GradeLevel } from "@/lib/api/types";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
@@ -63,7 +64,6 @@ export default function RegisterForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [done, setDone] = useState<RegisterStudentResult | null>(null);
-  const [schools, setSchools] = useState<{ id: string; name: string; location: string }[]>([]);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
   const caps = useBackendCapabilities();
   const gate = registrationGate(caps.detection, caps.fetching, caps.waking);
@@ -80,21 +80,6 @@ export default function RegisterForm() {
   const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
   const [claimErrors, setClaimErrors] = useState<Partial<Record<SchoolClaimField, string>>>({});
 
-  // School name suggestions from the public search (2+ characters, debounced).
-  useEffect(() => {
-    const q = v.schoolName.trim();
-    if (q.length < 2) return;
-    const t = setTimeout(() => {
-      publicApi.searchSchools(q).then(setSchools, () => setSchools([]));
-    }, 300);
-    return () => clearTimeout(t);
-  }, [v.schoolName]);
-
-  function onSchool(name: string) {
-    set("schoolName")(name);
-    const match = schools.find((s) => s.name === name);
-    if (match && !v.schoolLocation) set("schoolLocation")(match.location);
-  }
 
   function validate() {
     const e: Partial<Record<F, string>> = {};
@@ -156,7 +141,7 @@ export default function RegisterForm() {
   if (done) {
     return (
       <div className="space-y-5" data-testid="register-done">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome to ROF LMS!</h1>
+        <AuthHeading title="Welcome to ROF LMS!" />
         <Alert tone="success">Your student account <strong>{done.username}</strong> has been created.</Alert>
         <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
           {done.requiresEmailVerification && <li>We sent an activation link to your e-mail address. Open it to activate your account.</li>}
@@ -174,10 +159,8 @@ export default function RegisterForm() {
   if (schoolMode === null) {
     return (
       <div className="space-y-5" data-testid="register-gate">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a student</h1>
-          <p className="mt-1 text-sm text-slate-500">Create your ROF LMS account to start learning Olympiad mathematics.</p>
-        </div>
+        <JoinSwitch active="student" />
+        <AuthHeading title="Join as a student" subtitle="Create your free ROF account and start preparing for the Olympiads." />
         {gate.state === "failed" ? (
           <div className="space-y-4" data-testid="register-detection-failed">
             <Alert tone="error">We couldn&apos;t reach the ROF LMS server to prepare the registration form.</Alert>
@@ -195,12 +178,7 @@ export default function RegisterForm() {
             <p className="text-center text-xs text-slate-500">This can take up to a minute while the server wakes up.</p>
           </div>
         )}
-        <p className="text-center text-sm text-slate-500">
-          Already have an account?{" "}
-          <Link href="/login" className="font-medium text-[#2B2BB2] hover:underline">Sign in</Link>
-          {" · "}
-          <Link href="/" className="font-medium text-[#2B2BB2] hover:underline">Home</Link>
-        </p>
+        <SignInInstead />
       </div>
     );
   }
@@ -210,10 +188,8 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a student</h1>
-        <p className="mt-1 text-sm text-slate-500">Create your ROF LMS account to start learning Olympiad mathematics.</p>
-      </div>
+      <JoinSwitch active="student" />
+      <AuthHeading title="Join as a student" subtitle="Create your free ROF account and start preparing for the Olympiads. It only takes a few minutes." />
 
       {error != null && !fieldErr && (
         <Alert tone="error">
@@ -221,88 +197,86 @@ export default function RegisterForm() {
         </Alert>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />
-        <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />
-      </div>
-      <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />
-      <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} />
+      <FormSection step={1} title="About you">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />
+          <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />
+        </div>
 
-      <div>
-        <label htmlFor="gradeLevel" className="block text-sm font-semibold text-slate-700 mb-2">
-          Grade <span className="text-red-500">*</span>
-        </label>
-        <select
-          id="gradeLevel"
-          name="gradeLevel"
-          required
-          value={v.gradeLevel}
-          onChange={(e) => set("gradeLevel")(e.target.value)}
-          aria-invalid={errors.gradeLevel ? true : undefined}
-          aria-describedby={errors.gradeLevel ? "gradeLevel-error" : "gradeLevel-hint"}
-          className={`w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 ${errors.gradeLevel ? "border-red-400 focus:ring-red-500/20" : "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500"}`}
-        >
-          <option value="">Choose your grade</option>
-          {GRADES.map((g) => (
-            <option key={g} value={g}>
-              {g} ({["S1", "S2", "S3"].includes(g) ? "Junior" : "Senior"} division)
-            </option>
-          ))}
-        </select>
-        {errors.gradeLevel ? (
-          <p id="gradeLevel-error" className="mt-1.5 text-xs text-red-600">{errors.gradeLevel}</p>
-        ) : (
-          <p id="gradeLevel-hint" className="mt-1.5 text-xs text-slate-500">S1–S3 study in the Junior division, S4–S6 in the Senior division.</p>
+        <div>
+          <label htmlFor="gradeLevel" className="block text-sm font-semibold text-slate-700 mb-2">
+            Grade <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="gradeLevel"
+            name="gradeLevel"
+            required
+            value={v.gradeLevel}
+            onChange={(e) => set("gradeLevel")(e.target.value)}
+            aria-invalid={errors.gradeLevel ? true : undefined}
+            aria-describedby={errors.gradeLevel ? "gradeLevel-error" : "gradeLevel-hint"}
+            className={`w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 ${errors.gradeLevel ? "border-red-400 focus:ring-red-500/20" : "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500"}`}
+          >
+            <option value="">Choose your grade</option>
+            {GRADES.map((g) => (
+              <option key={g} value={g}>
+                {g} ({["S1", "S2", "S3"].includes(g) ? "Junior" : "Senior"} division)
+              </option>
+            ))}
+          </select>
+          {errors.gradeLevel ? (
+            <p id="gradeLevel-error" className="mt-1.5 text-xs text-red-600">{errors.gradeLevel}</p>
+          ) : (
+            <p id="gradeLevel-hint" className="mt-1.5 text-xs text-slate-500">S1–S3 study in the Junior division, S4–S6 in the Senior division.</p>
+          )}
+        </div>
+
+        <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
+
+        {interestsOn && (
+          <OlympiadInterestsField
+            value={interests}
+            onChange={(next) => {
+              setInterests(next);
+              setErrors((s) => ({ ...s, olympiadInterests: undefined }));
+            }}
+            error={errors.olympiadInterests}
+          />
         )}
-      </div>
+      </FormSection>
 
-      {directory ? (
-        <SchoolClaimFields
-          value={claim}
-          onChange={(d) => {
-            setClaim(d);
-            setClaimErrors({});
-          }}
-          errors={claimErrors}
-        />
-      ) : (
-        <>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="School" name="schoolName" required maxLength={200} list="school-suggestions" autoComplete="off" value={v.schoolName} onChange={(e) => onSchool(e.target.value)} error={errors.schoolName} />
-        <TextField label="School location" name="schoolLocation" required maxLength={200} value={v.schoolLocation} onChange={(e) => set("schoolLocation")(e.target.value)} error={errors.schoolLocation} hint="District or city" />
-      </div>
-      <datalist id="school-suggestions">
-        {schools.map((s) => (
-          <option key={s.id} value={s.name}>{s.location}</option>
-        ))}
-      </datalist>
-        </>
-      )}
-      <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
+      <FormSection step={2} title="Your school">
+        {directory ? (
+          <SchoolClaimFields
+            value={claim}
+            onChange={(d) => {
+              setClaim(d);
+              setClaimErrors({});
+            }}
+            errors={claimErrors}
+            hideLegend
+          />
+        ) : (
+          <>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField label="School" name="schoolName" required maxLength={200} autoComplete="off" value={v.schoolName} onChange={(e) => set("schoolName")(e.target.value)} error={errors.schoolName} />
+          <TextField label="School location" name="schoolLocation" required maxLength={200} value={v.schoolLocation} onChange={(e) => set("schoolLocation")(e.target.value)} error={errors.schoolLocation} hint="District or city" />
+        </div>
+          </>
+        )}
+      </FormSection>
 
-      {interestsOn && (
-        <OlympiadInterestsField
-          value={interests}
-          onChange={(next) => {
-            setInterests(next);
-            setErrors((s) => ({ ...s, olympiadInterests: undefined }));
-          }}
-          error={errors.olympiadInterests}
-        />
-      )}
+      <FormSection step={3} title="Your account">
+        <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />
+        <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} />
+        <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
 
-      <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
+        <Button type="submit" loading={submitting} className="w-full">
+          {submitting ? "Creating your account…" : "Create my account"}
+        </Button>
+      </FormSection>
 
-      <Button type="submit" loading={submitting} className="w-full">
-        {submitting ? "Creating your account…" : "Create my account"}
-      </Button>
-
-      <p className="text-center text-sm text-slate-500">
-        Already have an account?{" "}
-        <Link href="/login" className="font-medium text-[#2B2BB2] hover:underline">Sign in</Link>
-        {" · "}
-        <Link href="/" className="font-medium text-[#2B2BB2] hover:underline">Home</Link>
-      </p>
+      <SignInInstead />
     </form>
   );
 }

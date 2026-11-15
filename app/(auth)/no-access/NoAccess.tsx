@@ -34,7 +34,7 @@ export default function NoAccess() {
   if (session.status === "unauthenticated") {
     return (
       <div className="space-y-5 text-center">
-        <h1 className="text-xl font-bold text-slate-900">You are signed out</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">You are signed out</h1>
         <Link href="/login" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
           Sign in
         </Link>
@@ -45,7 +45,7 @@ export default function NoAccess() {
   const label = roleLabel(session.role);
   return (
     <div className="space-y-5" data-testid="no-access">
-      <h1 className="text-xl font-bold text-slate-900">No access configured yet</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">No access configured yet</h1>
       <Alert tone="info">
         You are signed in{session.user ? <> as <strong>{session.user.username}</strong></> : null} with the account type <strong>{label}</strong>.
       </Alert>

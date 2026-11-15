@@ -87,7 +87,7 @@ test("create, another country: a location is required; no code and no Rwandan pl
   assert.deepEqual(validateSchoolForm(ke), {});
   assert.match(validateSchoolForm({ ...ke, location: "" }).location, /needs a location/);
   assert.match(validateSchoolForm({ ...ke, code: "110001" }).code, /Rwanda/);
-  assert.match(validateSchoolForm({ ...ke, countryCode: "Kenya" }).countryCode, /two-letter/);
+  assert.match(validateSchoolForm({ ...ke, countryCode: "Kenya" }).countryCode, /Choose the country/);
   assert.deepEqual(createPayload({ ...ke, province: "Kigali City", district: "Gasabo", sector: "Kacyiru", code: "110001", cell: "c" }), {
     name: "Nairobi Academy", countryCode: "KE", location: "Nairobi",
   });

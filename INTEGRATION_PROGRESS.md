@@ -1,6 +1,25 @@
 # ROF LMS — Integration Progress
 
-Last updated: 2026-11-13 (release readiness section below; earlier sections describe the state on 2026-11-06)
+Last updated: 2026-11-15 (Phase 1 release section below; the release readiness section is from 2026-11-13 and earlier sections describe the state on 2026-11-06)
+
+## Phase 1 release (2026-11-15)
+
+**Live.**
+- Frontend `main` `9c40316` is published by Netlify `roflms` (production branch `main`).
+- Backend `main` `b7ed2a3` is on Render, with the Phase 1 migrations M1–M14 applied.
+- `GET /api/v1` advertises `academicYearActivation`, `permissionScopes`, `reportExportFilters`, `reviewQueueFilters`, `schoolAdministration`, `schoolAffiliations`, `schoolDirectorySync`, `schoolReferenceRequired`, `studentAssignmentFilters`.
+- `teacherAccounts` and `headCoachAccounts` are off (backend flags). The frontend keeps those screens hidden.
+
+**Compatibility checks with the deployed backend (automated, 2026-11-15):**
+
+| Check | Result |
+|---|---|
+| Backend detection (`classifyApiInfo` on the live answer) | `NEW`, the 9 features above on |
+| Every frontend API call against the backend's generated OpenAPI at `b7ed2a3` | 235 distinct calls, 0 missing; dynamic action segments match the backend's allowed values |
+| Production, read-only | Registration uses the school directory and the live school search; coach sign-in, pages and access restrictions; 23/23 |
+| Local journeys against the deployed backend code | Registration, learning cycle, exports, permissions, school import/sync/contacts, schools without a code, admin operations, Head Coach, academic years, school claims, school verification, all portals: all passed |
+
+**Change after the release:** the backend's new `503 DATABASE_BUSY` (every database connection busy; nothing was changed; `Retry-After: 2`) now gets its own message, "The server is busy right now. Nothing was changed — please try again in a moment.", instead of the generic server-error text. Reads were already retried automatically. With this message, people know a failed action such as publishing or saving was not applied and can safely repeat it (`lib/api/errors.ts`, `tests/api-errors.test.mjs`).
 
 This is the short, current-status version. The full step-by-step history of phases 1–6 (implementation details, endpoint lists, every test table) is in Git: `git show 1a1ca98:INTEGRATION_PROGRESS.md`. Plans: `PHASE5_ADMIN_PLAN.md`, `PHASE6_PLAN.md`, `VERIFICATION_PLAN.md`, `PHASE7_QA_PLAN.md`.
 

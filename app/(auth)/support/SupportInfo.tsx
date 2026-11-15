@@ -52,8 +52,8 @@ export default function SupportInfo() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Help and support</h1>
-        <p className="mt-1 text-sm text-slate-500">{s.platformName ?? "ROF Learning Platform"}</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Help and support</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">{s.platformName ?? "ROF Learning Platform"}</p>
       </div>
 
       {s.message && <p className="text-sm text-slate-700 whitespace-pre-line">{s.message}</p>}

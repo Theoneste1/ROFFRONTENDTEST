@@ -264,7 +264,7 @@ function MatchDialog({ claim, onClose, onMatched }: { claim: SchoolAffiliation; 
             ))}
           </ul>
         )}
-        <SchoolPicker label="Or search all schools" value={other} onChange={setOther} />
+        <SchoolPicker label="Or choose another school" value={other} onChange={setOther} />
         {other && (
           <button type="button" className={btnPrimary} disabled={match.isPending} onClick={() => pick(other.id)}>
             Match to {other.name}

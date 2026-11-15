@@ -179,8 +179,6 @@ export const publicApi = {
   registerStudent: (input: RegisterStudentInput) => api<RegisterStudentResult>("/auth/register/student", { method: "POST", body: input, auth: false }),
   /** Teacher / coach application: a mentor request that an administrator approves or rejects. */
   applyAsMentor: (input: MentorApplicationInput) => api<{ id: string; status: string }>("/mentor-requests", { method: "POST", body: input, auth: false }),
-  /** School name suggestions (at least 2 characters; up to 10 results). */
-  searchSchools: (q: string) => api<{ id: string; name: string; location: string }[]>("/schools/search", { query: { q }, auth: false }),
 };
 
 /** Backend password policy (src/auth/dto/password.rules.ts). */
