@@ -15,15 +15,12 @@
  *
  * Another country: the school's name (international schools are not in the Rwandan directory).
  */
-import { useQuery } from "@tanstack/react-query";
-import { schoolDirectoryApi } from "@/lib/api/accounts";
-import { errorMessage } from "@/lib/api/errors";
 import { SCHOOL_CLAIM_RULES, type SchoolClaimDraft, type SchoolClaimField } from "@/lib/accounts/school-claim";
 import type { DirectorySchool } from "@/lib/api/accounts";
 import { RWANDA } from "@/lib/schools/countries";
-import { byName, emptyPlace, NOT_LISTED, placeComplete, schoolFacts, type Place } from "@/lib/schools/school-cascade";
+import { emptyPlace, placeComplete, type Place } from "@/lib/schools/school-cascade";
 import { TextField } from "@/app/components/ui/form";
-import { CascadeSelect, CountrySelect, PlaceSelects, SchoolFactsPanel } from "@/app/components/schools/SchoolCascade";
+import { CountrySelect, PlaceSelects, SectorSchoolSelect } from "@/app/components/schools/SchoolCascade";
 
 export const emptyDraft = (mode: SchoolClaimDraft["mode"]): SchoolClaimDraft =>
   mode === "directory"
@@ -90,50 +87,21 @@ function SchoolInSector({
   onChange: (d: SchoolClaimDraft) => void;
   errors: Partial<Record<SchoolClaimField, string>>;
 }) {
-  const schools = useQuery({
-    queryKey: ["schools", "in-place", place.province, place.district, place.sector],
-    queryFn: async () => byName(await schoolDirectoryApi.search({ province: place.province, district: place.district, sector: place.sector })),
-    staleTime: 5 * 60_000,
-  });
-  const list = schools.data ?? [];
-  const selected = value.mode === "notListed" ? NOT_LISTED : value.school?.id ?? "";
-  const chosen = value.mode === "directory" && value.school ? list.find((s) => s.id === value.school!.id) ?? null : null;
-
-  const choose = (id: string) => {
-    if (id === NOT_LISTED) return onChange({ mode: "notListed", name: "", ...place });
-    const s = list.find((x) => x.id === id);
-    onChange({
-      mode: "directory",
-      ...place,
-      school: s ? { id: s.id, code: s.code, name: s.name, place: schoolPlace(s), location: s.location, district: s.district, sector: s.sector } : null,
-    });
-  };
-
-  if (schools.isError) {
-    return (
-      <p className="text-xs text-red-600" role="alert">
-        Couldn&apos;t load the schools of {place.sector}. {errorMessage(schools.error)}{" "}
-        <button type="button" className="font-semibold underline" onClick={() => void schools.refetch()}>
-          Try again
-        </button>
-      </p>
-    );
-  }
   return (
     <div className="space-y-3">
-      <CascadeSelect
-        label="School"
-        value={selected}
-        onChange={choose}
-        disabled={schools.isPending}
-        placeholder={schools.isPending ? "Loading schools…" : "Choose your school"}
-        options={[
-          ...list.map((s) => ({ value: s.id, label: s.code ? `${s.name} (${s.code})` : s.name })),
-          { value: NOT_LISTED, label: "My school is not listed" },
-        ]}
+      <SectorSchoolSelect
+        place={place}
+        schoolId={value.mode === "directory" ? value.school?.id ?? "" : ""}
+        placeholder="Choose your school"
+        notListed={{ selected: value.mode === "notListed", onSelect: () => onChange({ mode: "notListed", name: "", ...place }) }}
+        onChange={(s) =>
+          onChange({
+            mode: "directory",
+            ...place,
+            school: s ? { id: s.id, code: s.code, name: s.name, place: schoolPlace(s), location: s.location, district: s.district, sector: s.sector } : null,
+          })
+        }
         error={value.mode === "directory" ? errors.school : undefined}
-        hint={!schools.isPending && list.length === 0 ? `No school is listed in ${place.sector} yet. Choose “My school is not listed”.` : undefined}
-        testId="cascade-school"
       />
       {value.mode === "notListed" && (
         <TextField
@@ -146,13 +114,6 @@ function SchoolInSector({
           error={errors.schoolName}
           hint={`Your school in ${place.sector}, ${place.district}. An administrator adds it to the directory and verifies it.`}
         />
-      )}
-      {chosen && <SchoolFactsPanel facts={schoolFacts(chosen, place)} />}
-      {value.mode === "directory" && value.school && !chosen && !schools.isPending && (
-        // The chosen school is no longer listed in this sector (e.g. deactivated meanwhile).
-        <p className="text-xs text-red-600" role="alert">
-          That school is no longer listed here. Choose your school again.
-        </p>
       )}
     </div>
   );

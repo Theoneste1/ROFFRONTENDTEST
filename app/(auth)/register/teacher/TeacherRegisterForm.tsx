@@ -10,7 +10,7 @@
  * must answer `open: true`. Otherwise the page says registration is not available and links to
  * the contact form and sign in. A failed check offers a retry.
  *
- * School: province → district → school from the official directory (code and sector shown
+ * School: Country (Rwanda) → province → district → sector → school from the official directory (code and sector shown
  * read-only, never sent), or "My school is not listed" (name + sector, reviewed by an
  * Administrator). Home location: district → sector, separate from the school.
  */
@@ -31,17 +31,15 @@ import {
   TEACHER_RULES,
   buildTeacherPayload,
   countryOptions,
-  districtsOf,
   emptyTeacherDraft,
   homeDistrictsOf,
   homeSectorsOf,
   mapServerFieldErrors,
-  provincesOf,
-  sectorsOf,
   setHomeDistrict,
   setSchoolDistrict,
   setSchoolMode,
   setSchoolProvince,
+  setSchoolSector,
   teacherRegistrationGate,
   toggleInterest,
   validateTeacherRegistration,
@@ -51,30 +49,24 @@ import {
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields from "@/app/components/auth/NewPasswordFields";
-import { DistrictSchoolSelect, PlaceSelect } from "@/app/components/account/SchoolPlaceFields";
+import { PlaceSelect } from "@/app/components/account/SchoolPlaceFields";
+import { AuthHeading, FormSection, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
+import { CascadeSelect, PlaceSelects, SectorSchoolSelect } from "@/app/components/schools/SchoolCascade";
+import { countryName, RWANDA } from "@/lib/schools/countries";
+import type { Place } from "@/lib/schools/school-cascade";
 
-const linkCls = "font-medium text-[#2B2BB2] hover:underline";
 const primaryLink = "inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]";
 
 function Heading() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a teacher</h1>
-      <p className="mt-1 text-sm text-slate-500">Apply for a teacher account. An administrator reviews every application before the account is created.</p>
-    </div>
+    <>
+      <JoinSwitch active="teacher" />
+      <AuthHeading title="Join as a teacher" subtitle="Apply for a teacher account. An administrator reviews every application before the account is created." />
+    </>
   );
 }
 
-function Footer() {
-  return (
-    <p className="text-center text-sm text-slate-500">
-      Already have an account?{" "}
-      <Link href="/login" className={linkCls}>Sign in</Link>
-      {" · "}
-      <Link href="/" className={linkCls}>Home</Link>
-    </p>
-  );
-}
+const Footer = SignInInstead;
 
 export default function TeacherRegisterForm() {
   const caps = useBackendCapabilities();
@@ -117,7 +109,7 @@ export default function TeacherRegisterForm() {
   }
   return (
     <div className="space-y-5" data-testid="teacher-register-unavailable">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a teacher</h1>
+      <Heading />
       <Alert tone="info">Teacher registration is not available right now.</Alert>
       <p className="text-sm text-slate-700">
         If you teach at a school and would like to connect your students with the Rwanda Olympiad Foundation, send us a message and we will get in touch.
@@ -130,17 +122,20 @@ export default function TeacherRegisterForm() {
   );
 }
 
-function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+function Section({ step, title, description, children }: { step: number; title: string; description?: string; children: ReactNode }) {
   return (
-    <fieldset className="space-y-4 border-t border-slate-200 pt-5">
-      <legend className="sr-only">{title}</legend>
-      <div>
-        <h2 className="text-base font-semibold text-slate-900" aria-hidden="true">{title}</h2>
-        {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
-      </div>
+    <FormSection step={step} title={title}>
+      {description && <p className="-mt-2 text-xs text-slate-500">{description}</p>}
       {children}
-    </fieldset>
+    </FormSection>
   );
+}
+
+/** A new province, district or sector from the shared dropdowns: the steps after it start again. */
+function schoolPlaceChanged(d: TeacherDraft, p: Place): TeacherDraft {
+  if (p.province !== d.schoolProvince) return setSchoolProvince(d, p.province);
+  if (p.district !== d.schoolDistrict) return setSchoolDistrict(d, p.district);
+  return setSchoolSector(d, p.sector);
 }
 
 function OpenForm() {
@@ -178,7 +173,7 @@ function OpenForm() {
   if (done) {
     return (
       <div className="space-y-5" data-testid="teacher-register-done">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Application received</h1>
+        <AuthHeading title="Application received" />
         <Alert tone="success">Thank you for applying to join ROF LMS as a teacher.</Alert>
         <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
           <li>Your application is pending review by an administrator. Your account is created only once it is approved.</li>
@@ -207,7 +202,7 @@ function OpenForm() {
 
       {showAlert && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
 
-      <Section title="Personal information">
+      <Section step={1} title="About you">
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={TEACHER_RULES.nameMax} value={d.firstName} onChange={(e) => set("firstName", e.target.value)} error={errors.firstName} />
           <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={TEACHER_RULES.nameMax} value={d.lastName} onChange={(e) => set("lastName", e.target.value)} error={errors.lastName} />
@@ -220,7 +215,7 @@ function OpenForm() {
         </div>
       </Section>
 
-      <Section title="Olympiad interests" description="The Olympiad subjects you would like to support. Choose at least one.">
+      <Section step={2} title="Olympiad interests" description="The Olympiad subjects you would like to support. Choose at least one.">
         <div className="flex flex-wrap gap-4" role="group" aria-label="Olympiad interests" aria-describedby={errors.interests ? "interests-error" : undefined}>
           {OLYMPIAD_SUBJECTS.map((s) => (
             <label key={s.value} className="inline-flex items-center gap-2 text-sm text-slate-700">
@@ -243,73 +238,50 @@ function OpenForm() {
         )}
       </Section>
 
-      <Section title="School" description="The school where you teach, from the official list of Rwandan schools.">
-        {locations.isError ? (
-          <ErrorState error={locations.error} title="Couldn't load the list of places" onRetry={() => void locations.refetch()} />
-        ) : (
-          <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <PlaceSelect
-                label="Province"
-                value={d.schoolProvince}
-                onChange={(v) => update((s) => setSchoolProvince(s, v))}
-                options={provincesOf(places)}
-                placeholder={locations.isPending ? "Loading…" : "Choose"}
-                disabled={locations.isPending}
-                error={errors.schoolProvince}
-              />
-              <PlaceSelect
-                label="District"
-                value={d.schoolDistrict}
-                onChange={(v) => update((s) => setSchoolDistrict(s, v))}
-                options={districtsOf(places, d.schoolProvince)}
-                disabled={!d.schoolProvince}
-                error={errors.schoolDistrict}
-              />
-            </div>
-            {!missing && (
-              <DistrictSchoolSelect officialOnly province={d.schoolProvince} district={d.schoolDistrict} value={d.school} onChange={(school) => set("school", school)} error={errors.school} />
-            )}
-            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={missing}
-                onChange={(e) => update((s) => setSchoolMode(s, e.target.checked ? "missing" : "listed"))}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                data-testid="school-missing"
-              />
-              My school is not listed
-            </label>
-            {missing && (
-              <div className="space-y-4 rounded-lg border border-amber-200 bg-amber-50/50 p-4">
-                <TextField
-                  label="School name"
-                  name="proposedSchoolName"
-                  required
-                  maxLength={TEACHER_RULES.schoolNameMax}
-                  value={d.proposedSchoolName}
-                  onChange={(e) => set("proposedSchoolName", e.target.value)}
-                  error={errors.proposedSchoolName}
-                />
-                <PlaceSelect
-                  label="Sector"
-                  value={d.schoolSector}
-                  onChange={(v) => set("schoolSector", v)}
-                  options={sectorsOf(places, d.schoolProvince, d.schoolDistrict)}
-                  placeholder={d.schoolDistrict ? "Choose" : "Choose the district first"}
-                  disabled={!d.schoolDistrict}
-                  error={errors.schoolSector}
-                />
-                <p className="text-xs text-slate-600">
-                  An administrator will review this school before approving your application. Nothing is added to the school directory automatically.
-                </p>
-              </div>
-            )}
-          </>
+      <Section step={3} title="Your school" description="The school where you teach, from the official list of Rwandan schools.">
+        {/* Country → Province → District → Sector → School: plain dropdowns; each step clears the ones after it. */}
+        <CascadeSelect
+          label="School country"
+          value={RWANDA}
+          onChange={() => undefined}
+          options={[{ value: RWANDA, label: countryName(RWANDA) }]}
+          disabled
+          hint="Teacher applications are for schools in Rwanda."
+          testId="teacher-school-country"
+        />
+        <PlaceSelects
+          value={{ province: d.schoolProvince, district: d.schoolDistrict, sector: d.schoolSector }}
+          onChange={(p) => update((s) => schoolPlaceChanged(s, p))}
+          errors={{ province: errors.schoolProvince, district: errors.schoolDistrict, sector: errors.schoolSector }}
+        />
+        <SectorSchoolSelect
+          teacherEligible
+          place={{ province: d.schoolProvince, district: d.schoolDistrict, sector: d.schoolSector }}
+          schoolId={missing ? "" : d.school?.id ?? ""}
+          onChange={(school) => update((s) => ({ ...setSchoolMode(s, "listed"), school }))}
+          notListed={{ selected: missing, onSelect: () => update((s) => setSchoolMode(s, "missing")) }}
+          error={errors.school}
+        />
+        {missing && (
+          <div className="space-y-4 rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+            <TextField
+              label="School name"
+              name="proposedSchoolName"
+              required
+              maxLength={TEACHER_RULES.schoolNameMax}
+              value={d.proposedSchoolName}
+              onChange={(e) => set("proposedSchoolName", e.target.value)}
+              error={errors.proposedSchoolName}
+              hint={`Your school in ${d.schoolSector}, ${d.schoolDistrict}.`}
+            />
+            <p className="text-xs text-slate-600">
+              An administrator will review this school before approving your application. Nothing is added to the school directory automatically.
+            </p>
+          </div>
         )}
       </Section>
 
-      <Section title="Home location" description="Where you live (separate from your school).">
+      <Section step={4} title="Home location" description="Where you live (separate from your school).">
         {!locations.isError && (
           <div className="grid gap-4 sm:grid-cols-2">
             <PlaceSelect
@@ -335,7 +307,7 @@ function OpenForm() {
         {locations.isError && <p className="text-xs text-slate-500">Load the list of places above to choose your home location.</p>}
       </Section>
 
-      <Section title="Account security">
+      <Section step={5} title="Your account">
         <NewPasswordFields
           password={d.password}
           confirm={d.confirm}

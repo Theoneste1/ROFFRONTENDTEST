@@ -39,7 +39,6 @@ export const queryKeys = {
     /** The public province → district → sector list (the same key the claim form uses). */
     locations: () => ["schools", "locations"] as const,
     /** The public search filtered by place (GET /schools/search?province=&district=). */
-    byPlace: (province: string, district: string) => ["schools", "by-place", province, district] as const,
   },
   /** Teacher self-registration (lib/api/teacher-registration.ts). */
   teacherRegistration: {

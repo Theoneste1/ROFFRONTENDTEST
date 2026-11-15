@@ -4,7 +4,7 @@
  *
  * - Gate: the backend must advertise `teacherSelfRegistration` AND
  *   GET /auth/register/teacher/availability must answer `open: true`.
- * - School: a listed school (chosen province → district → school from GET /schools/search) sends
+ * - School: a listed school (chosen province → district → sector → school, plain dropdowns, from GET /schools/search) sends
  *   only `schoolId` + province + district — never its code, sector or name (the backend reads
  *   them). "My school is not listed" sends the proposed name + province / district / sector; an
  *   Administrator reviews it and no school is created automatically.
@@ -170,7 +170,7 @@ export interface TeacherDraft {
   /** The chosen listed school (its code and sector are shown, never sent). */
   school: Pick<DirectorySchool, "id" | "name" | "code" | "sector" | "district"> | null;
   proposedSchoolName: string;
-  /** Only for a missing school. */
+  /** The school's sector: chosen before the school (sent only for a missing school). */
   schoolSector: string;
   homeDistrict: string;
   homeSector: string;
@@ -198,19 +198,24 @@ export const emptyTeacherDraft = (): TeacherDraft => ({
   confirm: "",
 });
 
-/** A new province: district, school and school sector start again. */
+/** A new province: district, sector and school (or a not-listed school's name) start again. */
 export function setSchoolProvince(d: TeacherDraft, province: string): TeacherDraft {
-  return { ...d, schoolProvince: province, schoolDistrict: "", school: null, schoolSector: "" };
+  return { ...d, schoolProvince: province, schoolDistrict: "", schoolSector: "", school: null, schoolMode: "listed", proposedSchoolName: "" };
 }
 
-/** A new district: school and school sector start again. */
+/** A new district: sector and school start again. */
 export function setSchoolDistrict(d: TeacherDraft, district: string): TeacherDraft {
-  return { ...d, schoolDistrict: district, school: null, schoolSector: "" };
+  return { ...d, schoolDistrict: district, schoolSector: "", school: null, schoolMode: "listed", proposedSchoolName: "" };
 }
 
-/** Switching between a listed and a missing school clears the other choice. */
+/** A new sector: the school starts again. */
+export function setSchoolSector(d: TeacherDraft, sector: string): TeacherDraft {
+  return sector === d.schoolSector ? d : { ...d, schoolSector: sector, school: null, schoolMode: "listed", proposedSchoolName: "" };
+}
+
+/** Switching between a listed and a missing school clears the other choice (the place is kept). */
 export function setSchoolMode(d: TeacherDraft, mode: SchoolChoiceMode): TeacherDraft {
-  return mode === d.schoolMode ? d : { ...d, schoolMode: mode, school: null, schoolSector: "", proposedSchoolName: mode === "missing" ? d.proposedSchoolName : "" };
+  return mode === d.schoolMode ? d : { ...d, schoolMode: mode, school: null, proposedSchoolName: mode === "missing" ? d.proposedSchoolName : "" };
 }
 
 /** A new home district: the home sector starts again. */
@@ -269,12 +274,12 @@ export function validateTeacherRegistration(d: TeacherDraft): Partial<Record<Tea
   if (d.interests.length === 0) e.interests = "Choose at least one Olympiad subject.";
   if (!d.schoolProvince) e.schoolProvince = "Choose your school's province.";
   if (!d.schoolDistrict) e.schoolDistrict = "Choose your school's district.";
+  if (!d.schoolSector) e.schoolSector = "Choose your school's sector.";
   if (d.schoolMode === "listed") {
     if (!d.school) e.school = "Choose your school, or “My school is not listed”.";
   } else {
     const n = d.proposedSchoolName.trim().length;
     if (n < TEACHER_RULES.schoolNameMin || n > TEACHER_RULES.schoolNameMax) e.proposedSchoolName = "Enter your school's name (2–200 characters).";
-    if (!d.schoolSector) e.schoolSector = "Choose your school's sector.";
   }
   if (!d.homeDistrict) e.homeDistrict = "Choose the district where you live.";
   if (!d.homeSector) e.homeSector = "Choose the sector where you live.";

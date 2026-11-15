@@ -24,11 +24,10 @@ import type { DirectorySchool } from "@/lib/api/accounts";
 import { ApiError, errorMessage, isApiError } from "@/lib/api/errors";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
-import { useSchoolLocations } from "@/lib/queries/school-directory";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { countryLabel } from "@/lib/accounts/school-claim";
-import { districtsOf, provincesOf, subjectLabel } from "@/lib/accounts/teacher-registration";
+import { subjectLabel } from "@/lib/accounts/teacher-registration";
 import {
   APPROVAL_NOTE_MAX,
   REFRESH_AFTER,
@@ -45,7 +44,8 @@ import {
 } from "@/lib/admin/teacher-applications";
 import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { DistrictSchoolSelect, PlaceSelect } from "@/app/components/account/SchoolPlaceFields";
+import { PlaceSelects, SectorSchoolSelect } from "@/app/components/schools/SchoolCascade";
+import type { Place } from "@/lib/schools/school-cascade";
 import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../components/adminUi";
 import { SchoolPicker } from "../users/components/userUi";
 import type { SchoolRef } from "@/lib/api/types";
@@ -442,9 +442,8 @@ function NoteField({ id, value, onChange, max }: { id: string; value: string; on
  * The application stays PENDING; the applicant is e-mailed that the school was verified.
  */
 function VerifySchoolDialog({ app, onClose, onError, onVerified }: { app: TeacherApplication; onClose: () => void; onError: (e: unknown) => unknown; onVerified: (notice: string) => void }) {
-  const locations = useSchoolLocations();
-  const [province, setProvince] = useState(app.schoolProvince ?? "");
-  const [district, setDistrict] = useState(app.schoolDistrict ?? "");
+  // Province → District → Sector → School, starting from the place the applicant gave.
+  const [place, setPlace] = useState<Place>({ province: app.schoolProvince ?? "", district: app.schoolDistrict ?? "", sector: app.schoolSector ?? "" });
   const [school, setSchool] = useState<DirectorySchool | null>(null);
   // A school just created under Schools (perhaps without its official code yet) is not in the public
   // directory list above; the administrators' search of all schools finds it (as the student match dialog does).
@@ -487,41 +486,21 @@ function VerifySchoolDialog({ app, onClose, onError, onVerified }: { app: Teache
           <Link href="/admin/schools" className="font-semibold text-indigo-700 underline">
             Schools → directory
           </Link>
-          , then come back. Search carefully before creating one: the school may already be listed (perhaps under a slightly different name), and a school that already exists must
+          , then come back. Check the directory carefully before creating one: the school may already be listed (perhaps under a slightly different name), and a school that already exists must
           never be added again.
         </p>
-        {locations.isError ? (
-          <ErrorState error={locations.error} title="Couldn't load the list of places" onRetry={() => void locations.refetch()} />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <PlaceSelect
-              label="Province"
-              value={province}
-              onChange={(v) => {
-                setProvince(v);
-                setDistrict("");
-                setSchool(null);
-              }}
-              options={provincesOf(locations.data)}
-              placeholder={locations.isPending ? "Loading…" : "Choose"}
-              disabled={locations.isPending}
-            />
-            <PlaceSelect
-              label="District"
-              value={district}
-              onChange={(v) => {
-                setDistrict(v);
-                setSchool(null);
-              }}
-              options={districtsOf(locations.data, province)}
-              disabled={!province}
-            />
-          </div>
-        )}
-        <DistrictSchoolSelect
-          province={province}
-          district={district}
-          value={school}
+        <PlaceSelects
+          variant="admin"
+          value={place}
+          onChange={(p) => {
+            setPlace(p);
+            setSchool(null);
+          }}
+        />
+        <SectorSchoolSelect
+          variant="admin"
+          place={place}
+          schoolId={school?.id ?? ""}
           onChange={(s) => {
             setSchool(s);
             if (s) setOther(null);
@@ -529,7 +508,7 @@ function VerifySchoolDialog({ app, onClose, onError, onVerified }: { app: Teache
           label="Official school"
         />
         <SchoolPicker
-          label="Or search all schools (including one you have just created)"
+          label="Or choose another school (including one you have just created)"
           value={other}
           onChange={(s) => {
             setOther(s);

@@ -24,6 +24,7 @@ import {
   setSchoolMode,
   setSchoolProvince,
   teacherSchoolQuery,
+  setSchoolSector,
   sortSchools,
   subjectLabel,
   teacherRegistrationGate,
@@ -162,6 +163,7 @@ const filled = (over = {}) => ({
   interests: ["MATHEMATICS"],
   schoolProvince: "Southern Province",
   schoolDistrict: "Huye",
+  schoolSector: "Tumba",
   school: SCHOOL,
   homeDistrict: "Gasabo",
   homeSector: "Remera",
@@ -170,8 +172,8 @@ const filled = (over = {}) => ({
   ...over,
 });
 
-test("cascade: a new province resets district, school and school sector", () => {
-  const d = setSchoolProvince(filled({ schoolSector: "Tumba" }), "Kigali City");
+test("cascade: a new province resets district, sector and school", () => {
+  const d = setSchoolProvince(filled(), "Kigali City");
   assert.equal(d.schoolProvince, "Kigali City");
   assert.equal(d.schoolDistrict, "");
   assert.equal(d.school, null);
@@ -179,21 +181,34 @@ test("cascade: a new province resets district, school and school sector", () => 
   assert.equal(d.homeDistrict, "Gasabo", "home location untouched");
 });
 
-test("cascade: a new district resets school and school sector only", () => {
-  const d = setSchoolDistrict(filled({ schoolSector: "Tumba" }), "Gisagara");
+test("cascade: a new district resets sector and school only", () => {
+  const d = setSchoolDistrict(filled(), "Gisagara");
   assert.equal(d.schoolProvince, "Southern Province");
   assert.equal(d.schoolDistrict, "Gisagara");
   assert.equal(d.school, null);
   assert.equal(d.schoolSector, "");
 });
 
+test("cascade: a new sector resets the school (and a not-listed school's name)", () => {
+  const d = setSchoolSector(filled(), "Ngoma");
+  assert.equal(d.schoolDistrict, "Huye");
+  assert.equal(d.schoolSector, "Ngoma");
+  assert.equal(d.school, null);
+  const m = setSchoolSector(filled({ schoolMode: "missing", school: null, proposedSchoolName: "GS Nouvelle" }), "Ngoma");
+  assert.equal(m.schoolMode, "listed");
+  assert.equal(m.proposedSchoolName, "");
+  const same = filled();
+  assert.equal(setSchoolSector(same, "Tumba"), same);
+});
+
 test("cascade: switching listed / missing clears the other choice; home district resets home sector", () => {
   const m = setSchoolMode(filled(), "missing");
   assert.equal(m.schoolMode, "missing");
   assert.equal(m.school, null);
-  const back = setSchoolMode({ ...m, proposedSchoolName: "New school", schoolSector: "Tumba" }, "listed");
+  assert.equal(m.schoolSector, "Tumba", "the place is kept");
+  const back = setSchoolMode({ ...m, proposedSchoolName: "New school" }, "listed");
   assert.equal(back.proposedSchoolName, "");
-  assert.equal(back.schoolSector, "");
+  assert.equal(back.schoolSector, "Tumba");
   const same = filled();
   assert.equal(setSchoolMode(same, "listed"), same);
   const h = setHomeDistrict(filled(), "Huye");
@@ -210,7 +225,7 @@ test("validation: a complete listed-school draft passes", () => {
 test("validation: an empty draft names every required field", () => {
   const e = validateTeacherRegistration({ ...emptyTeacherDraft(), country: "" });
   assert.deepEqual(Object.keys(e).sort(), [
-    "country", "email", "firstName", "homeDistrict", "homeSector", "interests", "lastName", "password", "phone", "school", "schoolDistrict", "schoolProvince", "username",
+    "country", "email", "firstName", "homeDistrict", "homeSector", "interests", "lastName", "password", "phone", "school", "schoolDistrict", "schoolProvince", "schoolSector", "username",
   ]);
   assert.equal(e.confirm, undefined, "two empty passwords match; the password rule reports it");
 });
@@ -231,6 +246,11 @@ test("validation: password rule and confirmation", () => {
   assert.ok(validateTeacherRegistration(filled({ password: "short1", confirm: "short1" })).password);
   assert.ok(validateTeacherRegistration(filled({ password: "lettersonly", confirm: "lettersonly" })).password);
   assert.equal(validateTeacherRegistration(filled({ confirm: "secret124" })).confirm, "The passwords don't match.");
+});
+
+test("validation: the school's sector is chosen before the school", () => {
+  const e = validateTeacherRegistration(filled({ schoolSector: "", school: null }));
+  assert.ok(e.schoolSector && e.school);
 });
 
 test("validation: at least one interest", () => {

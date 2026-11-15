@@ -7,13 +7,16 @@
  *
  * Plain dropdowns only (no search box): each one lists the options of the step before it, from
  * the official directory, and is disabled until that step is chosen. Used by student registration,
- * the student's profile, and every administrator form that names a school (SchoolPicker).
+ * the student's profile, teacher registration, the teacher-application review, and every
+ * administrator form that names a school (SchoolPicker).
  * `variant` keeps each page's existing look: "public" (sign-up / profile), "admin" (admin pages).
  */
 import { useId, useMemo, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { schoolDirectoryApi, type DirectorySchool } from "@/lib/api/accounts";
 import { errorMessage } from "@/lib/api/errors";
 import { countryOptions } from "@/lib/schools/countries";
-import { districtsOf, provincesOf, sectorsOf, setPlaceLevel, type Place, type PlaceLevel } from "@/lib/schools/school-cascade";
+import { byName, districtsOf, NOT_LISTED, placeComplete, provincesOf, schoolFacts, sectorsOf, setPlaceLevel, type Place, type PlaceLevel } from "@/lib/schools/school-cascade";
 import { useSchoolLocations } from "@/lib/queries/school-directory";
 
 export type CascadeVariant = "public" | "admin";
@@ -142,5 +145,82 @@ export function SchoolFactsPanel({ facts, variant = "public" }: { facts: { label
         </div>
       ))}
     </dl>
+  );
+}
+
+/** The active schools of one sector, by name (only once province, district and sector are chosen). */
+export function useSchoolsInSector(place: Place, teacherEligible = false) {
+  return useQuery({
+    queryKey: ["schools", "in-place", place.province, place.district, place.sector, teacherEligible ? "teacher" : "all"],
+    queryFn: async () =>
+      byName(await schoolDirectoryApi.search({ province: place.province, district: place.district, sector: place.sector, ...(teacherEligible && { teacherEligible: "true" as const }) })),
+    enabled: placeComplete(place),
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * The last step: the School dropdown of the chosen sector (GET /schools/search with the place —
+ * never a search box). With `notListed` it ends with "My school is not listed". The chosen school's
+ * official details are shown from its directory record. `teacherEligible`: only the schools a
+ * Teacher may choose (official code, or administrator-created and verified).
+ */
+export function SectorSchoolSelect({
+  place, schoolId, onChange, notListed, teacherEligible = false, error, label = "School", placeholder = "Choose the school", variant = "public",
+}: {
+  place: Place;
+  /** The chosen school's id ("" for none). */
+  schoolId: string;
+  onChange: (school: DirectorySchool | null) => void;
+  notListed?: { selected: boolean; onSelect: () => void };
+  teacherEligible?: boolean;
+  error?: string;
+  label?: string;
+  placeholder?: string;
+  variant?: CascadeVariant;
+}) {
+  const schools = useSchoolsInSector(place, teacherEligible);
+  const s = STYLES[variant];
+  if (!placeComplete(place)) {
+    return <CascadeSelect label={label} value="" onChange={() => undefined} options={[]} placeholder="Choose the sector first" disabled error={error} variant={variant} testId="cascade-school" />;
+  }
+  if (schools.isError) {
+    return (
+      <p className={s.error} role="alert" data-testid="schools-error">
+        Couldn&apos;t load the schools of {place.sector}. {errorMessage(schools.error)}{" "}
+        <button type="button" className="font-semibold underline" onClick={() => void schools.refetch()}>
+          Try again
+        </button>
+      </p>
+    );
+  }
+  const list = schools.data ?? [];
+  const chosen = schoolId ? list.find((x) => x.id === schoolId) ?? null : null;
+  const selected = notListed?.selected ? NOT_LISTED : schoolId;
+  return (
+    <div className="space-y-3">
+      <CascadeSelect
+        label={label}
+        value={selected}
+        onChange={(id) => (id === NOT_LISTED ? notListed?.onSelect() : onChange(list.find((x) => x.id === id) ?? null))}
+        disabled={schools.isPending}
+        placeholder={schools.isPending ? "Loading schools…" : placeholder}
+        options={[
+          ...list.map((x) => ({ value: x.id, label: x.code ? `${x.name} (${x.code})` : x.name })),
+          ...(notListed ? [{ value: NOT_LISTED, label: "My school is not listed" }] : []),
+        ]}
+        error={error}
+        hint={!schools.isPending && list.length === 0 ? `No school is listed in ${place.sector} yet.${notListed ? " Choose “My school is not listed”." : ""}` : undefined}
+        variant={variant}
+        testId="cascade-school"
+      />
+      {chosen && !notListed?.selected && <SchoolFactsPanel variant={variant} facts={schoolFacts(chosen, place)} />}
+      {schoolId && !chosen && !schools.isPending && !notListed?.selected && (
+        // The chosen school is no longer listed in this sector (e.g. deactivated meanwhile).
+        <p className={s.error} role="alert">
+          That school is no longer listed here. Choose the school again.
+        </p>
+      )}
+    </div>
   );
 }
