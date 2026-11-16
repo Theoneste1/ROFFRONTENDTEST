@@ -8,6 +8,7 @@ import { postLoginPath } from "@/lib/auth/roles";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { Button, PasswordField, TextField } from "@/app/components/ui/form";
+import { accountRefusalMessage } from "@/lib/auth/login-refusals";
 import { LOGIN_NOTICE_TEXT, clearLoginNotice, peekLoginNotice } from "@/lib/auth/notice";
 
 export default function LoginForm() {
@@ -54,12 +55,8 @@ export default function LoginForm() {
 
   const notActivated = isApiError(error) && error.code === "ACCOUNT_NOT_ACTIVATED";
   // Backend login checks, in order: suspended, not activated, awaiting approval (all 403 after a correct password).
-  const statusMessage =
-    isApiError(error) && error.code === "ACCOUNT_SUSPENDED"
-      ? "Your account is suspended. Contact ROF support if you think this is a mistake."
-      : isApiError(error) && error.code === "ACCOUNT_PENDING_APPROVAL"
-        ? "Your account is waiting for an administrator's approval. You'll receive an e-mail once it is approved."
-        : null;
+  // Suspended, deactivated, archived or awaiting approval (all 403 after a correct password): lib/auth/login-refusals.ts.
+  const statusMessage = isApiError(error) ? accountRefusalMessage(error.code) : null;
 
   return (
     <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">

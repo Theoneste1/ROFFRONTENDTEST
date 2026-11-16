@@ -12,6 +12,7 @@ import type {
   SupportInfo,
   UpdateMeInput,
 } from "./types";
+import type { FormKey, PublicFormView } from "../forms/closed-form";
 
 /**
  * Sign-in after a sleeping backend: Netlify's proxy answers 502/504 (or the request fails) while
@@ -169,6 +170,8 @@ export interface ContactResult {
 }
 
 export const publicApi = {
+  /** GET /forms/:key (capability formAvailability): whether the form is open, and the administrator's closed message. */
+  form: (key: FormKey) => api<PublicFormView>(`/forms/${key}`, { auth: false }),
   support: () => api<SupportInfo>("/support", { auth: false }),
   statistics: () => api<PublicStatistics>("/public/statistics", { auth: false }),
   contact: (input: ContactInput) => api<ContactResult>("/public/contact", { method: "POST", body: input, auth: false }),
