@@ -67,6 +67,14 @@ test("formGate (student form): loading, closed, open and failed lookups; never a
   assert.equal(formGate(true, { status: "success", data: view({ state: "NOT_YET_OPEN" }) }), "closed");
   assert.equal(formGate(true, { status: "error" }), "failed");
   assert.equal(formGate(true, { status: "success", data: null }), "failed");
+  // A failed background re-fetch keeps the last answer (react-query: status "error" with the previous data).
+  assert.equal(formGate(true, { status: "error", data: view({ open: true, state: "OPEN" }) }), "open");
+  assert.equal(formGate(true, { status: "error", data: view() }), "closed");
+  assert.equal(formGate(true, { status: "error", data: null }), "failed");
+  assert.equal(formGate(true, { status: "error", data: {} }), "failed");   // no usable answer
   // Older backend (no formAvailability): not applicable, whatever the (disabled) query reports.
-  for (const status of ["pending", "error", "success"]) assert.equal(formGate(false, { status }), "notApplicable");
+  for (const status of ["pending", "error", "success"]) {
+    assert.equal(formGate(false, { status }), "notApplicable");
+    assert.equal(formGate(false, { status, data: view() }), "notApplicable");
+  }
 });

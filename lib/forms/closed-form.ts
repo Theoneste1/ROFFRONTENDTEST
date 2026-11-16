@@ -60,15 +60,17 @@ const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : nul
  * capability the form waits for GET /forms/:key, and a failed lookup is shown as a retryable error.
  * - notApplicable: the backend does not advertise formAvailability — behaviour as before.
  * - loading / failed / closed / open: the lookup is in flight / failed / says closed / says open.
- * Once the view has loaded, a failed background re-check keeps the last answer (react-query keeps `success`).
+ * Valid data already loaded wins over the query status: a failed background re-fetch sets react-query's status to
+ * `error` but keeps the last answer, which still decides (open → the form stays, closed → the notice stays).
+ * `failed` only when the lookup failed and there is no usable answer.
  */
 export type FormGate = "notApplicable" | "loading" | "failed" | "closed" | "open";
 
 export function formGate(enabled: boolean, q: { status: "pending" | "error" | "success"; data?: PublicFormView | null }): FormGate {
   if (!enabled) return "notApplicable";
+  if (q.data && typeof q.data.open === "boolean") return q.data.open ? "open" : "closed";
   if (q.status === "pending") return "loading";
-  if (q.status === "error" || !q.data) return "failed";
-  return q.data.open ? "open" : "closed";
+  return "failed";
 }
 
 /** The notice for a form that is not open (public view). Null when the form is open. */
