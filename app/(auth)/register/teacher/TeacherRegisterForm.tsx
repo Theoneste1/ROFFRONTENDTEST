@@ -8,7 +8,8 @@
  * Gate (lib/accounts/teacher-registration → teacherRegistrationGate): wait for GET /api/v1; the
  * backend must advertise `teacherSelfRegistration` and GET /auth/register/teacher/availability
  * must answer `open: true`. Otherwise the page says registration is not available and links to
- * the contact form and sign in. A failed check offers a retry.
+ * the contact form and sign in. A failed check offers a retry. With `formAvailability`, the form also waits for
+ * GET /forms/TEACHER_REGISTRATION (teacherPage): closed → the administrators' notice; failed → a retry.
  *
  * School: Country (Rwanda) → province → district → sector → school from the official directory (code and sector shown
  * read-only, never sent), or "My school is not listed" (name + sector, reviewed by an
@@ -41,6 +42,7 @@ import {
   setSchoolProvince,
   setSchoolSector,
   teacherRegistrationGate,
+  teacherPage,
   toggleInterest,
   validateTeacherRegistration,
   type TeacherDraft,
@@ -48,7 +50,7 @@ import {
 } from "@/lib/accounts/teacher-registration";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { usePublicForm } from "@/lib/queries/forms";
-import { noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
+import { formGate, noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
 import ClosedFormNotice from "@/app/components/forms/ClosedFormNotice";
 import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields from "@/app/components/auth/NewPasswordFields";
@@ -83,15 +85,17 @@ export default function TeacherRegisterForm() {
   const gate = teacherRegistrationGate(caps.detection, { status: availability.status, open: availability.data?.open });
   // formAvailability: the administrators' closed message for the teacher form. Only used when the FORM is closed —
   // the form may be open while the Teacher role is still disabled (TEACHERS_ENABLED), and then the generic text stays.
+  // The open form also waits for GET /forms/TEACHER_REGISTRATION (teacherPage), and a failed lookup is retryable.
   const teacherForm = usePublicForm("TEACHER_REGISTRATION");
   const closedForm = noticeFromView(teacherForm.data);
+  const page = teacherPage(gate.state, formGate(teacherForm.enabled, teacherForm));
   // Once the form is shown it stays (a background re-check must not remove it while someone types).
   const [shown, setShown] = useState(false);
-  if (!shown && gate.state === "open") setShown(true);
+  if (!shown && page === "open") setShown(true);
 
   if (shown) return <OpenForm />;
 
-  if (gate.state === "loading" || gate.state === "availabilityLoading") {
+  if (page === "loading") {
     return (
       <div className="space-y-5" data-testid="teacher-register-loading">
         <Heading />
@@ -110,6 +114,15 @@ export default function TeacherRegisterForm() {
           title="Couldn't check whether teacher registration is open"
           onRetry={() => (gate.state === "availabilityError" ? void availability.refetch() : caps.retry())}
         />
+        <Footer />
+      </div>
+    );
+  }
+  if (page === "formFailed") {
+    return (
+      <div className="space-y-5" data-testid="teacher-register-form-error">
+        <Heading />
+        <ErrorState error={teacherForm.error} title="Couldn't check whether teacher registration is open" onRetry={() => void teacherForm.refetch()} />
         <Footer />
       </div>
     );

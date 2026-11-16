@@ -40,7 +40,7 @@ import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/Ne
 import SchoolClaimFields, { emptyDraft } from "@/app/components/account/SchoolClaimFields";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { usePublicForm } from "@/lib/queries/forms";
-import { noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
+import { formGate, noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
 import ClosedFormNotice from "@/app/components/forms/ClosedFormNotice";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
 import { studentInterestsSupported, validateInterests, type OlympiadSubject } from "@/lib/accounts/olympiad-interests";
@@ -223,6 +223,32 @@ export default function RegisterForm() {
           <div data-testid="register-loading">
             <LoadingBlock label={gate.state === "loading" && gate.waking ? "The server is waking up…" : "Preparing the registration form…"} />
             <p className="text-center text-xs text-slate-500">This can take up to a minute while the server wakes up.</p>
+          </div>
+        )}
+        <SignInInstead />
+      </div>
+    );
+  }
+
+  // formAvailability: never show the form before GET /forms/STUDENT_REGISTRATION has answered, and never assume
+  // it is open when the lookup fails (a retryable message instead). Older backends: not applicable, as before.
+  const studentGate = formGate(studentForm.enabled, studentForm);
+  if (studentGate === "loading" || studentGate === "failed") {
+    return (
+      <div className="space-y-5" data-testid="register-form-check">
+        <JoinSwitch active="student" />
+        <AuthHeading title="Join as a student" subtitle="Create your free ROF account and start preparing for the Olympiads." />
+        {studentGate === "failed" ? (
+          <div className="space-y-4" data-testid="register-form-check-failed">
+            <Alert tone="error">We couldn&apos;t check whether student registration is open.</Alert>
+            <p className="text-sm text-slate-600">Check your connection and try again. The server can take up to a minute to wake up.</p>
+            <Button type="button" className="w-full" onClick={() => void studentForm.refetch()} disabled={studentForm.isFetching} data-testid="register-form-retry">
+              {studentForm.isFetching ? "Trying again…" : "Try again"}
+            </Button>
+          </div>
+        ) : (
+          <div data-testid="register-form-loading">
+            <LoadingBlock label="Checking whether registration is open…" />
           </div>
         )}
         <SignInInstead />

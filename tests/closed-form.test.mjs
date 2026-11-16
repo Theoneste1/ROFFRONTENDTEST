@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { kigaliTime, noticeFromRefusal, noticeFromView } from "../lib/forms/closed-form.ts";
+import { formGate, kigaliTime, noticeFromRefusal, noticeFromView } from "../lib/forms/closed-form.ts";
 
 const CUSTOM = "Student registration is currently closed. Please contact the Rwanda Olympiad Foundation for further information or check back later.";
 const view = (over = {}) => ({
@@ -58,4 +58,15 @@ test("noticeFromRefusal: anything else → null, so the caller keeps its fixed t
   assert.equal(noticeFromRefusal({ status: 403, code: "PERMISSION_REQUIRED", details: { form: "X" } }), null);
   assert.equal(noticeFromRefusal({ status: 400, code: "REGISTRATION_CLOSED", details: { form: "X" } }), null);
   assert.equal(noticeFromRefusal(null), null);
+});
+
+test("formGate (student form): loading, closed, open and failed lookups; never assumed open", () => {
+  assert.equal(formGate(true, { status: "pending" }), "loading");
+  assert.equal(formGate(true, { status: "success", data: view() }), "closed");
+  assert.equal(formGate(true, { status: "success", data: view({ open: true, state: "OPEN" }) }), "open");
+  assert.equal(formGate(true, { status: "success", data: view({ state: "NOT_YET_OPEN" }) }), "closed");
+  assert.equal(formGate(true, { status: "error" }), "failed");
+  assert.equal(formGate(true, { status: "success", data: null }), "failed");
+  // Older backend (no formAvailability): not applicable, whatever the (disabled) query reports.
+  for (const status of ["pending", "error", "success"]) assert.equal(formGate(false, { status }), "notApplicable");
 });

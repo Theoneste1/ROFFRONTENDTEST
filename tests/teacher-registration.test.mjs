@@ -28,6 +28,7 @@ import {
   sortSchools,
   subjectLabel,
   teacherRegistrationGate,
+  teacherPage,
   toggleInterest,
   validateTeacherRegistration,
 } from "../lib/accounts/teacher-registration.ts";
@@ -423,4 +424,25 @@ test("review errors and school place", () => {
   assert.equal(applicationSchoolPlace(verifiedApp), "Tumba, Huye, Southern Province");
   assert.equal(applicationSchoolPlace(listed), "Tumba, Huye, Southern Province");
   assert.equal(applicationSchoolPlace(missing), "Tumba, Huye, Southern Province");
+});
+
+test("teacherPage: the open form waits for the form lookup; closed, open and failed lookups (formAvailability)", () => {
+  // Gate open (feature on, availability open): the form only once the lookup says open.
+  assert.equal(teacherPage("open", "loading"), "loading");
+  assert.equal(teacherPage("open", "closed"), "unavailable");
+  assert.equal(teacherPage("open", "open"), "open");
+  assert.equal(teacherPage("open", "failed"), "formFailed");
+  // Older backend (no formAvailability): exactly the registration gate, as before.
+  assert.equal(teacherPage("open", "notApplicable"), "open");
+  assert.equal(teacherPage("unavailable", "notApplicable"), "unavailable");
+  for (const g of ["loading", "availabilityLoading"]) assert.equal(teacherPage(g, "notApplicable"), "loading");
+  for (const g of ["detectionFailed", "availabilityError"]) assert.equal(teacherPage(g, "open"), g);
+  // Role disabled while the form is open: generic text; a closed form: the administrators' notice; a failed lookup
+  // changes nothing there (the form is not offered anyway); a pending lookup waits so the notice does not flash in.
+  assert.equal(teacherPage("unavailable", "open"), "unavailable");
+  assert.equal(teacherPage("unavailable", "closed"), "unavailable");
+  assert.equal(teacherPage("unavailable", "failed"), "unavailable");
+  assert.equal(teacherPage("unavailable", "loading"), "loading");
+  // The gate's own checks come first.
+  assert.equal(teacherPage("availabilityLoading", "open"), "loading");
 });

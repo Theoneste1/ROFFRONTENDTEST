@@ -55,6 +55,22 @@ const httpsOnly = (u: string | null | undefined) => {
 };
 const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
+/**
+ * May a registration form be shown? (formAvailability.) Never assume open: on a backend that advertises the
+ * capability the form waits for GET /forms/:key, and a failed lookup is shown as a retryable error.
+ * - notApplicable: the backend does not advertise formAvailability — behaviour as before.
+ * - loading / failed / closed / open: the lookup is in flight / failed / says closed / says open.
+ * Once the view has loaded, a failed background re-check keeps the last answer (react-query keeps `success`).
+ */
+export type FormGate = "notApplicable" | "loading" | "failed" | "closed" | "open";
+
+export function formGate(enabled: boolean, q: { status: "pending" | "error" | "success"; data?: PublicFormView | null }): FormGate {
+  if (!enabled) return "notApplicable";
+  if (q.status === "pending") return "loading";
+  if (q.status === "error" || !q.data) return "failed";
+  return q.data.open ? "open" : "closed";
+}
+
 /** The notice for a form that is not open (public view). Null when the form is open. */
 export function noticeFromView(v: PublicFormView | null | undefined): ClosedFormNotice | null {
   if (!v || v.open) return null;
