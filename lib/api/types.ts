@@ -40,7 +40,11 @@ export type Permission =
   | "settings.manageSystem" | "permissions.view" | "permissions.manageOverrides"
   // Teacher delegations: granted to an individual Teacher by an Administrator.
   | "students.viewProfile" | "students.viewProgress" | "submissions.submitOnBehalf"
-  | "schools.manage" | "schools.syncDirectory";
+  | "schools.manage" | "schools.syncDirectory"
+  // Account states, bulk operations and form availability (backend develop, Administrators and Super Admins).
+  | "users.viewStatusHistory" | "users.changeStatus" | "users.suspend" | "users.archive"
+  | "users.bulkManage" | "users.export"
+  | "forms.view" | "forms.manageAvailability" | "forms.editMessages";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
@@ -824,7 +828,12 @@ export interface AdminUser {
   updatedAt?: string;
   /** Students' Olympiad interests (backends with studentOlympiadInterests). */
   olympiadInterests?: string[];
+  /** The account state (backends with accountStates); isActive is true exactly when it is ACTIVE. */
+  accountStatus?: AccountState;
 }
+
+/** Account states (capability accountStates). */
+export type AccountState = "ACTIVE" | "DEACTIVATED" | "SUSPENDED" | "ARCHIVED";
 
 /** `POST /admin/users/import` (multipart CSV, `?dryRun=`). */
 export interface UserImportResult {

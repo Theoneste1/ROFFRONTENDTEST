@@ -18,19 +18,17 @@ import { CascadeSelect, CountrySelect, PlaceSelects, SchoolFactsPanel } from "@/
 import { schoolRefFromDirectoryRow } from "@/lib/admin/school-directory";
 import { useSchoolDirectoryMode } from "@/lib/queries/school-directory";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { displayStatus, type DisplayStatus } from "@/lib/accounts/account-lifecycle";
 import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Badge, btnPrimary } from "../../components/adminUi";
 
 // ─── Status ─────────────────────────────────────────────────────────────────
 
-export type AccountStatus = "SUSPENDED" | "AWAITING_SETUP" | "AWAITING_APPROVAL" | "ACTIVE";
+export type AccountStatus = DisplayStatus;
 
-/** Derived from the backend flags, in order of precedence. */
-export function accountStatus(u: Pick<AdminUser, "isActive" | "isApproved" | "activatedAt">): AccountStatus {
-  if (!u.isActive) return "SUSPENDED";
-  if (!u.activatedAt) return "AWAITING_SETUP";
-  if (!u.isApproved) return "AWAITING_APPROVAL";
-  return "ACTIVE";
+/** Derived from the backend flags, in order of precedence; the backend's account state wins when sent (lib/accounts/account-lifecycle.ts). */
+export function accountStatus(u: Pick<AdminUser, "isActive" | "isApproved" | "activatedAt" | "accountStatus">): AccountStatus {
+  return displayStatus(u);
 }
 
 const STATUS: Record<AccountStatus, { label: string; badge: string }> = {
@@ -38,9 +36,11 @@ const STATUS: Record<AccountStatus, { label: string; badge: string }> = {
   AWAITING_SETUP: { label: "Awaiting setup", badge: "bg-amber-50 text-amber-700" },
   AWAITING_APPROVAL: { label: "Awaiting approval", badge: "bg-orange-50 text-orange-700" },
   SUSPENDED: { label: "Suspended", badge: "bg-gray-100 text-gray-600" },
+  DEACTIVATED: { label: "Deactivated", badge: "bg-gray-100 text-gray-600" },
+  ARCHIVED: { label: "Archived", badge: "bg-slate-200 text-slate-700" },
 };
 
-export function AccountStatusBadge({ user }: { user: Pick<AdminUser, "isActive" | "isApproved" | "activatedAt"> }) {
+export function AccountStatusBadge({ user }: { user: Pick<AdminUser, "isActive" | "isApproved" | "activatedAt" | "accountStatus"> }) {
   const s = STATUS[accountStatus(user)];
   return <Badge className={s.badge}>{s.label}</Badge>;
 }

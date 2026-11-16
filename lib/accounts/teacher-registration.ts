@@ -11,6 +11,7 @@
  * - Home location: district → sector (all districts of every province), separate from the school.
  * - Phone: required; checked with the same rules as the backend's normalisePhone (E.164).
  */
+import type { FormGate } from "../forms/closed-form";
 import type { DirectorySchool, SchoolProvince } from "../api/accounts";
 import { hasFeature, type BackendDetection } from "../api/capabilities";
 import type { OlympiadSubject, TeacherRegistrationInput } from "../api/teacher-registration";
@@ -59,6 +60,24 @@ export function teacherRegistrationGate(
   if (availability.status === "pending") return { state: "availabilityLoading" };
   if (availability.status === "error") return { state: "availabilityError" };
   return availability.open === true ? { state: "open" } : { state: "unavailable" };
+}
+
+/**
+ * What the teacher page shows: the registration gate above combined with the form's availability (formGate).
+ * The open form needs BOTH an open gate and a form that is open (or a backend without formAvailability); a closed
+ * form shows the administrators' notice; the page waits while the form lookup is in flight; a failed lookup offers a
+ * retry instead of assuming the form is open. When the gate is unavailable anyway, a failed lookup just keeps the
+ * generic "not available" text.
+ */
+export type TeacherPage = "loading" | "detectionFailed" | "availabilityError" | "formFailed" | "unavailable" | "open";
+
+export function teacherPage(gate: TeacherRegistrationGate["state"], form: FormGate): TeacherPage {
+  if (gate === "loading" || gate === "availabilityLoading") return "loading";
+  if (gate === "detectionFailed" || gate === "availabilityError") return gate;
+  if (form === "loading") return "loading";
+  if (form === "closed") return "unavailable";
+  if (gate === "open") return form === "failed" ? "formFailed" : "open";
+  return "unavailable";
 }
 
 // ─── Phone and countries (shared: lib/accounts/phone.ts, lib/schools/countries.ts) ───

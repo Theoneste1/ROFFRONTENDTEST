@@ -231,3 +231,12 @@ test("caching: definite answers stay fresh for 5 minutes; UNKNOWN is never fresh
   assert.equal(refetchIntervalFor({ state: "NEW", schemaVersion: 1, roles: [], features: [] }), false);
   assert.equal(refetchIntervalFor(undefined), false, "the first request is already in flight");
 });
+
+test("accountStates and formAvailability are known features, enabled only when listed", () => {
+  for (const f of ["accountStates", "formAvailability"]) {
+    assert.ok(KNOWN_FEATURES.includes(f), f);
+    const on = classifyApiInfo(200, body({ ...BASE, capabilities: { ...NEW_CAPS, features: [...NEW_CAPS.features, f] } }));
+    assert.equal(hasFeature(on, f), true, f);
+    assert.equal(hasFeature(classifyApiInfo(200, body({ ...BASE, capabilities: NEW_CAPS })), f), false, f);
+  }
+});
