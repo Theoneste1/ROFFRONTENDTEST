@@ -48,6 +48,7 @@ import type {
   StudentReportRow,
   SubmissionStatus,
   UserImportResult,
+  AccountState,
 } from "./types";
 
 type Query = Record<string, QueryValue>;
@@ -178,8 +179,15 @@ export const usersApi = {
     api<AdminUser>(`/admin/users/${id}/status`, { method: "PATCH", body: status }),
   resendInvitation: (id: string) => api<{ purpose: string; expiresAt: string }>(`/admin/users/${id}/resend-invitation`, { method: "POST" }),
   sendPasswordReset: (id: string) => api<{ message: string }>(`/admin/users/${id}/send-password-reset`, { method: "POST" }),
-  /** Only accounts without academic history (409 USER_HAS_HISTORY otherwise). */
+  /** Only accounts without academic history (409 USER_HAS_HISTORY otherwise). Backends with accountStates refuse it: archive instead. */
   remove: (id: string) => api<{ message: string }>(`/admin/users/${id}`, { method: "DELETE" }),
+  /**
+   * Change the account state (capability accountStates), with a reason (3–500 characters; required to deactivate,
+   * suspend, archive, and to restore an archived account, which also needs confirm: true). The account's sessions end
+   * when it leaves ACTIVE. `stillBlockedBy`: anything else that still stops it signing in after a restore.
+   */
+  changeStatus: (id: string, body: { toStatus: AccountState; reason?: string; confirm?: boolean }) =>
+    api<{ user: AdminUser; stillBlockedBy?: string[] }>(`/admin/users/${id}/status-changes`, { method: "POST", body }),
 };
 
 // ─── Divisions & schools (lookups) ──────────────────────────────────────────

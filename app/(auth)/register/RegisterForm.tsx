@@ -23,6 +23,10 @@
  * and validation depend on it). If detection fails the page says so, offers a
  * retry, and lets the student continue with the legacy fields. Once a form is
  * chosen it is kept, so a later re-check can't swap fields while someone types.
+ *
+ * Closed registration (capability formAvailability): the page shows the administrator's closed message, opening time,
+ * instructions and contact (GET /forms/STUDENT_REGISTRATION) instead of the form, and a refused submission shows the
+ * same texts from the 403 REGISTRATION_CLOSED body. Other backends keep the fixed closed text.
  */
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -35,6 +39,9 @@ import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import SchoolClaimFields, { emptyDraft } from "@/app/components/account/SchoolClaimFields";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { usePublicForm } from "@/lib/queries/forms";
+import { noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
+import ClosedFormNotice from "@/app/components/forms/ClosedFormNotice";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
 import { studentInterestsSupported, validateInterests, type OlympiadSubject } from "@/lib/accounts/olympiad-interests";
 import { registrationGate, type RegistrationSchoolMode } from "@/lib/accounts/registration-mode";
@@ -87,6 +94,7 @@ export default function RegisterForm() {
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
   const caps = useBackendCapabilities();
   const gate = registrationGate(caps.detection, caps.fetching, caps.waking);
+  const studentForm = usePublicForm("STUDENT_REGISTRATION");
   const [schoolMode, setSchoolMode] = useState<RegistrationSchoolMode | null>(null);
   // Olympiad interests: asked for only when the backend accepts them (decided with the school mode).
   const [interestsOn, setInterestsOn] = useState(false);
@@ -222,6 +230,19 @@ export default function RegisterForm() {
     );
   }
 
+  // Registration closed by the administrators (formAvailability): their message instead of the form.
+  const closedNow = noticeFromView(studentForm.data);
+  if (closedNow) {
+    return (
+      <div className="space-y-5" data-testid="register-closed">
+        <JoinSwitch active="student" />
+        <AuthHeading title="Join as a student" />
+        <ClosedFormNotice notice={closedNow} />
+        <SignInInstead />
+      </div>
+    );
+  }
+  const closedRefusal = isApiError(error) ? noticeFromRefusal(error, studentForm.data) : null;
   const coded = isApiError(error) && error.code ? STUDENT_DETAILS_ERRORS[error.code] : undefined;
   const known = isApiError(error) && error.code ? REGISTER_ERRORS[error.code] : undefined;
   const fieldErr =
@@ -236,7 +257,11 @@ export default function RegisterForm() {
         Fields marked <span className="text-red-500">*</span> are required.
       </p>
 
-      {error != null && !fieldErr && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
+      {closedRefusal && <ClosedFormNotice notice={closedRefusal} />}
+      {error != null && !fieldErr && !closedRefusal && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
+      {studentForm.data?.open && studentForm.data.instructions?.trim() && (
+        <p className="whitespace-pre-line text-sm text-slate-600" data-testid="form-instructions">{studentForm.data.instructions.trim()}</p>
+      )}
       {error != null && fieldErr && <Alert tone="error">Please check the highlighted fields.</Alert>}
 
       <FormSection step={1} title="About you">

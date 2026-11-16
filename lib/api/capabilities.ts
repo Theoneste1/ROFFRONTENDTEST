@@ -98,6 +98,19 @@ export const KNOWN_FEATURES = [
    * `educationLevel` and `olympiadInterests`; the administrators' list returns them. Without it: not asked.
    */
   "coachApplicationDetails",
+  /**
+   * Account states: ACTIVE, DEACTIVATED, SUSPENDED, ARCHIVED (`accountStatus` on users) and
+   * `POST /admin/users/:id/status-changes` { toStatus, reason, confirm? }. Accounts are archived, never
+   * deleted (`DELETE /admin/users/:id` is refused with 409 PERMANENT_DELETION_DISABLED). Without it: suspend,
+   * reactivate and delete as before.
+   */
+  "accountStates",
+  /**
+   * Form availability: `GET /forms/:key` (public) gives each form's state and the administrator's closed
+   * message, instructions, contact e-mail and support link; a closed form refuses with that message.
+   * Without it: the fixed closed texts.
+   */
+  "formAvailability",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

@@ -47,6 +47,9 @@ import {
   type TeacherField,
 } from "@/lib/accounts/teacher-registration";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
+import { usePublicForm } from "@/lib/queries/forms";
+import { noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
+import ClosedFormNotice from "@/app/components/forms/ClosedFormNotice";
 import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields from "@/app/components/auth/NewPasswordFields";
 import { PlaceSelect } from "@/app/components/account/SchoolPlaceFields";
@@ -78,6 +81,10 @@ export default function TeacherRegisterForm() {
     retry: 1,
   });
   const gate = teacherRegistrationGate(caps.detection, { status: availability.status, open: availability.data?.open });
+  // formAvailability: the administrators' closed message for the teacher form. Only used when the FORM is closed —
+  // the form may be open while the Teacher role is still disabled (TEACHERS_ENABLED), and then the generic text stays.
+  const teacherForm = usePublicForm("TEACHER_REGISTRATION");
+  const closedForm = noticeFromView(teacherForm.data);
   // Once the form is shown it stays (a background re-check must not remove it while someone types).
   const [shown, setShown] = useState(false);
   if (!shown && gate.state === "open") setShown(true);
@@ -110,10 +117,16 @@ export default function TeacherRegisterForm() {
   return (
     <div className="space-y-5" data-testid="teacher-register-unavailable">
       <Heading />
-      <Alert tone="info">Teacher registration is not available right now.</Alert>
-      <p className="text-sm text-slate-700">
-        If you teach at a school and would like to connect your students with the Rwanda Olympiad Foundation, send us a message and we will get in touch.
-      </p>
+      {closedForm ? (
+        <ClosedFormNotice notice={closedForm} />
+      ) : (
+        <>
+          <Alert tone="info">Teacher registration is not available right now.</Alert>
+          <p className="text-sm text-slate-700">
+            If you teach at a school and would like to connect your students with the Rwanda Olympiad Foundation, send us a message and we will get in touch.
+          </p>
+        </>
+      )}
       <Link href="/?subject=teacher#contact" className={primaryLink}>
         Contact us
       </Link>
@@ -139,6 +152,7 @@ function schoolPlaceChanged(d: TeacherDraft, p: Place): TeacherDraft {
 }
 
 function OpenForm() {
+  const teacherForm = usePublicForm("TEACHER_REGISTRATION");
   const [d, setD] = useState<TeacherDraft>(emptyTeacherDraft);
   const [errors, setErrors] = useState<Partial<Record<TeacherField, string>>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -190,6 +204,8 @@ function OpenForm() {
     );
   }
 
+  // Closed by the administrators while the form was open in the browser (formAvailability): their message.
+  const closedRefusal = isApiError(error) ? noticeFromRefusal(error, teacherForm.data) : null;
   const known = isApiError(error) && error.code ? TEACHER_REGISTER_ERRORS[error.code] : undefined;
   const serverFieldErrors = isApiError(error) && mapServerFieldErrors(error.validationMessages);
   const showAlert = error != null && (known || !serverFieldErrors || Object.keys(serverFieldErrors).length === 0);
@@ -200,7 +216,11 @@ function OpenForm() {
     <form onSubmit={onSubmit} noValidate className="space-y-5" data-testid="teacher-register-form">
       <Heading />
 
-      {showAlert && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
+      {closedRefusal && <ClosedFormNotice notice={closedRefusal} />}
+      {showAlert && !closedRefusal && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
+      {teacherForm.data?.open && teacherForm.data.instructions?.trim() && (
+        <p className="whitespace-pre-line text-sm text-slate-600" data-testid="form-instructions">{teacherForm.data.instructions.trim()}</p>
+      )}
 
       <Section step={1} title="About you">
         <div className="grid gap-4 sm:grid-cols-2">

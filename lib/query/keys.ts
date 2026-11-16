@@ -48,6 +48,10 @@ export const queryKeys = {
   teacherRegistration: {
     availability: () => ["teacher-registration", "availability"] as const,
   },
+  /** Public form availability (GET /forms/:key). */
+  forms: {
+    public: (key: string) => ["forms", "public", key] as const,
+  },
   /** Teacher application review (`/admin/teacher-applications`). */
   teacherApplications: {
     all: ["teacher-applications"] as const,
