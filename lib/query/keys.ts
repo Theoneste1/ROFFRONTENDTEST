@@ -39,6 +39,10 @@ export const queryKeys = {
     /** The public province → district → sector list (the same key the claim form uses). */
     locations: () => ["schools", "locations"] as const,
   },
+  /** Public form availability (GET /forms/:key). */
+  forms: {
+    public: (key: string) => ["forms", "public", key] as const,
+  },
   /** Official-directory sync runs (lib/api/school-sync.ts). */
   schoolSync: {
     all: ["school-sync"] as const,

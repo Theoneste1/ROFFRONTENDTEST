@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, KeyRound, MailPlus, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, CheckCircle2, KeyRound, MailPlus, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { useAdminUser, useUserAction, type UserAction } from "@/lib/queries/admin";
 import { isApiError } from "@/lib/api/errors";
@@ -17,6 +17,9 @@ import { AccountStatusBadge, UserForm } from "../components/userUi";
 import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
 import PermissionOverridesCard from "./PermissionOverridesCard";
+import { hasFeature } from "@/lib/api/capabilities";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { lifecycleActions, STATUS_REASON, stillBlockedText } from "@/lib/accounts/account-lifecycle";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -27,11 +30,15 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-type Confirm = { action: UserAction; title: string; body: ReactNode; label: string; tone?: "danger"; done: string };
+type Confirm = { action: UserAction; title: string; body: ReactNode; label: string; tone?: "danger"; done: string; reason?: boolean };
 
 export default function UserDetail({ userId }: { userId: string }) {
   const router = useRouter();
   const { user: me, can } = useSession();
+  // Account states (archive instead of delete): only on a backend that advertises them; null while not known yet
+  // (loading or UNKNOWN), when neither Delete nor Archive is offered.
+  const { detection } = useBackendCapabilities();
+  const accountStates = detection?.state === "NEW" || detection?.state === "LEGACY" ? hasFeature(detection, "accountStates") : null;
   const user = useAdminUser(userId);
   const act = useUserAction(userId);
   const [editing, setEditing] = useState(false);
@@ -56,6 +63,7 @@ export default function UserDetail({ userId }: { userId: string }) {
   const u = user.data;
   const isMe = me?.id === u.id;
   const name = `${u.firstName} ${u.lastName}`;
+  const actions = lifecycleActions(u, { accountStates, isMe, canArchive: can("users.archive") });
 
   const ask = (c: Confirm) => {
     setNotice(null);
@@ -153,27 +161,64 @@ export default function UserDetail({ userId }: { userId: string }) {
                 <KeyRound className="h-3.5 w-3.5" aria-hidden="true" /> Send password-reset link
               </button>
             )}
-            {!isMe &&
-              (u.isActive ? (
-                <button
-                  type="button"
-                  className={btnSecondary}
-                  onClick={() =>
-                    ask({ action: { type: "status", isActive: false }, title: "Suspend this account?", body: `${name} is signed out everywhere and cannot sign in until the account is reactivated. Their work and results are kept.`, label: "Suspend", tone: "danger", done: "Account suspended. All of the user's sessions were ended." })
-                  }
-                >
-                  <UserX className="h-3.5 w-3.5" aria-hidden="true" /> Suspend account
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={btnPrimary}
-                  onClick={() => ask({ action: { type: "status", isActive: true }, title: "Reactivate this account?", body: `${name} can sign in again.`, label: "Reactivate", done: "Account reactivated." })}
-                >
-                  <UserCheck className="h-3.5 w-3.5" aria-hidden="true" /> Reactivate account
-                </button>
-              ))}
-            {!isMe && (
+            {actions.includes("suspend") && (
+              <button
+                type="button"
+                className={btnSecondary}
+                onClick={() =>
+                  ask({ action: { type: "status", isActive: false }, title: "Suspend this account?", body: `${name} is signed out everywhere and cannot sign in until the account is reactivated. Their work and results are kept.`, label: "Suspend", tone: "danger", done: "Account suspended. All of the user's sessions were ended." })
+                }
+              >
+                <UserX className="h-3.5 w-3.5" aria-hidden="true" /> Suspend account
+              </button>
+            )}
+            {actions.includes("reactivate") && (
+              <button
+                type="button"
+                className={btnPrimary}
+                onClick={() => ask({ action: { type: "status", isActive: true }, title: "Reactivate this account?", body: `${name} can sign in again.`, label: "Reactivate", done: "Account reactivated." })}
+              >
+                <UserCheck className="h-3.5 w-3.5" aria-hidden="true" /> Reactivate account
+              </button>
+            )}
+            {actions.includes("restore") && (
+              <button
+                type="button"
+                className={btnPrimary}
+                onClick={() =>
+                  ask({
+                    action: { type: "restore", reason: "" },
+                    title: "Restore this archived account?",
+                    body: `${name} becomes active again and can sign in, unless something else still stops it (for example an activation that was never completed). Give the reason; it is recorded in the account's history.`,
+                    label: "Restore account",
+                    done: "Account restored.",
+                    reason: true,
+                  })
+                }
+              >
+                <ArchiveRestore className="h-3.5 w-3.5" aria-hidden="true" /> Restore account
+              </button>
+            )}
+            {actions.includes("archive") && (
+              <button
+                type="button"
+                className={btnDanger}
+                onClick={() =>
+                  ask({
+                    action: { type: "archive", reason: "" },
+                    title: "Archive this account?",
+                    body: `${name} is signed out everywhere and can no longer sign in. Nothing is deleted: their submissions, results, discussions and history are kept, and an administrator can restore the account later. Give the reason; it is recorded in the account's history.`,
+                    label: "Archive account",
+                    tone: "danger",
+                    done: "Account archived. All of the user's sessions were ended.",
+                    reason: true,
+                  })
+                }
+              >
+                <Archive className="h-3.5 w-3.5" aria-hidden="true" /> Archive account
+              </button>
+            )}
+            {actions.includes("delete") && (
               <button
                 type="button"
                 className={btnDanger}
@@ -191,7 +236,7 @@ export default function UserDetail({ userId }: { userId: string }) {
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Delete account
               </button>
             )}
-            {isMe && <p className="text-[11px] text-gray-400">This is your own account: it cannot be suspended or deleted here, and its role cannot be changed.</p>}
+            {isMe && <p className="text-[11px] text-gray-400">This is your own account: it cannot be suspended, archived or deleted here, and its role cannot be changed.</p>}
           </div>
         </Card>
 
@@ -225,11 +270,13 @@ export default function UserDetail({ userId }: { userId: string }) {
           body={confirm.body}
           confirmLabel={confirm.label}
           tone={confirm.tone}
+          note={confirm.reason ? { label: "Reason", min: STATUS_REASON.min, max: STATUS_REASON.max, required: true } : undefined}
           onClose={() => setConfirm(null)}
-          onConfirm={async () => {
-            await act.mutateAsync(confirm.action);
+          onConfirm={async (reason) => {
+            const action = confirm.action.type === "archive" || confirm.action.type === "restore" ? { ...confirm.action, reason } : confirm.action;
+            const result = (await act.mutateAsync(action)) as { stillBlockedBy?: string[] } | undefined;
             if (confirm.done === "deleted") router.replace("/admin/users");
-            else setNotice({ tone: "success", text: confirm.done });
+            else setNotice({ tone: "success", text: [confirm.done, action.type === "restore" ? stillBlockedText(result?.stillBlockedBy) : null].filter(Boolean).join(" ") });
           }}
         />
       )}

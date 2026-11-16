@@ -115,7 +115,10 @@ export type UserAction =
   | { type: "status"; isActive?: boolean; isApproved?: boolean }
   | { type: "resendInvitation" }
   | { type: "sendPasswordReset" }
-  | { type: "delete" };
+  | { type: "delete" }
+  /** Account states (capability accountStates): archive, or restore an archived account. Both need a reason. */
+  | { type: "archive"; reason: string }
+  | { type: "restore"; reason: string };
 
 /** Every change to one account; refreshes admin views (and the mentor/student caches it may affect). */
 export function useUserAction(id: string) {
@@ -133,6 +136,10 @@ export function useUserAction(id: string) {
           return usersApi.sendPasswordReset(id);
         case "delete":
           return usersApi.remove(id);
+        case "archive":
+          return usersApi.changeStatus(id, { toStatus: "ARCHIVED", reason: a.reason });
+        case "restore":
+          return usersApi.changeStatus(id, { toStatus: "ACTIVE", reason: a.reason, confirm: true });
       }
     },
     onSuccess: () => invalidate(queryKeys.leaderboard.all),

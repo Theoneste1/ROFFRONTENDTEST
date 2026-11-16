@@ -15,6 +15,11 @@
  * and validation depend on it). If detection fails the page says so, offers a
  * retry, and lets the student continue with the legacy fields. Once a form is
  * chosen it is kept, so a later re-check can't swap fields while someone types.
+ *
+ * Closed registration (capability formAvailability): the page shows the administrator's closed message, opening time,
+ * instructions and contact (GET /forms/STUDENT_REGISTRATION) instead of the form, and a refused submission shows the
+ * same texts from the 403 REGISTRATION_CLOSED body. The form is never shown before that lookup has answered, and a
+ * failed lookup offers a retry instead of assuming the form is open. Other backends keep the fixed closed text.
  */
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -26,6 +31,9 @@ import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import SchoolClaimFields, { emptyDraft } from "@/app/components/account/SchoolClaimFields";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { usePublicForm } from "@/lib/queries/forms";
+import { formGate, noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
+import ClosedFormNotice from "@/app/components/forms/ClosedFormNotice";
 import { registrationGate, type RegistrationSchoolMode } from "@/lib/accounts/registration-mode";
 import {
   SCHOOL_CLAIM_ERRORS,
@@ -62,6 +70,7 @@ export default function RegisterForm() {
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
   const caps = useBackendCapabilities();
   const gate = registrationGate(caps.detection, caps.fetching, caps.waking);
+  const studentForm = usePublicForm("STUDENT_REGISTRATION");
   const [schoolMode, setSchoolMode] = useState<RegistrationSchoolMode | null>(null);
   // Adopt the first definite answer and keep it (state adjusted during render, not in an effect).
   if (schoolMode === null && gate.state === "ready") setSchoolMode(gate.mode);
@@ -189,20 +198,59 @@ export default function RegisterForm() {
     );
   }
 
+  // formAvailability: never show the form before GET /forms/STUDENT_REGISTRATION has answered, and never assume
+  // it is open when the lookup fails (a retryable message instead). Older backends: not applicable, as before.
+  const studentGate = formGate(studentForm.enabled, studentForm);
+  if (studentGate === "loading" || studentGate === "failed") {
+    return (
+      <div className="space-y-5" data-testid="register-form-check">
+        <RegisterHeading />
+        {studentGate === "failed" ? (
+          <div className="space-y-4" data-testid="register-form-check-failed">
+            <Alert tone="error">We couldn&apos;t check whether student registration is open.</Alert>
+            <p className="text-sm text-slate-600">Check your connection and try again. The server can take up to a minute to wake up.</p>
+            <Button type="button" className="w-full" onClick={() => void studentForm.refetch()} disabled={studentForm.isFetching} data-testid="register-form-retry">
+              {studentForm.isFetching ? "Trying again…" : "Try again"}
+            </Button>
+          </div>
+        ) : (
+          <div data-testid="register-form-loading">
+            <LoadingBlock label="Checking whether registration is open…" />
+          </div>
+        )}
+        <SignInLinks />
+      </div>
+    );
+  }
+
+  // Registration closed by the administrators (formAvailability): their message instead of the form.
+  const closedNow = noticeFromView(studentForm.data);
+  if (closedNow) {
+    return (
+      <div className="space-y-5" data-testid="register-closed">
+        <RegisterHeading />
+        <ClosedFormNotice notice={closedNow} />
+        <SignInLinks />
+      </div>
+    );
+  }
+
+  const closedRefusal = isApiError(error) ? noticeFromRefusal(error, studentForm.data) : null;
   const known = isApiError(error) && error.code ? REGISTER_ERRORS[error.code] : undefined;
   const fieldErr = Object.keys(fieldErrors(error, directory ? [...FIELDS, ...CLAIM_SERVER_FIELDS] : FIELDS)).length > 0;
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a student</h1>
-        <p className="mt-1 text-sm text-slate-500">Create your ROF LMS account to start learning Olympiad mathematics.</p>
-      </div>
+      <RegisterHeading />
 
-      {error != null && !fieldErr && (
+      {closedRefusal && <ClosedFormNotice notice={closedRefusal} />}
+      {error != null && !fieldErr && !closedRefusal && (
         <Alert tone="error">
           {known ?? errorMessage(error)}
         </Alert>
+      )}
+      {studentForm.data?.open && studentForm.data.instructions?.trim() && (
+        <p className="whitespace-pre-line text-sm text-slate-600" data-testid="form-instructions">{studentForm.data.instructions.trim()}</p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -277,5 +325,27 @@ export default function RegisterForm() {
         <Link href="/" className="font-medium text-[#2B2BB2] hover:underline">Home</Link>
       </p>
     </form>
+  );
+}
+
+/** The page heading (the same text as the form's). */
+function RegisterHeading() {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Join as a student</h1>
+      <p className="mt-1 text-sm text-slate-500">Create your ROF LMS account to start learning Olympiad mathematics.</p>
+    </div>
+  );
+}
+
+/** Sign in instead, or go home (as on the detection page). */
+function SignInLinks() {
+  return (
+    <p className="text-center text-sm text-slate-500">
+      Already have an account?{" "}
+      <Link href="/login" className="font-medium text-[#2B2BB2] hover:underline">Sign in</Link>
+      {" · "}
+      <Link href="/" className="font-medium text-[#2B2BB2] hover:underline">Home</Link>
+    </p>
   );
 }
