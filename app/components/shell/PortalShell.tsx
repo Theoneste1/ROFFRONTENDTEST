@@ -120,7 +120,7 @@ export default function PortalShell({
               aria-label="Main menu"
               inert={!drawerOpen}
               // Opening shows the drawer at once (so focus can move in); closing hides it after the slide.
-              className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto bg-[#001E4E] shadow-2xl duration-300 ease-in-out [&>aside]:h-full [&>aside]:min-h-[480px] [&>aside]:w-full ${
+              className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto bg-[#001E4E] shadow-2xl duration-300 ease-in-out [&>aside]:h-auto [&>aside]:min-h-full [&>aside]:w-full ${
                 drawerOpen ? "translate-x-0 visible transition-transform" : "-translate-x-full invisible transition-[transform,visibility]"
               }`}
             >

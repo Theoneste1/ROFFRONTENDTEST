@@ -46,12 +46,17 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
   const [moreOpen, setMoreOpen] = useState(false);
   const panelId = useId();
   const drawer = useSidebarPlacement() === "drawer";
+  // While "More" is open inline in the drawer the list is taller than its share: do not re-measure then (it would
+  // move items back and forth).
+  const frozen = useRef(false);
+  frozen.current = drawer && moreOpen;
 
   // Measure the available height (and one item's real height) whenever the sidebar or the window changes size.
   useIsoLayoutEffect(() => {
     const el = listRef.current;
     if (!el) return;
     const measure = () => {
+      if (frozen.current) return;
       const first = el.querySelector<HTMLElement>("[data-nav-item]");
       const h = first ? first.getBoundingClientRect().height + 12 : DEFAULT_ITEM_PX;
       setSlots(slotsFor(el.clientHeight, h));
@@ -90,7 +95,7 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
   const activeExtra = extra.find(itemActive);
 
   return (
-    <nav aria-label={label} ref={listRef} className="flex-1 min-h-0 flex flex-col gap-3" data-testid="sidebar-nav">
+    <nav aria-label={label} ref={listRef} className={`flex-1 flex flex-col gap-3 ${drawer && moreOpen ? "" : "min-h-0"}`} data-testid="sidebar-nav">
       {shown.map((item) => (
         <NavEntry key={item.href} item={item} isOpen={isOpen} />
       ))}
