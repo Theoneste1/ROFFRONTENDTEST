@@ -93,7 +93,8 @@ test("no redirect loop: every role is sent to its own portal home (admitted ther
 
 test("administrative roles and notification-type settings follow the backend", () => {
   assert.deepEqual(ROLES.filter(isAdministrative), ["ADMIN", "SUPER_ADMIN"]);
-  assert.deepEqual(ROLES.filter(hasNotificationTypeSettings), ["MENTOR", "ADMIN", "SUPER_ADMIN"]);
+  // Head Coaches receive the coaches' notifications for assigned course work (backend fix/role-notification-settings); Teachers have none.
+  assert.deepEqual(ROLES.filter(hasNotificationTypeSettings), ["MENTOR", "HEAD_COACH", "ADMIN", "SUPER_ADMIN"]);
   for (const r of UNKNOWN) {
     assert.equal(isAdministrative(r), false);
     assert.equal(hasNotificationTypeSettings(r), false);

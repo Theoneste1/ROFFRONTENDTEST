@@ -196,6 +196,8 @@ export const queryKeys = {
     usersAll: ["admin", "users"] as const,
     users: (filters: UserFilters = {}) => [...queryKeys.admin.usersAll, "list", filters] as const,
     user: (id: string) => [...queryKeys.admin.usersAll, "detail", id] as const,
+    /** GET /admin/users/:id/status-history (lib/accounts/status-history.ts). */
+    userStatusHistory: (id: string, page: number) => [...queryKeys.admin.usersAll, "status-history", id, page] as const,
     divisions: () => [...queryKeys.admin.all, "divisions"] as const,
     schools: (params: { search?: string; page?: number; limit?: number } = {}) => [...queryKeys.admin.all, "schools", "list", params] as const,
     school: (id: string, page = 1) => [...queryKeys.admin.all, "schools", "detail", id, page] as const,
