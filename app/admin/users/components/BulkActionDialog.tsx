@@ -8,7 +8,9 @@
  */
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usersApi } from "@/lib/api/admin";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { bulkUsersApi, type BulkAction, type BulkPreview, type BulkSelection } from "@/lib/api/bulk-users";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import type { Permission } from "@/lib/api/types";
@@ -19,6 +21,9 @@ import {
   EMPTY_PARAMS,
   REASON_MAX,
   allowedActions,
+  teacherStudentBulkSupported,
+  TEACHER_STUDENT_ACTIONS,
+  TEACHER_DELEGATION_OPTIONS,
   bulkErrorMessage,
   buildParams,
   confirmProblems,
@@ -52,7 +57,9 @@ export default function BulkActionDialog({
   onStarted: (operationId: string, total: number) => void;
 }) {
   const qc = useQueryClient();
-  const actions = useMemo(() => allowedActions(can), [can]);
+  const { detection } = useBackendCapabilities();
+  const teacherActions = teacherStudentBulkSupported(detection);
+  const actions = useMemo(() => allowedActions(can, teacherActions), [can, teacherActions]);
   const [action, setAction] = useState<BulkAction | "">(actions[0] ?? "");
   const [params, setParams] = useState<ParamsDraft>(EMPTY_PARAMS);
   const [preview, setPreview] = useState<BulkPreview | null>(null);
@@ -176,6 +183,9 @@ export default function BulkActionDialog({
               </select>
             </div>
           )}
+          {action !== "" && TEACHER_STUDENT_ACTIONS.includes(action) && (
+            <TeacherParams params={params} setParams={setParams} withPermission={action === "grantDelegation" || action === "revokeDelegation"} />
+          )}
           {action === "message" && (
             <>
               <div>
@@ -295,5 +305,53 @@ export default function BulkActionDialog({
         </form>
       )}
     </Modal>
+  );
+}
+
+
+/** The teacher (search by name or username) and, for permissions, which permission. */
+function TeacherParams({ params, setParams, withPermission }: {
+  params: ParamsDraft;
+  setParams: (fn: (p: ParamsDraft) => ParamsDraft) => void;
+  withPermission: boolean;
+}) {
+  const [search, setSearch] = useState("");
+  const teachers = useQuery({
+    queryKey: ["bulk-teacher-search", search],
+    queryFn: () => usersApi.list({ role: "TEACHER", search: search.trim() || undefined, limit: 20 }),
+  });
+  return (
+    <>
+      <div>
+        <label htmlFor="bulk-teacher-search" className={labelCls}>
+          Teacher
+        </label>
+        <input id="bulk-teacher-search" className={inputCls} placeholder="Search by name or username…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select aria-label="Teacher" className={`${inputCls} mt-2`} value={params.teacherId} onChange={(e) => setParams((p) => ({ ...p, teacherId: e.target.value }))}>
+          <option value="">Choose…</option>
+          {(teachers.data?.data ?? []).map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.firstName} {t.lastName} (@{t.username})
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-slate-400">Only students in the selection are affected; other accounts are skipped.</p>
+      </div>
+      {withPermission && (
+        <div>
+          <label htmlFor="bulk-permission" className={labelCls}>
+            Permission
+          </label>
+          <select id="bulk-permission" className={inputCls} value={params.permission} onChange={(e) => setParams((p) => ({ ...p, permission: e.target.value }))}>
+            <option value="">Choose…</option>
+            {TEACHER_DELEGATION_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+    </>
   );
 }

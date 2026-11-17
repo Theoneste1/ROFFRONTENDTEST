@@ -45,9 +45,24 @@ export const BULK_ACTIONS: Readonly<Record<BulkAction, ActionMeta>> = {
   assignRole: { label: "Change role", permissions: [], danger: true },
   changeClassification: { label: "Change grade", permissions: [], danger: false },
   message: { label: "Send an e-mail", permissions: ["email.bulkSend"], danger: false },
+  assignTeacher: { label: "Assign to a teacher", permissions: ["users.manageTeachers"], danger: false },
+  unassignTeacher: { label: "Remove from a teacher", permissions: ["users.manageTeachers"], danger: false },
+  grantDelegation: { label: "Give a teacher a permission for these students", permissions: ["users.manageTeachers"], danger: false },
+  revokeDelegation: { label: "Take a teacher's permission back for these students", permissions: ["users.manageTeachers"], danger: false },
 };
 
-export const BULK_ACTION_ORDER: readonly BulkAction[] = ["message", "changeClassification", "assignRole", "activate", "deactivate", "suspend", "archive", "restore"];
+/** Actions on teacher–student links: only on backends with teacherStudentAccess. */
+export const TEACHER_STUDENT_ACTIONS: readonly BulkAction[] = ["assignTeacher", "unassignTeacher", "grantDelegation", "revokeDelegation"];
+export const TEACHER_DELEGATION_OPTIONS = [
+  { value: "students.viewProfile", label: "View student profiles" },
+  { value: "students.viewProgress", label: "View student progress and submissions" },
+  { value: "submissions.submitOnBehalf", label: "Submit work on a student's behalf" },
+] as const;
+
+export const BULK_ACTION_ORDER: readonly BulkAction[] = [
+  "message", "changeClassification", "assignRole", "activate", "deactivate", "suspend", "archive", "restore",
+  "assignTeacher", "unassignTeacher", "grantDelegation", "revokeDelegation",
+];
 
 /** Bulk actions are offered only with the backend feature and the known users.bulkManage. */
 export function bulkAvailable(detection: BackendDetection | null | undefined, can: (p: Permission) => boolean): boolean {
@@ -58,9 +73,17 @@ export function exportAvailable(detection: BackendDetection | null | undefined, 
   return hasFeature(detection, "bulkUserOperations") && can(EXPORT_PERMISSION);
 }
 
-/** The actions this administrator may start (every permission the action needs is held). */
-export function allowedActions(can: (p: Permission) => boolean): BulkAction[] {
-  return BULK_ACTION_ORDER.filter((a) => BULK_ACTIONS[a].permissions.every((p) => can(p)));
+/**
+ * The actions this administrator may start (every permission the action needs is held). The teacher–student actions
+ * also need the backend to offer teacherStudentAccess (`teacherStudentAccess`; false for older backends).
+ */
+export function allowedActions(can: (p: Permission) => boolean, teacherStudentAccess = false): BulkAction[] {
+  return BULK_ACTION_ORDER.filter((a) => (teacherStudentAccess || !TEACHER_STUDENT_ACTIONS.includes(a)) && BULK_ACTIONS[a].permissions.every((p) => can(p)));
+}
+
+/** The backend advertises teacherStudentAccess (string check: the feature may be unknown to this build's list). */
+export function teacherStudentBulkSupported(detection: BackendDetection | null | undefined): boolean {
+  return !!detection && detection.state === "NEW" && (detection.features as readonly string[]).includes("teacherStudentAccess");
 }
 
 /** Roles a bulk role change may give: the ones the single-user form offers, never Super Administrator. */
@@ -127,9 +150,11 @@ export interface ParamsDraft {
   gradeLevel: string;
   subject: string;
   body: string;
+  teacherId: string;
+  permission: string;
 }
 
-export const EMPTY_PARAMS: ParamsDraft = { role: "", gradeLevel: "", subject: "", body: "" };
+export const EMPTY_PARAMS: ParamsDraft = { role: "", gradeLevel: "", subject: "", body: "", teacherId: "", permission: "" };
 
 /** The parameters the action uses, or the problem with them (the backend's limits). */
 export function buildParams(action: BulkAction, d: ParamsDraft): { params?: BulkParams; problem?: string } {
@@ -146,6 +171,13 @@ export function buildParams(action: BulkAction, d: ParamsDraft): { params?: Bulk
       if (d.body.trim().length < 5 || d.body.length > 10_000) return { problem: "The message needs 5–10 000 characters." };
       return { params: { subject, body: d.body } };
     }
+    case "assignTeacher":
+    case "unassignTeacher":
+      return d.teacherId ? { params: { teacherId: d.teacherId } } : { problem: "Choose the teacher." };
+    case "grantDelegation":
+    case "revokeDelegation":
+      if (!d.teacherId) return { problem: "Choose the teacher." };
+      return d.permission ? { params: { teacherId: d.teacherId, permission: d.permission } } : { problem: "Choose the permission." };
     default:
       return {};
   }

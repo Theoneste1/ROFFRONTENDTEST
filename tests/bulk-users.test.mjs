@@ -153,3 +153,24 @@ test("progress helpers", () => {
   assert.equal(itemCodeLabel("SOMETHING"), "SOMETHING");
   assert.equal(itemCodeLabel(null), "");
 });
+
+// Teacher–student actions (backends with teacherStudentAccess).
+import { teacherStudentBulkSupported, EMPTY_PARAMS as EMPTY } from "../lib/admin/bulk-users.ts";
+
+test("teacher–student actions: only with the backend feature and users.manageTeachers", () => {
+  assert.deepEqual(allowedActions(can("users.manageTeachers")), ["changeClassification", "assignRole"]);
+  assert.deepEqual(allowedActions(can("users.manageTeachers"), true),
+    ["changeClassification", "assignRole", "assignTeacher", "unassignTeacher", "grantDelegation", "revokeDelegation"]);
+  assert.deepEqual(allowedActions(can(), true), ["changeClassification", "assignRole"]);
+  assert.equal(teacherStudentBulkSupported({ state: "NEW", schemaVersion: 1, roles: [], features: ["teacherStudentAccess"] }), true);
+  assert.equal(teacherStudentBulkSupported({ state: "NEW", schemaVersion: 1, roles: [], features: [] }), false);
+  assert.equal(teacherStudentBulkSupported({ state: "LEGACY" }), false);
+});
+
+test("teacher–student parameters: the teacher, and the permission for delegations", () => {
+  assert.deepEqual(buildParams("assignTeacher", EMPTY), { problem: "Choose the teacher." });
+  assert.deepEqual(buildParams("unassignTeacher", { ...EMPTY, teacherId: "t1" }), { params: { teacherId: "t1" } });
+  assert.deepEqual(buildParams("grantDelegation", { ...EMPTY, teacherId: "t1" }), { problem: "Choose the permission." });
+  assert.deepEqual(buildParams("revokeDelegation", { ...EMPTY, teacherId: "t1", permission: "students.viewProfile" }),
+    { params: { teacherId: "t1", permission: "students.viewProfile" } });
+});

@@ -15,7 +15,10 @@
 import { api, apiBlob, type DownloadedFile } from "./client";
 import type { GradeLevel, Page, Role } from "./types";
 
-export type BulkAction = "activate" | "deactivate" | "suspend" | "archive" | "restore" | "assignRole" | "changeClassification" | "message";
+export type BulkAction =
+  | "activate" | "deactivate" | "suspend" | "archive" | "restore" | "assignRole" | "changeClassification" | "message"
+  // Teacher–student access (backends with teacherStudentAccess): the selected students and one teacher.
+  | "assignTeacher" | "unassignTeacher" | "grantDelegation" | "revokeDelegation";
 
 /** The filters of GET /admin/users (JSON booleans). */
 export interface BulkFilter {
@@ -38,6 +41,10 @@ export interface BulkParams {
   gradeLevel?: GradeLevel;
   subject?: string;
   body?: string;
+  /** Teacher–student actions: the Teacher. */
+  teacherId?: string;
+  /** grantDelegation / revokeDelegation: students.viewProfile, students.viewProgress or submissions.submitOnBehalf. */
+  permission?: string;
 }
 
 export interface BulkAccount {
