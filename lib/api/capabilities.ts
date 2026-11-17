@@ -111,6 +111,12 @@ export const KNOWN_FEATURES = [
    * Without it: the fixed closed texts.
    */
   "formAvailability",
+  /**
+   * Bulk user operations: `/admin/users/bulk` — preview an action on chosen accounts or on every account matching the
+   * list filters, confirm it (bound to exactly the previewed accounts), follow its progress and per-account results,
+   * cancel it; `POST /admin/users/bulk/export` (users.export) downloads the selection as CSV. Without it: none of this.
+   */
+  "bulkUserOperations",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

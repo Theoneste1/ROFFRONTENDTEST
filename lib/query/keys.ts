@@ -63,6 +63,13 @@ export const queryKeys = {
     all: ["notification-deliveries"] as const,
     list: (filters: object) => [...queryKeys.notificationDeliveries.all, "list", filters] as const,
   },
+  /** Bulk user operations (lib/api/bulk-users.ts). */
+  bulkUsers: {
+    all: ["bulk-users"] as const,
+    list: (filters: object) => [...queryKeys.bulkUsers.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.bulkUsers.all, "detail", id] as const,
+    items: (id: string, filters: object) => [...queryKeys.bulkUsers.all, "items", id, filters] as const,
+  },
   /** Official-directory sync runs (lib/api/school-sync.ts). */
   schoolSync: {
     all: ["school-sync"] as const,
