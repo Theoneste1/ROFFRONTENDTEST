@@ -5,6 +5,11 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { teacherApi, type TeacherStudentFilters } from "@/lib/api/teacher";
 import { queryKeys } from "@/lib/query/keys";
 
+/** GET /teacher/students/summary — only on backends with teacherStudentAccess. */
+export function useTeacherStudentsSummary(enabled: boolean) {
+  return useQuery({ queryKey: queryKeys.teacher.summary(), queryFn: () => teacherApi.summary(), enabled });
+}
+
 export function useTeacherStudents(filters: TeacherStudentFilters) {
   return useQuery({
     queryKey: queryKeys.teacher.students(filters),

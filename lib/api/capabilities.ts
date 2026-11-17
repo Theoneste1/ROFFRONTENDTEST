@@ -23,6 +23,11 @@
 
 /** The `features` this frontend knows (schemaVersion 1). Unknown names in a response are ignored. */
 export const KNOWN_FEATURES = [
+  /**
+   * Teacher–student access (TS-1…TS-6): explicit teacher–student assignments, the School Access page, delegations
+   * limited to assigned or selected students, and on My Students how each student is seen and what you may do.
+   */
+  "teacherStudentAccess",
   "permissionScopes",
   "schoolReferenceRequired",
   "schoolAdministration",

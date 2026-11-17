@@ -80,6 +80,9 @@ export const queryKeys = {
     candidates: (id: string) => [...queryKeys.accounts.all, "candidates", id] as const,
     teacherSchools: (teacherId: string) => [...queryKeys.accounts.all, "teacher-schools", teacherId] as const,
     delegations: (teacherId: string) => [...queryKeys.accounts.all, "delegations", teacherId] as const,
+    teacherStudents: (filters: object) => [...queryKeys.accounts.all, "teacher-students", filters] as const,
+    schoolAccess: (schoolId: string) => [...queryKeys.accounts.all, "school-access", schoolId] as const,
+    schoolAccessStudents: (schoolId: string, filters: object) => [...queryKeys.accounts.all, "school-access", schoolId, "students", filters] as const,
     programmeHeads: (programmeId: string) => [...queryKeys.accounts.all, "programme-heads", programmeId] as const,
   },
   support: ["support"] as const,
@@ -87,6 +90,7 @@ export const queryKeys = {
   teacher: {
     all: ["teacher"] as const,
     students: (filters: Record<string, unknown> = {}) => [...queryKeys.teacher.all, "students", filters] as const,
+    summary: () => [...queryKeys.teacher.all, "summary"] as const,
     profile: (studentId: string) => [...queryKeys.teacher.all, "profile", studentId] as const,
     progress: (studentId: string) => [...queryKeys.teacher.all, "progress", studentId] as const,
   },
