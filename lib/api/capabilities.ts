@@ -111,6 +111,12 @@ export const KNOWN_FEATURES = [
    * Without it: the fixed closed texts.
    */
   "formAvailability",
+  /**
+   * Application details and requests for more information (backend ADR-009): Teacher position and years of
+   * experience; Coach phone, affiliation, expertise, experience; a Coach rejection reason; administrators ask the
+   * applicant a question, answered through a one-time link. Without it: none of this is shown or sent.
+   */
+  "applicationDetails",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

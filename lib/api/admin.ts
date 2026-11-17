@@ -233,7 +233,9 @@ export const mentorRequestsApi = {
     api<Page<MentorRequest>>("/mentor-requests", { query: params }),
   /** Creates the mentor account (activation e-mail when verification is on). */
   approve: (id: string) => api<MentorRequestApproval>(`/mentor-requests/${id}/approve`, { method: "PATCH" }),
-  reject: (id: string) => api<{ id: string; status: MentorRequestStatus }>(`/mentor-requests/${id}/reject`, { method: "PATCH" }),
+  /** `reason` (backends with applicationDetails) is e-mailed to the applicant; older backends take no body. */
+  reject: (id: string, reason?: string) =>
+    api<{ id: string; status: MentorRequestStatus }>(`/mentor-requests/${id}/reject`, { method: "PATCH", ...(reason && { body: { reason } }) }),
 };
 
 // ─── Students ───────────────────────────────────────────────────────────────

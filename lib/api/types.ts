@@ -926,6 +926,14 @@ export interface MentorRequest {
   occupation?: string | null;
   educationLevel?: string | null;
   olympiadInterests?: string[] | null;
+  /** Backends with `applicationDetails`. */
+  phone?: string | null;
+  affiliation?: string | null;
+  expertise?: string | null;
+  relevantExperience?: string | null;
+  yearsOfExperience?: number | null;
+  rejectionReason?: string | null;
+  infoRequests?: import("../accounts/application-details").InfoRequest[];
 }
 
 export interface MentorRequestApproval {

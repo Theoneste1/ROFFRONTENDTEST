@@ -47,6 +47,7 @@ import Pagination from "@/app/components/ui/Pagination";
 import { PlaceSelects, SectorSchoolSelect } from "@/app/components/schools/SchoolCascade";
 import type { Place } from "@/lib/schools/school-cascade";
 import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../components/adminUi";
+import { AskForInformation, InfoRequestHistory } from "@/app/components/applications/InfoRequests";
 import { SchoolPicker } from "../users/components/userUi";
 import type { SchoolRef } from "@/lib/api/types";
 
@@ -347,6 +348,8 @@ function DetailDialog({
           <Row label="Phone">{a.phone}</Row>
           <Row label="Country">{countryLabel(a.country)}</Row>
           <Row label="Olympiad interests">{a.olympiadInterests.map(subjectLabel).join(", ") || "—"}</Row>
+          {a.position !== undefined && <Row label="Position">{a.position || "—"}</Row>}
+          {a.yearsOfExperience !== undefined && <Row label="Years of experience">{a.yearsOfExperience ?? "—"}</Row>}
           {missing && (
             <Row label="School requested (not listed)">
               {a.proposedSchoolName ?? "—"}
@@ -392,6 +395,12 @@ function DetailDialog({
             </>
           )}
         </dl>
+        <InfoRequestHistory requests={a.infoRequests} />
+        {a.status === "PENDING" && a.infoRequests !== undefined && (
+          <div className="pt-3 text-right">
+            <AskForInformation kind="TEACHER" applicationId={a.id} applicantName={fullName(a)} requests={a.infoRequests} onAsked={() => void detail.refetch()} />
+          </div>
+        )}
         {a.status === "PENDING" && (
           <div className="pt-4 space-y-3">
             {actions.approve.shown && !actions.approve.enabled && <p className="text-xs text-amber-700 text-right">{actions.approve.reason}</p>}

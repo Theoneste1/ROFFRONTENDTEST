@@ -22,6 +22,8 @@ import { teacherRegistrationApi, type TeacherRegistrationResult } from "@/lib/ap
 import { hasFeature } from "@/lib/api/capabilities";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { applicationDetailsSupported, emptyTeacherExtra, teacherExtraPayload, validateTeacherExtra, type TeacherExtraDraft } from "@/lib/accounts/application-details";
+import { TeacherExtraFields } from "@/app/components/applications/ExtraFields";
 import { useSchoolLocations } from "@/lib/queries/school-directory";
 import { queryKeys } from "@/lib/query/keys";
 import {
@@ -167,6 +169,10 @@ function schoolPlaceChanged(d: TeacherDraft, p: Place): TeacherDraft {
 function OpenForm() {
   const teacherForm = usePublicForm("TEACHER_REGISTRATION");
   const [d, setD] = useState<TeacherDraft>(emptyTeacherDraft);
+  // Position and years of experience (applicationDetails).
+  const extraOn = applicationDetailsSupported(useBackendCapabilities().detection);
+  const [extra, setExtra] = useState<TeacherExtraDraft>(emptyTeacherExtra);
+  const [extraErrors, setExtraErrors] = useState<Partial<Record<keyof TeacherExtraDraft, string>>>({});
   const [errors, setErrors] = useState<Partial<Record<TeacherField, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -180,12 +186,14 @@ function OpenForm() {
     ev.preventDefault();
     if (submitting) return;
     const e = validateTeacherRegistration(d);
+    const xe = extraOn ? validateTeacherExtra(extra) : {};
     setErrors(e);
+    setExtraErrors(xe);
     setError(null);
-    if (Object.keys(e).length) return;
+    if (Object.keys(e).length || Object.keys(xe).length) return;
     setSubmitting(true);
     try {
-      setDone(await teacherRegistrationApi.register(buildTeacherPayload(d)));
+      setDone(await teacherRegistrationApi.register({ ...buildTeacherPayload(d), ...(extraOn && teacherExtraPayload(extra)) }));
     } catch (err) {
       setError(err);
       const server = isApiError(err) ? mapServerFieldErrors(err.validationMessages) : {};
@@ -246,6 +254,16 @@ function OpenForm() {
           <PlaceSelect label="Country" value={d.country} onChange={(v) => set("country", v)} options={countries} placeholder="Choose your country" error={errors.country} />
           <TextField label="Phone" name="phone" type="tel" autoComplete="tel" required maxLength={30} value={d.phone} onChange={(e) => set("phone", e.target.value)} error={errors.phone} hint={PHONE_HINT} />
         </div>
+        {extraOn && (
+          <TeacherExtraFields
+            value={extra}
+            onChange={(k, val) => {
+              setExtra((s) => ({ ...s, [k]: val }));
+              setExtraErrors((s) => ({ ...s, [k]: undefined }));
+            }}
+            errors={extraErrors}
+          />
+        )}
       </Section>
 
       <Section step={2} title="Olympiad interests" description="The Olympiad subjects you would like to support. Choose at least one.">

@@ -13,6 +13,7 @@
  * Only on a backend advertising `teacherSelfRegistration` (GET /api/v1). Whether registration
  * is currently open comes from the availability endpoint.
  */
+import type { InfoRequest } from "../accounts/application-details";
 import { api } from "./client";
 import type { Page } from "./types";
 
@@ -43,6 +44,9 @@ export interface TeacherRegistrationBase {
   schoolDistrict: string;
   homeDistrict: string;
   homeSector: string;
+  /** Backends with applicationDetails. */
+  position?: string;
+  yearsOfExperience?: number;
 }
 export type TeacherRegistrationInput =
   | (TeacherRegistrationBase & { schoolId: string })
@@ -88,6 +92,10 @@ export interface TeacherApplication {
   decidedAt: string | null;
   decidedBy: { id: string; firstName: string; lastName: string } | null;
   rejectionReason: string | null;
+  /** Backends with applicationDetails. */
+  position?: string | null;
+  yearsOfExperience?: number | null;
+  infoRequests?: InfoRequest[];
   decisionNote: string | null;
   userId: string | null;
   assignedSchool: { id: string; name: string; code: string | null } | null;

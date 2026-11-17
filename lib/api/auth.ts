@@ -168,6 +168,12 @@ export interface MentorApplicationInput {
   occupation?: string;
   educationLevel?: string;
   olympiadInterests?: OlympiadSubject[];
+  // Only on a backend with `applicationDetails` (lib/accounts/application-details.ts):
+  phone?: string;
+  affiliation?: string;
+  expertise?: string;
+  relevantExperience?: string;
+  yearsOfExperience?: number;
 }
 
 /** `GET /public/statistics`: aggregate counts of active members (teachers: null — not on the platform yet). */

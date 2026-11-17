@@ -232,9 +232,9 @@ export function useMentorRequests(params: { status?: MentorRequestStatus; page?:
 export function useDecideMentorRequest() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
-    mutationFn: async ({ id, decision }: { id: string; decision: "approve" | "reject" }): Promise<MentorRequestApproval | null> => {
+    mutationFn: async ({ id, decision, reason }: { id: string; decision: "approve" | "reject"; reason?: string }): Promise<MentorRequestApproval | null> => {
       if (decision === "approve") return mentorRequestsApi.approve(id);
-      await mentorRequestsApi.reject(id);
+      await mentorRequestsApi.reject(id, reason);
       return null;
     },
     onSettled: () => invalidate(),
