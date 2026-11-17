@@ -19,6 +19,7 @@ import TeacherAccessCard from "./TeacherAccessCard";
 import { interestsText } from "@/lib/accounts/olympiad-interests";
 import { personalDetailRows } from "@/lib/accounts/admin-user-details";
 import PermissionOverridesCard from "./PermissionOverridesCard";
+import RegistrationHistoryCard from "./RegistrationHistoryCard";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { lifecycleActions, STATUS_REASON, stillBlockedText } from "@/lib/accounts/account-lifecycle";
@@ -249,6 +250,7 @@ export default function UserDetail({ userId }: { userId: string }) {
           </div>
         </Card>
 
+        {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
         {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}
