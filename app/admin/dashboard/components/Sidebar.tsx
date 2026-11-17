@@ -20,13 +20,15 @@ import {
   Inbox,
   School,
   UserPlus,
-  MailCheck
+  MailCheck,
+  ClipboardList
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import { useSession } from "@/lib/auth/session";
-import { ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { ADMIN_FORMS, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
 import { teacherApplicationsNavVisible } from "@/lib/admin/teacher-applications";
 import { notificationDeliveriesNavVisible } from "@/lib/admin/notification-deliveries";
+import { formsNavVisible } from "@/lib/admin/form-availability";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 interface SidebarProps {
@@ -50,6 +52,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/messages": Inbox,
   "/admin/teacher-applications": UserPlus,
   "/admin/notification-deliveries": MailCheck,
+  "/admin/forms": ClipboardList,
 };
 
 /**
@@ -68,6 +71,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     ...(teacherApplicationsNavVisible(detection, knownPermissions) ? [ADMIN_TEACHER_APPLICATIONS] : []),
     // Notification deliveries: the backend feature AND the known email.bulkSend (lib/admin/notification-deliveries.ts).
     ...(notificationDeliveriesNavVisible(detection, knownPermissions) ? [ADMIN_NOTIFICATION_DELIVERIES] : []),
+    // Forms: the backend feature AND the known forms.view (lib/admin/form-availability.ts).
+    ...(formsNavVisible(detection, knownPermissions) ? [ADMIN_FORMS] : []),
   ];
 
   // Function to check if link is active

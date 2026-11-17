@@ -13,6 +13,7 @@
  */
 import type { Permission } from "../api/types";
 import { NOTIFICATION_DELIVERIES_PERMISSION } from "../admin/notification-deliveries";
+import { FORMS_VIEW_PERMISSION } from "../admin/form-availability";
 
 export interface NavItem {
   href: string;
@@ -57,6 +58,13 @@ export const ADMIN_TEACHER_APPLICATIONS: NavItem = { href: "/admin/teacher-appli
  * (email.bulkSend, held by ADMIN and SUPER_ADMIN).
  */
 export const ADMIN_NOTIFICATION_DELIVERIES: NavItem = { href: "/admin/notification-deliveries", label: "Notification Deliveries", permission: NOTIFICATION_DELIVERIES_PERMISSION };
+
+/**
+ * Forms (open, close, schedule and the closed messages of the registration and website forms). Separately
+ * gated like the items above: a backend advertising `formAvailability` and the known forms.view
+ * (lib/admin/form-availability.ts → formsNavVisible).
+ */
+export const ADMIN_FORMS: NavItem = { href: "/admin/forms", label: "Forms", permission: FORMS_VIEW_PERMISSION };
 
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
