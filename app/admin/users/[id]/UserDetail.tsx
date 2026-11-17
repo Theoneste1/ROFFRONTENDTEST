@@ -17,6 +17,7 @@ import { AccountStatusBadge, UserForm } from "../components/userUi";
 import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
 import { interestsText } from "@/lib/accounts/olympiad-interests";
+import { personalDetailRows } from "@/lib/accounts/admin-user-details";
 import PermissionOverridesCard from "./PermissionOverridesCard";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -107,6 +108,12 @@ export default function UserDetail({ userId }: { userId: string }) {
             )}
             <Row label="School">{u.school ? `${u.school.name} · ${u.school.location}` : "—"}</Row>
             <Row label="Home location">{u.homeLocation || "—"}</Row>
+            {/* ACC-02: the account's personal details (sent to administrators for one account only). */}
+            {personalDetailRows(u).map((r) => (
+              <Row key={r.label} label={r.label}>
+                {r.value}
+              </Row>
+            ))}
             <Row label="Activated">{u.activatedAt ? formatDateTime(u.activatedAt) : "Not yet — waiting for the user to set a password"}</Row>
             <Row label="Last sign-in">{u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "Never"}</Row>
             <Row label="Created">{formatDateTime(u.createdAt)}</Row>
