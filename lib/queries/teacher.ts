@@ -4,6 +4,15 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { teacherApi, type TeacherStudentFilters } from "@/lib/api/teacher";
 import { queryKeys } from "@/lib/query/keys";
+import { useSession } from "@/lib/auth/session";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { teacherStudentAccessSupported } from "@/lib/accounts/teacher-student-access";
+
+/** The School Access page is offered: the backend has teacherStudentAccess and the caller holds users.manageTeachers. */
+export function useSchoolAccessPageAvailable(): boolean {
+  const { can } = useSession();
+  return teacherStudentAccessSupported(useBackendCapabilities().detection) && can("users.manageTeachers");
+}
 
 /** GET /teacher/students/summary — only on backends with teacherStudentAccess. */
 export function useTeacherStudentsSummary(enabled: boolean) {

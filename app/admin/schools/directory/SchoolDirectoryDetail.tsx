@@ -23,9 +23,7 @@ import SchoolActiveDialog from "./SchoolActiveDialog";
 import SchoolContactsTab from "./SchoolContactsTab";
 import SchoolFormDialog from "./SchoolFormDialog";
 import SchoolOfferingsTab from "./SchoolOfferingsTab";
-import { useSession } from "@/lib/auth/session";
-import { useBackendCapabilities } from "@/lib/queries/capabilities";
-import { teacherStudentAccessSupported } from "@/lib/accounts/teacher-student-access";
+import { useSchoolAccessPageAvailable } from "@/lib/queries/teacher";
 
 type Tab = "students" | "contacts" | "offerings" | "history";
 const TAB_LABEL: Record<Tab, string> = { students: "Students", contacts: "Contacts", offerings: "Offerings", history: "History" };
@@ -45,9 +43,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
   const [verifying, setVerifying] = useState(false);
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null);
   const qc = useQueryClient();
-  // Teacher & student access (TS-1…TS-6): users.manageTeachers, on backends that offer it.
-  const { can } = useSession();
-  const accessPage = teacherStudentAccessSupported(useBackendCapabilities().detection) && can("users.manageTeachers");
+  const accessPage = useSchoolAccessPageAvailable();
   const back = (
     <Link href="/admin/schools" className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800 mb-4">
       <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> All schools
