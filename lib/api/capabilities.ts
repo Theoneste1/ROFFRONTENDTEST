@@ -99,6 +99,12 @@ export const KNOWN_FEATURES = [
    */
   "coachApplicationDetails",
   /**
+   * Application details and requests for more information (backend ADR-009): Teacher position and years of
+   * experience; Coach phone, affiliation, expertise, experience; a Coach rejection reason; administrators ask the
+   * applicant a question, answered through a one-time link. Without it: none of this is shown or sent.
+   */
+  "applicationDetails",
+  /**
    * Account states: ACTIVE, DEACTIVATED, SUSPENDED, ARCHIVED (`accountStatus` on users) and
    * `POST /admin/users/:id/status-changes` { toStatus, reason, confirm? }. Accounts are archived, never
    * deleted (`DELETE /admin/users/:id` is refused with 409 PERMANENT_DELETION_DISABLED). Without it: suspend,
@@ -111,12 +117,6 @@ export const KNOWN_FEATURES = [
    * Without it: the fixed closed texts.
    */
   "formAvailability",
-  /**
-   * Application details and requests for more information (backend ADR-009): Teacher position and years of
-   * experience; Coach phone, affiliation, expertise, experience; a Coach rejection reason; administrators ask the
-   * applicant a question, answered through a one-time link. Without it: none of this is shown or sent.
-   */
-  "applicationDetails",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 
