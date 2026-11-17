@@ -49,7 +49,10 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
   // While "More" is open inline in the drawer the list is taller than its share: do not re-measure then (it would
   // move items back and forth).
   const frozen = useRef(false);
-  frozen.current = drawer && moreOpen;
+
+  useIsoLayoutEffect(() => {
+    frozen.current = drawer && moreOpen;
+  }, [drawer, moreOpen]);
 
   // Measure the available height (and one item's real height) whenever the sidebar or the window changes size.
   useIsoLayoutEffect(() => {
