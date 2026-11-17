@@ -64,6 +64,8 @@ export interface TeacherApplicationSchool {
 /** 201 answer. */
 export interface TeacherRegistrationResult {
   id: string;
+  /** Backends with registrationAvatar: one-time token for the OPTIONAL picture (REG-02). */
+  avatarUploadToken?: string;
   status: "PENDING";
   requiresApproval: true;
   school: TeacherApplicationSchool | null;

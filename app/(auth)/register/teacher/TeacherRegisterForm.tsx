@@ -22,6 +22,8 @@ import { teacherRegistrationApi, type TeacherRegistrationResult } from "@/lib/ap
 import { hasFeature } from "@/lib/api/capabilities";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
+import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
 import { applicationDetailsSupported, emptyTeacherExtra, teacherExtraPayload, validateTeacherExtra, type TeacherExtraDraft } from "@/lib/accounts/application-details";
 import { TeacherExtraFields } from "@/app/components/applications/ExtraFields";
 import { useSchoolLocations } from "@/lib/queries/school-directory";
@@ -177,6 +179,11 @@ function OpenForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [done, setDone] = useState<TeacherRegistrationResult | null>(null);
+  // Optional profile picture (REG-02): never required; uploaded with the registration's one-time token.
+  const pictureOn = registrationAvatarSupported(useBackendCapabilities().detection);
+  const [picture, setPicture] = useState<File | null>(null);
+  const [pictureError, setPictureError] = useState<string | null>(null);
+  const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
   const locations = useSchoolLocations();
   const countries = useMemo(() => countryOptions(), []);
   const set = <K extends keyof TeacherDraft>(k: K, v: TeacherDraft[K]) => setD((s) => ({ ...s, [k]: v }));
@@ -190,10 +197,12 @@ function OpenForm() {
     setErrors(e);
     setExtraErrors(xe);
     setError(null);
-    if (Object.keys(e).length || Object.keys(xe).length) return;
+    if (Object.keys(e).length || Object.keys(xe).length || pictureError) return;
     setSubmitting(true);
     try {
-      setDone(await teacherRegistrationApi.register({ ...buildTeacherPayload(d), ...(extraOn && teacherExtraPayload(extra)) }));
+      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d), ...(extraOn && teacherExtraPayload(extra)) });
+      if (pictureOn) setPictureResult(await uploadRegistrationAvatar(result.avatarUploadToken, picture));
+      setDone(result);
     } catch (err) {
       setError(err);
       const server = isApiError(err) ? mapServerFieldErrors(err.validationMessages) : {};
@@ -218,6 +227,9 @@ function OpenForm() {
           )}
           <li>Once approved, sign in with the username and password you chose.</li>
         </ul>
+        {pictureOutcomeText(pictureResult) && (
+          <p className="text-sm text-slate-700" data-testid="picture-outcome">{pictureOutcomeText(pictureResult)}</p>
+        )}
         <Link href="/" className={primaryLink}>
           Back to the homepage
         </Link>
@@ -262,6 +274,16 @@ function OpenForm() {
               setExtraErrors((s) => ({ ...s, [k]: undefined }));
             }}
             errors={extraErrors}
+          />
+        )}
+        {pictureOn && (
+          <OptionalAvatarField
+            file={picture}
+            error={pictureError}
+            onChange={(f) => {
+              setPicture(f);
+              setPictureError(registrationAvatarProblem(f));
+            }}
           />
         )}
       </Section>

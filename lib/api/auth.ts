@@ -155,6 +155,8 @@ export interface RegisterStudentResult {
   requiresEmailVerification: boolean;
   /** New backend: "PENDING" while an administrator verifies the school (absent on older backends). */
   schoolVerification?: "PENDING" | null;
+  /** Backends with registrationAvatar: one-time token for the OPTIONAL picture (REG-02). */
+  avatarUploadToken?: string;
 }
 
 export interface MentorApplicationInput {
@@ -211,7 +213,7 @@ export const publicApi = {
   /** Student self-registration (may be closed by the administrators: 403 REGISTRATION_CLOSED). */
   registerStudent: (input: RegisterStudentInput) => api<RegisterStudentResult>("/auth/register/student", { method: "POST", body: input, auth: false }),
   /** Teacher / coach application: a mentor request that an administrator approves or rejects. */
-  applyAsMentor: (input: MentorApplicationInput) => api<{ id: string; status: string }>("/mentor-requests", { method: "POST", body: input, auth: false }),
+  applyAsMentor: (input: MentorApplicationInput) => api<{ id: string; status: string; avatarUploadToken?: string }>("/mentor-requests", { method: "POST", body: input, auth: false }),
 };
 
 /** Backend password policy (src/auth/dto/password.rules.ts). */

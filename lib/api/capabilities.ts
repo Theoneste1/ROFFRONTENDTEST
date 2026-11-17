@@ -105,6 +105,11 @@ export const KNOWN_FEATURES = [
    */
   "applicationDetails",
   /**
+   * Optional profile picture at registration (REG-02): registration answers carry a one-time avatarUploadToken for
+   * PUT /auth/register/avatar. Without it the registration forms do not offer a picture (My Profile does later).
+   */
+  "registrationAvatar",
+  /**
    * Account states: ACTIVE, DEACTIVATED, SUSPENDED, ARCHIVED (`accountStatus` on users) and
    * `POST /admin/users/:id/status-changes` { toStatus, reason, confirm? }. Accounts are archived, never
    * deleted (`DELETE /admin/users/:id` is refused with 409 PERMANENT_DELETION_DISABLED). Without it: suspend,
