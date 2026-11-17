@@ -21,11 +21,14 @@ import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, Badge, Card, MetricCard, Notice, TableCard, TableMessage, btnDanger, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
 import SchoolActiveDialog from "./SchoolActiveDialog";
 import SchoolContactsTab from "./SchoolContactsTab";
+import SchoolTeachersTab from "./SchoolTeachersTab";
+import { useSession } from "@/lib/auth/session";
+import { schoolTeachersVisible } from "@/lib/schools/school-teachers";
 import SchoolFormDialog from "./SchoolFormDialog";
 import SchoolOfferingsTab from "./SchoolOfferingsTab";
 
-type Tab = "students" | "contacts" | "offerings" | "history";
-const TAB_LABEL: Record<Tab, string> = { students: "Students", contacts: "Contacts", offerings: "Offerings", history: "History" };
+type Tab = "students" | "teachers" | "contacts" | "offerings" | "history";
+const TAB_LABEL: Record<Tab, string> = { students: "Students", teachers: "Teachers", contacts: "Contacts", offerings: "Offerings", history: "History" };
 
 const CLAIM_BADGE: Record<SchoolClaimStatus, string> = {
   PENDING: "bg-amber-50 text-amber-700",
@@ -38,6 +41,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
   const valid = isUuid(schoolId);
   const school = useDirectorySchool(schoolId, valid);
   const [tab, setTab] = useState<Tab>("students");
+  const { can } = useSession();
   const [dialog, setDialog] = useState<"edit" | "active" | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null);
@@ -126,7 +130,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       <SchoolRecord school={s} />
 
       <div role="tablist" aria-label="School information" className="flex gap-2 my-4">
-        {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
+        {(Object.keys(TAB_LABEL) as Tab[]).filter((t) => t !== "teachers" || schoolTeachersVisible(can)).map((t) => (
           <button
             key={t}
             type="button"
@@ -141,6 +145,8 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       </div>
       {tab === "students" ? (
         <StudentsTab schoolId={s.id} />
+      ) : tab === "teachers" && schoolTeachersVisible(can) ? (
+        <SchoolTeachersTab schoolId={s.id} />
       ) : tab === "contacts" ? (
         <SchoolContactsTab schoolId={s.id} />
       ) : tab === "offerings" ? (

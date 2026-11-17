@@ -161,6 +161,9 @@ export const DELEGATION_RULES = { reasonMin: 3, reasonMax: 500 };
 export const teachersAdminApi = {
   assignments: (teacherId: string) =>
     api<Page<TeacherSchoolAssignment>>("/admin/teacher-assignments", { query: { teacherId, limit: 100 } }),
+  /** A school's Teacher assignments (INT-07): names only, never contact details. */
+  bySchool: (schoolId: string, q: { page?: number; isActive?: boolean } = {}) =>
+    api<Page<TeacherSchoolAssignment>>("/admin/teacher-assignments", { query: { schoolId, page: q.page ?? 1, limit: 20, ...(q.isActive !== undefined && { isActive: q.isActive }) } }),
   assign: (teacherId: string, schoolId: string) => post<TeacherSchoolAssignment>("/admin/teacher-assignments", { teacherId, schoolId }),
   endAssignment: (id: string) => api<TeacherSchoolAssignment>(`/admin/teacher-assignments/${id}`, { method: "DELETE" }),
   delegations: (teacherId: string) => api<DelegationRow[]>(`/admin/teachers/${teacherId}/delegations`),
