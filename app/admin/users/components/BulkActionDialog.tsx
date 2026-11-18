@@ -25,6 +25,7 @@ import {
   TEACHER_STUDENT_ACTIONS,
   TEACHER_DELEGATION_OPTIONS,
   bulkErrorMessage,
+  delegationLabel,
   buildParams,
   confirmProblems,
   executeBody,
@@ -41,6 +42,9 @@ const GRADES = ["S1", "S2", "S3", "S4", "S5", "S6"] as const;
 const inputCls =
   "w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500";
 const labelCls = "block text-sm font-semibold text-slate-700 mb-1";
+
+/** The chosen teacher, kept with its name so it stays visible after a new search and on the confirmation step. */
+type ChosenTeacher = { id: string; firstName: string; lastName: string; username: string };
 
 export default function BulkActionDialog({
   selection,
@@ -62,6 +66,7 @@ export default function BulkActionDialog({
   const actions = useMemo(() => allowedActions(can, teacherActions), [can, teacherActions]);
   const [action, setAction] = useState<BulkAction | "">(actions[0] ?? "");
   const [params, setParams] = useState<ParamsDraft>(EMPTY_PARAMS);
+  const [teacher, setTeacher] = useState<ChosenTeacher | null>(null);
   const [preview, setPreview] = useState<BulkPreview | null>(null);
   const [confirm, setConfirm] = useState<ConfirmDraft>({ reason: "", currentPassword: "", acknowledged: false });
   // One key per confirmed preview: retrying the same confirmation never starts a second operation.
@@ -184,7 +189,7 @@ export default function BulkActionDialog({
             </div>
           )}
           {action !== "" && TEACHER_STUDENT_ACTIONS.includes(action) && (
-            <TeacherParams params={params} setParams={setParams} withPermission={action === "grantDelegation" || action === "revokeDelegation"} />
+            <TeacherParams params={params} setParams={setParams} teacher={teacher} setTeacher={setTeacher} withPermission={action === "grantDelegation" || action === "revokeDelegation"} />
           )}
           {action === "message" && (
             <>
@@ -219,6 +224,28 @@ export default function BulkActionDialog({
             <p className="text-sm text-slate-800">
               <strong>{BULK_ACTIONS[preview.action]?.label ?? preview.action}</strong> — {preview.total} account{preview.total === 1 ? "" : "s"}
             </p>
+            {TEACHER_STUDENT_ACTIONS.includes(preview.action) && (
+              <dl className="mt-2 text-sm text-slate-700 space-y-0.5" data-testid="bulk-preview-teacher">
+                <div>
+                  <dt className="inline font-semibold">Teacher: </dt>
+                  <dd className="inline">
+                    {teacher && teacher.id === preview.params.teacherId ? (
+                      <>
+                        {teacher.firstName} {teacher.lastName} <span className="text-slate-500">@{teacher.username}</span>
+                      </>
+                    ) : (
+                      preview.params.teacherId
+                    )}
+                  </dd>
+                </div>
+                {preview.params.permission && (
+                  <div>
+                    <dt className="inline font-semibold">Permission: </dt>
+                    <dd className="inline">{delegationLabel(preview.params.permission)}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
             {preview.consequences.map((c) => (
               <p key={c} className="mt-1 text-xs text-slate-600">
                 {c}
@@ -310,9 +337,11 @@ export default function BulkActionDialog({
 
 
 /** The teacher (search by name or username) and, for permissions, which permission. */
-function TeacherParams({ params, setParams, withPermission }: {
+function TeacherParams({ params, setParams, teacher, setTeacher, withPermission }: {
   params: ParamsDraft;
   setParams: (fn: (p: ParamsDraft) => ParamsDraft) => void;
+  teacher: ChosenTeacher | null;
+  setTeacher: (t: ChosenTeacher | null) => void;
   withPermission: boolean;
 }) {
   const [search, setSearch] = useState("");
@@ -320,6 +349,10 @@ function TeacherParams({ params, setParams, withPermission }: {
     queryKey: ["bulk-teacher-search", search],
     queryFn: () => usersApi.list({ role: "TEACHER", search: search.trim() || undefined, limit: 20 }),
   });
+  const found = teachers.data?.data ?? [];
+  // The chosen teacher stays an option even when a new search no longer returns it.
+  const chosen = teacher && teacher.id === params.teacherId ? teacher : null;
+  const options = chosen && !found.some((t) => t.id === chosen.id) ? [chosen, ...found] : found;
   return (
     <>
       <div>
@@ -327,9 +360,16 @@ function TeacherParams({ params, setParams, withPermission }: {
           Teacher
         </label>
         <input id="bulk-teacher-search" className={inputCls} placeholder="Search by name or username…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <select aria-label="Teacher" className={`${inputCls} mt-2`} value={params.teacherId} onChange={(e) => setParams((p) => ({ ...p, teacherId: e.target.value }))}>
+        <select aria-label="Teacher" className={`${inputCls} mt-2`} value={params.teacherId}
+          onChange={(e) => {
+            const id = e.target.value;
+            const t = options.find((o) => o.id === id);
+            setTeacher(t ? { id: t.id, firstName: t.firstName, lastName: t.lastName, username: t.username } : null);
+            setParams((p) => ({ ...p, teacherId: id }));
+          }}
+        >
           <option value="">Choose…</option>
-          {(teachers.data?.data ?? []).map((t) => (
+          {options.map((t) => (
             <option key={t.id} value={t.id}>
               {t.firstName} {t.lastName} (@{t.username})
             </option>

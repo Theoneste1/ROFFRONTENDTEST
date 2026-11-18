@@ -174,3 +174,10 @@ test("teacher–student parameters: the teacher, and the permission for delegati
   assert.deepEqual(buildParams("revokeDelegation", { ...EMPTY, teacherId: "t1", permission: "students.viewProfile" }),
     { params: { teacherId: "t1", permission: "students.viewProfile" } });
 });
+
+import { delegationLabel } from "../lib/admin/bulk-users.ts";
+test("teacher permission labels for the confirmation and the operations list", () => {
+  assert.equal(delegationLabel("students.viewProgress"), "View student progress and submissions");
+  assert.equal(delegationLabel("submissions.submitOnBehalf"), "Submit work on a student's behalf");
+  assert.equal(delegationLabel("something.else"), "something.else");
+});

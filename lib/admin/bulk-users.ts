@@ -59,6 +59,11 @@ export const TEACHER_DELEGATION_OPTIONS = [
   { value: "submissions.submitOnBehalf", label: "Submit work on a student's behalf" },
 ] as const;
 
+/** Human label of a teacher permission (grantDelegation / revokeDelegation); unknown values are shown as they are. */
+export function delegationLabel(permission: string): string {
+  return TEACHER_DELEGATION_OPTIONS.find((o) => o.value === permission)?.label ?? permission;
+}
+
 export const BULK_ACTION_ORDER: readonly BulkAction[] = [
   "message", "changeClassification", "assignRole", "activate", "deactivate", "suspend", "archive", "restore",
   "assignTeacher", "unassignTeacher", "grantDelegation", "revokeDelegation",

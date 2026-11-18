@@ -5,10 +5,11 @@
  * progress (refreshed while one is running), the per-account results with the reason of each failure or skip, and
  * Cancel for an operation still waiting or running. Rules: lib/admin/bulk-users.ts.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAdminUser } from "@/lib/queries/admin";
 import { bulkUsersApi, type BulkItemOutcome, type BulkOperation } from "@/lib/api/bulk-users";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { useSession } from "@/lib/auth/session";
@@ -21,6 +22,7 @@ import {
   bulkAvailable,
   bulkErrorMessage,
   canCancel,
+  delegationLabel,
   isOperationActive,
   itemCodeLabel,
   operationStatusLabel,
@@ -111,6 +113,7 @@ function OperationRow({ op, open, onToggle }: { op: BulkOperation; open: boolean
           {op.params?.role && <span className="block text-[11px] text-gray-500">to {op.params.role}</span>}
           {op.params?.gradeLevel && <span className="block text-[11px] text-gray-500">to {op.params.gradeLevel}</span>}
           {op.params?.subject && <span className="block text-[11px] text-gray-500 truncate max-w-[220px]">“{op.params.subject}”</span>}
+          {op.params?.permission && <span className="block text-[11px] text-gray-500">{delegationLabel(op.params.permission)}</span>}
         </td>
         <td className={td}>
           <Badge className={meta?.badge ?? "bg-slate-100 text-slate-700"}>{operationStatusLabel(op.status)}</Badge>
@@ -164,6 +167,13 @@ function OperationDetail({ id }: { id: string }) {
     placeholderData: keepPreviousData,
     refetchInterval: active ? POLL_MS : false,
   });
+  // When the operation turns final, fetch the results once more so no account is left showing "pending".
+  const wasActive = useRef(active);
+  const refetchItems = items.refetch;
+  useEffect(() => {
+    if (wasActive.current && !active) void refetchItems();
+    wasActive.current = active;
+  }, [active, refetchItems]);
   const cancel = useMutation({
     mutationFn: () => bulkUsersApi.cancel(id),
     onSuccess: () => {
@@ -193,6 +203,7 @@ function OperationDetail({ id }: { id: string }) {
               <span className="font-semibold">Reason:</span> {op.reason}
             </span>
           )}
+          {op.params?.teacherId && <TeacherLine teacherId={op.params.teacherId} permission={op.params.permission} />}
           <span className="block">
             {op.startedAt ? `Started ${formatDateTime(op.startedAt)}` : "Not started yet"}
             {op.finishedAt ? ` · finished ${formatDateTime(op.finishedAt)}` : ""}
@@ -273,5 +284,22 @@ function OperationDetail({ id }: { id: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Teacher actions: which teacher (name and @username when the account can be read) and which permission. */
+function TeacherLine({ teacherId, permission }: { teacherId: string; permission?: string }) {
+  const teacher = useAdminUser(teacherId);
+  const t = teacher.data;
+  return (
+    <span className="block" data-testid="bulk-operation-teacher">
+      <span className="font-semibold">Teacher:</span> {t ? `${t.firstName} ${t.lastName} @${t.username}` : teacherId}
+      {permission && (
+        <>
+          {" · "}
+          <span className="font-semibold">Permission:</span> {delegationLabel(permission)}
+        </>
+      )}
+    </span>
   );
 }
