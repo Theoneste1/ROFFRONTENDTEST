@@ -99,6 +99,11 @@ export const meApi = {
   /** Only firstName, lastName and homeLocation can be changed. */
   update: (input: UpdateMeInput) => api<CurrentUser>("/me", { method: "PATCH", body: input }),
   permissions: () => api<MePermissions>("/me/permissions"),
+  /**
+   * `PUT /me/date-of-birth` (capability `studentDateOfBirthStep`): a student without a date of birth gives it once
+   * ("YYYY-MM-DD"); returns the profile. 400 VALIDATION_FAILED, 409 DATE_OF_BIRTH_ALREADY_SET.
+   */
+  setDateOfBirth: (dateOfBirth: string) => api<CurrentUser>("/me/date-of-birth", { method: "PUT", body: { dateOfBirth } }),
   /** `PUT /me/avatar` (capability `profilePictures`): the new picture; returns the profile. Upload progress is tracked by the client. */
   uploadAvatar: (file: File) => {
     const form = new FormData();
