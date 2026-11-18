@@ -54,7 +54,8 @@ const SIDEBARS = [
 /** Literal links in a component's source: href="/…" and settingsHref="/…". */
 function literalHrefs(file) {
   const src = readFileSync(join(ROOT, file), "utf8");
-  return [...src.matchAll(/(?:href|settingsHref)=["'](\/[^"']*)["']/gi)].map((m) => m[1]);
+  // JSX attributes (href="…") and the sidebar item objects passed to SidebarNav (href: "…").
+  return [...src.matchAll(/(?:href|settingsHref)(?:=|:\s*)["'](\/[^"']*)["']/gi)].map((m) => m[1]);
 }
 
 test("the route scan sees the app's pages (sanity)", () => {

@@ -1,9 +1,9 @@
 'use client';
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
+import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
 import { TEACHER_NAV, visibleNav } from "@/lib/auth/navigation";
 
@@ -17,25 +17,15 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
     <aside
       className={`${isOpen ? "w-64 px-4" : "w-20 px-3"} h-full bg-[#001E4E] text-slate-300 flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out`}
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex-1 min-h-0 flex flex-col gap-3">
         <div className="text-white font-bold text-center text-lg tracking-wide pb-6 border-b border-blue-900/40 whitespace-nowrap">
           {isOpen ? "ROF LMS" : "ROF"}
         </div>
-        {visibleNav(TEACHER_NAV, knownPermissions).map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            title={item.label}
-            className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? "px-4" : "justify-center px-0"} ${
-              isActive(item.href)
-                ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-                : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-          >
-            <Users className="h-5 w-5 flex-shrink-0" />
-            {isOpen && <span className="whitespace-nowrap">{item.label}</span>}
-          </Link>
-        ))}
+        <SidebarNav
+          isOpen={isOpen}
+          label="Teacher portal"
+          items={visibleNav(TEACHER_NAV, knownPermissions).map((item) => ({ href: item.href, label: item.label, icon: Users, active: isActive(item.href) }))}
+        />
       </div>
       <SidebarUtilities isOpen={isOpen} settingsHref="/teacher/account" />
     </aside>
