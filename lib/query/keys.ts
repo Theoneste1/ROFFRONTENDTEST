@@ -36,6 +36,8 @@ export const queryKeys = {
     list: (filters: object) => [...queryKeys.schoolDirectory.all, "list", filters] as const,
     detail: (id: string) => [...queryKeys.schoolDirectory.all, "detail", id] as const,
     students: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "students", id, page] as const,
+    /** Teacher assignments of the school (INT-07). */
+    teachers: (id: string, filter: string, page: number) => [...queryKeys.schoolDirectory.all, "teachers", id, filter, page] as const,
     history: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "history", id, page] as const,
     contacts: (id: string, includeRemoved: boolean) => [...queryKeys.schoolDirectory.all, "contacts", id, includeRemoved] as const,
     offerings: (id: string) => [...queryKeys.schoolDirectory.all, "offerings", id] as const,
