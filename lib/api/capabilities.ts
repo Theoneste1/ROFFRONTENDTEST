@@ -99,6 +99,23 @@ export const KNOWN_FEATURES = [
    */
   "coachApplicationDetails",
   /**
+   * Application details and requests for more information (backend ADR-009): Teacher position and years of
+   * experience; Coach phone, affiliation, expertise, experience; a Coach rejection reason; administrators ask the
+   * applicant a question, answered through a one-time link. Without it: none of this is shown or sent.
+   */
+  "applicationDetails",
+  /**
+   * Application picture review: admin rows of teacher and coach applications carry `avatarFileId`; the picture is
+   * served to the reviewer (`GET /admin/teacher-applications/:id/avatar`, `GET /mentor-requests/:id/avatar`) and is
+   * kept on approval only with `approvePicture: true` (otherwise discarded). Without it: nothing is shown or sent.
+   */
+  "applicationPictureReview",
+  /**
+   * Optional profile picture at registration (REG-02): registration answers carry a one-time avatarUploadToken for
+   * PUT /auth/register/avatar. Without it the registration forms do not offer a picture (My Profile does later).
+   */
+  "registrationAvatar",
+  /**
    * Account states: ACTIVE, DEACTIVATED, SUSPENDED, ARCHIVED (`accountStatus` on users) and
    * `POST /admin/users/:id/status-changes` { toStatus, reason, confirm? }. Accounts are archived, never
    * deleted (`DELETE /admin/users/:id` is refused with 409 PERMANENT_DELETION_DISABLED). Without it: suspend,

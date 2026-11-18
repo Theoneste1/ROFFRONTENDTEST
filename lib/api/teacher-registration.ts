@@ -13,7 +13,8 @@
  * Only on a backend advertising `teacherSelfRegistration` (GET /api/v1). Whether registration
  * is currently open comes from the availability endpoint.
  */
-import { api } from "./client";
+import type { InfoRequest } from "../accounts/application-details";
+import { api, apiBlob } from "./client";
 import type { Page } from "./types";
 
 export type OlympiadSubject = "MATHEMATICS" | "COMPUTING" | "PHYSICS";
@@ -43,6 +44,9 @@ export interface TeacherRegistrationBase {
   schoolDistrict: string;
   homeDistrict: string;
   homeSector: string;
+  /** Backends with applicationDetails. */
+  position?: string;
+  yearsOfExperience?: number;
 }
 export type TeacherRegistrationInput =
   | (TeacherRegistrationBase & { schoolId: string })
@@ -60,6 +64,8 @@ export interface TeacherApplicationSchool {
 /** 201 answer. */
 export interface TeacherRegistrationResult {
   id: string;
+  /** Backends with registrationAvatar: one-time token for the OPTIONAL picture (REG-02). */
+  avatarUploadToken?: string;
   status: "PENDING";
   requiresApproval: true;
   school: TeacherApplicationSchool | null;
@@ -88,6 +94,10 @@ export interface TeacherApplication {
   decidedAt: string | null;
   decidedBy: { id: string; firstName: string; lastName: string } | null;
   rejectionReason: string | null;
+  /** Backends with applicationDetails. */
+  position?: string | null;
+  yearsOfExperience?: number | null;
+  infoRequests?: InfoRequest[];
   decisionNote: string | null;
   userId: string | null;
   assignedSchool: { id: string; name: string; code: string | null } | null;
@@ -98,6 +108,8 @@ export interface TeacherApplication {
    */
   schoolVerifiedAt?: string | null;
   schoolVerifiedBy?: { id: string; firstName: string; lastName: string } | null;
+  /** Backends with applicationPictureReview: the picture sent with the application, or null. */
+  avatarFileId?: string | null;
 }
 
 export interface TeacherApplicationFilters {
@@ -131,8 +143,10 @@ export const teacherApplicationsAdminApi = {
   verifySchool: (id: string, input: { schoolId: string; note?: string }) =>
     api<TeacherApplication>(`/admin/teacher-applications/${encodeURIComponent(id)}/school`, { method: "POST", body: input }),
   /** 400 SCHOOL_NOT_VERIFIED (missing school not verified yet) / SCHOOL_MISMATCH; 409 APPLICATION_ALREADY_DECIDED. */
-  approve: (id: string, input: { schoolId?: string; note?: string }) =>
+  approve: (id: string, input: { schoolId?: string; note?: string; approvePicture?: boolean }) =>
     api<ApproveTeacherApplicationResult>(`/admin/teacher-applications/${encodeURIComponent(id)}/approve`, { method: "POST", body: input }),
+  /** The application's picture (applicationPictureReview), fetched with the session; 404 when there is none. */
+  avatar: (id: string) => apiBlob(`/admin/teacher-applications/${encodeURIComponent(id)}/avatar`, {}, "picture"),
   reject: (id: string, reason: string) =>
     api<TeacherApplication>(`/admin/teacher-applications/${encodeURIComponent(id)}/reject`, { method: "POST", body: { reason } }),
 };

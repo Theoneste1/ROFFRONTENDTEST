@@ -99,6 +99,11 @@ export const meApi = {
   /** Only firstName, lastName and homeLocation can be changed. */
   update: (input: UpdateMeInput) => api<CurrentUser>("/me", { method: "PATCH", body: input }),
   permissions: () => api<MePermissions>("/me/permissions"),
+  /**
+   * `PUT /me/date-of-birth` (capability `studentDateOfBirthStep`): a student without a date of birth gives it once
+   * ("YYYY-MM-DD"); returns the profile. 400 VALIDATION_FAILED, 409 DATE_OF_BIRTH_ALREADY_SET.
+   */
+  setDateOfBirth: (dateOfBirth: string) => api<CurrentUser>("/me/date-of-birth", { method: "PUT", body: { dateOfBirth } }),
   /** `PUT /me/avatar` (capability `profilePictures`): the new picture; returns the profile. Upload progress is tracked by the client. */
   uploadAvatar: (file: File) => {
     const form = new FormData();
@@ -155,6 +160,8 @@ export interface RegisterStudentResult {
   requiresEmailVerification: boolean;
   /** New backend: "PENDING" while an administrator verifies the school (absent on older backends). */
   schoolVerification?: "PENDING" | null;
+  /** Backends with registrationAvatar: one-time token for the OPTIONAL picture (REG-02). */
+  avatarUploadToken?: string;
 }
 
 export interface MentorApplicationInput {
@@ -168,6 +175,12 @@ export interface MentorApplicationInput {
   occupation?: string;
   educationLevel?: string;
   olympiadInterests?: OlympiadSubject[];
+  // Only on a backend with `applicationDetails` (lib/accounts/application-details.ts):
+  phone?: string;
+  affiliation?: string;
+  expertise?: string;
+  relevantExperience?: string;
+  yearsOfExperience?: number;
 }
 
 /** `GET /public/statistics`: aggregate counts of active members (teachers: null — not on the platform yet). */
@@ -205,7 +218,7 @@ export const publicApi = {
   /** Student self-registration (may be closed by the administrators: 403 REGISTRATION_CLOSED). */
   registerStudent: (input: RegisterStudentInput) => api<RegisterStudentResult>("/auth/register/student", { method: "POST", body: input, auth: false }),
   /** Teacher / coach application: a mentor request that an administrator approves or rejects. */
-  applyAsMentor: (input: MentorApplicationInput) => api<{ id: string; status: string }>("/mentor-requests", { method: "POST", body: input, auth: false }),
+  applyAsMentor: (input: MentorApplicationInput) => api<{ id: string; status: string; avatarUploadToken?: string }>("/mentor-requests", { method: "POST", body: input, auth: false }),
 };
 
 /** Backend password policy (src/auth/dto/password.rules.ts). */

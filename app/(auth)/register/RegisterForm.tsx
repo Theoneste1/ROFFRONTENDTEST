@@ -39,6 +39,8 @@ import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import SchoolClaimFields, { emptyDraft } from "@/app/components/account/SchoolClaimFields";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
+import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
 import { usePublicForm } from "@/lib/queries/forms";
 import { formGate, noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
 import ClosedFormNotice from "@/app/components/forms/ClosedFormNotice";
@@ -91,6 +93,11 @@ export default function RegisterForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [done, setDone] = useState<RegisterStudentResult | null>(null);
+  // Optional profile picture (REG-02): never required; uploaded with the registration's one-time token.
+  const pictureOn = registrationAvatarSupported(useBackendCapabilities().detection);
+  const [picture, setPicture] = useState<File | null>(null);
+  const [pictureError, setPictureError] = useState<string | null>(null);
+  const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
   const caps = useBackendCapabilities();
   const gate = registrationGate(caps.detection, caps.fetching, caps.waking);
@@ -152,7 +159,7 @@ export default function RegisterForm() {
     setClaimErrors(ce);
     setDetailErrors(de);
     setError(null);
-    if (Object.keys(e).length || Object.keys(ce).length || Object.keys(de).length) return;
+    if (Object.keys(e).length || Object.keys(ce).length || Object.keys(de).length || pictureError) return;
     setSubmitting(true);
     try {
       const res = await publicApi.registerStudent({
@@ -166,6 +173,7 @@ export default function RegisterForm() {
         ...(detailsOn ? studentDetailsPayload(details) : { homeLocation: v.homeLocation.trim() }),
         ...(interestsOn && { olympiadInterests: interests }),
       });
+      if (pictureOn) setPictureResult(await uploadRegistrationAvatar(res.avatarUploadToken, picture));
       setDone(res);
     } catch (err) {
       setError(err);
@@ -196,6 +204,9 @@ export default function RegisterForm() {
           {done.schoolVerification === "PENDING" && <li>An administrator will check your school. Until then it is shown as not yet verified.</li>}
           {!done.requiresEmailVerification && !done.requiresApproval && <li>You can sign in now.</li>}
         </ul>
+        {pictureOutcomeText(pictureResult) && (
+          <p className="text-sm text-slate-700" data-testid="picture-outcome">{pictureOutcomeText(pictureResult)}</p>
+        )}
         <Link href="/login" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
           Go to sign in
         </Link>
@@ -309,6 +320,16 @@ export default function RegisterForm() {
               onChange={(e) => setDetail({ ...details, dateOfBirth: e.target.value }, "dateOfBirth")}
               error={detailErrors.dateOfBirth}
             />
+            {pictureOn && (
+              <OptionalAvatarField
+                file={picture}
+                error={pictureError}
+                onChange={(f) => {
+                  setPicture(f);
+                  setPictureError(registrationAvatarProblem(f));
+                }}
+              />
+            )}
             <CascadeSelect
               label="Country where you live"
               value={details.homeCountry}

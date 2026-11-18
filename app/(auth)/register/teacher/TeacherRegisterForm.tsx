@@ -22,6 +22,10 @@ import { teacherRegistrationApi, type TeacherRegistrationResult } from "@/lib/ap
 import { hasFeature } from "@/lib/api/capabilities";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
+import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
+import { applicationDetailsSupported, emptyTeacherExtra, teacherExtraPayload, validateTeacherExtra, type TeacherExtraDraft } from "@/lib/accounts/application-details";
+import { TeacherExtraFields } from "@/app/components/applications/ExtraFields";
 import { useSchoolLocations } from "@/lib/queries/school-directory";
 import { queryKeys } from "@/lib/query/keys";
 import {
@@ -167,10 +171,19 @@ function schoolPlaceChanged(d: TeacherDraft, p: Place): TeacherDraft {
 function OpenForm() {
   const teacherForm = usePublicForm("TEACHER_REGISTRATION");
   const [d, setD] = useState<TeacherDraft>(emptyTeacherDraft);
+  // Position and years of experience (applicationDetails).
+  const extraOn = applicationDetailsSupported(useBackendCapabilities().detection);
+  const [extra, setExtra] = useState<TeacherExtraDraft>(emptyTeacherExtra);
+  const [extraErrors, setExtraErrors] = useState<Partial<Record<keyof TeacherExtraDraft, string>>>({});
   const [errors, setErrors] = useState<Partial<Record<TeacherField, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [done, setDone] = useState<TeacherRegistrationResult | null>(null);
+  // Optional profile picture (REG-02): never required; uploaded with the registration's one-time token.
+  const pictureOn = registrationAvatarSupported(useBackendCapabilities().detection);
+  const [picture, setPicture] = useState<File | null>(null);
+  const [pictureError, setPictureError] = useState<string | null>(null);
+  const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
   const locations = useSchoolLocations();
   const countries = useMemo(() => countryOptions(), []);
   const set = <K extends keyof TeacherDraft>(k: K, v: TeacherDraft[K]) => setD((s) => ({ ...s, [k]: v }));
@@ -180,12 +193,16 @@ function OpenForm() {
     ev.preventDefault();
     if (submitting) return;
     const e = validateTeacherRegistration(d);
+    const xe = extraOn ? validateTeacherExtra(extra) : {};
     setErrors(e);
+    setExtraErrors(xe);
     setError(null);
-    if (Object.keys(e).length) return;
+    if (Object.keys(e).length || Object.keys(xe).length || pictureError) return;
     setSubmitting(true);
     try {
-      setDone(await teacherRegistrationApi.register(buildTeacherPayload(d)));
+      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d), ...(extraOn && teacherExtraPayload(extra)) });
+      if (pictureOn) setPictureResult(await uploadRegistrationAvatar(result.avatarUploadToken, picture));
+      setDone(result);
     } catch (err) {
       setError(err);
       const server = isApiError(err) ? mapServerFieldErrors(err.validationMessages) : {};
@@ -210,6 +227,9 @@ function OpenForm() {
           )}
           <li>Once approved, sign in with the username and password you chose.</li>
         </ul>
+        {pictureOutcomeText(pictureResult) && (
+          <p className="text-sm text-slate-700" data-testid="picture-outcome">{pictureOutcomeText(pictureResult)}</p>
+        )}
         <Link href="/" className={primaryLink}>
           Back to the homepage
         </Link>
@@ -246,6 +266,26 @@ function OpenForm() {
           <PlaceSelect label="Country" value={d.country} onChange={(v) => set("country", v)} options={countries} placeholder="Choose your country" error={errors.country} />
           <TextField label="Phone" name="phone" type="tel" autoComplete="tel" required maxLength={30} value={d.phone} onChange={(e) => set("phone", e.target.value)} error={errors.phone} hint={PHONE_HINT} />
         </div>
+        {extraOn && (
+          <TeacherExtraFields
+            value={extra}
+            onChange={(k, val) => {
+              setExtra((s) => ({ ...s, [k]: val }));
+              setExtraErrors((s) => ({ ...s, [k]: undefined }));
+            }}
+            errors={extraErrors}
+          />
+        )}
+        {pictureOn && (
+          <OptionalAvatarField
+            file={picture}
+            error={pictureError}
+            onChange={(f) => {
+              setPicture(f);
+              setPictureError(registrationAvatarProblem(f));
+            }}
+          />
+        )}
       </Section>
 
       <Section step={2} title="Olympiad interests" description="The Olympiad subjects you would like to support. Choose at least one.">

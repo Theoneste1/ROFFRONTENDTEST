@@ -21,6 +21,10 @@ import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
+import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
+import { applicationDetailsSupported, coachExtraPayload, emptyCoachExtra, validateCoachExtra, type CoachExtraDraft } from "@/lib/accounts/application-details";
+import { CoachExtraFields } from "@/app/components/applications/ExtraFields";
 import {
   coachDetailsPayload,
   coachDetailsSupported,
@@ -50,6 +54,10 @@ export default function ApplyForm() {
   const role = "Coach";
   // Country, occupation, education and interests: only when the backend accepts them.
   const detailsOn = coachDetailsSupported(detection);
+  // Phone, affiliation, expertise, experience (applicationDetails).
+  const extraOn = applicationDetailsSupported(detection);
+  const [extra, setExtra] = useState<CoachExtraDraft>(emptyCoachExtra);
+  const [extraErrors, setExtraErrors] = useState<Partial<Record<keyof CoachExtraDraft, string>>>({});
   const [details, setDetails] = useState<CoachDetailsDraft>(emptyCoachDetails);
   const [detailErrors, setDetailErrors] = useState<Partial<Record<CoachDetailsField, string>>>({});
   const countries = useMemo(() => countryOptions(), []);
@@ -64,6 +72,11 @@ export default function ApplyForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [done, setDone] = useState(false);
+  // Optional profile picture (REG-02): never required; uploaded with the registration's one-time token.
+  const pictureOn = registrationAvatarSupported(useBackendCapabilities().detection);
+  const [picture, setPicture] = useState<File | null>(null);
+  const [pictureError, setPictureError] = useState<string | null>(null);
+  const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
 
   async function onSubmit(ev: FormEvent) {
@@ -78,20 +91,24 @@ export default function ApplyForm() {
     if (p.password) e.password = p.password;
     if (p.confirm) e.confirm = p.confirm;
     const de = detailsOn ? validateCoachDetails(details) : {};
+    const xe = extraOn ? validateCoachExtra(extra) : {};
     setErrors(e);
     setDetailErrors(de);
+    setExtraErrors(xe);
     setError(null);
-    if (Object.keys(e).length || Object.keys(de).length) return;
+    if (Object.keys(e).length || Object.keys(de).length || Object.keys(xe).length || pictureError) return;
     setSubmitting(true);
     try {
-      await publicApi.applyAsMentor({
+      const applied = await publicApi.applyAsMentor({
         firstName: v.firstName.trim(),
         lastName: v.lastName.trim(),
         username: v.username,
         email: v.email.trim(),
         password,
         ...(detailsOn && coachDetailsPayload(details)),
+        ...(extraOn && coachExtraPayload(extra)),
       });
+      if (pictureOn) setPictureResult(await uploadRegistrationAvatar(applied.avatarUploadToken, picture));
       setDone(true);
     } catch (err) {
       setError(err);
@@ -155,6 +172,9 @@ export default function ApplyForm() {
         <p className="text-sm text-slate-700">
           An administrator will review your application. You will receive an e-mail at <strong>{v.email.trim()}</strong> with the decision. Once approved, sign in with the username and password you chose.
         </p>
+        {pictureOutcomeText(pictureResult) && (
+          <p className="text-sm text-slate-700" data-testid="picture-outcome">{pictureOutcomeText(pictureResult)}</p>
+        )}
         <Link href="/" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
           Back to the homepage
         </Link>
@@ -229,6 +249,26 @@ export default function ApplyForm() {
             error={detailErrors.olympiadInterests}
             hint="The Olympiads you would like to coach. Choose one or more."
           />
+          {extraOn && (
+            <CoachExtraFields
+              value={extra}
+              onChange={(k, val) => {
+                setExtra((s) => ({ ...s, [k]: val }));
+                setExtraErrors((s) => ({ ...s, [k]: undefined }));
+              }}
+              errors={extraErrors}
+            />
+          )}
+          {pictureOn && (
+            <OptionalAvatarField
+              file={picture}
+              error={pictureError}
+              onChange={(f) => {
+                setPicture(f);
+                setPictureError(registrationAvatarProblem(f));
+              }}
+            />
+          )}
         </FormSection>
       )}
 

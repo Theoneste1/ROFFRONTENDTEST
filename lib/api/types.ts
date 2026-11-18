@@ -113,6 +113,11 @@ export interface CurrentUser {
   homeProvince?: string | null;
   homeDistrict?: string | null;
   homeSector?: string | null;
+  /**
+   * Backends with `studentDateOfBirthStep`: true for a student without a date of birth (created by an Administrator,
+   * invited or imported), who must give it (PUT /me/date-of-birth) before anything else. Absent on older backends.
+   */
+  dateOfBirthRequired?: boolean;
 }
 
 /**
@@ -926,6 +931,16 @@ export interface MentorRequest {
   occupation?: string | null;
   educationLevel?: string | null;
   olympiadInterests?: string[] | null;
+  /** Backends with `applicationDetails`. */
+  phone?: string | null;
+  affiliation?: string | null;
+  expertise?: string | null;
+  relevantExperience?: string | null;
+  yearsOfExperience?: number | null;
+  rejectionReason?: string | null;
+  infoRequests?: import("../accounts/application-details").InfoRequest[];
+  /** Backends with applicationPictureReview: the picture sent with the application, or null. */
+  avatarFileId?: string | null;
 }
 
 export interface MentorRequestApproval {

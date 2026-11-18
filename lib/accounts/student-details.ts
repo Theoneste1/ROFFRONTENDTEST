@@ -73,14 +73,19 @@ export function birthDateBounds(today: Date): { min: string; max: string } {
   return { min: isoDay(min), max: isoDay(max) };
 }
 
+/** Why this date of birth is refused (the backend's rules: a real past date, age 5–30), or null when it is fine. */
+export function dateOfBirthProblem(dateOfBirth: string, today: Date = new Date()): string | null {
+  if (!dateOfBirth) return "Enter your date of birth.";
+  const age = ageOn(dateOfBirth, today);
+  if (age === null) return "Enter a valid date of birth.";
+  if (age < STUDENT_AGE.min || age > STUDENT_AGE.max) return `Students must be ${STUDENT_AGE.min} to ${STUDENT_AGE.max} years old. Check your date of birth.`;
+  return null;
+}
+
 export function validateStudentDetails(d: StudentDetailsDraft, today: Date = new Date()): Partial<Record<StudentDetailsField, string>> {
   const e: Partial<Record<StudentDetailsField, string>> = {};
-  if (!d.dateOfBirth) e.dateOfBirth = "Enter your date of birth.";
-  else {
-    const age = ageOn(d.dateOfBirth, today);
-    if (age === null) e.dateOfBirth = "Enter a valid date of birth.";
-    else if (age < STUDENT_AGE.min || age > STUDENT_AGE.max) e.dateOfBirth = `Students must be ${STUDENT_AGE.min} to ${STUDENT_AGE.max} years old. Check your date of birth.`;
-  }
+  const dob = dateOfBirthProblem(d.dateOfBirth, today);
+  if (dob) e.dateOfBirth = dob;
   if (d.phone.trim() && !normalisePhone(d.phone)) e.phone = `Enter a valid phone number, or leave it empty. ${PHONE_HINT}`;
   if (!d.guardianPhone.trim()) e.guardianPhone = "Enter the phone number of a parent or close family member.";
   else if (!normalisePhone(d.guardianPhone)) e.guardianPhone = `Enter a valid phone number. ${PHONE_HINT}`;

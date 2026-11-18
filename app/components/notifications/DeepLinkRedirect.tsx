@@ -6,7 +6,9 @@
  * into notifications and e-mails. Sends the user to their own portal's page:
  * - signed out → sign in, then back here;
  * - signed in → the role's page (`lib/notifications/links.ts`);
- * - nothing for this role → a short explanation, never another portal.
+ * - nothing for this role → a short explanation, never another portal;
+ * - a student held at the first-sign-in date-of-birth step → their dashboard (which shows the step); nothing is
+ *   looked up, as the backend refuses it until then.
  */
 import { useEffect } from "react";
 import Link from "next/link";
@@ -16,6 +18,7 @@ import { hasPortal, portalHome, portalPath } from "@/lib/auth/roles";
 import { resolveLink } from "@/lib/notifications/links";
 import { useResult } from "@/lib/queries/assessment";
 import { isApiError } from "@/lib/api/errors";
+import { needsDateOfBirth } from "@/lib/accounts/date-of-birth-step";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import PublicCard from "@/app/components/shell/PublicCard";
 
@@ -26,14 +29,15 @@ export default function DeepLinkRedirect() {
   const search = useSearchParams().toString();
   const full = search ? `${pathname}?${search}` : pathname;
   const role = session.status === "authenticated" ? session.role : null;
+  const heldAtDateOfBirth = !!role && needsDateOfBirth(session.user);
 
   // A student's result link without the assignment id: look the result up.
   const resultId = pathname.match(/^\/results\/([\w-]+)\/?$/)?.[1] ?? null;
   const target = role ? resolveLink(full, role) : null;
-  const needsLookup = role === "STUDENT" && !!resultId && target === `/results/${resultId}`;
+  const needsLookup = role === "STUDENT" && !heldAtDateOfBirth && !!resultId && target === `/results/${resultId}`;
   const result = useResult(resultId, needsLookup);
   const lookupMissing = needsLookup && result.isError && isApiError(result.error) && result.error.status === 404;
-  const unavailable = !!role && (needsLookup ? lookupMissing : !target);
+  const unavailable = !!role && !heldAtDateOfBirth && (needsLookup ? lookupMissing : !target);
 
   useEffect(() => {
     if (session.status === "unauthenticated") {
@@ -41,12 +45,16 @@ export default function DeepLinkRedirect() {
       return;
     }
     if (!role) return;
+    if (heldAtDateOfBirth) {
+      router.replace("/student/dashboard");
+      return;
+    }
     if (needsLookup) {
       if (result.data) router.replace(`/student/assignments/${result.data.assignment.id}?tab=results`);
       return;
     }
     if (target) router.replace(target);
-  }, [session.status, role, full, target, needsLookup, result.data, router]);
+  }, [session.status, role, heldAtDateOfBirth, full, target, needsLookup, result.data, router]);
 
   if (session.status === "error") {
     return (
