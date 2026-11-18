@@ -8,6 +8,10 @@ import { coachDetailsText } from "@/lib/accounts/coach-application";
 import { LIMITS, latestAnswer, openInfoRequest } from "@/lib/accounts/application-details";
 import { AskForInformation, InfoRequestHistory } from "@/app/components/applications/InfoRequests";
 import { ErrorState } from "@/app/components/ui/feedback";
+import { mentorRequestsApi } from "@/lib/api/admin";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { pictureReviewShown, withPictureDecision } from "@/lib/accounts/application-picture";
+import ApplicationPictureReview from "@/app/components/applications/ApplicationPictureReview";
 import Pagination from "@/app/components/ui/Pagination";
 import { Badge, ConfirmDialog, FilterPills, Notice, TableCard, TableMessage, td, th } from "../../components/adminUi";
 
@@ -49,6 +53,16 @@ export default function ApplicationsPanel() {
   const [notice, setNotice] = useState<string | null>(null);
   const requests = useMentorRequests({ status: status || undefined, page, limit: 20 });
   const decision = useDecideMentorRequest();
+  const { detection } = useBackendCapabilities();
+  // Owner policy: the applicant's picture is kept only when the Administrator saw it and ticked the box (unticked by default).
+  const [keepPicture, setKeepPicture] = useState(false);
+  const [pictureLoaded, setPictureLoaded] = useState(false);
+  const pictureReview = decide?.decision === "approve" && pictureReviewShown(detection, decide.request.avatarFileId);
+  const openDecision = (request: MentorRequest, d: "approve" | "reject") => {
+    setKeepPicture(false);
+    setPictureLoaded(false);
+    setDecide({ request, decision: d });
+  };
 
   return (
     <>
@@ -116,10 +130,10 @@ export default function ApplicationsPanel() {
                   <td className={td}>
                     {r.status === "PENDING" ? (
                       <div className="flex flex-wrap gap-3">
-                        <button type="button" onClick={() => setDecide({ request: r, decision: "approve" })} className="text-emerald-700 hover:text-emerald-900 font-semibold">
+                        <button type="button" onClick={() => openDecision(r, "approve")} className="text-emerald-700 hover:text-emerald-900 font-semibold">
                           Approve
                         </button>
-                        <button type="button" onClick={() => setDecide({ request: r, decision: "reject" })} className="text-red-600 hover:text-red-800 font-semibold">
+                        <button type="button" onClick={() => openDecision(r, "reject")} className="text-red-600 hover:text-red-800 font-semibold">
                           Reject
                         </button>
                         {r.infoRequests !== undefined && (
@@ -151,14 +165,32 @@ export default function ApplicationsPanel() {
           note={decide.decision === "reject" && decide.request.infoRequests !== undefined ? { label: "Reason (e-mailed to the applicant)", required: true, min: LIMITS.reason[0], max: LIMITS.reason[1] } : undefined}
           onClose={() => setDecide(null)}
           onConfirm={async (reason) => {
-            const r = await decision.mutateAsync({ id: decide.request.id, decision: decide.decision, ...(reason && { reason }) });
+            const picture = withPictureDecision({}, { shown: pictureReview, loaded: pictureLoaded, keep: keepPicture });
+            const r = await decision.mutateAsync({
+              id: decide.request.id,
+              decision: decide.decision,
+              ...(reason && { reason }),
+              // Only when the picture was reviewed; older backends get no body, as before.
+              ...(pictureReview && { approveBody: picture }),
+            });
             setNotice(
               r
                 ? `Coach account @${r.mentor.username} created${r.emailVerificationRequired ? "; they must confirm their e-mail before the first sign-in" : ""}. Add their course access on the Coaches tab.`
                 : "Application rejected.",
             );
           }}
-        />
+        >
+          {pictureReview && (
+            <ApplicationPictureReview
+              kind="coach"
+              applicationId={decide.request.id}
+              fetchPicture={mentorRequestsApi.avatar}
+              keep={keepPicture}
+              onKeepChange={setKeepPicture}
+              onLoadedChange={setPictureLoaded}
+            />
+          )}
+        </ConfirmDialog>
       )}
     </>
   );

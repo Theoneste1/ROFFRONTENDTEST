@@ -122,6 +122,12 @@ export const KNOWN_FEATURES = [
    * Without it: the fixed closed texts.
    */
   "formAvailability",
+  /**
+   * Application picture review: admin rows of teacher and coach applications carry `avatarFileId`; the picture is
+   * served to the reviewer (`GET /admin/teacher-applications/:id/avatar`, `GET /mentor-requests/:id/avatar`) and is
+   * kept on approval only with `approvePicture: true` (otherwise discarded). Without it: nothing is shown or sent.
+   */
+  "applicationPictureReview",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

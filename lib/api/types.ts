@@ -939,6 +939,8 @@ export interface MentorRequest {
   yearsOfExperience?: number | null;
   rejectionReason?: string | null;
   infoRequests?: import("../accounts/application-details").InfoRequest[];
+  /** Backends with applicationPictureReview: the picture sent with the application, or null. */
+  avatarFileId?: string | null;
 }
 
 export interface MentorRequestApproval {

@@ -49,6 +49,8 @@ import type { Place } from "@/lib/schools/school-cascade";
 import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../components/adminUi";
 import { AskForInformation, InfoRequestHistory } from "@/app/components/applications/InfoRequests";
 import { SchoolPicker } from "../users/components/userUi";
+import ApplicationPictureReview from "@/app/components/applications/ApplicationPictureReview";
+import { pictureReviewShown, withPictureDecision } from "@/lib/accounts/application-picture";
 import type { SchoolRef } from "@/lib/api/types";
 
 /** The backend's error with a message for its code (shown by the dialogs). */
@@ -214,6 +216,7 @@ export default function TeacherApplicationsReview() {
       {approving && (
         <ApproveDialog
           app={approving}
+          pictureReview={pictureReviewShown(caps.detection, approving.avatarFileId)}
           onClose={() => setApproving(null)}
           onError={onError}
           onApproved={(text) => {
@@ -545,10 +548,26 @@ function VerifySchoolDialog({ app, onClose, onError, onVerified }: { app: Teache
 }
 
 /** Approve with an optional note. Never chooses a school: the application's own (listed or verified) is used. */
-function ApproveDialog({ app, onClose, onError, onApproved }: { app: TeacherApplication; onClose: () => void; onError: (e: unknown) => unknown; onApproved: (notice: string) => void }) {
+function ApproveDialog({
+  app,
+  pictureReview,
+  onClose,
+  onError,
+  onApproved,
+}: {
+  app: TeacherApplication;
+  /** The application has a picture and the backend reviews pictures (applicationPictureReview). */
+  pictureReview: boolean;
+  onClose: () => void;
+  onError: (e: unknown) => unknown;
+  onApproved: (notice: string) => void;
+}) {
   const actions = teacherReviewActions(app);
   const blocked = actions.approve.shown && !actions.approve.enabled ? actions.approve.reason : null;
   const [note, setNote] = useState("");
+  // Owner policy: the picture is kept only when the Administrator saw it and ticked the box (unticked by default).
+  const [keepPicture, setKeepPicture] = useState(false);
+  const [pictureLoaded, setPictureLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -561,7 +580,8 @@ function ApproveDialog({ app, onClose, onError, onApproved }: { app: TeacherAppl
     setBusy(true);
     setError(null);
     try {
-      const res = await teacherApplicationsAdminApi.approve(app.id, p.body);
+      const body = withPictureDecision(p.body, { shown: pictureReview, loaded: pictureLoaded, keep: keepPicture });
+      const res = await teacherApplicationsAdminApi.approve(app.id, body);
       onApproved(
         `${fullName(app)}: approved. Teacher account @${res.teacher.username} created${res.emailVerificationRequired ? "; they must confirm their e-mail with the activation message before signing in" : ""}. The teacher is notified by e-mail and in the app.`,
       );
@@ -590,6 +610,16 @@ function ApproveDialog({ app, onClose, onError, onApproved }: { app: TeacherAppl
           <Alert tone="info">{blocked}</Alert>
         ) : (
           <>
+            {pictureReview && (
+              <ApplicationPictureReview
+                kind="teacher"
+                applicationId={app.id}
+                fetchPicture={teacherApplicationsAdminApi.avatar}
+                keep={keepPicture}
+                onKeepChange={setKeepPicture}
+                onLoadedChange={setPictureLoaded}
+              />
+            )}
             <NoteField id="approve-note" value={note} onChange={setNote} max={APPROVAL_NOTE_MAX} />
             <p className="text-sm text-gray-600">The teacher will be notified of the approval by e-mail and in the app.</p>
           </>
