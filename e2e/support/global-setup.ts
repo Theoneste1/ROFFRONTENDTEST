@@ -25,7 +25,8 @@ export default async function globalSetup() {
         `INSERT INTO "User" (id, username, "firstName", "lastName", email, role, "passwordHash", "activatedAt", "isApproved", "updatedAt",
                              "gradeLevel", "divisionId", "homeLocation", "dateOfBirth")
          VALUES (gen_random_uuid()::text, $1, $2, 'E2E', $3, $4::"Role", $5, now(), true, now(), $6::"GradeLevel", $7, $8, $9)
-         ON CONFLICT (username) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash", role = EXCLUDED.role, "accountStatus" = 'ACTIVE'`,
+         ON CONFLICT (username) DO UPDATE SET "passwordHash" = EXCLUDED."passwordHash", role = EXCLUDED.role, "accountStatus" = 'ACTIVE',
+           "dateOfBirth" = EXCLUDED."dateOfBirth"`,   // every run starts from the fixture date (a run may correct it)
         [
           a.username, a.username.replace("e2e.", "").replace(/^./, (c) => c.toUpperCase()), `${a.username}@e2e.local`, a.role, hash,
           a.role === "STUDENT" ? "S2" : null, a.role === "STUDENT" ? junior : null, a.role === "STUDENT" ? "Huye" : null,

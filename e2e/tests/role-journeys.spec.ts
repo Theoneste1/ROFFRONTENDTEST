@@ -76,13 +76,41 @@ test.describe.serial("Administrator: a student's user page", () => {
 
   test("date of birth with age, close-family phone (ACC-02), registration history (REG-13)", async () => {
     await page.goto(`/admin/users/${studentId}`);
-    await expect(page.getByText("Date of birth")).toBeVisible();
+    await expect(page.getByText("Date of birth", { exact: true })).toBeVisible();
     await expect(page.getByText(/1 May 2012 \(\d+ years\)/)).toBeVisible();
     await expect(page.getByText("+250788000111")).toBeVisible();
     const history = page.getByTestId("registration-history");
     await expect(history).toContainText("Registration history");
     await expect(history).toContainText("Created");
     await expect(history).toContainText("Account state");
+    await loadsCleanly(page);
+  });
+
+  test("the Administrator corrects the date of birth with a reason; the history shows old and new dates (owner approval)", async () => {
+    await page.goto(`/admin/users/${studentId}`);
+    const card = page.getByTestId("date-of-birth-card");
+    const correct = async (date: string, reason: string) => {
+      await card.getByRole("button", { name: "Correct date of birth" }).click();
+      await page.getByLabel("Date of birth", { exact: false }).last().fill(date);
+      await page.getByLabel("Reason").fill(reason);
+      await page.getByRole("button", { name: "Save correction" }).click();
+      await expect(page.getByRole("button", { name: "Save correction" })).toHaveCount(0);
+    };
+    // A reason is required in the form too.
+    await card.getByRole("button", { name: "Correct date of birth" }).click();
+    await page.getByLabel("Date of birth", { exact: false }).last().fill("2012-05-02");
+    await page.getByRole("button", { name: "Save correction" }).click();
+    await expect(page.getByRole("button", { name: "Save correction" })).toBeVisible();
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    await correct("2012-05-02", "Birth certificate shows the 2nd");
+    await expect(page.getByText(/2 May 2012 \(\d+ years\)/)).toBeVisible();
+    await expect(card).toContainText("Birth certificate shows the 2nd");
+    await expect(card).toContainText("1 May 2012");
+    await expect(card).toContainText("2 May 2012");
+    // Back to the fixture date, so repeated runs see the same student.
+    await correct("2012-05-01", "Restored for the next test run");
+    await expect(page.getByText(/1 May 2012 \(\d+ years\)/)).toBeVisible();
     await loadsCleanly(page);
   });
 });
