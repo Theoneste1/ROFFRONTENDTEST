@@ -63,6 +63,12 @@ export const queryKeys = {
     all: ["notification-deliveries"] as const,
     list: (filters: object) => [...queryKeys.notificationDeliveries.all, "list", filters] as const,
   },
+  /** Administrators' form management (lib/api/admin-forms.ts). */
+  adminForms: {
+    all: ["admin-forms"] as const,
+    list: () => [...queryKeys.adminForms.all, "list"] as const,
+    history: (key: string) => [...queryKeys.adminForms.all, "history", key] as const,
+  },
   /** Official-directory sync runs (lib/api/school-sync.ts). */
   schoolSync: {
     all: ["school-sync"] as const,
