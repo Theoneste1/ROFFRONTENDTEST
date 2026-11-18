@@ -103,6 +103,17 @@ export function avatarFileProblem(file: { name: string; type: string; size: numb
  * Where to load a picture from: an API path (`/api/v1/users/:id/avatar?v=…`, fetched with the
  * session because it needs authentication) or an absolute https URL used as is; null otherwise.
  */
+/**
+ * Whether to fetch a picture again after a failure. A refusal is final: 404 (no picture — also the answer when the
+ * viewer may not see a student's picture, owner decision 2026-11-18), 401 and 403. The generated avatar is shown
+ * instead. A server error or network failure is retried once.
+ */
+export function avatarRetry(failureCount: number, error: unknown): boolean {
+  const status = typeof error === "object" && error !== null ? (error as { status?: unknown }).status : undefined;
+  if (typeof status === "number" && status > 0 && status < 500) return false;
+  return failureCount < 1;
+}
+
 export function avatarSource(avatarUrl: string | null | undefined): { kind: "api"; path: string } | { kind: "url"; url: string } | null {
   const v = (avatarUrl ?? "").trim();
   if (!v) return null;
