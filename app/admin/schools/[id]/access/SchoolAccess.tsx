@@ -25,7 +25,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import {
-  DELEGATION_LABEL, MAX_STUDENTS_PER_REQUEST, assignReasonProblem, outcomeSummary, problemLines, scopeText,
+  DELEGATION_LABEL, MAX_STUDENTS_PER_REQUEST, assignReasonProblem, grantSelected, outcomeSummary, problemLines, scopeText,
   teacherStudentAccessSupported, type ItemResult,
 } from "@/lib/accounts/teacher-student-access";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
@@ -45,7 +45,8 @@ const ACTION_TITLE: Record<Action, string> = {
 
 export default function SchoolAccess({ schoolId }: { schoolId: string }) {
   const { can } = useSession();
-  const tsa = teacherStudentAccessSupported(useBackendCapabilities().detection);
+  const caps = useBackendCapabilities();
+  const tsa = teacherStudentAccessSupported(caps.detection);
   const allowed = can("users.manageTeachers");
   const qc = useQueryClient();
 
@@ -91,6 +92,7 @@ export default function SchoolAccess({ schoolId }: { schoolId: string }) {
     </Link>
   );
   if (!allowed) return <AdminPage title="Teacher & student access">{back}<ErrorState error={null} title="You don't have permission to manage teacher access." /></AdminPage>;
+  if (!tsa && caps.loading) return <AdminPage title="Teacher & student access">{back}<LoadingBlock /></AdminPage>;
   if (!tsa) return <AdminPage title="Teacher & student access">{back}<Notice tone="info">This server does not offer teacher–student access yet.</Notice></AdminPage>;
   if (access.isPending) return <AdminPage title="Teacher & student access">{back}<LoadingBlock /></AdminPage>;
   if (access.isError) return <AdminPage title="Teacher & student access">{back}<ErrorState error={access.error} title="Couldn't load this school's access" onRetry={() => access.refetch()} /></AdminPage>;
@@ -346,8 +348,10 @@ function ActionDialog({ action, schoolTeachers, students, onClose, onDone }: {
         if (action === "grant") {
           if (current) out = (await teachersAdminApi.addDelegationStudents(teacherId, current.id, ids)).results;
           else {
-            await teachersAdminApi.grant(teacherId, { permission: permission as TeacherDelegation, reason: reason.trim(), studentScope: "SELECTED", studentIds: ids });
-            out = ids.map((studentId) => ({ studentId, outcome: "ADDED" as const }));
+            // All-or-nothing on the backend: students the teacher does not see are reported, the rest is given.
+            out = await grantSelected(ids, (studentIds) => teachersAdminApi.grant(teacherId, {
+              permission: permission as TeacherDelegation, reason: reason.trim(), studentScope: "SELECTED", studentIds,
+            }), errorMessage);
           }
         } else if (!current) {
           out = ids.map((studentId) => ({ studentId, outcome: "SKIPPED" as const, code: "NOT_APPLICABLE" }));
@@ -423,7 +427,7 @@ function ActionDialog({ action, schoolTeachers, students, onClose, onDone }: {
             {action === "assign" && fromOtherSchool && <li>This teacher is not a teacher of this school: they will see only these students, never the rest of the school.</li>}
             {action === "assign" && pending > 0 && <li>{pending} selected student{pending === 1 ? " is" : "s are"} still waiting for school verification.</li>}
             {action === "assign" && <li>Students already assigned to this teacher are skipped. The teacher is told once; students are not notified.</li>}
-            {action === "grant" && <li>Only students the teacher sees can be covered; the others are reported. The teacher is told about a new permission.</li>}
+            {action === "grant" && <li>Only students the teacher sees can be covered: any other selected student is reported as failed and the permission is given for the rest. The teacher is told about a new permission.</li>}
             {action === "revoke" && <li>Permissions for the whole school or for assigned students are not changed here: revoke those on the teacher&apos;s page.</li>}
             <li>Nothing is deleted: every change is kept in the history and the audit log.</li>
           </ul>

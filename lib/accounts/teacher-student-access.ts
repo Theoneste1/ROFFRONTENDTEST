@@ -122,3 +122,52 @@ export const DELEGATION_LABEL: Record<string, string> = {
   "students.viewProgress": "View student progress and submissions",
   "submissions.submitOnBehalf": "Submit work on a student's behalf",
 };
+
+/**
+ * The students a 400 STUDENT_NOT_IN_TEACHER_SCOPE refused (`details.studentIds`), or null when the error is not that
+ * refusal. Giving a SELECTED delegation is all-or-nothing on the backend: one unseen student refuses the whole request.
+ */
+export function refusedStudentIds(e: unknown): string[] | null {
+  if (!e || typeof e !== "object") return null;
+  const { status, code, details } = e as { status?: unknown; code?: unknown; details?: unknown };
+  if (status !== 400 || code !== "STUDENT_NOT_IN_TEACHER_SCOPE") return null;
+  const ids = details && typeof details === "object" ? (details as { studentIds?: unknown }).studentIds : undefined;
+  return Array.isArray(ids) ? ids.filter((i): i is string => typeof i === "string") : null;
+}
+
+const NOT_SEEN = { outcome: "FAILED" as const, code: "STUDENT_NOT_IN_TEACHER_SCOPE", message: "The teacher does not see this student." };
+
+/**
+ * Give a new SELECTED delegation for `ids` with real per-student results: the students the backend refuses (not seen by
+ * the teacher) are reported FAILED and the permission is given again for the rest, if any (a few attempts at most, as
+ * what the teacher sees can change in between). Any other error before anything was refused is thrown; after a
+ * refusal it is reported on the remaining students.
+ */
+export async function grantSelected(
+  ids: readonly string[],
+  grant: (studentIds: string[]) => Promise<unknown>,
+  errorText: (e: unknown) => string,
+  maxAttempts = 3,
+): Promise<ItemResult[]> {
+  const failed: ItemResult[] = [];
+  let remaining = [...ids];
+  for (let attempt = 1; remaining.length > 0; attempt++) {
+    try {
+      await grant(remaining);
+      return [...failed, ...remaining.map((studentId) => ({ studentId, outcome: "ADDED" as const }))];
+    } catch (e) {
+      const refused = refusedStudentIds(e);
+      const hit = refused ? remaining.filter((id) => refused.includes(id)) : [];
+      if (hit.length === 0 || attempt >= maxAttempts) {
+        if (failed.length === 0 && hit.length === 0) throw e;
+        failed.push(...hit.map((studentId) => ({ studentId, ...NOT_SEEN })));
+        const rest = remaining.filter((id) => !hit.includes(id));
+        const why = hit.length ? "Not given: the teacher's students changed while this was running. Try again." : errorText(e);
+        return [...failed, ...rest.map((studentId) => ({ studentId, outcome: "FAILED" as const, message: why }))];
+      }
+      failed.push(...hit.map((studentId) => ({ studentId, ...NOT_SEEN })));
+      remaining = remaining.filter((id) => !hit.includes(id));
+    }
+  }
+  return failed;
+}

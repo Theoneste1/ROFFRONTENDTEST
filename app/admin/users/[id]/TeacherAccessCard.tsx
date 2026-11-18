@@ -59,8 +59,9 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
   const act = useMutation({ mutationFn: (fn: () => Promise<unknown>) => fn(), onSuccess: () => { setError(null); refresh(); }, onError: (e) => setError(message(e)) });
 
   const [school, setSchool] = useState<SchoolRef | null>(null);
-  const [grant, setGrant] = useState<{ permission: TeacherDelegation | ""; reason: string; expiresAt: string; scope: StudentScope; studentIds: string[] }>(
-    { permission: "", reason: "", expiresAt: "", scope: "SCHOOL", studentIds: [] });
+  // scope null = the default: every student of the teacher's schools, or (no active school) the assigned students.
+  const [grant, setGrant] = useState<{ permission: TeacherDelegation | ""; reason: string; expiresAt: string; scope: StudentScope | null; studentIds: string[] }>(
+    { permission: "", reason: "", expiresAt: "", scope: null, studentIds: [] });
   const [grantError, setGrantError] = useState<string | null>(null);
 
   const active = (schools.data?.data ?? []).filter((a) => a.isActive);
@@ -69,6 +70,8 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
   const granted = new Set(tsa ? [] : activeDelegations.map((d) => d.permission));
   const myStudents = (assignedStudents.data?.data ?? []);
   const canGrant = active.length > 0 || (tsa && myStudents.length > 0);
+  // Without an active school the backend refuses a school-wide delegation: default to the assigned students then.
+  const scope: StudentScope = grant.scope ?? (active.length > 0 ? "SCHOOL" : "ASSIGNED");
 
   function onGrant(e: FormEvent) {
     e.preventDefault();
@@ -77,12 +80,12 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
     if (reason.length < DELEGATION_RULES.reasonMin || reason.length > DELEGATION_RULES.reasonMax) return setGrantError(`Give a reason (${DELEGATION_RULES.reasonMin}–${DELEGATION_RULES.reasonMax} characters).`);
     const expires = grant.expiresAt ? new Date(`${grant.expiresAt}T23:59:59`) : null;
     if (expires && expires.getTime() <= Date.now()) return setGrantError("The end date must be in the future.");
-    if (tsa && grant.scope === "SELECTED" && grant.studentIds.length === 0) return setGrantError("Choose at least one student.");
+    if (tsa && scope === "SELECTED" && grant.studentIds.length === 0) return setGrantError("Choose at least one student.");
     setGrantError(null);
     const permission = grant.permission;
-    const scope = tsa ? { studentScope: grant.scope, ...(grant.scope === "SELECTED" && { studentIds: grant.studentIds }) } : {};
-    act.mutate(() => teachersAdminApi.grant(teacherId, { permission, reason, ...(expires && { expiresAt: expires.toISOString() }), ...scope })
-      .then(() => setGrant({ permission: "", reason: "", expiresAt: "", scope: "SCHOOL", studentIds: [] })));
+    const scoped = tsa ? { studentScope: scope, ...(scope === "SELECTED" && { studentIds: grant.studentIds }) } : {};
+    act.mutate(() => teachersAdminApi.grant(teacherId, { permission, reason, ...(expires && { expiresAt: expires.toISOString() }), ...scoped })
+      .then(() => setGrant({ permission: "", reason: "", expiresAt: "", scope: null, studentIds: [] })));
   }
 
   return (
@@ -193,12 +196,12 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                 {tsa && (
                   <SelectInput
                     label="For which students"
-                    value={grant.scope}
+                    value={scope}
                     onChange={(v) => setGrant((g) => ({ ...g, scope: v as StudentScope, studentIds: [] }))}
                     options={STUDENT_SCOPES.map((s) => ({ label: SCOPE_LABEL[s], value: s }))}
                   />
                 )}
-                {tsa && grant.scope === "SELECTED" && (
+                {tsa && scope === "SELECTED" && (
                   myStudents.length === 0 ? (
                     <p className="text-xs text-gray-500">To choose students of a school, use that school&apos;s &ldquo;Teacher &amp; student access&rdquo; page. Here you can choose among students assigned to this teacher.</p>
                   ) : (

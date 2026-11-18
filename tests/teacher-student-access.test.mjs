@@ -56,3 +56,37 @@ test("assignment reason: optional unless needed; length checked when given", () 
   assert.match(assignReasonProblem("abc", false), /5–500/);
   assert.equal(assignReasonProblem("Camp group", true), null);
 });
+
+import { grantSelected, refusedStudentIds } from "../lib/accounts/teacher-student-access.ts";
+
+const notSeen = (ids) => Object.assign(new Error("not seen"), { status: 400, code: "STUDENT_NOT_IN_TEACHER_SCOPE", details: { studentIds: ids } });
+
+test("refused students are read from 400 STUDENT_NOT_IN_TEACHER_SCOPE only", () => {
+  assert.deepEqual(refusedStudentIds(notSeen(["a", "b"])), ["a", "b"]);
+  assert.equal(refusedStudentIds({ status: 409, code: "STUDENT_NOT_IN_TEACHER_SCOPE", details: { studentIds: ["a"] } }), null);
+  assert.equal(refusedStudentIds({ status: 400, code: "VALIDATION_FAILED" }), null);
+  assert.equal(refusedStudentIds(null), null);
+});
+
+test("giving a permission to selected students: refused ones fail, the rest is given in a second request", async () => {
+  const calls = [];
+  const grant = async (ids) => { calls.push(ids); if (ids.includes("b")) throw notSeen(["b"]); };
+  const out = await grantSelected(["a", "b", "c"], grant, (e) => e.message);
+  assert.deepEqual(calls, [["a", "b", "c"], ["a", "c"]]);
+  assert.deepEqual(out.map((r) => [r.studentId, r.outcome]), [["b", "FAILED"], ["a", "ADDED"], ["c", "ADDED"]]);
+  assert.equal(out[0].code, "STUDENT_NOT_IN_TEACHER_SCOPE");
+});
+
+test("giving a permission: every student refused means nothing is given and every one is reported", async () => {
+  const calls = [];
+  const out = await grantSelected(["a", "b"], async (ids) => { calls.push(ids); throw notSeen(["a", "b"]); }, (e) => e.message);
+  assert.equal(calls.length, 1);
+  assert.deepEqual(out.map((r) => r.outcome), ["FAILED", "FAILED"]);
+});
+
+test("giving a permission: another error is thrown at first, reported on the rest after a refusal", async () => {
+  await assert.rejects(grantSelected(["a"], async () => { throw Object.assign(new Error("boom"), { status: 500 }); }, (e) => e.message), /boom/);
+  let n = 0;
+  const out = await grantSelected(["a", "b"], async () => { n++; if (n === 1) throw notSeen(["a"]); throw new Error("down"); }, (e) => e.message);
+  assert.deepEqual(out.map((r) => [r.studentId, r.outcome, r.message]), [["a", "FAILED", "The teacher does not see this student."], ["b", "FAILED", "down"]]);
+});
