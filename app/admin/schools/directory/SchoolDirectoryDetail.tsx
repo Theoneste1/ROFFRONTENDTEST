@@ -26,6 +26,7 @@ import { useSession } from "@/lib/auth/session";
 import { schoolTeachersVisible } from "@/lib/schools/school-teachers";
 import SchoolFormDialog from "./SchoolFormDialog";
 import SchoolOfferingsTab from "./SchoolOfferingsTab";
+import { useSchoolAccessPageAvailable } from "@/lib/queries/teacher";
 
 type Tab = "students" | "teachers" | "contacts" | "offerings" | "history";
 const TAB_LABEL: Record<Tab, string> = { students: "Students", teachers: "Teachers", contacts: "Contacts", offerings: "Offerings", history: "History" };
@@ -46,6 +47,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
   const [verifying, setVerifying] = useState(false);
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null);
   const qc = useQueryClient();
+  const accessPage = useSchoolAccessPageAvailable();
   const back = (
     <Link href="/admin/schools" className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800 mb-4">
       <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> All schools
@@ -90,6 +92,11 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       description={placeLabel(s)}
       actions={
         <>
+          {accessPage && (
+            <Link href={`/admin/schools/${s.id}/access`} className={btnSecondary} data-testid="school-access-link">
+              Teacher &amp; student access
+            </Link>
+          )}
           <button type="button" className={btnSecondary} onClick={() => setDialog("edit")}>
             Edit
           </button>

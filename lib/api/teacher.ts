@@ -23,7 +23,13 @@ export interface TeacherStudent {
   gradeLevel: GradeLevel | null;
   division: DivisionRef | null;
   school: { id: string; name: string; location: string } | null;
+  /** Backends with teacherStudentAccess: how you see the student, and what your permissions let you do for them. */
+  access?: { school: boolean; assigned: boolean };
+  can?: { viewProfile: boolean; viewProgress: boolean; submitOnBehalf: boolean };
 }
+
+/** GET /teacher/students/summary (teacherStudentAccess). Pending students are a number only. */
+export interface TeacherStudentsSummary { schools: number; students: number; viaSchool: number; viaAssignment: number; pendingVerification: number }
 
 export interface TeacherStudentProfile extends TeacherStudent {
   account: { isActive: boolean; isApproved: boolean; activated: boolean; registeredAt: string; lastLoginAt: string | null };
@@ -87,6 +93,8 @@ export interface TeacherStudentFilters {
   q?: string;
   gradeLevel?: GradeLevel;
   schoolId?: string;
+  /** teacherStudentAccess: SCHOOL (verified students of your schools) or ASSIGNED (assigned to you). */
+  access?: "SCHOOL" | "ASSIGNED";
   page?: number;
   limit?: number;
   [key: string]: QueryValue;
@@ -94,6 +102,7 @@ export interface TeacherStudentFilters {
 
 export const teacherApi = {
   students: (filters: TeacherStudentFilters = {}) => api<Page<TeacherStudent>>("/teacher/students", { query: filters }),
+  summary: () => api<TeacherStudentsSummary>("/teacher/students/summary"),
   profile: (studentId: string) => api<TeacherStudentProfile>(`/teacher/students/${studentId}`),
   progress: (studentId: string) => api<TeacherStudentProgress>(`/teacher/students/${studentId}/progress`),
   /** Multipart, the same fields as a student's own submission (assignmentId, answerText, note, files). */

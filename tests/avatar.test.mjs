@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { avatarUploadErrorText, AVATAR_RULES, AVATAR_TONES, avatarFileProblem, avatarInitials, avatarLabel, avatarSource, avatarTone, displayName } from "../lib/accounts/avatar.ts";
+import { avatarRetry, avatarUploadErrorText, AVATAR_RULES, AVATAR_TONES, avatarFileProblem, avatarInitials, avatarLabel, avatarSource, avatarTone, displayName } from "../lib/accounts/avatar.ts";
 
 test("label: first name and last-name initial (\"Theoneste N\")", () => {
   assert.equal(avatarLabel({ firstName: "Theoneste", lastName: "Nsanzabarinda" }), "Theoneste N");
@@ -67,4 +67,12 @@ test("upload refusals from the backend get clear messages (415, 413, 400 codes)"
   assert.equal(avatarUploadErrorText({ status: 400, code: "EMPTY_FILE" }), "That file is empty.");
   assert.equal(avatarUploadErrorText({ status: 500, code: "INTERNAL_ERROR" }), null);
   assert.equal(avatarUploadErrorText(null), null);
+});
+
+test("a refused picture is final (the generated avatar is shown): 404 — also another viewer of a student's picture — 401, 403; a server error is retried once", () => {
+  for (const status of [404, 401, 403]) assert.equal(avatarRetry(0, { status }), false, String(status));
+  assert.equal(avatarRetry(0, { status: 500 }), true);
+  assert.equal(avatarRetry(1, { status: 500 }), false);
+  assert.equal(avatarRetry(0, new Error("network")), true);   // no status: a network failure
+  assert.equal(avatarRetry(0, { status: 0 }), true);          // the client's network-error status
 });

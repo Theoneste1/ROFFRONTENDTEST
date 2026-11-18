@@ -11,6 +11,7 @@
  */
 import { api, type QueryValue } from "./client";
 import type { GradeLevel, Page } from "./types";
+import type { ItemOutcome, ItemResult, StudentScope } from "../accounts/teacher-student-access";
 
 // ─── School directory (public) ──────────────────────────────────────────────
 
@@ -154,6 +155,65 @@ export interface DelegationRow {
   revokedAt: string | null;
   createdBy: { id: string; username: string } | null;
   active: boolean;
+  /** Backends with teacherStudentAccess: which students it covers; the listed students of a SELECTED one; TS-5 flag. */
+  studentScope?: StudentScope | null;
+  students?: Array<{ studentId: string; createdAt: string; student: PersonRef }>;
+  reviewNeededAt?: string | null;
+  reviewReason?: string | null;
+}
+
+export interface PersonRef { id: string; username: string; firstName: string; lastName: string }
+
+/** An explicit teacher–student assignment (TS-2, TS-3). */
+export interface TeacherStudentAssignment {
+  id: string;
+  isActive: boolean;
+  source: "ADMIN" | "BULK";
+  crossSchool: boolean;
+  reason: string | null;
+  createdAt: string;
+  endedAt: string | null;
+  endReason: string | null;
+  teacher: PersonRef;
+  student: PersonRef & { gradeLevel: GradeLevel | null; school: { id: string; name: string } | null };
+  assignedBy: { id: string; username: string } | null;
+  endedBy: { id: string; username: string } | null;
+}
+
+export interface BatchResult { counts: Partial<Record<ItemOutcome, number>>; results: ItemResult[] }
+
+/** GET /admin/schools/:id/access */
+export interface SchoolAccess {
+  school: { id: string; name: string; location: string; isActive: boolean };
+  teachers: Array<{
+    teacherSchoolAssignmentId: string;
+    since: string;
+    teacher: PersonRef & { accountStatus: string };
+    assignedStudents: number;
+    delegations: Array<{ id: string; permission: string; studentScope: StudentScope | null; expiresAt: string | null; reviewNeededAt: string | null; reviewReason: string | null; selectedStudents: number | null }>;
+  }>;
+  counts: { verifiedStudents: number; pendingStudents: number; verifiedWithoutTeacher: number };
+  attention: { delegationsNeedingReview: Array<{ teacherId: string; overrideId: string; permission: string; reviewReason: string | null }> };
+}
+
+/** GET /admin/schools/:id/access/students — never contact data. */
+export interface SchoolAccessStudent extends PersonRef {
+  gradeLevel: GradeLevel | null;
+  accountStatus: string;
+  isApproved: boolean;
+  activated: boolean;
+  claim: { id: string; status: "VERIFIED" | "PENDING" } | null;
+  teachers: Array<PersonRef & { assignmentId: string; crossSchool: boolean }>;
+}
+
+export interface SchoolAccessStudentFilters {
+  q?: string;
+  gradeLevel?: GradeLevel;
+  verification?: "VERIFIED" | "PENDING";
+  assigned?: boolean;
+  teacherId?: string;
+  page?: number;
+  limit?: number;
 }
 
 export const DELEGATION_RULES = { reasonMin: 3, reasonMax: 500 };
@@ -167,7 +227,23 @@ export const teachersAdminApi = {
   assign: (teacherId: string, schoolId: string) => post<TeacherSchoolAssignment>("/admin/teacher-assignments", { teacherId, schoolId }),
   endAssignment: (id: string) => api<TeacherSchoolAssignment>(`/admin/teacher-assignments/${id}`, { method: "DELETE" }),
   delegations: (teacherId: string) => api<DelegationRow[]>(`/admin/teachers/${teacherId}/delegations`),
-  grant: (teacherId: string, input: { permission: TeacherDelegation; reason: string; expiresAt?: string }) =>
+  grant: (teacherId: string, input: { permission: TeacherDelegation; reason: string; expiresAt?: string; studentScope?: StudentScope; studentIds?: string[] }) =>
     post<DelegationRow>(`/admin/teachers/${teacherId}/delegations`, input),
+  addDelegationStudents: (teacherId: string, overrideId: string, studentIds: string[]) =>
+    post<BatchResult & { overrideId: string }>(`/admin/teachers/${teacherId}/delegations/${overrideId}/students`, { studentIds }),
+  removeDelegationStudent: (teacherId: string, overrideId: string, studentId: string) =>
+    api<ItemResult>(`/admin/teachers/${teacherId}/delegations/${overrideId}/students/${studentId}`, { method: "DELETE" }),
+  markReviewed: (teacherId: string, overrideId: string) => post<{ overrideId: string }>(`/admin/teachers/${teacherId}/delegations/${overrideId}/reviewed`, {}),
+  /** Teacher–student assignments (teacherStudentAccess). */
+  studentAssignments: (filters: { teacherId?: string; studentId?: string; schoolId?: string; isActive?: boolean; limit?: number; page?: number }) =>
+    api<Page<TeacherStudentAssignment>>("/admin/teacher-students", { query: filters }),
+  assignStudents: (teacherId: string, studentIds: string[], reason?: string) =>
+    post<BatchResult & { teacherId: string }>("/admin/teacher-students", { teacherId, studentIds, ...(reason && { reason }) }),
+  endStudentAssignment: (id: string) => api<TeacherStudentAssignment>(`/admin/teacher-students/${id}`, { method: "DELETE" }),
+  reassignStudents: (fromTeacherId: string, toTeacherId: string, studentIds: string[], reason?: string) =>
+    post<BatchResult>("/admin/teacher-students/reassign", { fromTeacherId, toTeacherId, studentIds, ...(reason && { reason }) }),
+  schoolAccess: (schoolId: string) => api<SchoolAccess>(`/admin/schools/${schoolId}/access`),
+  schoolAccessStudents: (schoolId: string, filters: SchoolAccessStudentFilters) =>
+    api<Page<SchoolAccessStudent>>(`/admin/schools/${schoolId}/access/students`, { query: filters as Record<string, QueryValue> }),
   revoke: (teacherId: string, overrideId: string) => api<DelegationRow>(`/admin/teachers/${teacherId}/delegations/${overrideId}`, { method: "DELETE" }),
 };

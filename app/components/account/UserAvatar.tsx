@@ -15,9 +15,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { meApi } from "@/lib/api/auth";
-import { isApiError } from "@/lib/api/errors";
 import { queryKeys } from "@/lib/query/keys";
-import { avatarInitials, avatarLabel, avatarSource, avatarTone, type AvatarPerson } from "@/lib/accounts/avatar";
+import { avatarInitials, avatarLabel, avatarRetry, avatarSource, avatarTone, type AvatarPerson } from "@/lib/accounts/avatar";
 
 export interface AvatarUser extends AvatarPerson {
   avatarUrl?: string | null;
@@ -33,7 +32,7 @@ export function useAvatarSrc(avatarUrl: string | null | undefined): string | nul
     staleTime: Infinity, // the path changes with every new picture (?v=<file id>)
     gcTime: 30 * 60_000,
     // 404: no picture (the generated avatar is shown); 401/403: not retried either. Server errors: once.
-    retry: (count, err) => !(isApiError(err) && err.status < 500) && count < 1,
+    retry: avatarRetry,
   });
   const data = source?.kind === "api" ? blob.data : undefined;
   // One object URL per picture, revoked when the picture changes or the avatar unmounts.
