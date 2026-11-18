@@ -190,7 +190,7 @@ export const usersApi = {
   changeStatus: (id: string, body: { toStatus: AccountState; reason?: string; confirm?: boolean }) =>
     api<{ user: AdminUser; stillBlockedBy?: string[] }>(`/admin/users/${id}/status-changes`, { method: "POST", body }),
   /**
-   * Correct a student's date of birth (capability dateOfBirthCorrection): "YYYY-MM-DD" and a reason (5–500 characters).
+   * Correct a student's date of birth (capability dateOfBirthCorrection): "YYYY-MM-DD" and a reason (5â€“500 characters).
    * 400 VALIDATION_FAILED / NOT_A_STUDENT, 409 DATE_OF_BIRTH_UNCHANGED.
    */
   correctDateOfBirth: (id: string, body: { dateOfBirth: string; reason: string }) =>
