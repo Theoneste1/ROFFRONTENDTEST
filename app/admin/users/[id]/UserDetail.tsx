@@ -17,12 +17,13 @@ import { AccountStatusBadge, UserForm } from "../components/userUi";
 import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
 import { interestsText } from "@/lib/accounts/olympiad-interests";
-import { personalDetailRows } from "@/lib/accounts/admin-user-details";
 import PermissionOverridesCard from "./PermissionOverridesCard";
-import RegistrationHistoryCard from "./RegistrationHistoryCard";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { lifecycleActions, STATUS_REASON, stillBlockedText } from "@/lib/accounts/account-lifecycle";
+// ACC-02 and REG-13 (kept last so this branch merges cleanly with the account-history branch).
+import { personalDetailRows } from "@/lib/accounts/admin-user-details";
+import RegistrationHistoryCard from "./RegistrationHistoryCard";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
