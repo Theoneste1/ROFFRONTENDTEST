@@ -24,6 +24,8 @@ import { lifecycleActions, STATUS_REASON, stillBlockedText } from "@/lib/account
 // ACC-02 and REG-13 (kept last so this branch merges cleanly with the account-history branch).
 import { personalDetailRows } from "@/lib/accounts/admin-user-details";
 import RegistrationHistoryCard from "./RegistrationHistoryCard";
+import DateOfBirthCard from "./DateOfBirthCard";
+import { canCorrectDateOfBirth } from "@/lib/accounts/date-of-birth-correction";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -251,6 +253,8 @@ export default function UserDetail({ userId }: { userId: string }) {
           </div>
         </Card>
 
+        {/* Students' date of birth: correction with a reason, and its history (capability dateOfBirthCorrection). */}
+        {canCorrectDateOfBirth(detection, u.role, can("users.manage")) && <DateOfBirthCard userId={u.id} dateOfBirth={u.dateOfBirth} />}
         {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}

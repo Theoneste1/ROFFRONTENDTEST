@@ -111,6 +111,11 @@ export const KNOWN_FEATURES = [
    * Without it: the fixed closed texts.
    */
   "formAvailability",
+  /**
+   * Administrator date-of-birth correction: `PUT /admin/users/:id/date-of-birth` { dateOfBirth, reason } for a
+   * student, and `GET /admin/users/:id/date-of-birth-history` (both users.manage). Without it: not offered.
+   */
+  "dateOfBirthCorrection",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 
