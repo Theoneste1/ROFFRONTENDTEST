@@ -95,7 +95,9 @@ for (const c of PORTALS) {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await signIn(page, c.who);
     await page.goto(c.home);
-    const { all } = await sidebarHrefs(page);
+    // Group sub-links too (e.g. the student's Assignments group).
+    const { all: items, children } = await sidebarHrefs(page, { openGroups: true });
+    const all = [...new Set([...items, ...children])];
     expect(all.length).toBeGreaterThan(0);
     for (const href of all) expect(href.startsWith(c.prefix), href).toBe(true);
     for (const href of all) {

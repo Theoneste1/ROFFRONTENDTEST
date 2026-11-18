@@ -45,9 +45,12 @@ test.describe.serial("Administrator: School Access", () => {
     await page.goto(`/admin/schools/${schoolId}`);
     await page.getByTestId("school-access-link").click();
     await expect(page).toHaveURL(new RegExp(`/admin/schools/${schoolId}/access$`));
-    const counts = page.getByTestId("access-counts");
-    await expect(counts).toContainText("Verified students");
-    await expect(counts).toContainText("2");
+    // Each count is the value under its own label (this run's fresh school: 2 verified, 1 pending, none assigned).
+    const count = (label: string) =>
+      page.getByTestId("access-counts").getByText(label, { exact: true }).locator("xpath=following-sibling::p[1]");
+    await expect(count("Verified students")).toHaveText("2");
+    await expect(count("Pending verification")).toHaveText("1");
+    await expect(count("Verified, no teacher")).toHaveText("2");
     await expect(page.getByTestId("access-teachers")).toContainText("@e2e.teacher");
     await expect(row(names.pending)).toContainText("Pending");
   });

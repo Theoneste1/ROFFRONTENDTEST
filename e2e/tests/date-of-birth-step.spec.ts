@@ -5,10 +5,11 @@
  * shows only the date-of-birth step; an invalid date is refused; once a valid date is given the portal opens and the
  * step does not come back. (Students with a date of birth are covered by role-journeys: they go straight to the portal.)
  */
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { hashSync } from "bcryptjs";
 import { PASSWORD } from "../support/accounts";
 import { withDb } from "../support/db";
+import { signInWith } from "../support/session";
 
 const USERNAME = `e2e.nodob.${Date.now().toString(36)}`;
 
@@ -25,11 +26,15 @@ test.beforeAll(async () => {
   });
 });
 
+/** Once the page's requests have settled, the portal shows no error (no "Couldn't load…", no error alert). */
+async function expectNoErrorState(page: Page) {
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText(/Couldn.t load/)).toHaveCount(0);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+}
+
 test("a student without a date of birth gives it at first sign-in, then reaches the portal", async ({ page }) => {
-  await page.goto("/login");
-  await page.locator('input[name="username"]').fill(USERNAME);
-  await page.locator('input[name="password"]').fill(PASSWORD);
-  await page.locator('button[type="submit"]').click();
+  await signInWith(page, USERNAME, PASSWORD);
 
   // Only the step: no portal navigation.
   await expect(page.getByRole("heading", { name: "One more step, Nadia" })).toBeVisible({ timeout: 30_000 });
@@ -47,6 +52,8 @@ test("a student without a date of birth gives it at first sign-in, then reaches 
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByTestId("sidebar-nav").first()).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("heading", { name: /One more step/ })).toHaveCount(0);
+  // The dashboard's own requests (refused while the step was pending) now succeed.
+  await expectNoErrorState(page);
 
   const stored = await withDb(async (c) =>
     (await c.query<{ d: string }>(`SELECT to_char("dateOfBirth", 'YYYY-MM-DD') AS d FROM "User" WHERE username = $1`, [USERNAME])).rows[0].d);
@@ -56,4 +63,5 @@ test("a student without a date of birth gives it at first sign-in, then reaches 
   await page.reload();
   await expect(page.getByTestId("sidebar-nav").first()).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("heading", { name: /One more step/ })).toHaveCount(0);
+  await expectNoErrorState(page);
 });
