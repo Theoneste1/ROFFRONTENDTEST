@@ -31,6 +31,37 @@ export function splitNav(count: number, slots: number | null, minPrimary = 2): S
   return { primary, hasMore: primary < count };
 }
 
+/** Fallback height of one sub-link of an opened group (py-2 text-sm link), used until it can be measured. */
+export const DEFAULT_CHILD_PX = 36;
+
+/** Extra height an opened group takes below its toggle: mt-1, its sub-links and the space-y-1 between them. */
+export function groupExtraPx(children: number, childPx: number = DEFAULT_CHILD_PX, gapPx = 4): number {
+  if (!(children > 0)) return 0;
+  return gapPx + children * childPx + (children - 1) * gapPx;
+}
+
+/**
+ * The same split as {@link splitNav}, but from each item's own height, so an opened group (a toggle plus its
+ * sub-links) counts as taller than one row. `heights` are the items' heights in order (without the gap); the "More"
+ * button is one row of `morePx`. All items when they fit; otherwise as many as fit above "More", at least
+ * `minPrimary`. `availablePx` null = not measured yet: show all.
+ */
+export function splitByHeights(availablePx: number | null, heights: readonly number[], morePx: number, gapPx = 12, minPrimary = 2): SplitResult {
+  const count = heights.length;
+  if (availablePx === null) return { primary: count, hasMore: false };
+  const avail = Number.isFinite(availablePx) ? availablePx : 0;
+  const total = heights.reduce((sum, h) => sum + h, 0) + Math.max(0, count - 1) * gapPx;
+  if (total <= avail) return { primary: count, hasMore: false };
+  let used = morePx;
+  let fit = 0;
+  while (fit < count && used + heights[fit] + gapPx <= avail) {
+    used += heights[fit] + gapPx;
+    fit++;
+  }
+  const primary = Math.min(count, Math.max(minPrimary, fit));
+  return { primary, hasMore: primary < count };
+}
+
 /** Whether the active page is among the items under "More" (then "More" opens and shows as active). */
 export function activeInMore(active: readonly boolean[], primary: number): boolean {
   return active.slice(primary).some(Boolean);

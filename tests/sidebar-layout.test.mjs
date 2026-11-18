@@ -54,3 +54,35 @@ test("the portal menus keep their items (the More menu changes the layout only)"
   assert.ok(TEACHER_NAV.some((i) => i.href === "/teacher/dashboard"));
   assert.equal(new Set(ADMIN_NAV.map((i) => i.href)).size, ADMIN_NAV.length, "no duplicate admin items");
 });
+
+import { DEFAULT_CHILD_PX, groupExtraPx, splitByHeights } from "../lib/navigation/sidebar-layout.ts";
+
+test("an opened group is taller than one row: its sub-links count", () => {
+  assert.equal(groupExtraPx(0), 0);
+  assert.equal(groupExtraPx(3, 36), 4 + 3 * 36 + 2 * 4);
+  assert.equal(groupExtraPx(2), 4 + 2 * DEFAULT_CHILD_PX + 4);
+});
+
+test("split by heights: same result as the row split when every item is one row", () => {
+  for (const count of [1, 3, 5, 14]) {
+    for (let avail = 0; avail <= 900; avail += 7) {
+      const heights = Array(count).fill(48);
+      assert.deepEqual(splitByHeights(avail, heights, 48), splitNav(count, slotsFor(avail, 60)), `count ${count}, ${avail}px`);
+    }
+  }
+  assert.deepEqual(splitByHeights(null, [48, 48, 48], 48), { primary: 3, hasMore: false });
+});
+
+test("split by heights: opening a group moves the items below it under More instead of overlapping", () => {
+  // 7 rows of 48 px with 12 px gaps need 7*48 + 6*12 = 408 px: everything fits in 420 px.
+  const closed = Array(7).fill(48);
+  assert.deepEqual(splitByHeights(420, closed, 48), { primary: 7, hasMore: false });
+  // The 3rd item (a group) opens with 3 sub-links: it no longer fits, so items go under More.
+  const opened = closed.map((h, i) => (i === 2 ? h + groupExtraPx(3) : h));
+  const split = splitByHeights(420, opened, 48);
+  assert.equal(split.hasMore, true);
+  const used = opened.slice(0, split.primary).reduce((a, b) => a + b + 12, 0) + 48;
+  assert.ok(used <= 420, `shown items plus More fit (${used}px)`);
+  // A very short screen still keeps the two most used pages.
+  assert.deepEqual(splitByHeights(60, opened, 48), { primary: 2, hasMore: true });
+});

@@ -5,14 +5,15 @@
  * It measures the height it is given and shows the items that fit, in their order (most used first); the rest are
  * under "More" at the bottom. "More" opens a panel beside the sidebar — it needs no vertical space, so the sidebar
  * never has to scroll — and closes on a second click, Escape, a click outside, or when a page is chosen. When the
- * current page is under "More", the button is highlighted and names that page. Items arrive already filtered by role
+ * current page is under "More", the button is highlighted and names that page. An opened group (e.g. the student's
+ * Assignments) counts with its sub-links, so opening one moves items under "More" instead of overlapping the footer. Items arrive already filtered by role
  * and permissions; this component only lays them out (nothing removed, nothing duplicated).
  */
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react";
-import { DEFAULT_ITEM_PX, activeInMore, slotsFor, splitNav } from "@/lib/navigation/sidebar-layout";
+import { DEFAULT_CHILD_PX, DEFAULT_ITEM_PX, activeInMore, groupExtraPx, splitByHeights } from "@/lib/navigation/sidebar-layout";
 import { useSidebarPlacement } from "./sidebar-placement";
 
 export interface SidebarChild {
@@ -38,12 +39,25 @@ const IDLE = "hover:bg-white/5 text-slate-400 hover:text-white";
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const itemActive = (i: SidebarItem) => i.active || !!i.children?.some((c) => c.active);
+const GAP_PX = 12; // gap-3 between entries
+
+/** What the measurement found: the height the list is given, one entry's height and one group sub-link's height. */
+interface Metrics {
+  available: number;
+  itemPx: number;
+  childPx: number;
+}
 
 export default function SidebarNav({ items, isOpen, label = "Main navigation" }: { items: readonly SidebarItem[]; isOpen: boolean; label?: string }) {
   const listRef = useRef<HTMLElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
-  const [slots, setSlots] = useState<number | null>(null);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  // Groups the user opened or closed (by href); otherwise a group is open while one of its pages is active. Kept here
+  // so the layout knows how tall each group is, wherever it is shown.
+  const [toggledGroups, setToggledGroups] = useState<Readonly<Record<string, boolean>>>({});
+  const groupOpen = (i: SidebarItem) => !!i.children?.length && (toggledGroups[i.href] ?? itemActive(i));
+  const toggleGroup = (i: SidebarItem) => setToggledGroups((t) => ({ ...t, [i.href]: !groupOpen(i) }));
   const panelId = useId();
   const drawer = useSidebarPlacement() === "drawer";
   // While "More" is open inline in the drawer the list is taller than its share: do not re-measure then (it would
@@ -54,16 +68,24 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
     frozen.current = drawer && moreOpen;
   }, [drawer, moreOpen]);
 
-  // Measure the available height (and one item's real height) whenever the sidebar or the window changes size.
+  // Measure the available height (and the real height of one item and of one group sub-link) whenever the sidebar or
+  // the window changes size, and when a group opens or closes.
+  const measureRef = useRef<() => void>(() => {});
   useIsoLayoutEffect(() => {
     const el = listRef.current;
     if (!el) return;
     const measure = () => {
       if (frozen.current) return;
       const first = el.querySelector<HTMLElement>("[data-nav-item]");
-      const h = first ? first.getBoundingClientRect().height + 12 : DEFAULT_ITEM_PX;
-      setSlots(slotsFor(el.clientHeight, h));
+      const child = el.querySelector<HTMLElement>("[data-nav-child]");
+      const itemPx = first ? first.getBoundingClientRect().height : DEFAULT_ITEM_PX - GAP_PX;
+      setMetrics((m) => {
+        const childPx = child ? child.getBoundingClientRect().height : (m?.childPx ?? DEFAULT_CHILD_PX);
+        const next = { available: el.clientHeight, itemPx, childPx };
+        return m && m.available === next.available && m.itemPx === next.itemPx && m.childPx === next.childPx ? m : next;
+      });
     };
+    measureRef.current = measure;
     measure();
     const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
     ro?.observe(el);
@@ -91,7 +113,15 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
     };
   }, [moreOpen, drawer]);
 
-  const { primary, hasMore } = splitNav(items.length, slots);
+  const openGroups = items.filter(groupOpen).map((i) => i.href).join(" ");
+  useIsoLayoutEffect(() => {
+    measureRef.current();
+  }, [openGroups, isOpen]);
+
+  // An opened group is as tall as its toggle plus its sub-links (shown only in the expanded sidebar).
+  const itemPx = metrics?.itemPx ?? DEFAULT_ITEM_PX - GAP_PX;
+  const heights = items.map((i) => itemPx + (isOpen && groupOpen(i) ? groupExtraPx(i.children!.length, metrics?.childPx) : 0));
+  const { primary, hasMore } = splitByHeights(metrics?.available ?? null, heights, itemPx, GAP_PX);
   const moreActive = hasMore && activeInMore(items.map(itemActive), primary);
   const shown = items.slice(0, primary);
   const extra = hasMore ? items.slice(primary) : [];
@@ -100,7 +130,7 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
   return (
     <nav aria-label={label} ref={listRef} className={`flex-1 flex flex-col gap-3 ${drawer && moreOpen ? "" : "min-h-0"}`} data-testid="sidebar-nav">
       {shown.map((item) => (
-        <NavEntry key={item.href} item={item} isOpen={isOpen} />
+        <NavEntry key={item.href} item={item} isOpen={isOpen} groupOpen={groupOpen(item)} onToggleGroup={() => toggleGroup(item)} />
       ))}
       {hasMore && (
         <div ref={moreRef} className={drawer ? "mt-auto flex flex-col gap-2" : "relative mt-auto"} data-testid="sidebar-more">
@@ -144,7 +174,7 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
             }}
           >
             {extra.map((item) => (
-              <NavEntry key={item.href} item={item} isOpen inPanel />
+              <NavEntry key={item.href} item={item} isOpen inPanel groupOpen={groupOpen(item)} onToggleGroup={() => toggleGroup(item)} />
             ))}
           </div>
         </div>
@@ -153,9 +183,17 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
   );
 }
 
-function NavEntry({ item, isOpen, inPanel }: { item: SidebarItem; isOpen: boolean; inPanel?: boolean }) {
+interface EntryProps {
+  item: SidebarItem;
+  isOpen: boolean;
+  inPanel?: boolean;
+  groupOpen: boolean;
+  onToggleGroup: () => void;
+}
+
+function NavEntry({ item, isOpen, inPanel, groupOpen, onToggleGroup }: EntryProps) {
   const Icon = item.icon;
-  if (item.children?.length) return <NavGroup item={item} isOpen={isOpen} inPanel={inPanel} />;
+  if (item.children?.length) return <NavGroup item={item} isOpen={isOpen} inPanel={inPanel} open={groupOpen} onToggle={onToggleGroup} />;
   const pad = inPanel ? "px-3 !py-2.5 text-sm" : isOpen ? "px-4" : "justify-center px-0";
   return (
     <Link
@@ -173,17 +211,14 @@ function NavEntry({ item, isOpen, inPanel }: { item: SidebarItem; isOpen: boolea
 }
 
 /** A group with sub-links (opened while one of its pages is active), as the student's Assignments menu was. */
-function NavGroup({ item, isOpen, inPanel }: { item: SidebarItem; isOpen: boolean; inPanel?: boolean }) {
+function NavGroup({ item, isOpen, inPanel, open, onToggle }: Omit<EntryProps, "groupOpen" | "onToggleGroup"> & { open: boolean; onToggle: () => void }) {
   const Icon = item.icon;
   const active = itemActive(item);
-  // Open while one of its pages is active, unless the user toggled it (no state set in an effect).
-  const [toggled, setToggled] = useState<boolean | null>(null);
-  const open = toggled ?? active;
   return (
     <div>
       <button
         type="button"
-        onClick={() => setToggled(!open)}
+        onClick={onToggle}
         title={item.label}
         aria-expanded={open}
         data-nav-item={inPanel ? undefined : ""}
@@ -204,6 +239,7 @@ function NavGroup({ item, isOpen, inPanel }: { item: SidebarItem; isOpen: boolea
               key={c.href}
               href={c.href}
               aria-current={c.active ? "page" : undefined}
+              data-nav-child={inPanel ? undefined : ""}
               className={`flex items-center gap-3 w-full py-2 px-3 rounded-lg font-medium text-sm transition-all ${c.active ? "bg-blue-600/20 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
             >
               <span className="whitespace-nowrap">{c.label}</span>
