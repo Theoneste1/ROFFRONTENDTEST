@@ -162,7 +162,7 @@ export function roleFilterTabs(backendRoles: readonly string[] | null): { label:
   return [{ label: "All", value: "" }, ...shown.map((r) => ({ label: TAB_LABEL[r], value: r }))];
 }
 
-/** Roles the backend serves `/me/notification-settings` (per-type switches) to. */
+/** Roles the backend serves `/me/notification-settings` (per-type switches) to; Teachers and students have none. */
 export function hasNotificationTypeSettings(role: string | null | undefined): boolean {
-  return role === "ADMIN" || role === "MENTOR" || role === "SUPER_ADMIN";
+  return role === "ADMIN" || role === "MENTOR" || role === "HEAD_COACH" || role === "SUPER_ADMIN";
 }

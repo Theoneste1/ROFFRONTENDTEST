@@ -18,6 +18,8 @@ import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
 import { interestsText } from "@/lib/accounts/olympiad-interests";
 import PermissionOverridesCard from "./PermissionOverridesCard";
+import StatusHistoryCard from "./StatusHistoryCard";
+import { statusHistoryVisible } from "@/lib/accounts/status-history";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { lifecycleActions, STATUS_REASON, stillBlockedText } from "@/lib/accounts/account-lifecycle";
@@ -247,6 +249,7 @@ export default function UserDetail({ userId }: { userId: string }) {
         {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}
         {/* Super Administrators: effective permissions (permissions.view) and overrides (permissions.manageOverrides). */}
         {(can("permissions.view") || can("permissions.manageOverrides")) && <PermissionOverridesCard user={u} />}
+        {statusHistoryVisible(detection, can) && <StatusHistoryCard userId={u.id} />}
       </div>
 
       {editing && (
