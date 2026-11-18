@@ -52,6 +52,13 @@ export const queryKeys = {
   forms: {
     public: (key: string) => ["forms", "public", key] as const,
   },
+  /** Bulk user operations (lib/api/bulk-users.ts). */
+  bulkUsers: {
+    all: ["bulk-users"] as const,
+    list: (filters: object) => [...queryKeys.bulkUsers.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.bulkUsers.all, "detail", id] as const,
+    items: (id: string, filters: object) => [...queryKeys.bulkUsers.all, "items", id, filters] as const,
+  },
   /** Teacher application review (`/admin/teacher-applications`). */
   teacherApplications: {
     all: ["teacher-applications"] as const,
