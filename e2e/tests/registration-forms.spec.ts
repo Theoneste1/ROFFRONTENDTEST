@@ -37,6 +37,26 @@ async function setForm(key: string, mode: "OPEN" | "CLOSED") {
   }
 }
 
+/**
+ * Submit and wait for the confirmation. Registration endpoints allow 10 requests a minute per address (not weakened for
+ * tests); in a full run other specs may have used them, so a "Too many requests" answer waits out the window and submits
+ * again, as the sign-in helper does.
+ */
+async function submitAndExpect(page: Page, button: string, doneTestId: string) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await page.getByRole("button", { name: button }).click();
+    const outcome = await Promise.race([
+      page.getByTestId(doneTestId).waitFor({ timeout: 30_000 }).then(() => "done" as const, () => null),
+      page.getByRole("alert").filter({ hasText: /Too many requests/i }).waitFor({ timeout: 30_000 }).then(() => "limited" as const, () => null),
+    ]);
+    if (outcome !== "limited") break;
+    test.info().annotations.push({ type: "rate-limit", description: `${button}: 429, waited 61 s` });
+    test.info().setTimeout(test.info().timeout + 70_000);
+    await page.waitForTimeout(61_000);
+  }
+  await expect(page.getByTestId(doneTestId)).toBeVisible({ timeout: 30_000 });
+}
+
 async function fillPassword(page: Page) {
   await page.locator('input[name="new-password"]').fill(PASSWORD);
   await page.locator('input[name="confirm-password"]').fill(PASSWORD);
@@ -66,14 +86,13 @@ async function studentForm(page: Page, username: string, withPicture: boolean) {
   await page.locator('input[name="username"]').fill(username);
   await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
   await fillPassword(page);
-  await page.getByRole("button", { name: "Create my account" }).click();
+  await submitAndExpect(page, "Create my account", "register-done");
 }
 
 test.describe("public sign-up forms", () => {
   test("a student registers without a picture (it is optional); the account is stored with date of birth and guardian phone", async ({ page }) => {
     const username = `signup.nopic.${RUN}`;
     await studentForm(page, username, false);
-    await expect(page.getByTestId("register-done")).toBeVisible({ timeout: 30_000 });
     const row = await withDb(async (c) => (await c.query(
       `SELECT role, to_char("dateOfBirth", 'YYYY-MM-DD') AS dob, "guardianPhone" IS NOT NULL AS guardian, "avatarFileId" IS NULL AS no_picture, "olympiadInterests"::text AS interests
          FROM "User" WHERE username = $1`, [username])).rows[0]);
@@ -84,7 +103,6 @@ test.describe("public sign-up forms", () => {
   test("a student registers with a picture; the picture is attached to the new account", async ({ page }) => {
     const username = `signup.pic.${RUN}`;
     await studentForm(page, username, true);
-    await expect(page.getByTestId("register-done")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("picture-outcome")).toBeVisible();
     const hasPicture = await withDb(async (c) => (await c.query(`SELECT "avatarFileId" IS NOT NULL AS p FROM "User" WHERE username = $1`, [username])).rows[0].p);
     expect(hasPicture).toBe(true);
@@ -116,8 +134,7 @@ test.describe("public sign-up forms", () => {
     await expect(homeSector).toBeEnabled();
     await homeSector.selectOption({ index: 1 });
     await fillPassword(page);
-    await page.getByRole("button", { name: "Apply as a teacher" }).click();
-    await expect(page.getByTestId("teacher-register-done")).toBeVisible({ timeout: 30_000 });
+    await submitAndExpect(page, "Apply as a teacher", "teacher-register-done");
     // The application holds the details; no account exists until an Administrator approves it.
     const row = await withDb(async (c) => ({
       status: (await c.query(`SELECT status::text AS status FROM "TeacherApplication" WHERE username = $1`, [username])).rows[0]?.status,
@@ -142,8 +159,7 @@ test.describe("public sign-up forms", () => {
     await page.locator('input[name="username"]').fill(username);
     await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await fillPassword(page);
-    await page.getByRole("button", { name: "Apply as a coach" }).click();
-    await expect(page.getByTestId("apply-done")).toBeVisible({ timeout: 30_000 });
+    await submitAndExpect(page, "Apply as a coach", "apply-done");
     const status = await withDb(async (c) => (await c.query(`SELECT status::text AS status FROM "MentorRequest" WHERE username = $1`, [username])).rows[0]?.status);
     expect(status).toBe("PENDING");
   });

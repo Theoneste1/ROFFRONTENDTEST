@@ -63,7 +63,7 @@ test.describe.serial("Administrator sidebar", () => {
     await toggle.click();
     const target = panel.locator("a[href]").last();
     const href = (await target.getAttribute("href"))!;
-    const label = (await target.innerText()).trim();
+    const label = ((await target.textContent()) ?? "").trim();   // textContent: independent of the panel's layout timing
     await target.click();
     await expect(page).toHaveURL(new RegExp(`${href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\?|$)`));
     await expect(panel).toBeHidden();
