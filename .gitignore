@@ -43,3 +43,8 @@ next-env.d.ts
 
 # netlify
 .netlify
+
+# Playwright
+/e2e/report/
+/test-results/
+/playwright/.cache/
