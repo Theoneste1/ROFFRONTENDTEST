@@ -30,7 +30,8 @@ test.beforeAll(async () => {
 async function expectNoErrorState(page: Page) {
   await page.waitForLoadState("networkidle");
   await expect(page.getByText(/Couldn.t load/)).toHaveCount(0);
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  // Any alert except Next.js's route announcer (a role="alert" live region that repeats the page heading).
+  await expect(page.locator('[role="alert"]:not(next-route-announcer [role="alert"])')).toHaveCount(0);
 }
 
 test("a student without a date of birth gives it at first sign-in, then reaches the portal", async ({ page }) => {

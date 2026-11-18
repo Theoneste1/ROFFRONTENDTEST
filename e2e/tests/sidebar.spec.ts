@@ -10,7 +10,7 @@
  * not replayed between contexts): the tests of a role share one page.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { signIn, sidebarHrefs } from "../support/session";
+import { navigateViaSidebar, signIn, sidebarHrefs } from "../support/session";
 
 test.describe.serial("Administrator sidebar", () => {
   let page: Page;
@@ -94,14 +94,15 @@ for (const c of PORTALS) {
   test(`${c.who}: only ${c.prefix} items, each one navigates`, async ({ browser }) => {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await signIn(page, c.who);
-    await page.goto(c.home);
+    // Sign-in lands on the portal: no reload (each full load refreshes the session; the backend allows 30 a minute).
+    await page.waitForURL((u) => u.pathname.startsWith(c.prefix));
     // Group sub-links too (e.g. the student's Assignments group).
     const { all: items, children } = await sidebarHrefs(page, { openGroups: true });
     const all = [...new Set([...items, ...children])];
     expect(all.length).toBeGreaterThan(0);
     for (const href of all) expect(href.startsWith(c.prefix), href).toBe(true);
     for (const href of all) {
-      await page.goto(href);
+      await navigateViaSidebar(page, href);   // clicks the link (client-side), as a user does
       await expect(page.getByTestId("sidebar-nav").first()).toBeVisible();
       await expect(page).not.toHaveURL(/no-access|\/login/);
     }

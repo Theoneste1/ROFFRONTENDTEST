@@ -22,7 +22,14 @@ export async function signIn(page: Page, who: AccountKey) {
 export async function signInWith(page: Page, username: string, password: string) {
   for (let attempt = 1; ; attempt++) {
     await page.goto("/login");
-    await page.locator('input[name="username"]').fill(username);
+    // Opening any page first restores the session (POST /auth/refresh, 30 a minute per address). In a full run that
+    // limit is reached and the app waits it out before showing the form (it retries, then shows sign-in): wait for it.
+    const username_ = page.locator('input[name="username"]');
+    if (!(await username_.isVisible())) {
+      test.info().setTimeout(test.info().timeout + 90_000);
+      await username_.waitFor({ timeout: 90_000 });
+    }
+    await username_.fill(username);
     await page.locator('input[name="password"]').fill(password);
     await page.locator('button[type="submit"]').click();
     const limited = page.getByRole("alert").filter({ hasText: RATE_LIMITED });
@@ -39,6 +46,26 @@ export async function signInWith(page: Page, username: string, password: string)
     break;
   }
   await expect(page).not.toHaveURL(/\/login(\?|$)/, { timeout: 30_000 });
+}
+
+/**
+ * Goes to a sidebar item the way a user does — by clicking its link (opening "More" or a closed group first when the
+ * link is not shown) — and waits for that page. Client-side navigation: no page reload, so no session refresh per item
+ * (the backend allows 30 refreshes a minute; reloading every item of every portal in one run exceeds that).
+ */
+export async function navigateViaSidebar(page: Page, href: string) {
+  const nav = page.getByTestId("sidebar-nav").first();
+  const link = nav.locator(`a[href="${href}"]`).first();
+  if (!(await link.isVisible())) {
+    const toggle = nav.getByTestId("sidebar-more-toggle");
+    if (await toggle.isVisible() && (await nav.locator(`[data-testid="sidebar-more-panel"] a[href="${href}"]`).count()) === 0) {
+      await toggle.click();
+    }
+    const closed = nav.locator(':scope > div:not([data-testid]) > button[aria-expanded="false"]');
+    while (!(await link.isVisible()) && (await closed.count()) > 0) await closed.first().click();
+  }
+  await link.click();
+  await page.waitForURL((u) => u.pathname === href.split("?")[0]);
 }
 
 /**
