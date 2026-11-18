@@ -94,6 +94,11 @@ export const KNOWN_FEATURES = [
    */
   "studentRegistrationDetails",
   /**
+   * Administrator date-of-birth correction: `PUT /admin/users/:id/date-of-birth` { dateOfBirth, reason } for a
+   * student, and `GET /admin/users/:id/date-of-birth-history` (both users.manage). Without it: not offered.
+   */
+  "dateOfBirthCorrection",
+  /**
    * Coach application details: `POST /mentor-requests` takes `country`, `occupation`,
    * `educationLevel` and `olympiadInterests`; the administrators' list returns them. Without it: not asked.
    */

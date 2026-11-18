@@ -23,6 +23,11 @@ import { statusHistoryVisible } from "@/lib/accounts/status-history";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { lifecycleActions, STATUS_REASON, stillBlockedText } from "@/lib/accounts/account-lifecycle";
+// ACC-02 and REG-13 (kept last so this branch merges cleanly with the account-history branch).
+import { personalDetailRows } from "@/lib/accounts/admin-user-details";
+import RegistrationHistoryCard from "./RegistrationHistoryCard";
+import DateOfBirthCard from "./DateOfBirthCard";
+import { canCorrectDateOfBirth } from "@/lib/accounts/date-of-birth-correction";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -109,6 +114,12 @@ export default function UserDetail({ userId }: { userId: string }) {
             )}
             <Row label="School">{u.school ? `${u.school.name} · ${u.school.location}` : "—"}</Row>
             <Row label="Home location">{u.homeLocation || "—"}</Row>
+            {/* ACC-02: the account's personal details (sent to administrators for one account only). */}
+            {personalDetailRows(u).map((r) => (
+              <Row key={r.label} label={r.label}>
+                {r.value}
+              </Row>
+            ))}
             <Row label="Activated">{u.activatedAt ? formatDateTime(u.activatedAt) : "Not yet — waiting for the user to set a password"}</Row>
             <Row label="Last sign-in">{u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "Never"}</Row>
             <Row label="Created">{formatDateTime(u.createdAt)}</Row>
@@ -244,6 +255,9 @@ export default function UserDetail({ userId }: { userId: string }) {
           </div>
         </Card>
 
+        {/* Students' date of birth: correction with a reason, and its history (capability dateOfBirthCorrection). */}
+        {canCorrectDateOfBirth(detection, u.role, can("users.manage")) && <DateOfBirthCard userId={u.id} dateOfBirth={u.dateOfBirth} />}
+        {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
         {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}

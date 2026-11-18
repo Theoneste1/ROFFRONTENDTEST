@@ -4,6 +4,7 @@
  * and publish — they never grade and never create assignments.
  */
 import { api, apiBlob, saveFile, type QueryValue } from "./client";
+import type { DateOfBirthHistoryEntry } from "../accounts/date-of-birth-correction";
 import type {
   AdminDashboard,
   AdminDivision,
@@ -188,6 +189,14 @@ export const usersApi = {
    */
   changeStatus: (id: string, body: { toStatus: AccountState; reason?: string; confirm?: boolean }) =>
     api<{ user: AdminUser; stillBlockedBy?: string[] }>(`/admin/users/${id}/status-changes`, { method: "POST", body }),
+  /**
+   * Correct a student's date of birth (capability dateOfBirthCorrection): "YYYY-MM-DD" and a reason (5–500 characters).
+   * 400 VALIDATION_FAILED / NOT_A_STUDENT, 409 DATE_OF_BIRTH_UNCHANGED.
+   */
+  correctDateOfBirth: (id: string, body: { dateOfBirth: string; reason: string }) =>
+    api<AdminUser>(`/admin/users/${id}/date-of-birth`, { method: "PUT", body }),
+  /** Corrections and the first-sign-in entry, newest first. */
+  dateOfBirthHistory: (id: string) => api<DateOfBirthHistoryEntry[]>(`/admin/users/${id}/date-of-birth-history`),
 };
 
 // ─── Divisions & schools (lookups) ──────────────────────────────────────────

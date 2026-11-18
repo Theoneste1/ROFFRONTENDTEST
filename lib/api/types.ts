@@ -835,6 +835,17 @@ export interface AdminUser {
   olympiadInterests?: string[];
   /** The account state (backends with accountStates); isActive is true exactly when it is ACTIVE. */
   accountStatus?: AccountState;
+  /**
+   * Registration details (backends with studentRegistrationDetails): full values for ONE account
+   * (GET /admin/users/:id, users.manage); lists return phones masked ("+250••••••456").
+   */
+  dateOfBirth?: string | null;
+  phone?: string | null;
+  guardianPhone?: string | null;
+  country?: string | null;
+  homeProvince?: string | null;
+  homeDistrict?: string | null;
+  homeSector?: string | null;
 }
 
 /** Account states (capability accountStates). */
