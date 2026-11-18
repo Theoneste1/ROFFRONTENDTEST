@@ -138,7 +138,7 @@ function DistributeDialog({ assignment, waiting, onClose, onDone }: { assignment
               {mentors.data!.map((m) => (
                 <label key={m.id} className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={selected.includes(m.id)} onChange={(e) => setSelected((s) => (e.target.checked ? [...s, m.id] : s.filter((x) => x !== m.id)))} />
-                  {personName(m)} <span className="text-gray-400 text-xs">@{m.username}</span>
+                  {personName(m)} <span className="text-gray-500 text-xs">@{m.username}</span>
                 </label>
               ))}
             </div>
@@ -179,7 +179,7 @@ export default function SubmissionsSection({ assignment }: { assignment: MentorA
           <h2 id="subs-title" className="text-xl font-bold text-gray-900">
             Submissions
           </h2>
-          <p className="text-xs text-gray-500">Distribute student work to coaches, follow reviews and open a review to approve it.</p>
+          <p className="text-xs text-gray-600">Distribute student work to coaches, follow reviews and open a review to approve it.</p>
         </div>
         {!archived && waiting > 0 && (
           <button type="button" onClick={() => setDistributing(true)} className={btnPrimary}>
@@ -236,12 +236,12 @@ export default function SubmissionsSection({ assignment }: { assignment: MentorA
                   <tr key={s.id} className="text-xs hover:bg-gray-50/60">
                     <td className={`${td} font-semibold text-gray-800 whitespace-nowrap`}>
                       {personName(s.student)}
-                      <span className="block text-[11px] font-normal text-gray-400">
+                      <span className="block text-[11px] font-normal text-gray-500">
                         @{s.student.username}
                         {s.student.gradeLevel && ` · ${s.student.gradeLevel}`}
                       </span>
                     </td>
-                    <td className={`${td} text-gray-500 whitespace-nowrap`}>
+                    <td className={`${td} text-gray-600 whitespace-nowrap`}>
                       {formatDateTime(s.submittedAt)}
                       <span className="block text-[11px]">
                         {s.revisionCount > 1 ? `${s.revisionCount} attempts` : "1 attempt"}
@@ -280,7 +280,7 @@ export default function SubmissionsSection({ assignment }: { assignment: MentorA
             {batches.data.map((b) => (
               <li key={b.id}>
                 {formatDateTime(b.createdAt)} · {b.assignedCount} submission{b.assignedCount === 1 ? "" : "s"} · {b.strategy === "BALANCED" ? "balanced" : "round robin"} · by @{b.createdBy?.username ?? "—"}
-                {b.reviews.length > 0 && <span className="text-gray-400"> — {[...new Set(b.reviews.map((r) => `@${r.mentor?.username ?? "?"}`))].join(", ")}</span>}
+                {b.reviews.length > 0 && <span className="text-gray-500"> — {[...new Set(b.reviews.map((r) => `@${r.mentor?.username ?? "?"}`))].join(", ")}</span>}
               </li>
             ))}
           </ul>

@@ -164,7 +164,7 @@ export default function SchoolDirectoryList() {
       )}
 
       {schools.data && (
-        <p className="text-xs text-gray-500 mb-2" data-testid="school-count">
+        <p className="text-xs text-gray-600 mb-2" data-testid="school-count">
           {formatNumber(schools.data.meta.total)} school{schools.data.meta.total === 1 ? "" : "s"}
           {isFiltered(state) ? " match the filters" : ""}
         </p>
@@ -210,16 +210,16 @@ export default function SchoolDirectoryList() {
                 <tr key={s.id} className="text-xs hover:bg-gray-50/60" data-testid="school-row">
                   <td className={`${td} font-semibold text-gray-800`}>
                     {s.name}
-                    {s.code && <span className="block text-[11px] font-normal text-gray-400">Code {s.code}</span>}
+                    {s.code && <span className="block text-[11px] font-normal text-gray-500">Code {s.code}</span>}
                   </td>
-                  <td className={`${td} text-gray-500`}>{placeLabel(s)}</td>
-                  <td className={`${td} text-gray-500`}>{SOURCE_LABEL[s.source] ?? s.source}</td>
+                  <td className={`${td} text-gray-600`}>{placeLabel(s)}</td>
+                  <td className={`${td} text-gray-600`}>{SOURCE_LABEL[s.source] ?? s.source}</td>
                   <td className={`${td} text-gray-600 whitespace-nowrap`}>
                     {formatNumber(s.students)}
-                    <span className="block text-[11px] text-gray-400">{formatNumber(s.verifiedStudents)} verified</span>
+                    <span className="block text-[11px] text-gray-500">{formatNumber(s.verifiedStudents)} verified</span>
                   </td>
                   <td className={td}>
-                    <Badge className={s.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}>{s.isActive ? "Active" : "Inactive"}</Badge>
+                    <Badge className={s.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}>{s.isActive ? "Active" : "Inactive"}</Badge>
                   </td>
                   <td className={`${td} whitespace-nowrap`}>
                     <span className="flex items-center gap-3">

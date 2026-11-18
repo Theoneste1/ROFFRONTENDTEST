@@ -42,14 +42,14 @@ export default function FileButton({ file, fetchFile }: { file: FileRef; fetchFi
           <p className="text-xs font-semibold text-gray-900 truncate" title={file.originalName}>
             {file.originalName}
           </p>
-          <p className="text-[11px] text-gray-400">{formatFileSize(file.size)}</p>
+          <p className="text-[11px] text-gray-500">{formatFileSize(file.size)}</p>
         </div>
         {viewable && (
           <button
             type="button"
             onClick={() => run("view")}
             disabled={!!busy}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+            className="p-1.5 rounded-lg text-gray-600 hover:text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
             aria-label={`Open ${file.originalName}`}
             title="Open"
           >
@@ -60,7 +60,7 @@ export default function FileButton({ file, fetchFile }: { file: FileRef; fetchFi
           type="button"
           onClick={() => run("save")}
           disabled={!!busy}
-          className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+          className="p-1.5 rounded-lg text-gray-600 hover:text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
           aria-label={`Download ${file.originalName}`}
           title="Download"
         >

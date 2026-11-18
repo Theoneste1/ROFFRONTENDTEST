@@ -89,7 +89,7 @@ export default function CoachInvite({ programmeId, programmeName }: { programmeI
       {open && (
         <Modal title={`Invite a coach to ${programmeName}`} onClose={() => setOpen(false)}>
           <form onSubmit={onSubmit} noValidate className="space-y-4" data-testid="coach-invite-form">
-            <p className="text-xs text-gray-500">The coach receives an e-mail to set a password. An administrator approves the account and gives course access.</p>
+            <p className="text-xs text-gray-600">The coach receives an e-mail to set a password. An administrator approves the account and gives course access.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <TextInput label="First name" required value={v.firstName} onChange={(x) => setV((s) => ({ ...s, firstName: x }))} error={errors.firstName} maxLength={USER_RULES.name.max} autoComplete="off" />
               <TextInput label="Last name" required value={v.lastName} onChange={(x) => setV((s) => ({ ...s, lastName: x }))} error={errors.lastName} maxLength={USER_RULES.name.max} autoComplete="off" />

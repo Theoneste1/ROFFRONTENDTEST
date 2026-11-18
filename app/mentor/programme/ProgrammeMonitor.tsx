@@ -124,7 +124,7 @@ export default function ProgrammeMonitor() {
         />
       )}
       {ALL_PROGRAMMES[active] && (
-        <p className="text-xs text-gray-500 mb-3" data-testid="report-scope-note">
+        <p className="text-xs text-gray-600 mb-3" data-testid="report-scope-note">
           {ALL_PROGRAMMES[active]} all {headed.programmes.length > 1 ? `${headed.programmes.length} programmes` : "the programmes"} you head
           {headed.programmes.length > 1 ? ", not only the one selected above" : ""}
           {active === "log" ? "." : ", for the current academic year."}
@@ -177,7 +177,7 @@ function StudentProgress() {
             <tr key={s.id}>
               <td className={td}>
                 <p className="font-semibold text-gray-800">{s.name}</p>
-                <p className="text-xs text-gray-400">@{s.username} · {STATUS_LABEL[s.status] ?? s.status}</p>
+                <p className="text-xs text-gray-500">@{s.username} · {STATUS_LABEL[s.status] ?? s.status}</p>
               </td>
               <td className={`${td} text-gray-600`}>{s.division?.name ?? "—"}</td>
               <td className={`${td} text-gray-600`}>{formatNumber(s.submissions)}</td>
@@ -217,7 +217,7 @@ function CoachActivity() {
             <tr key={m.id}>
               <td className={td}>
                 <p className="font-semibold text-gray-800">{m.name}</p>
-                <p className="text-xs text-gray-400">@{m.username} · {STATUS_LABEL[m.status] ?? m.status}</p>
+                <p className="text-xs text-gray-500">@{m.username} · {STATUS_LABEL[m.status] ?? m.status}</p>
               </td>
               <td className={`${td} text-gray-600`}>{m.teaching.length ? m.teaching.map((t) => `${t.course.title} (${t.division.name})`).join(", ") : "—"}</td>
               <td className={`${td} text-gray-600`}>{formatNumber(m.openReviews)}</td>

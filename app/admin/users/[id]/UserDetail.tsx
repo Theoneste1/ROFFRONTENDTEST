@@ -32,7 +32,7 @@ import { canCorrectDateOfBirth } from "@/lib/accounts/date-of-birth-correction";
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-4 py-2.5 border-b border-gray-100 last:border-0 text-sm">
-      <dt className="sm:w-44 shrink-0 text-xs font-semibold text-gray-400 uppercase tracking-wider pt-0.5">{label}</dt>
+      <dt className="sm:w-44 shrink-0 text-xs font-semibold text-gray-500 uppercase tracking-wider pt-0.5">{label}</dt>
       <dd className="text-gray-800 min-w-0 break-words">{children}</dd>
     </div>
   );
@@ -125,7 +125,7 @@ export default function UserDetail({ userId }: { userId: string }) {
             <Row label="Created">{formatDateTime(u.createdAt)}</Row>
           </dl>
           {u.role === "MENTOR" && (
-            <p className="mt-4 text-xs text-gray-500">
+            <p className="mt-4 text-xs text-gray-600">
               Course access for this coach is managed on the{" "}
               <Link href={`/admin/mentors?mentor=${u.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
                 Coaches page
@@ -134,7 +134,7 @@ export default function UserDetail({ userId }: { userId: string }) {
             </p>
           )}
           {u.role === "HEAD_COACH" && courseAccessTarget(me?.role, can, u.role) === "headCoach" && (
-            <p className="mt-4 text-xs text-gray-500" data-testid="head-coach-course-access">
+            <p className="mt-4 text-xs text-gray-600" data-testid="head-coach-course-access">
               To let this Head Coach prepare and grade work, give them course access on a course of a programme they head:{" "}
               <Link href={`/admin/mentors?mentor=${u.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
                 Course access
@@ -146,7 +146,7 @@ export default function UserDetail({ userId }: { userId: string }) {
 
         <Card className="p-6 h-fit">
           <h2 className="text-base font-bold text-gray-900 mb-1">Actions</h2>
-          <p className="text-xs text-gray-500 mb-4">Administrators never see or set another person&apos;s password; send a reset link instead.</p>
+          <p className="text-xs text-gray-600 mb-4">Administrators never see or set another person&apos;s password; send a reset link instead.</p>
           <div className="flex flex-col gap-2">
             {/* The backend approves any active account; a coach invited by a Head Coach waits for approval even before activation. */}
             {u.isActive && !u.isApproved && (
@@ -251,7 +251,7 @@ export default function UserDetail({ userId }: { userId: string }) {
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Delete account
               </button>
             )}
-            {isMe && <p className="text-[11px] text-gray-400">This is your own account: it cannot be suspended, archived or deleted here, and its role cannot be changed.</p>}
+            {isMe && <p className="text-[11px] text-gray-500">This is your own account: it cannot be suspended, archived or deleted here, and its role cannot be changed.</p>}
           </div>
         </Card>
 

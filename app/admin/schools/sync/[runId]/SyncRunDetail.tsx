@@ -209,7 +209,7 @@ function RunPage({ runId, access, back }: { runId: string; access: SyncAccess; b
               ) : (
                 open && <p className="text-emerald-700">Nothing blocks an approval. Pending changes are not applied.</p>
               )}
-              <p className="text-gray-500">
+              <p className="text-gray-600">
                 {review.data.run.approvedAt
                   ? `Last approved ${formatDateTime(review.data.run.approvedAt)}${review.data.run.approvedBy ? ` by @${review.data.run.approvedBy.username}` : ""}${review.data.run.approvalCurrent ? "" : " (no longer current)"}. `
                   : ""}
@@ -301,7 +301,7 @@ function CategoriesCard({ runId, onDone }: { runId: string; onDone: Done }) {
     <Card>
       <div className="p-5 mt-4 text-xs space-y-2" data-testid="sync-categories">
         <h2 className="text-sm font-bold text-gray-800">Approve by category</h2>
-        <p className="text-gray-500">Approves every pending change of the category as listed now (explicit rejections stay). Changes, contacts and new places are decided one by one below.</p>
+        <p className="text-gray-600">Approves every pending change of the category as listed now (explicit rejections stay). Changes, contacts and new places are decided one by one below.</p>
         {approvable.map((c) => (
           <label key={c.kind} className="flex items-center gap-2">
             <input
@@ -385,18 +385,18 @@ function ChangesTab({ runId, open, superAdmin, onDone }: { runId: string; open: 
                     <td className={td}>{c.item?.rowNumber ?? "—"}</td>
                     <td className={td}>
                       <span className="font-semibold text-gray-800">{KIND_LABEL[c.kind]}</span>
-                      {c.field && <span className="block text-gray-500">{c.field}</span>}
+                      {c.field && <span className="block text-gray-600">{c.field}</span>}
                     </td>
                     <td className={`${td} text-gray-600 max-w-[14rem] break-words`}>{showValue(c.currentValue)}</td>
                     <td className={`${td} text-gray-800 max-w-[14rem] break-words`}>{showValue(c.publishedValue)}</td>
                     <td className={td}>
                       <Badge className={DECISION_BADGE[c.decision]}>{DECISION_LABEL[c.decision]}</Badge>
-                      {c.decidedBy && <span className="block text-[11px] text-gray-400">@{c.decidedBy.username}</span>}
+                      {c.decidedBy && <span className="block text-[11px] text-gray-500">@{c.decidedBy.username}</span>}
                       {c.appliedAt && <span className="block text-[11px] text-emerald-600">applied</span>}
                     </td>
                     <td className={`${td} whitespace-nowrap`}>
                       {blocked ? (
-                        <span className="text-[11px] text-gray-400">{open ? blocked : ""}</span>
+                        <span className="text-[11px] text-gray-500">{open ? blocked : ""}</span>
                       ) : (
                         <span className="inline-flex gap-2">
                           {(["APPROVED", "REJECTED", "PENDING"] as const)
@@ -475,15 +475,15 @@ function RowsTab({ runId, runStatus, open, onDone }: { runId: string; runStatus:
                     <td className={td}>{it.rowNumber ?? "—"}</td>
                     <td className={`${td} font-semibold text-gray-800`}>
                       {name ?? "—"}
-                      {(n?.rawCode || typeof d.code === "string") && <span className="block font-normal text-gray-500">code {n?.rawCode || String(d.code)}</span>}
+                      {(n?.rawCode || typeof d.code === "string") && <span className="block font-normal text-gray-600">code {n?.rawCode || String(d.code)}</span>}
                     </td>
                     <td className={`${td} text-gray-600`}>{[n?.sector ?? d.sector, n?.district ?? d.district, n?.province].filter(Boolean).map(String).join(", ") || "—"}</td>
                     <td className={td}>
                       <Badge className={it.outcome === "MATCHED" ? "bg-emerald-50 text-emerald-700" : it.outcome === "NEW" ? "bg-indigo-50 text-indigo-700" : "bg-amber-50 text-amber-700"}>{OUTCOME_LABEL[it.outcome]}</Badge>
-                      {it.conflictState && <span className="block text-[11px] text-gray-500">{CONFLICT_STATE_LABEL[it.conflictState]}</span>}
-                      {Array.isArray(d.reasons) && <span className="block text-[11px] text-gray-500">{(d.reasons as string[]).map((x) => x.toLowerCase().replace(/_/g, " ")).join("; ")}</span>}
+                      {it.conflictState && <span className="block text-[11px] text-gray-600">{CONFLICT_STATE_LABEL[it.conflictState]}</span>}
+                      {Array.isArray(d.reasons) && <span className="block text-[11px] text-gray-600">{(d.reasons as string[]).map((x) => x.toLowerCase().replace(/_/g, " ")).join("; ")}</span>}
                     </td>
-                    <td className={`${td} text-gray-500`}>{it.issues.length ? [...new Set(it.issues.map((x) => x.code.toLowerCase().replace(/_/g, " ")))].join("; ") : "—"}</td>
+                    <td className={`${td} text-gray-600`}>{it.issues.length ? [...new Set(it.issues.map((x) => x.code.toLowerCase().replace(/_/g, " ")))].join("; ") : "—"}</td>
                     <td className={td}>
                       {canPropose && isManualReview(it) && it.conflictState !== "RESOLVED" && (
                         <button type="button" className={linkBtn} onClick={() => setProposing(it)}>

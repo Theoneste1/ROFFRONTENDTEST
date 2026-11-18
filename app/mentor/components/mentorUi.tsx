@@ -60,7 +60,7 @@ export function ScopeSelect({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+      <label htmlFor={id} className="text-[10px] font-bold tracking-wider text-slate-600 uppercase">
         {label}
       </label>
       <div className="relative">
@@ -77,7 +77,7 @@ export function ScopeSelect({
             </option>
           ))}
         </select>
-        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <ChevronDown className="w-4 h-4 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
       </div>
     </div>
   );

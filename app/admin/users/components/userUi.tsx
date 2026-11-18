@@ -51,7 +51,7 @@ export const gradeDivision = (g: GradeLevel) => (["S1", "S2", "S3"].includes(g) 
 // ─── Form controls (admin style) ────────────────────────────────────────────
 
 const inputCls =
-  "w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500";
+  "w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500";
 
 export function Field({ label, error, hint, required, children, id }: { label: string; error?: string; hint?: ReactNode; required?: boolean; children: (id: string, describedBy?: string) => ReactNode; id?: string }) {
   const autoId = useId();
@@ -68,7 +68,7 @@ export function Field({ label, error, hint, required, children, id }: { label: s
           {error}
         </p>
       ) : hint ? (
-        <p id={`${fid}-hint`} className="mt-1 text-[11px] text-gray-400">
+        <p id={`${fid}-hint`} className="mt-1 text-[11px] text-gray-500">
           {hint}
         </p>
       ) : null}
@@ -157,7 +157,7 @@ function SchoolCascadePicker({ value, onChange, label }: { value: SchoolRef | nu
         {(id) => (
           <div id={id} className="flex items-center justify-between gap-2 border border-gray-200 rounded-lg px-3 py-2 text-sm">
             <span className="min-w-0 truncate">
-              {value.name} <span className="text-gray-400">· {value.location}</span>
+              {value.name} <span className="text-gray-500">· {value.location}</span>
             </span>
             <button type="button" onClick={reset} className="text-xs font-medium text-indigo-600 hover:text-indigo-800 shrink-0">
               Change
@@ -238,7 +238,7 @@ function LegacySchoolSearch({ value, onChange, label }: { value: SchoolRef | nul
         {(id) => (
           <div id={id} className="flex items-center justify-between gap-2 border border-gray-200 rounded-lg px-3 py-2 text-sm">
             <span className="min-w-0 truncate">
-              {value.name} <span className="text-gray-400">· {value.location}</span>
+              {value.name} <span className="text-gray-500">· {value.location}</span>
             </span>
             <button type="button" onClick={() => onChange(null)} className="text-xs font-medium text-indigo-600 hover:text-indigo-800 shrink-0">
               Change
@@ -256,15 +256,15 @@ function LegacySchoolSearch({ value, onChange, label }: { value: SchoolRef | nul
           {term.length >= 2 && (
             <div className="mt-1 border border-gray-100 rounded-lg max-h-40 overflow-y-auto">
               {results.isPending ? (
-                <p className="px-3 py-2 text-xs text-gray-400">Searching…</p>
+                <p className="px-3 py-2 text-xs text-gray-500">Searching…</p>
               ) : results.isError ? (
                 <p className="px-3 py-2 text-xs text-red-600">{errorMessage(results.error)}</p>
               ) : results.data.length === 0 ? (
-                <p className="px-3 py-2 text-xs text-gray-400">No school matches “{term}”.</p>
+                <p className="px-3 py-2 text-xs text-gray-500">No school matches “{term}”.</p>
               ) : (
                 results.data.map((s) => (
                   <button key={s.id} type="button" onClick={() => onChange(s)} className="block w-full text-left px-3 py-2 text-xs hover:bg-indigo-50">
-                    {s.name} <span className="text-gray-400">· {s.location}</span>
+                    {s.name} <span className="text-gray-500">· {s.location}</span>
                   </button>
                 ))
               )}
@@ -507,14 +507,14 @@ export function UserForm({
         </div>
       )}
       <SchoolPicker value={f.school} onChange={(s) => set("school", s)} />
-      {mode === "invite" && !newSchoolByName && !f.school && <p className="text-[11px] text-gray-400">An invitation can only name a school that already exists.</p>}
+      {mode === "invite" && !newSchoolByName && !f.school && <p className="text-[11px] text-gray-500">An invitation can only name a school that already exists.</p>}
       {mode === "invite" && newSchoolByName && !f.school && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput label="…or a new school name" value={f.newSchoolName} onChange={(v) => set("newSchoolName", v)} error={errors.schoolName} maxLength={200} />
           <TextInput label="New school location" value={f.newSchoolLocation} onChange={(v) => set("newSchoolLocation", v)} error={errors.schoolLocation} maxLength={200} />
         </div>
       )}
-      {mode === "edit" && initial?.role === "STUDENT" && <p className="text-[11px] text-gray-400">Changing the grade moves the student to the matching division.</p>}
+      {mode === "edit" && initial?.role === "STUDENT" && <p className="text-[11px] text-gray-500">Changing the grade moves the student to the matching division.</p>}
       {formError && <Alert tone="error">{formError}</Alert>}
       <div className="flex justify-end gap-3">
         <button type="button" onClick={onCancel} disabled={busy} className="px-5 py-2 text-sm text-gray-600 disabled:opacity-50">

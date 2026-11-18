@@ -21,20 +21,20 @@ export default function StatusHistoryCard({ userId }: { userId: string }) {
   return (
     <Card className="p-6 lg:col-span-3">
       <h2 className="text-base font-bold text-gray-900 mb-1">Account history</h2>
-      <p className="text-xs text-gray-500 mb-4">Every change of the account&apos;s state — who made it, when, and why.</p>
+      <p className="text-xs text-gray-600 mb-4">Every change of the account&apos;s state — who made it, when, and why.</p>
       {history.isPending ? (
         <LoadingBlock />
       ) : history.isError ? (
         <ErrorState error={history.error} title="Couldn't load the account history" onRetry={() => history.refetch()} />
       ) : history.data.data.length === 0 ? (
-        <p className="text-sm text-gray-500">No state changes yet: the account has been active since it was created.</p>
+        <p className="text-sm text-gray-600">No state changes yet: the account has been active since it was created.</p>
       ) : (
         <>
           <ol className="divide-y divide-gray-100" data-testid="status-history">
             {history.data.data.map((c) => (
               <li key={c.id} className="py-2.5 text-sm">
                 <p className="font-semibold text-gray-800">{transitionText(c)}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-600">
                   {formatDateTime(c.createdAt)} · {changedBy(c)}
                   {c.operationId && (
                     <>

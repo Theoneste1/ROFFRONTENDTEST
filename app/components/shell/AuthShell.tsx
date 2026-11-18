@@ -113,7 +113,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
           </div>
         </main>
 
-        <footer className="relative flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 pb-6 text-xs text-slate-500">
+        <footer className="relative flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 pb-6 text-xs text-slate-600">
           <span>Rwanda Olympiad Foundation · Learning platform</span>
           <Link href="/support" className="font-medium text-slate-600 hover:text-[#2B2BB2] hover:underline">
             Help and support

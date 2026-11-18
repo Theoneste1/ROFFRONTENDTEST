@@ -122,7 +122,7 @@ export default function TeacherStudents() {
                   <tr key={s.id} className="hover:bg-gray-50/50" data-testid="teacher-student-row">
                     <td className={td}>
                       <p className="font-semibold text-gray-800">{personName(s)}</p>
-                      <p className="text-xs text-gray-400">@{s.username}</p>
+                      <p className="text-xs text-gray-500">@{s.username}</p>
                       {(accessBadges(s.access).length > 0 || (may && may.length > 0)) && (
                         <div className="mt-1 flex flex-wrap gap-1">
                           {accessBadges(s.access).map((b) => (
@@ -144,7 +144,7 @@ export default function TeacherStudents() {
                             Open
                           </Link>
                         ) : (
-                          <span className="text-xs text-gray-400" title="Your permissions do not cover this student.">No access</span>
+                          <span className="text-xs text-gray-500" title="Your permissions do not cover this student.">No access</span>
                         )}
                       </td>
                     )}

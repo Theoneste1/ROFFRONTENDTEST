@@ -92,14 +92,14 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
     <Card className="p-6 lg:col-span-3" >
       <div data-testid="teacher-access">
         <h2 className="text-base font-bold text-gray-900 mb-1">Teacher access</h2>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-gray-600 mb-4">
           A teacher sees only students of their assigned schools whose school an administrator has verified{tsa ? ", and students assigned to them directly" : ""}. Changes apply on the teacher&apos;s next request.
         </p>
         {error && <Alert tone="error">{error}</Alert>}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-3">
           <section aria-labelledby="t-schools">
-            <h3 id="t-schools" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Schools</h3>
+            <h3 id="t-schools" className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Schools</h3>
             {schools.isPending ? (
               <LoadingBlock />
             ) : schools.isError ? (
@@ -107,12 +107,12 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
             ) : (
               <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg mb-3" data-testid="teacher-schools">
                 {active.length === 0 ? (
-                  <li className="px-3 py-2 text-xs text-gray-400">No school assigned yet.</li>
+                  <li className="px-3 py-2 text-xs text-gray-500">No school assigned yet.</li>
                 ) : (
                   active.map((a) => (
                     <li key={a.id} className="px-3 py-2 flex items-center justify-between gap-2 text-sm">
                       <span className="min-w-0">
-                        {a.school.name} <span className="text-xs text-gray-400">· {a.school.location} · since {formatDate(a.createdAt)}</span>
+                        {a.school.name} <span className="text-xs text-gray-500">· {a.school.location} · since {formatDate(a.createdAt)}</span>
                       </span>
                       <button type="button" className={linkBtn} disabled={act.isPending} onClick={() => act.mutate(() => teachersAdminApi.endAssignment(a.id))}>
                         End
@@ -134,7 +134,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
           </section>
 
           <section aria-labelledby="t-delegations">
-            <h3 id="t-delegations" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Extra permissions</h3>
+            <h3 id="t-delegations" className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Extra permissions</h3>
             {delegations.isPending ? (
               <LoadingBlock />
             ) : delegations.isError ? (
@@ -142,14 +142,14 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
             ) : (
               <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg mb-3" data-testid="teacher-delegations">
                 {activeDelegations.length === 0 ? (
-                  <li className="px-3 py-2 text-xs text-gray-400">None — the teacher sees the student list only.</li>
+                  <li className="px-3 py-2 text-xs text-gray-500">None — the teacher sees the student list only.</li>
                 ) : (
                   activeDelegations.map((d) => (
                     <li key={d.id} className="px-3 py-2 flex items-start justify-between gap-2 text-sm">
                       <span className="min-w-0">
                         {DELEGATION_LABEL[d.permission] ?? d.permission}
                         {tsa && <span className="block text-xs text-gray-600">{scopeText(d.studentScope, d.students?.length)}</span>}
-                        <span className="block text-xs text-gray-400">
+                        <span className="block text-xs text-gray-500">
                           {d.reason} · {d.expiresAt ? `until ${formatDate(d.expiresAt)}` : "no end date"}
                           {d.createdBy ? ` · by @${d.createdBy.username}` : ""}
                         </span>
@@ -158,7 +158,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                             {d.students!.map((s) => (
                               <span key={s.studentId} className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
                                 {personName(s.student)}
-                                <button type="button" className="text-gray-400 hover:text-red-600" aria-label={`Take ${personName(s.student)} off this permission`} disabled={act.isPending}
+                                <button type="button" className="text-gray-500 hover:text-red-600" aria-label={`Take ${personName(s.student)} off this permission`} disabled={act.isPending}
                                   onClick={() => act.mutate(() => teachersAdminApi.removeDelegationStudent(teacherId, d.id, s.studentId))}>
                                   ×
                                 </button>
@@ -184,7 +184,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
               </ul>
             )}
             {!canGrant ? (
-              <p className="text-xs text-gray-500">Assign a school{tsa ? " or students" : ""} before granting extra permissions.</p>
+              <p className="text-xs text-gray-600">Assign a school{tsa ? " or students" : ""} before granting extra permissions.</p>
             ) : (
               <form onSubmit={onGrant} noValidate className="space-y-3" data-testid="grant-delegation">
                 <SelectInput
@@ -203,10 +203,10 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                 )}
                 {tsa && scope === "SELECTED" && (
                   myStudents.length === 0 ? (
-                    <p className="text-xs text-gray-500">To choose students of a school, use that school&apos;s &ldquo;Teacher &amp; student access&rdquo; page. Here you can choose among students assigned to this teacher.</p>
+                    <p className="text-xs text-gray-600">To choose students of a school, use that school&apos;s &ldquo;Teacher &amp; student access&rdquo; page. Here you can choose among students assigned to this teacher.</p>
                   ) : (
                     <fieldset className="border border-gray-100 rounded-lg p-2 max-h-40 overflow-y-auto" data-testid="grant-students">
-                      <legend className="text-xs text-gray-500 px-1">Students assigned to this teacher</legend>
+                      <legend className="text-xs text-gray-600 px-1">Students assigned to this teacher</legend>
                       {myStudents.map((a) => (
                         <label key={a.id} className="flex items-center gap-2 text-sm py-0.5">
                           <input
@@ -214,7 +214,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                             checked={grant.studentIds.includes(a.student.id)}
                             onChange={(e) => setGrant((g) => ({ ...g, studentIds: e.target.checked ? [...g.studentIds, a.student.id] : g.studentIds.filter((x) => x !== a.student.id) }))}
                           />
-                          {personName(a.student)} <span className="text-xs text-gray-400">@{a.student.username}</span>
+                          {personName(a.student)} <span className="text-xs text-gray-500">@{a.student.username}</span>
                         </label>
                       ))}
                     </fieldset>
@@ -222,7 +222,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                 )}
                 <TextInput label="Reason" required value={grant.reason} onChange={(v) => setGrant((g) => ({ ...g, reason: v }))} maxLength={DELEGATION_RULES.reasonMax} hint="Recorded in the audit log." />
                 <TextInput label="End date (optional)" type="date" value={grant.expiresAt} onChange={(v) => setGrant((g) => ({ ...g, expiresAt: v }))} />
-                <p className="text-xs text-gray-500">The teacher will be notified by e-mail and in the app of the permission granted.</p>
+                <p className="text-xs text-gray-600">The teacher will be notified by e-mail and in the app of the permission granted.</p>
                 {grantError && <Alert tone="error">{grantError}</Alert>}
                 <button type="submit" className={btnPrimary} disabled={act.isPending}>
                   Grant permission
@@ -234,7 +234,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
 
         {tsa && (
           <section aria-labelledby="t-students" className="mt-6">
-            <h3 id="t-students" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Students assigned to this teacher</h3>
+            <h3 id="t-students" className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Students assigned to this teacher</h3>
             {assignedStudents.isPending ? (
               <LoadingBlock />
             ) : assignedStudents.isError ? (
@@ -242,13 +242,13 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
             ) : (
               <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg" data-testid="teacher-assigned-students">
                 {myStudents.length === 0 ? (
-                  <li className="px-3 py-2 text-xs text-gray-400">None. Assign students from a school&apos;s &ldquo;Teacher &amp; student access&rdquo; page.</li>
+                  <li className="px-3 py-2 text-xs text-gray-500">None. Assign students from a school&apos;s &ldquo;Teacher &amp; student access&rdquo; page.</li>
                 ) : (
                   myStudents.map((a) => (
                     <li key={a.id} className="px-3 py-2 flex items-center justify-between gap-2 text-sm">
                       <span className="min-w-0">
                         {personName(a.student)}{" "}
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-500">
                           · {a.student.school?.name ?? "no school"}{a.crossSchool ? " · other school" : ""} · since {formatDate(a.createdAt)}
                           {a.reason ? ` · ${a.reason}` : ""}
                         </span>

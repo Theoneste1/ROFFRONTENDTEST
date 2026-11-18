@@ -25,7 +25,7 @@ const PAGE_SIZE = 20;
 
 /** Reviewed = approved + published of the submissions received. */
 function ReviewProgress({ row }: { row: AssignmentReportRow | undefined }) {
-  if (!row) return <span className="text-gray-400">—</span>;
+  if (!row) return <span className="text-gray-500">—</span>;
   const done = row.byStage.approved + row.byStage.published;
   const pct = row.submitted ? Math.round((done / row.submitted) * 100) : 0;
   return (
@@ -33,7 +33,7 @@ function ReviewProgress({ row }: { row: AssignmentReportRow | undefined }) {
       <div className="w-full bg-gray-200/80 rounded-full h-1.5 overflow-hidden" aria-hidden="true">
         <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-gray-500 font-medium shrink-0">
+      <span className="text-gray-600 font-medium shrink-0">
         {done} / {row.submitted}
       </span>
     </div>
@@ -73,7 +73,7 @@ export default function AssignmentsClient() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Assignments</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">
+          <p className="text-sm text-gray-600 mt-1 font-medium">
             Coaches prepare assignments; administrators approve and publish them, then follow submissions and reviews.
           </p>
         </div>
@@ -135,11 +135,11 @@ export default function AssignmentsClient() {
                       <Link href={`/admin/assignments/${a.id}`} className="hover:text-indigo-700">
                         {a.title}
                       </Link>
-                      <span className="block text-[11px] font-normal text-gray-400">by {personName(a.createdBy, "a coach")}</span>
+                      <span className="block text-[11px] font-normal text-gray-500">by {personName(a.createdBy, "a coach")}</span>
                     </td>
                     <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>{a.course.title}</td>
                     <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>{a.division.name.replace(/ division$/i, "")}</td>
-                    <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDate(a.deadline)}</td>
+                    <td className={`${td} text-gray-600 whitespace-nowrap`}>{formatDate(a.deadline)}</td>
                     <td className={`${td} text-gray-600 whitespace-nowrap`}>{r ? `${r.submitted} / ${r.expectedStudents} submitted` : `${a._count?.submissions ?? 0} submitted`}</td>
                     <td className={td}>
                       <ReviewProgress row={r} />

@@ -55,12 +55,12 @@ function EntryDialog({ id, onClose }: { id: string; onClose: () => void }) {
             ["Record", `${entry.data.entity}${entry.data.entityId ? ` · ${entry.data.entityId}` : ""}`],
           ].map(([k, v]) => (
             <div key={k} className="flex flex-col sm:flex-row gap-0.5 sm:gap-4">
-              <dt className="sm:w-28 shrink-0 text-[11px] font-bold uppercase tracking-wider text-gray-400 pt-0.5">{k}</dt>
+              <dt className="sm:w-28 shrink-0 text-[11px] font-bold uppercase tracking-wider text-gray-500 pt-0.5">{k}</dt>
               <dd className="text-gray-800 break-all">{v}</dd>
             </div>
           ))}
           <div>
-            <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">Details</dt>
+            <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Details</dt>
             <dd>
               <pre className="text-[11px] bg-gray-50 border border-gray-100 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all">{JSON.stringify(entry.data.metadata ?? {}, null, 2)}</pre>
             </dd>
@@ -103,7 +103,7 @@ export default function AuditLogClient() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Audit Log</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">A chronological record of key administrative actions across the platform.</p>
+          <p className="text-sm text-gray-600 mt-1 font-medium">A chronological record of key administrative actions across the platform.</p>
         </div>
         <CsvButton onDownload={() => auditApi.exportCsv(filters)} />
       </div>
@@ -112,11 +112,11 @@ export default function AuditLogClient() {
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <SearchInput value={action} onChange={(v) => setParam("action", v)} placeholder="Search actions (e.g. publish)…" label="Search actions" />
         <SelectFilter label="Role" value={actorRole} onChange={(v) => setParam("actorRole", v)} options={[{ label: "Any", value: "" }, { label: "Administrator", value: "ADMIN" }, { label: "Coach", value: "MENTOR" }, { label: "Student", value: "STUDENT" }]} />
-        <label className="flex items-center gap-2 text-xs text-gray-500">
+        <label className="flex items-center gap-2 text-xs text-gray-600">
           <span className="font-semibold">From</span>
           <input type="date" value={from} onChange={(e) => setParam("from", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-500">
+        <label className="flex items-center gap-2 text-xs text-gray-600">
           <span className="font-semibold">To</span>
           <input type="date" value={to} onChange={(e) => setParam("to", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
         </label>
@@ -164,9 +164,9 @@ export default function AuditLogClient() {
             ) : (
               logs.data.data.map((e) => (
                 <tr key={e.id} className="hover:bg-gray-50/60 transition-colors text-xs">
-                  <td className={`${td} text-gray-400 font-medium whitespace-nowrap`}>{formatDateTime(e.createdAt)}</td>
+                  <td className={`${td} text-gray-500 font-medium whitespace-nowrap`}>{formatDateTime(e.createdAt)}</td>
                   <td className={`${td} font-bold text-gray-800 whitespace-nowrap`}>{auditActor(e)}</td>
-                  <td className={`${td} text-gray-500 font-medium`}>{e.actorRole ? (ROLE_LABEL[e.actorRole as Role] ?? e.actorRole) : "—"}</td>
+                  <td className={`${td} text-gray-600 font-medium`}>{e.actorRole ? (ROLE_LABEL[e.actorRole as Role] ?? e.actorRole) : "—"}</td>
                   <td className={`${td} text-gray-700 font-medium`}>{humanizeAction(e.action)}</td>
                   <td className={`${td} text-gray-600 font-medium break-words max-w-[240px]`}>{target(e)}</td>
                   <td className={td}>

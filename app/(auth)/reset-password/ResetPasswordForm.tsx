@@ -65,7 +65,7 @@ export default function ResetPasswordForm() {
     <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Choose a new password</h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">You&apos;ll be signed out everywhere and can sign in with the new password.</p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">You&apos;ll be signed out everywhere and can sign in with the new password.</p>
       </div>
       {mutation.isError && !server.newPassword && <Alert tone="error">{errorMessage(mutation.error)}</Alert>}
       <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={errors} />

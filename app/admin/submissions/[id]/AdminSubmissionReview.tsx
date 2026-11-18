@@ -18,7 +18,7 @@ import ResultActions from "./ResultActions";
 function Info({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</dt>
+      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{label}</dt>
       <dd className="text-sm text-gray-800 mt-0.5 break-words">{children}</dd>
     </div>
   );
@@ -102,9 +102,9 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
           {/* Mentor review (read-only) */}
           <Card className="p-6">
             <h2 className="text-base font-bold text-gray-900 mb-1">Coach review</h2>
-            <p className="text-xs text-gray-500 mb-4">Administrators approve or send back reviews; only the coach can change the score or feedback.</p>
+            <p className="text-xs text-gray-600 mb-4">Administrators approve or send back reviews; only the coach can change the score or feedback.</p>
             {!r ? (
-              <p className="text-sm text-gray-500">Not assigned to a coach yet.</p>
+              <p className="text-sm text-gray-600">Not assigned to a coach yet.</p>
             ) : (
               <div className="space-y-4">
                 <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -117,7 +117,7 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
                   {r.decidedAt && <Info label="Decided">{formatDateTime(r.decidedAt)}</Info>}
                 </dl>
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Feedback</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Feedback</h3>
                   <div className="text-sm text-gray-800 whitespace-pre-wrap break-words bg-gray-50 border border-gray-100 rounded-xl p-4">{r.feedback || "—"}</div>
                 </div>
                 {r.attachments.length > 0 && (
@@ -128,7 +128,7 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
                   </div>
                 )}
                 {r.decisionNote && <Alert tone="info">Sent back earlier: “{r.decisionNote}”</Alert>}
-                {r.coordinationNote && <p className="text-xs text-gray-500">Coordination note (internal): {r.coordinationNote}</p>}
+                {r.coordinationNote && <p className="text-xs text-gray-600">Coordination note (internal): {r.coordinationNote}</p>}
               </div>
             )}
           </Card>
@@ -145,7 +145,7 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
                     <p className="text-xs font-semibold text-gray-700 mb-2">
                       Attempt {rev.revisionNumber} · {formatDateTime(rev.submittedAt)} {rev.isLate && <Badge className="ml-1 bg-red-50 text-red-600">Late</Badge>}
                     </p>
-                    {rev.note && <p className="text-xs text-gray-500 mb-2">Student&apos;s note: {rev.note}</p>}
+                    {rev.note && <p className="text-xs text-gray-600 mb-2">Student&apos;s note: {rev.note}</p>}
                     {rev.answerText && <div className="text-sm text-gray-800 whitespace-pre-wrap break-words bg-gray-50 rounded-lg p-3 mb-2">{rev.answerText}</div>}
                     {rev.attachments.length > 0 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -154,7 +154,7 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
                         ))}
                       </div>
                     )}
-                    {!rev.answerText && rev.attachments.length === 0 && <p className="text-xs text-gray-400">No text or files.</p>}
+                    {!rev.answerText && rev.attachments.length === 0 && <p className="text-xs text-gray-500">No text or files.</p>}
                   </li>
                 ))}
             </ol>
@@ -178,7 +178,7 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
                 )}
               </div>
             ) : (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-600">
                 {s.status === "PUBLISHED"
                   ? "The result is published to the student."
                   : s.status === "SUBMITTED"
@@ -191,25 +191,25 @@ export default function AdminSubmissionReview({ submissionId }: { submissionId: 
 
           <Card className="p-6">
             <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <History className="w-4 h-4 text-gray-500" aria-hidden="true" /> Review cycles
+              <History className="w-4 h-4 text-gray-600" aria-hidden="true" /> Review cycles
             </h2>
             {cycles.isPending ? (
               <Spinner />
             ) : cycles.isError ? (
               <p className="text-sm text-red-600">{errorMessage(cycles.error)}</p>
             ) : cycles.data.length === 0 ? (
-              <p className="text-sm text-gray-500">No review yet.</p>
+              <p className="text-sm text-gray-600">No review yet.</p>
             ) : (
               <ol className="space-y-4">
                 {cycles.data.map((c) => (
                   <li key={c.id} className="text-xs">
                     <p className="font-semibold text-gray-800">
-                      Cycle {c.cycle} · {personName(c.mentor, "—")} · <span className="font-normal text-gray-500">{humanizeAction(c.status)}</span>
-                      {c.score != null && <span className="font-normal text-gray-500"> · {c.score} / {max}</span>}
+                      Cycle {c.cycle} · {personName(c.mentor, "—")} · <span className="font-normal text-gray-600">{humanizeAction(c.status)}</span>
+                      {c.score != null && <span className="font-normal text-gray-600"> · {c.score} / {max}</span>}
                     </p>
                     <ul className="mt-1 space-y-1 border-l border-gray-200 pl-3">
                       {c.events.map((e) => (
-                        <li key={e.id} className="text-gray-500">
+                        <li key={e.id} className="text-gray-600">
                           {humanizeAction(e.type)} · {formatDateTime(e.createdAt)}
                           {e.actor && ` · ${personName(e.actor)}`}
                           {e.note && <span className="block text-gray-600 break-words">{e.note}</span>}

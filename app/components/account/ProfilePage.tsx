@@ -47,7 +47,7 @@ import { Section } from "./Section";
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</dt>
+      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{label}</dt>
       <dd className="text-sm text-gray-800 mt-0.5 break-words">{children || "—"}</dd>
     </div>
   );
@@ -93,7 +93,7 @@ export default function ProfilePage() {
               <Detail label="Member since">{formatDate(user.createdAt)}</Detail>
               <Detail label="Last sign-in">{user.lastLoginAt ? formatDateTime(user.lastLoginAt) : null}</Detail>
             </dl>
-            <p className="mt-5 text-xs text-gray-400">
+            <p className="mt-5 text-xs text-gray-500">
               Username, e-mail{user.role === "STUDENT" ? ", grade and school" : ""} are managed by the administrators.
               {detailsOn && " To correct your date of birth, phones or home, contact ROF support."}
             </p>

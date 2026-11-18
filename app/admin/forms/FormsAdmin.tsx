@@ -98,13 +98,13 @@ export default function FormsAdmin() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-base font-bold text-gray-900">{f.label}</h2>
-                    <p className="text-xs text-gray-400 font-mono">{f.key}</p>
+                    <p className="text-xs text-gray-500 font-mono">{f.key}</p>
                   </div>
                   <Badge className={meta?.badge ?? "bg-slate-100 text-slate-700"}>{formStateLabel(f.state)}</Badge>
                 </div>
                 <p className="text-sm text-gray-700">{scheduleSummary(f)}</p>
                 {roleNote && <Alert tone="info">{roleNote}</Alert>}
-                <div className="text-xs text-gray-500 space-y-1">
+                <div className="text-xs text-gray-600 space-y-1">
                   <p>
                     <span className="font-semibold text-gray-600">Closed message: </span>
                     {f.closedMessageCustom ? f.closedMessageCustom : <span className="italic">built-in — {f.closedMessageDefault}</span>}
@@ -121,7 +121,7 @@ export default function FormsAdmin() {
                       {[f.contactEmail, f.supportUrl].filter(Boolean).join(" · ")}
                     </p>
                   )}
-                  <p className="text-gray-400">
+                  <p className="text-gray-500">
                     {neverChanged(f) ? "Never changed (initial setting)." : `Last changed ${formatDateTime(f.updatedAt)}${f.updatedBy ? ` by ${personName(f.updatedBy)}` : ""}.`}
                   </p>
                 </div>
@@ -203,7 +203,7 @@ function AvailabilityDialog({ form, onClose, onSaved }: { form: AdminFormView; o
                 <input type="radio" name="mode" value={o.value} checked={draft.mode === o.value} onChange={() => set("mode")(o.value)} className="mt-1" />
                 <span>
                   <span className="font-semibold">{o.label}</span>
-                  <span className="block text-xs text-slate-500">{o.hint}</span>
+                  <span className="block text-xs text-slate-600">{o.hint}</span>
                 </span>
               </label>
             ))}
@@ -215,7 +215,7 @@ function AvailabilityDialog({ form, onClose, onSaved }: { form: AdminFormView; o
               Opening time (Kigali){draft.mode === "SCHEDULED" && <span className="text-red-500"> *</span>}
             </label>
             <input id="form-opens" type="datetime-local" className={inputCls} value={draft.opensAt} onChange={(e) => set("opensAt")(e.target.value)} disabled={draft.mode !== "SCHEDULED"} />
-            {draft.mode !== "SCHEDULED" && <p className="mt-1 text-xs text-slate-400">Used only by a scheduled form (kept).</p>}
+            {draft.mode !== "SCHEDULED" && <p className="mt-1 text-xs text-slate-500">Used only by a scheduled form (kept).</p>}
           </div>
           <div>
             <label htmlFor="form-closes" className={labelCls}>
@@ -230,7 +230,7 @@ function AvailabilityDialog({ form, onClose, onSaved }: { form: AdminFormView; o
           </div>
         </div>
         {draft.mode === "SCHEDULED" && draft.opensAt && !problems.length && (
-          <p className="text-xs text-slate-500">Opens {kigaliTime(`${draft.opensAt}:00+02:00`)}.</p>
+          <p className="text-xs text-slate-600">Opens {kigaliTime(`${draft.opensAt}:00+02:00`)}.</p>
         )}
         {submitted && problems.length > 0 && (
           <Alert tone="error">
@@ -312,7 +312,7 @@ function MessagesDialog({ form, onClose, onSaved }: { form: AdminFormView; onClo
               ) : (
                 <input {...common} type={fld.type ?? "text"} onChange={(e) => setDraft((d) => ({ ...d, [fld.key]: e.target.value }))} />
               )}
-              <p className={`mt-1 text-xs ${err ? "text-red-600" : "text-slate-400"}`}>{err ?? fld.hint}</p>
+              <p className={`mt-1 text-xs ${err ? "text-red-600" : "text-slate-500"}`}>{err ?? fld.hint}</p>
             </div>
           );
         })}
@@ -340,12 +340,12 @@ function HistoryDialog({ form, onClose }: { form: AdminFormView; onClose: () => 
       ) : history.isError ? (
         <ErrorState error={history.error} title="Couldn't load the history" onRetry={() => history.refetch()} />
       ) : history.data.length === 0 ? (
-        <p className="text-sm text-slate-500">No changes yet.</p>
+        <p className="text-sm text-slate-600">No changes yet.</p>
       ) : (
         <ol className="space-y-3" data-testid="form-history">
           {history.data.map((row) => (
             <li key={row.id} className="border border-slate-100 rounded-lg p-3">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-600">
                 {formatDateTime(row.createdAt)} · {historySource(row)} · {row.actorUsername ?? "deleted account"}
                 {row.actorRole ? ` (${row.actorRole})` : ""}
               </p>

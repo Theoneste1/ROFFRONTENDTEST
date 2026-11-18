@@ -39,7 +39,7 @@ export default function RegistrationHistoryCard({
         {q.isPending && <LoadingBlock />}
         {q.isError &&
           (isApiError(q.error) && q.error.status === 404 ? (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-600">
               The registration history is not available on this server yet.
             </p>
           ) : (
@@ -53,13 +53,13 @@ export default function RegistrationHistoryCard({
                   key={label}
                   className="flex justify-between gap-3 border-b border-gray-100 py-1"
                 >
-                  <dt className="text-gray-500">{label}</dt>
+                  <dt className="text-gray-600">{label}</dt>
                   <dd className="text-gray-900 text-right">{value}</dd>
                 </div>
               ))}
             </dl>
             {q.data.events.length === 0 ? (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-600">
                 No registration events were recorded for this account.
               </p>
             ) : (
@@ -69,7 +69,7 @@ export default function RegistrationHistoryCard({
                   return (
                     <li key={e.id} className="text-sm">
                       <p className="font-medium text-gray-900">{e.label}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-600">
                         {formatDateTime(e.at)} ·{" "}
                         {actorText(e, (r) => roleLabel(r as never))}
                       </p>

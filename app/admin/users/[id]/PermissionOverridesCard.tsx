@@ -36,7 +36,7 @@ import { SelectInput, TextInput } from "../components/userUi";
 const STATE_BADGE: Record<OverrideState, { label: string; badge: string }> = {
   ACTIVE: { label: "Active", badge: "bg-emerald-50 text-emerald-700" },
   EXPIRED: { label: "Expired", badge: "bg-gray-100 text-gray-600" },
-  REVOKED: { label: "Revoked", badge: "bg-slate-100 text-slate-500" },
+  REVOKED: { label: "Revoked", badge: "bg-slate-100 text-slate-600" },
 };
 
 const EMPTY: OverrideForm = { effect: "DENY", permission: "", reason: "", expiresOn: "", courseId: "", divisionId: "" };
@@ -85,7 +85,7 @@ export default function PermissionOverridesCard({ user }: { user: { id: string; 
     <Card className="p-6 lg:col-span-3">
       <div data-testid="permission-overrides">
         <h2 className="text-base font-bold text-gray-900 mb-1">Permissions</h2>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-gray-600 mb-4">
           What this account can do: the defaults of its role, changed by individual overrides. {canManage ? "Overrides apply on the user's next request and are kept in the audit log." : "Only a Super Administrator can change overrides."}
         </p>
         {notice && (
@@ -97,7 +97,7 @@ export default function PermissionOverridesCard({ user }: { user: { id: string; 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {canView && (
             <section aria-labelledby="p-effective">
-              <h3 id="p-effective" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+              <h3 id="p-effective" className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">
                 Effective permissions
               </h3>
               {effective.isPending ? (
@@ -105,13 +105,13 @@ export default function PermissionOverridesCard({ user }: { user: { id: string; 
               ) : effective.isError ? (
                 <Alert tone="error">{errorMessage(effective.error)}</Alert>
               ) : effective.data.permissions.length === 0 ? (
-                <p className="text-xs text-gray-400">None.</p>
+                <p className="text-xs text-gray-500">None.</p>
               ) : (
                 <ul className="flex flex-wrap gap-1.5" data-testid="effective-permissions">
                   {effective.data.permissions.map((p) => (
                     <li key={p.permission} data-permission={p.permission} className="inline-flex items-center gap-1 bg-gray-50 border border-gray-100 rounded-full px-2.5 py-0.5 text-[11px] text-gray-700">
                       {p.permission}
-                      {p.scope !== "global" && <span className="text-gray-400">· {p.scope}</span>}
+                      {p.scope !== "global" && <span className="text-gray-500">· {p.scope}</span>}
                     </li>
                   ))}
                 </ul>
@@ -121,7 +121,7 @@ export default function PermissionOverridesCard({ user }: { user: { id: string; 
 
           {canManage && (
             <section aria-labelledby="p-overrides">
-              <h3 id="p-overrides" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+              <h3 id="p-overrides" className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">
                 Overrides
               </h3>
               {overrides.isPending ? (
@@ -131,7 +131,7 @@ export default function PermissionOverridesCard({ user }: { user: { id: string; 
               ) : (
                 <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg mb-4" data-testid="override-list">
                   {overrides.data.length === 0 ? (
-                    <li className="px-3 py-2 text-xs text-gray-400">No overrides: the role&apos;s defaults apply.</li>
+                    <li className="px-3 py-2 text-xs text-gray-500">No overrides: the role&apos;s defaults apply.</li>
                   ) : (
                     overrides.data.map((o) => {
                       const state = overrideState(o);
@@ -144,8 +144,8 @@ export default function PermissionOverridesCard({ user }: { user: { id: string; 
                               <span className="font-medium">{o.permission}</span>
                               <Badge className={STATE_BADGE[state].badge}>{STATE_BADGE[state].label}</Badge>
                             </span>
-                            <span className="block text-xs text-gray-500 mt-0.5 break-words">{o.reason}</span>
-                            <span className="block text-[11px] text-gray-400">
+                            <span className="block text-xs text-gray-600 mt-0.5 break-words">{o.reason}</span>
+                            <span className="block text-[11px] text-gray-500">
                               {scope ? `${scope} · ` : ""}
                               {o.expiresAt ? `${state === "EXPIRED" ? "expired" : "until"} ${formatDate(o.expiresAt)}` : "no end date"} · added {formatDateTime(o.createdAt)}
                               {o.createdBy ? ` by @${o.createdBy.username}` : ""}
@@ -165,7 +165,7 @@ export default function PermissionOverridesCard({ user }: { user: { id: string; 
               )}
 
               {refusal ? (
-                <p className="text-xs text-gray-500" data-testid="override-refusal">
+                <p className="text-xs text-gray-600" data-testid="override-refusal">
                   {refusal}
                 </p>
               ) : catalogue.isError ? (
@@ -184,7 +184,7 @@ export default function PermissionOverridesCard({ user }: { user: { id: string; 
                   {catalogue.isPending ? (
                     <LoadingBlock />
                   ) : options.length === 0 ? (
-                    <p className="text-xs text-gray-500">No permission can be {form.effect === "DENY" ? "denied to" : "granted to"} this role by an override.</p>
+                    <p className="text-xs text-gray-600">No permission can be {form.effect === "DENY" ? "denied to" : "granted to"} this role by an override.</p>
                   ) : (
                     <SelectInput
                       label="Permission"

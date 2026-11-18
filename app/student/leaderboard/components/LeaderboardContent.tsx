@@ -37,7 +37,7 @@ export default function LeaderboardContent() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Leaderboard</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600">
             See how you rank against your peers{user?.division ? ` · ${divisionLabel(user.division)}` : ''}
           </p>
         </div>
@@ -120,17 +120,17 @@ function StudentsBoard() {
                     slot.isFirst ? 'bg-amber-50/30 border-amber-200 ring-2 ring-amber-400/20 py-6' : ''
                   } ${entry.isMe ? 'ring-2 ring-indigo-400' : ''}`}
                 >
-                  <span className="text-[10px] tracking-wider uppercase font-extrabold text-amber-600 bg-amber-100/80 px-2.5 py-0.5 rounded-full mb-2">
+                  <span className="text-[10px] tracking-wider uppercase font-extrabold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full mb-2">
                     #{entry.rank}
                   </span>
                   <h3 className="font-bold text-slate-800 text-base">
                     {entry.displayName}
                     {entry.isMe && ' (You)'}
                   </h3>
-                  {entry.school && <p className="text-[11px] text-slate-400">{entry.school.name}</p>}
+                  {entry.school && <p className="text-[11px] text-slate-600">{entry.school.name}</p>}
                   <div className="mt-1">
                     <span className="text-xl font-black text-indigo-600 block">{formatNumber(entry.points)}</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Points</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Points</span>
                   </div>
                 </div>
               </div>
@@ -142,7 +142,7 @@ function StudentsBoard() {
       {/* Your status */}
       <div className="bg-[#0b1329] text-white rounded-2xl p-4 md:px-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
         {me.isError ? (
-          <p className="text-sm text-slate-300">Couldn&apos;t load your rank.</p>
+          <p className="text-sm text-slate-400">Couldn&apos;t load your rank.</p>
         ) : (
           <>
             <div className="flex items-center gap-3">
@@ -159,7 +159,7 @@ function StudentsBoard() {
             <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="flex flex-col">
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Next Milestone</span>
-                <span className="text-xs text-slate-300">{milestone?.text ?? '—'}</span>
+                <span className="text-xs text-slate-400">{milestone?.text ?? '—'}</span>
               </div>
               <div className="w-24 bg-slate-800 h-2 rounded-full overflow-hidden">
                 <div className="bg-indigo-500 h-full" style={{ width: `${milestone?.pct ?? 0}%` }} />
@@ -171,14 +171,14 @@ function StudentsBoard() {
 
       {/* Rankings */}
       <div className="bg-indigo-50/50 rounded-2xl p-2 sm:p-4 border border-indigo-100/50">
-        <div className="grid grid-cols-12 px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
+        <div className="grid grid-cols-12 px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">
           <div className="col-span-2">Rank</div>
           <div className="col-span-7 sm:col-span-8">Name</div>
           <div className="col-span-3 sm:col-span-2 text-right">Points</div>
         </div>
 
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-slate-500">Everyone in your division is on the podium.</p>
+          <p className="px-4 py-6 text-sm text-slate-600">Everyone in your division is on the podium.</p>
         ) : (
           <div className={`space-y-1 ${board.isFetching ? 'opacity-70' : ''}`}>
             {rows.map((row) => (
@@ -196,7 +196,7 @@ function StudentsBoard() {
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="truncate">{row.displayName}</span>
                     {row.isMe && <span className="bg-indigo-900 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">You</span>}
-                    {row.school && <span className="hidden sm:inline text-[11px] font-normal text-slate-400 truncate">{row.school.name}</span>}
+                    {row.school && <span className="hidden sm:inline text-[11px] font-normal text-slate-600 truncate">{row.school.name}</span>}
                   </div>
                 </div>
                 <div className="col-span-3 sm:col-span-2 text-right font-bold text-indigo-600">{formatNumber(row.points)}</div>
@@ -228,7 +228,7 @@ function SchoolsBoard() {
 
   return (
     <div className="bg-indigo-50/50 rounded-2xl p-2 sm:p-4 border border-indigo-100/50">
-      <div className="grid grid-cols-12 px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">
+      <div className="grid grid-cols-12 px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">
         <div className="col-span-2">Rank</div>
         <div className="col-span-6">School</div>
         <div className="col-span-2 text-right hidden sm:block">Students</div>
@@ -250,12 +250,12 @@ function SchoolsBoard() {
                   {s.schoolName}
                   {mine && <span className="ml-2 bg-indigo-900 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">Yours</span>}
                 </span>
-                <span className="block text-[11px] font-normal text-slate-400 truncate">{s.schoolLocation}</span>
+                <span className="block text-[11px] font-normal text-slate-600 truncate">{s.schoolLocation}</span>
               </div>
               <div className="col-span-2 text-right hidden sm:block">{formatNumber(s.studentCount)}</div>
               <div className="col-span-4 sm:col-span-2 text-right font-bold text-indigo-600">
                 {formatNumber(s.totalPoints)}
-                <span className="block text-[10px] font-normal text-slate-400">avg {formatNumber(Math.round(s.averagePoints))}</span>
+                <span className="block text-[10px] font-normal text-slate-600">avg {formatNumber(Math.round(s.averagePoints))}</span>
               </div>
             </div>
           );

@@ -34,7 +34,7 @@ export default function PublicCard({ children }: { children: ReactNode }) {
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">{children}</div>
 
-          <p className="mt-6 text-center text-xs text-slate-500">Rwanda Olympiad Foundation · Mathematics LMS</p>
+          <p className="mt-6 text-center text-xs text-slate-600">Rwanda Olympiad Foundation · Mathematics LMS</p>
         </div>
       </main>
     </div>

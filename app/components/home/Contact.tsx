@@ -103,7 +103,7 @@ export default function Contact() {
           : `Your message was not sent. ${errorMessage(sendError)}`;
 
   const input = (bad?: string) =>
-    `w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${bad ? "border-red-400 focus:ring-red-200" : "border-slate-300 focus:border-[#00428c] focus:ring-blue-200"}`;
+    `w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 ${bad ? "border-red-400 focus:ring-red-200" : "border-slate-300 focus:border-[#00428c] focus:ring-blue-200"}`;
 
   return (
     <section id="contact" className="bg-gradient-to-br from-blue-50 via-white to-amber-50/60 py-20 sm:py-28" aria-labelledby="contact-title">
@@ -119,26 +119,26 @@ export default function Contact() {
             {to && (
               <li className="flex items-start gap-4">
                 <span className="rounded-xl bg-[#001E4E] p-3 text-white"><Mail className="h-5 w-5" aria-hidden="true" /></span>
-                <span><span className="block text-sm font-semibold text-slate-500">E-mail</span><a href={`mailto:${to}`} className="font-semibold text-[#00428c] hover:underline">{to}</a></span>
+                <span><span className="block text-sm font-semibold text-slate-600">E-mail</span><a href={`mailto:${to}`} className="font-semibold text-[#00428c] hover:underline">{to}</a></span>
               </li>
             )}
             {info?.phone && (
               <li className="flex items-start gap-4">
                 <span className="rounded-xl bg-[#001E4E] p-3 text-white"><Phone className="h-5 w-5" aria-hidden="true" /></span>
-                <span><span className="block text-sm font-semibold text-slate-500">Phone</span><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="font-semibold text-[#00428c] hover:underline">{info.phone}</a></span>
+                <span><span className="block text-sm font-semibold text-slate-600">Phone</span><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="font-semibold text-[#00428c] hover:underline">{info.phone}</a></span>
               </li>
             )}
             {info?.hours && (
               <li className="flex items-start gap-4">
                 <span className="rounded-xl bg-[#001E4E] p-3 text-white"><Clock className="h-5 w-5" aria-hidden="true" /></span>
-                <span><span className="block text-sm font-semibold text-slate-500">Hours</span><span className="font-semibold text-slate-800">{info.hours}</span></span>
+                <span><span className="block text-sm font-semibold text-slate-600">Hours</span><span className="font-semibold text-slate-800">{info.hours}</span></span>
               </li>
             )}
             {(website || helpUrl) && (
               <li className="flex items-start gap-4">
                 <span className="rounded-xl bg-[#001E4E] p-3 text-white"><Globe className="h-5 w-5" aria-hidden="true" /></span>
                 <span>
-                  <span className="block text-sm font-semibold text-slate-500">Website</span>
+                  <span className="block text-sm font-semibold text-slate-600">Website</span>
                   <a href={(website ?? helpUrl)!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#00428c] hover:underline">
                     {(website ?? helpUrl)!.replace(/^https?:\/\//, "").replace(/\/$/, "")} <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                   </a>
@@ -208,7 +208,7 @@ export default function Contact() {
             </div>
 
             <div className="mt-6 flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <p id="contact-how" className="text-sm text-slate-500">
+              <p id="contact-how" className="text-sm text-slate-600">
                 We use your details only to reply to your message.
               </p>
               <button

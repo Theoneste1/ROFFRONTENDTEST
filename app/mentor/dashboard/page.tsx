@@ -106,7 +106,7 @@ export default function MentorDashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                   <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                  <p className="text-xs text-gray-500 mt-2">{stat.change}</p>
+                  <p className="text-xs text-gray-600 mt-2">{stat.change}</p>
                 </div>
                 <div className={`${stat.color} text-white p-3 rounded-xl`}>{stat.icon}</div>
               </div>
@@ -128,11 +128,11 @@ export default function MentorDashboard() {
             ) : notifications.isError ? (
               <p className="text-sm text-red-600">Couldn&apos;t load recent activity.</p>
             ) : notifications.data.data.length === 0 ? (
-              <p className="text-sm text-gray-500">No activity yet. You&apos;ll see assigned work, decisions on your assignments and reviews, and discussion activity here.</p>
+              <p className="text-sm text-gray-600">No activity yet. You&apos;ll see assigned work, decisions on your assignments and reviews, and discussion activity here.</p>
             ) : (
               <div className="space-y-4">
                 {notifications.data.data.map((n) => {
-                  const tone = n.category === 'REVIEWS' ? 'bg-blue-100 text-blue-600' : n.category === 'ASSIGNMENTS' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600';
+                  const tone = n.category === 'REVIEWS' ? 'bg-blue-100 text-blue-600' : n.category === 'ASSIGNMENTS' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-700';
                   const Icon = n.category === 'REVIEWS' ? FileText : n.category === 'ASSIGNMENTS' ? CheckCircle2 : AlertCircle;
                   return (
                     <NotificationLink key={n.id} notification={n} className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
@@ -142,7 +142,7 @@ export default function MentorDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900">{n.title}</p>
                         {n.body && <p className="text-sm text-gray-600 line-clamp-2">{n.body}</p>}
-                        <p className="text-xs text-gray-400 mt-1">{formatRelative(n.createdAt, now)}</p>
+                        <p className="text-xs text-gray-500 mt-1">{formatRelative(n.createdAt, now)}</p>
                       </div>
                     </NotificationLink>
                   );
@@ -155,18 +155,18 @@ export default function MentorDashboard() {
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200/80">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Upcoming Deadlines</h2>
-              <Calendar className="w-5 h-5 text-gray-400" />
+              <Calendar className="w-5 h-5 text-gray-500" />
             </div>
             {assignments.isPending ? (
               <Spinner />
             ) : upcoming.length === 0 ? (
-              <p className="text-sm text-gray-500">No published assignments with an upcoming deadline.{drafts > 0 && ` You have ${drafts} draft(s).`}</p>
+              <p className="text-sm text-gray-600">No published assignments with an upcoming deadline.{drafts > 0 && ` You have ${drafts} draft(s).`}</p>
             ) : (
               <div className="space-y-4">
                 {upcoming.map((a) => (
                   <Link key={a.id} href={`/mentor/assignments/${a.id}`} className="block p-4 rounded-xl border border-gray-200 hover:border-blue-300 transition-colors">
                     <h3 className="text-sm font-bold text-gray-900 truncate">{a.title}</h3>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-600 mt-1">
                       {a.course.title} · {a.division.name}
                     </p>
                     <div className="flex items-center justify-between mt-3">

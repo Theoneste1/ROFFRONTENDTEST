@@ -151,7 +151,7 @@ export default function LoginForm() {
 
       <JoinLinks />
 
-      <p className="text-center text-xs text-slate-500">
+      <p className="text-center text-xs text-slate-600">
         Need help?{" "}
         <Link href="/support" className="font-medium text-[#2B2BB2] hover:underline">
           Help and support

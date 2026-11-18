@@ -17,7 +17,7 @@ export function AuthHeading({ title, subtitle, eyebrow }: { title: ReactNode; su
     <div>
       {eyebrow && <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#2B2BB2]">{eyebrow}</p>}
       <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
-      {subtitle && <p className="mt-2 text-sm leading-relaxed text-slate-500">{subtitle}</p>}
+      {subtitle && <p className="mt-2 text-sm leading-relaxed text-slate-600">{subtitle}</p>}
     </div>
   );
 }
@@ -52,7 +52,7 @@ export function JoinSwitch({ active }: { active: JoinRole }) {
             href={href}
             aria-current={on ? "page" : undefined}
             className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-              on ? "bg-white text-[#2B2BB2] shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"
+              on ? "bg-white text-[#2B2BB2] shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-800"
             }`}
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
@@ -69,7 +69,7 @@ export function JoinLinks() {
   const roles = useJoinRoles();
   return (
     <div className="space-y-3" data-testid="signup-links">
-      <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-slate-400">
+      <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-slate-500">
         <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
         Don&apos;t have an account?
         <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
@@ -112,7 +112,7 @@ export function FormSection({ title, step, children }: { title: string; step?: n
 /** "Already have an account? Sign in" under the registration forms. */
 export function SignInInstead() {
   return (
-    <p className="text-center text-sm text-slate-500">
+    <p className="text-center text-sm text-slate-600">
       Already have an account?{" "}
       <Link href="/login" className="font-semibold text-[#2B2BB2] hover:underline">
         Sign in

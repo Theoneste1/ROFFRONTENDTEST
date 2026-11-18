@@ -48,7 +48,7 @@ export default function SchoolContactsTab({ schoolId }: { schoolId: string }) {
     <div className="space-y-3" data-testid="school-contacts">
       {notice && <Notice onClose={() => setNotice(null)}>{notice}</Notice>}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-gray-500">Contacts are visible to administrators only, unless verified and authorised for the school&apos;s representatives.</p>
+        <p className="text-xs text-gray-600">Contacts are visible to administrators only, unless verified and authorised for the school&apos;s representatives.</p>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1.5 text-xs text-gray-600">
             <input type="checkbox" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} /> Show removed
@@ -82,9 +82,9 @@ export default function SchoolContactsTab({ schoolId }: { schoolId: string }) {
                 </td>
                 <td className={`${td} font-semibold text-gray-800`}>
                   {c.value}
-                  {c.label && <span className="block font-normal text-gray-500">{c.label}</span>}
-                  {c.dataSource && <span className="block font-normal text-gray-400">from {c.dataSource.key}</span>}
-                  {c.removedAt && <span className="block font-normal text-gray-500">Removed {formatDateTime(c.removedAt)}{c.removedBy ? ` by @${c.removedBy.username}` : ""}</span>}
+                  {c.label && <span className="block font-normal text-gray-600">{c.label}</span>}
+                  {c.dataSource && <span className="block font-normal text-gray-500">from {c.dataSource.key}</span>}
+                  {c.removedAt && <span className="block font-normal text-gray-600">Removed {formatDateTime(c.removedAt)}{c.removedBy ? ` by @${c.removedBy.username}` : ""}</span>}
                 </td>
                 <td className={td}>
                   {c.verifiedAt ? (
@@ -159,7 +159,7 @@ function ContactsDialog({ schoolId, contacts, onClose, onSaved }: { schoolId: st
   return (
     <Modal wide title="Edit contacts" onClose={() => !save.isPending && onClose()}>
       <div className="space-y-3 text-xs" data-testid="contacts-form">
-        {drafts.length === 0 && <p className="text-gray-500">No contacts. Add one below.</p>}
+        {drafts.length === 0 && <p className="text-gray-600">No contacts. Add one below.</p>}
         {drafts.map((d, i) => (
           <div key={d.key} className="rounded-xl border border-gray-100 p-3 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -175,7 +175,7 @@ function ContactsDialog({ schoolId, contacts, onClose, onSaved }: { schoolId: st
               <label className="flex items-center gap-1">
                 <input type="checkbox" checked={d.isPrimary} onChange={(e) => set(d.key, { isPrimary: e.target.checked })} /> Primary
               </label>
-              <button type="button" aria-label={`Remove contact ${i + 1}`} className="text-gray-400 hover:text-red-600" onClick={() => setDrafts((ds) => ds.filter((x) => x.key !== d.key))}>
+              <button type="button" aria-label={`Remove contact ${i + 1}`} className="text-gray-500 hover:text-red-600" onClick={() => setDrafts((ds) => ds.filter((x) => x.key !== d.key))}>
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>

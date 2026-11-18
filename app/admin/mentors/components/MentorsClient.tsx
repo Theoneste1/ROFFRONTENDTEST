@@ -16,7 +16,7 @@ import ApplicationsPanel from "./ApplicationsPanel";
 
 const STATUS_BADGE: Record<ReportUserStatus, { label: string; badge: string }> = {
   ACTIVE: { label: "Active", badge: "bg-emerald-50 text-emerald-700" },
-  INACTIVE: { label: "Inactive", badge: "bg-gray-100 text-gray-500" },
+  INACTIVE: { label: "Inactive", badge: "bg-gray-100 text-gray-600" },
   AWAITING_SETUP: { label: "Awaiting setup", badge: "bg-amber-50 text-amber-700" },
 };
 
@@ -59,7 +59,7 @@ export default function MentorsClient() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Coaches</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Coaches review submissions, give scores and formal feedback.</p>
+          <p className="text-sm text-gray-600 mt-1 font-medium">Coaches review submissions, give scores and formal feedback.</p>
         </div>
         {tab === "mentors" && <CsvButton onDownload={() => downloadCsv("/admin/reports/mentors.csv", { divisionId: filters.divisionId, status: filters.status, q: filters.q }, "mentors.csv")} />}
       </div>
@@ -72,7 +72,7 @@ export default function MentorsClient() {
             role="tab"
             aria-selected={tab === t}
             onClick={() => setParam("tab", t === "applications" ? "applications" : null)}
-            className={`pb-3 text-sm font-semibold -mb-px border-b-2 transition-colors ${tab === t ? "border-indigo-600 text-indigo-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+            className={`pb-3 text-sm font-semibold -mb-px border-b-2 transition-colors ${tab === t ? "border-indigo-600 text-indigo-700" : "border-transparent text-gray-600 hover:text-gray-700"}`}
           >
             {t === "mentors" ? "Coaches" : "Applications"}
             {t === "applications" && !!pendingCount && <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px]">{pendingCount}</span>}
@@ -137,23 +137,23 @@ export default function MentorsClient() {
                               <AlertCircle className="w-3.5 h-3.5 text-amber-500 fill-amber-100 shrink-0" aria-label={m.teaching.length === 0 ? "No course access" : "Awaiting setup"} />
                             )}
                           </div>
-                          <span className="block text-[11px] font-normal text-gray-400">Last sign-in {m.lastLoginAt ? formatDate(m.lastLoginAt) : "never"}</span>
+                          <span className="block text-[11px] font-normal text-gray-500">Last sign-in {m.lastLoginAt ? formatDate(m.lastLoginAt) : "never"}</span>
                         </td>
-                        <td className={`${td} text-gray-500 font-medium`}>{m.email}</td>
+                        <td className={`${td} text-gray-600 font-medium`}>{m.email}</td>
                         <td className={`${td} font-medium`}>
-                          <span className={divs.length ? "text-gray-700" : "text-amber-600 font-semibold"}>{divs.length ? divs.join(", ") : "Not assigned"}</span>
+                          <span className={divs.length ? "text-gray-700" : "text-amber-700 font-semibold"}>{divs.length ? divs.join(", ") : "Not assigned"}</span>
                         </td>
                         <td className={`${td} font-medium`}>
                           {m.teaching.length ? (
                             <ul className="space-y-0.5">
                               {m.teaching.map((t) => (
                                 <li key={`${t.course.id}:${t.division.id}`} className="text-gray-700 whitespace-nowrap">
-                                  {t.course.title} <span className="text-gray-400">· {t.division.name.replace(/ division$/i, "")}</span>
+                                  {t.course.title} <span className="text-gray-500">· {t.division.name.replace(/ division$/i, "")}</span>
                                 </li>
                               ))}
                             </ul>
                           ) : (
-                            <span className="text-amber-600 font-semibold">No access</span>
+                            <span className="text-amber-700 font-semibold">No access</span>
                           )}
                         </td>
                         <td className={`${td} text-gray-600`}>{formatNumber(m.openReviews)}</td>

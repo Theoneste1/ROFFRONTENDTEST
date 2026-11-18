@@ -125,7 +125,7 @@ export default function ResourcesTab({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{cfg.title}</h2>
-          <p className="text-gray-500 text-sm mt-1">{cfg.subtitle}</p>
+          <p className="text-gray-600 text-sm mt-1">{cfg.subtitle}</p>
         </div>
         {canManage && (
           <button
@@ -225,7 +225,7 @@ export default function ResourcesTab({
                             <p className="font-bold text-gray-900 text-xs md:text-sm truncate max-w-[260px]" title={r.title}>
                               {r.title}
                             </p>
-                            <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 truncate max-w-[260px]">
+                            <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 truncate max-w-[260px]">
                               {[r.author, r.year, r.source, r.tags.join(", ")].filter(Boolean).join(" · ") || "—"}
                             </p>
                           </div>
@@ -237,7 +237,7 @@ export default function ResourcesTab({
                       </td>
                       <td className="py-3 md:py-4 px-4 md:px-6">
                         <p className="font-bold text-gray-800 text-xs">{formatDate(r.createdAt)}</p>
-                        <p className="text-[10px] md:text-xs text-gray-400 mt-0.5">By {personName(r.uploadedBy, "—")}</p>
+                        <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">By {personName(r.uploadedBy, "—")}</p>
                       </td>
                       <td className="py-3 md:py-4 px-4 md:px-6 font-medium text-gray-600 text-xs">
                         {r.attachments.length} · {formatFileSize(size)}

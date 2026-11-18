@@ -214,7 +214,7 @@ export default function AssignmentWizard({
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
               {done.submitted ? "Submitted for approval!" : isEdit ? "Changes saved!" : "Assignment saved as draft!"}
             </h1>
-            <p className="text-slate-500 text-sm mt-1 mb-8">
+            <p className="text-slate-600 text-sm mt-1 mb-8">
               {done.submitted
                 ? "An administrator will review and publish it. Students see it once it is published."
                 : "It stays a draft, visible only to staff, until you submit it for approval."}
@@ -222,10 +222,10 @@ export default function AssignmentWizard({
             <div className="w-full bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 mb-8 text-left flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="text-xl font-bold text-slate-900 tracking-tight truncate">{done.assignment.title}</h2>
-                <p className="text-sm font-medium text-slate-500 mt-1">
+                <p className="text-sm font-medium text-slate-600 mt-1">
                   {done.assignment.course.title} • {done.assignment.division.name} division
                 </p>
-                <p className="text-xs text-slate-400 mt-1">Due: {formatDateTime(done.assignment.deadline)}</p>
+                <p className="text-xs text-slate-500 mt-1">Due: {formatDateTime(done.assignment.deadline)}</p>
               </div>
               <Link
                 href={`/mentor/assignments/${done.assignment.id}`}
@@ -281,17 +281,17 @@ export default function AssignmentWizard({
                 <button key={step.id} type="button" onClick={() => goTo(step.id)} className="flex items-center gap-2 whitespace-nowrap" aria-current={isActive ? "step" : undefined}>
                   <span
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
-                      isActive ? "bg-blue-600 text-white" : isCompleted ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-400"
+                      isActive ? "bg-blue-600 text-white" : isCompleted ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"
                     }`}
                   >
                     {step.id}
                   </span>
-                  <span className={`text-sm font-medium ${isActive ? "text-blue-600 font-semibold" : isCompleted ? "text-slate-700" : "text-slate-400"}`}>{step.name}</span>
+                  <span className={`text-sm font-medium ${isActive ? "text-blue-600 font-semibold" : isCompleted ? "text-slate-700" : "text-slate-500"}`}>{step.name}</span>
                 </button>
               );
             })}
           </div>
-          <span className="text-sm font-medium text-slate-500 hidden sm:inline-block">
+          <span className="text-sm font-medium text-slate-600 hidden sm:inline-block">
             Step {currentStep} of {STEPS.length}
           </span>
         </div>
@@ -307,7 +307,7 @@ export default function AssignmentWizard({
           <div className="space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-1">Basic Information</h2>
-              <p className="text-slate-500 text-sm">Provide the basic details about your assignment.</p>
+              <p className="text-slate-600 text-sm">Provide the basic details about your assignment.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
               <div className="space-y-6">
@@ -324,7 +324,7 @@ export default function AssignmentWizard({
                       onChange={(e) => set("description", e.target.value)}
                       className={`${inputCls} resize-none p-4`}
                     />
-                    <span className="absolute bottom-3 right-3 text-xs text-slate-400 font-medium">{form.description.length}/500</span>
+                    <span className="absolute bottom-3 right-3 text-xs text-slate-500 font-medium">{form.description.length}/500</span>
                   </div>
                 </Field>
               </div>
@@ -334,13 +334,13 @@ export default function AssignmentWizard({
                     <p className="text-sm font-semibold text-slate-800">
                       {existing!.course.title} · {existing!.division.name} division
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">Fixed after creation.</p>
+                    <p className="text-xs text-slate-500 mt-1">Fixed after creation.</p>
                   </Field>
                 ) : (
                   <div>
                     <ScopeSelect scopes={scopes} value={form.scope} onChange={(v) => set("scope", v)} label="Course and division *" />
                     {err("scope") && <p className="mt-1.5 text-xs text-red-600">{err("scope")}</p>}
-                    <p className="mt-1.5 text-xs text-slate-400">Only the course × division pairs assigned to you are listed. Every student of that division receives it.</p>
+                    <p className="mt-1.5 text-xs text-slate-500">Only the course × division pairs assigned to you are listed. Every student of that division receives it.</p>
                   </div>
                 )}
               </div>
@@ -353,7 +353,7 @@ export default function AssignmentWizard({
           <div className="max-w-4xl space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-1">Instructions</h2>
-              <p className="text-slate-500 text-sm">Add instructions and any specific guidelines for students.</p>
+              <p className="text-slate-600 text-sm">Add instructions and any specific guidelines for students.</p>
             </div>
             <Field label="Instructions for Students" required error={err("instructions")} htmlFor="instructions">
               <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
@@ -367,7 +367,7 @@ export default function AssignmentWizard({
                     placeholder={"Attempt all questions.\nShow all steps clearly.\nUpload your work as a PDF."}
                     className="w-full focus:outline-none text-slate-700 text-sm leading-relaxed resize-y bg-transparent"
                   />
-                  <span className="absolute bottom-3 right-3 text-xs text-slate-400 font-medium">{form.instructions.length}/10000</span>
+                  <span className="absolute bottom-3 right-3 text-xs text-slate-500 font-medium">{form.instructions.length}/10000</span>
                 </div>
               </div>
             </Field>
@@ -379,15 +379,15 @@ export default function AssignmentWizard({
           <div className="max-w-4xl space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-1">Files</h2>
-              <p className="text-slate-500 text-sm">Attach the problem sheet, templates or reference material (optional).</p>
+              <p className="text-slate-600 text-sm">Attach the problem sheet, templates or reference material (optional).</p>
             </div>
             {keptAttachments.length > 0 && (
               <ul className="space-y-2">
                 {keptAttachments.map((a) => (
                   <li key={a.id} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
                     <span className="text-xs font-medium text-slate-800 truncate flex-1">{a.file.originalName}</span>
-                    <span className="text-[10px] text-slate-400">{formatFileSize(a.file.size)}</span>
-                    <button type="button" onClick={() => setRemoved((r) => [...r, a.id])} className="p-1 text-slate-400 hover:text-red-600" aria-label={`Remove ${a.file.originalName}`}>
+                    <span className="text-[10px] text-slate-500">{formatFileSize(a.file.size)}</span>
+                    <button type="button" onClick={() => setRemoved((r) => [...r, a.id])} className="p-1 text-slate-500 hover:text-red-600" aria-label={`Remove ${a.file.originalName}`}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </li>
@@ -404,7 +404,7 @@ export default function AssignmentWizard({
           <div className="max-w-3xl space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-1">Assignment Settings</h2>
-              <p className="text-slate-500 text-sm">Set the deadline, submission rules and grading.</p>
+              <p className="text-slate-600 text-sm">Set the deadline, submission rules and grading.</p>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
@@ -422,7 +422,7 @@ export default function AssignmentWizard({
                   />
                   <div>
                     <p className="text-sm font-medium text-slate-900">Allow resubmission</p>
-                    <p className="text-xs text-slate-400">Students can replace their work before the deadline, until a coach starts reviewing it. Needed if you may ask for a new attempt.</p>
+                    <p className="text-xs text-slate-500">Students can replace their work before the deadline, until a coach starts reviewing it. Needed if you may ask for a new attempt.</p>
                   </div>
                 </label>
                 {form.allowResubmission && (
@@ -441,7 +441,7 @@ export default function AssignmentWizard({
                   />
                   <div>
                     <p className="text-sm font-medium text-slate-900">Accept late submissions</p>
-                    <p className="text-xs text-slate-400">A first submission after the deadline is accepted and marked late.</p>
+                    <p className="text-xs text-slate-500">A first submission after the deadline is accepted and marked late.</p>
                   </div>
                 </label>
               </div>
@@ -466,13 +466,13 @@ export default function AssignmentWizard({
           <div className="max-w-3xl space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-1">Review &amp; Submit</h2>
-              <p className="text-slate-500 text-sm">Check the details. Save a draft, or submit it so an administrator can publish it.</p>
+              <p className="text-slate-600 text-sm">Check the details. Save a draft, or submit it so an administrator can publish it.</p>
             </div>
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
               <div>
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Title</span>
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Title</span>
                 <p className="text-lg font-bold text-slate-900">{form.title || "—"}</p>
-                {form.description && <p className="text-sm text-slate-500 mt-1">{form.description}</p>}
+                {form.description && <p className="text-sm text-slate-600 mt-1">{form.description}</p>}
               </div>
               <ReviewGrid
                 items={[
@@ -545,7 +545,7 @@ function Field({ label, required, error, hint, htmlFor, children }: { label: str
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
-      {error ? <p className="mt-1.5 text-xs text-red-600">{error}</p> : hint ? <p className="mt-1.5 text-xs text-slate-400">{hint}</p> : null}
+      {error ? <p className="mt-1.5 text-xs text-red-600">{error}</p> : hint ? <p className="mt-1.5 text-xs text-slate-500">{hint}</p> : null}
     </div>
   );
 }
@@ -555,7 +555,7 @@ function ReviewGrid({ items }: { items: [string, string][] }) {
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-3">
       {items.map(([label, value]) => (
         <div key={label}>
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</span>
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{label}</span>
           <p className="text-sm font-medium text-slate-800">{value}</p>
         </div>
       ))}

@@ -29,12 +29,12 @@ const ReportItem: React.FC<ReportItemProps> = ({ label, value, total, hasProgres
   return (
     <div className="py-3 border-b border-gray-100 last:border-0 text-xs">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-gray-500 font-medium">{label}</span>
+        <span className="text-gray-600 font-medium">{label}</span>
         <div className="font-bold text-gray-900 shrink-0">
           {total !== undefined ? (
             <span>
               <span className="text-gray-900">{shown}</span>
-              <span className="text-gray-400 font-normal"> / {formatNumber(total)}</span>
+              <span className="text-gray-500 font-normal"> / {formatNumber(total)}</span>
             </span>
           ) : (
             <span>{shown}</span>
@@ -61,7 +61,7 @@ function FilterSelect({ label, value, onChange, children }: { label: string; val
       >
         {children}
       </select>
-      <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
+      <ChevronDown className="w-3.5 h-3.5 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
     </div>
   );
 }
@@ -118,7 +118,7 @@ export default function ReportsContent() {
       {/* Header Section */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Reports</h1>
-        <p className="text-sm text-gray-500 mt-1 font-medium">Live figures for the current academic year, filtered by course, division and period.</p>
+        <p className="text-sm text-gray-600 mt-1 font-medium">Live figures for the current academic year, filtered by course, division and period.</p>
       </div>
 
       {/* Filter Bar */}
@@ -153,7 +153,7 @@ export default function ReportsContent() {
       )}
 
       {loading && !error && (
-        <p className="mb-4 inline-flex items-center gap-2 text-xs font-medium text-gray-500" role="status">
+        <p className="mb-4 inline-flex items-center gap-2 text-xs font-medium text-gray-600" role="status">
           <Spinner className="h-3.5 w-3.5" /> Loading figures…
         </p>
       )}
@@ -205,9 +205,9 @@ export default function ReportsContent() {
             {divisions.isPending ? (
               <ReportItem label="Divisions" value={undefined} />
             ) : divisions.isError ? (
-              <p className="py-3 text-xs text-gray-400">Couldn&apos;t load the divisions.</p>
+              <p className="py-3 text-xs text-gray-500">Couldn&apos;t load the divisions.</p>
             ) : byDivision.length === 0 ? (
-              <p className="py-3 text-xs text-gray-400">No divisions yet.</p>
+              <p className="py-3 text-xs text-gray-500">No divisions yet.</p>
             ) : (
               byDivision.map(({ div, students, avg, loaded }) => (
                 <ReportItem key={div.id} label={`${div.name.replace(/ division$/i, "")} participation (avg. across courses, ${formatNumber(students)} students)`} value={shown(participation.isError, loaded ? avg : undefined)} total={100} hasProgressBar />
@@ -220,7 +220,7 @@ export default function ReportsContent() {
           <h2 id="r-exports" className="text-sm font-bold text-gray-900 mb-1">
             Exports
           </h2>
-          <p className="text-xs text-gray-500 mb-4">CSV files with the filters above. Exports contain personal data; each download is recorded in the audit log.</p>
+          <p className="text-xs text-gray-600 mb-4">CSV files with the filters above. Exports contain personal data; each download is recorded in the audit log.</p>
           <div className="flex flex-wrap gap-2">
             {REPORT_EXPORTS.map((x) => {
               const plan = exportPlan({ key: x.key, noFilters: "noFilters" in x }, filters, serverFilters);

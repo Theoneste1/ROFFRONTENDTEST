@@ -24,7 +24,7 @@ export function AreaField({ label, value, onChange, error, hint, required, max, 
         aria-invalid={error ? true : undefined}
         className={`w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 ${error ? "border-red-400 focus:ring-red-500/20" : "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500"}`}
       />
-      {(error || hint) && <p className={`mt-1 text-xs ${error ? "text-red-600" : "text-slate-500"}`}>{error ?? hint}</p>}
+      {(error || hint) && <p className={`mt-1 text-xs ${error ? "text-red-600" : "text-slate-600"}`}>{error ?? hint}</p>}
     </div>
   );
 }

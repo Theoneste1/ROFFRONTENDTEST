@@ -12,7 +12,7 @@ export const REASON_LABEL: Record<ReportReason, string> = {
 export const REPORT_STATUS: Record<ReportStatus, { label: string; badge: string }> = {
   OPEN: { label: "Open", badge: "bg-amber-50 text-amber-700" },
   RESOLVED: { label: "Resolved", badge: "bg-emerald-50 text-emerald-700" },
-  DISMISSED: { label: "Dismissed", badge: "bg-gray-100 text-gray-500" },
+  DISMISSED: { label: "Dismissed", badge: "bg-gray-100 text-gray-600" },
 };
 
 export const excerpt = (s: string | null | undefined, n = 120) => (!s ? "—" : s.length > n ? `${s.slice(0, n)}…` : s);

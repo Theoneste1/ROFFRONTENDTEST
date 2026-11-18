@@ -116,7 +116,7 @@ export default function UsersTableClient() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Users</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Every account on the platform — students, coaches and administrators.</p>
+          <p className="text-sm text-gray-600 mt-1 font-medium">Every account on the platform — students, coaches and administrators.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setDialog("create")} className={btnPrimary}>
@@ -253,9 +253,9 @@ export default function UsersTableClient() {
                   )}
                   <td className={`${td} font-semibold text-gray-800 whitespace-nowrap`}>
                     {u.firstName} {u.lastName}
-                    <span className="block text-[11px] font-normal text-gray-400">@{u.username}</span>
+                    <span className="block text-[11px] font-normal text-gray-500">@{u.username}</span>
                   </td>
-                  <td className={`${td} text-gray-500 font-medium`}>{u.email}</td>
+                  <td className={`${td} text-gray-600 font-medium`}>{u.email}</td>
                   <td className={`${td} text-gray-600 font-medium`}>{roleLabel(u.role)}</td>
                   <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>
                     {u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}
@@ -263,7 +263,7 @@ export default function UsersTableClient() {
                   <td className={td}>
                     <AccountStatusBadge user={u} />
                   </td>
-                  <td className={`${td} text-gray-500 whitespace-nowrap`}>{u.lastLoginAt ? formatDate(u.lastLoginAt) : "Never"}</td>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`}>{u.lastLoginAt ? formatDate(u.lastLoginAt) : "Never"}</td>
                   <td className={td}>
                     <Link href={`/admin/users/${u.id}`} className={linkBtn} aria-label={`View ${u.firstName} ${u.lastName}`}>
                       View
@@ -278,7 +278,7 @@ export default function UsersTableClient() {
 
       {(dialog === "create" || dialog === "invite") && (
         <Modal wide title={dialog === "create" ? "Add a user" : "Invite a user"} onClose={() => setDialog(null)}>
-          <p className="text-xs text-gray-500 mb-4">
+          <p className="text-xs text-gray-600 mb-4">
             {dialog === "create"
               ? "The account is active immediately with the password you set. Share it securely; the user can change it later."
               : "The account is created without a password and an activation link (valid 7 days) is e-mailed to the person."}

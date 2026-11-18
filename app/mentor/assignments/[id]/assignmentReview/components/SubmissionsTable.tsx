@@ -34,7 +34,7 @@ export default function SubmissionsTable({ assignmentId, maximumMarks, rows }: {
                       <h4 className="font-bold text-slate-900 truncate">
                         {s.student.firstName} {s.student.lastName}
                       </h4>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-500">
                         {s.student.gradeLevel ?? ""}
                         {s.revisions.length > 1 && ` · attempt ${s.revisions.length}`}
                         {s.isLate && <span className="text-orange-600"> · late</span>}
@@ -47,7 +47,7 @@ export default function SubmissionsTable({ assignmentId, maximumMarks, rows }: {
                   <div className="col-span-1 font-bold text-slate-800">{s.review?.score !== null && s.review?.score !== undefined ? `${s.review.score}/${maximumMarks}` : "—"}</div>
                   <div className="col-span-2 text-xs text-slate-600 font-medium leading-relaxed">
                     <div>{formatDate(s.submittedAt)}</div>
-                    <div className="text-slate-400">{formatTime(s.submittedAt)}</div>
+                    <div className="text-slate-500">{formatTime(s.submittedAt)}</div>
                   </div>
                   <div className="col-span-2">
                     <Link

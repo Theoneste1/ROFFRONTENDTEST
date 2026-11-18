@@ -39,7 +39,7 @@ export default function SchoolOfferingsTab({ schoolId }: { schoolId: string }) {
             {o.levels.length ? (
               <p className="text-gray-700">{o.levels.map((l) => `${l.name}${l.qualifier ? ` (${l.qualifier})` : ""}`).join(" · ")}</p>
             ) : (
-              <p className="text-gray-500">None recorded.</p>
+              <p className="text-gray-600">None recorded.</p>
             )}
           </div>
           <div>
@@ -49,13 +49,13 @@ export default function SchoolOfferingsTab({ schoolId }: { schoolId: string }) {
                 {o.programmes.map((p) => (
                   <li key={p.id} className="text-gray-700">
                     {p.name}
-                    {p.code ? ` (${p.code})` : ""} <span className="text-gray-400">· {CATEGORY_LABEL[p.category] ?? p.category}</span>
+                    {p.code ? ` (${p.code})` : ""} <span className="text-gray-500">· {CATEGORY_LABEL[p.category] ?? p.category}</span>
                     {p.needsReview && <Badge className="ml-1 bg-amber-50 text-amber-700">Needs review</Badge>}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500">None recorded.</p>
+              <p className="text-gray-600">None recorded.</p>
             )}
           </div>
         </div>
@@ -139,10 +139,10 @@ function OfferingsDialog({ schoolId, offerings, onClose, onSaved }: { schoolId: 
                     }
                   />
                   {p.name}
-                  {p.needsReview && <span className="text-amber-600">(needs review)</span>}
+                  {p.needsReview && <span className="text-amber-700">(needs review)</span>}
                 </label>
               ))}
-              {ref.data.programmes.length === 0 && <p className="text-gray-500">No programmes in the reference data.</p>}
+              {ref.data.programmes.length === 0 && <p className="text-gray-600">No programmes in the reference data.</p>}
             </div>
           </fieldset>
           <label className="block">

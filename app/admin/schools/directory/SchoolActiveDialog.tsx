@@ -53,7 +53,7 @@ export default function SchoolActiveDialog({
         <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3" data-testid="school-impact">
           <p className="text-xs font-semibold text-gray-600 mb-1">What refers to this school (kept as it is)</p>
           {detail.isPending ? (
-            <p className="text-xs text-gray-500">Loading…</p>
+            <p className="text-xs text-gray-600">Loading…</p>
           ) : detail.isError ? (
             <p className="text-xs text-red-600">Couldn&apos;t load the current counts: {errorMessage(detail.error)}</p>
           ) : (
@@ -78,7 +78,7 @@ export default function SchoolActiveDialog({
             aria-describedby="school-active-reason-note"
             className={`w-full border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${reasonError ? "border-red-400" : "border-gray-200"}`}
           />
-          <p id="school-active-reason-note" className={`mt-1 text-[11px] ${reasonError ? "text-red-600" : "text-gray-500"}`}>
+          <p id="school-active-reason-note" className={`mt-1 text-[11px] ${reasonError ? "text-red-600" : "text-gray-600"}`}>
             {reasonError ?? `${ACTIVE_REASON.min}–${ACTIVE_REASON.max} characters, recorded in the audit log.`}
           </p>
         </div>

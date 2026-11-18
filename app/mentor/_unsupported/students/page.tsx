@@ -171,7 +171,7 @@ export default function MentorStudents() {
                 {/* Filters and Search */}
                 <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                         <input
                             type="text"
                             placeholder="Search students by name or email..."
@@ -193,7 +193,7 @@ export default function MentorStudents() {
                                 <option>Calculus</option>
                                 <option>Trigonometry</option>
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                         </div>
                         <div className="relative">
                             <select
@@ -206,7 +206,7 @@ export default function MentorStudents() {
                                 <option>G11</option>
                                 <option>G12</option>
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                         </div>
                         <button className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
                             <Filter className="w-4 h-4" />
@@ -230,11 +230,11 @@ export default function MentorStudents() {
                                     </div>
                                     <div>
                                         <h3 className="text-base font-bold text-gray-900">{student.name}</h3>
-                                        <p className="text-xs text-gray-500">{student.email}</p>
+                                        <p className="text-xs text-gray-600">{student.email}</p>
                                     </div>
                                 </div>
                                 <button className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-                                    <MoreVertical className="w-4 h-4 text-gray-400" />
+                                    <MoreVertical className="w-4 h-4 text-gray-500" />
                                 </button>
                             </div>
 
@@ -284,7 +284,7 @@ export default function MentorStudents() {
                                         )}
                                         {student.averageScore}%
                                     </div>
-                                    <span className="text-xs text-gray-400">{student.lastActive}</span>
+                                    <span className="text-xs text-gray-500">{student.lastActive}</span>
                                 </div>
                                 <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                                     <Mail className="w-4 h-4 text-gray-600" />

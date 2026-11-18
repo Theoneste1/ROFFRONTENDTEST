@@ -18,7 +18,7 @@ import { Badge, ConfirmDialog, FilterPills, Notice, TableCard, TableMessage, td,
 const STATUS: Record<MentorRequestStatus, { label: string; badge: string }> = {
   PENDING: { label: "Pending", badge: "bg-amber-50 text-amber-700" },
   APPROVED: { label: "Approved", badge: "bg-emerald-50 text-emerald-700" },
-  REJECTED: { label: "Rejected", badge: "bg-gray-100 text-gray-500" },
+  REJECTED: { label: "Rejected", badge: "bg-gray-100 text-gray-600" },
 };
 
 /** Phone, affiliation, expertise, experience, questions and answers (backends with applicationDetails). */
@@ -28,7 +28,7 @@ function CoachExtraSummary({ r }: { r: MentorRequest }) {
   const waiting = openInfoRequest(r.infoRequests);
   const answered = latestAnswer(r.infoRequests);
   return (
-    <span className="mt-1 block max-w-sm whitespace-normal text-[11px] font-normal text-gray-500" data-testid="coach-application-extra">
+    <span className="mt-1 block max-w-sm whitespace-normal text-[11px] font-normal text-gray-600" data-testid="coach-application-extra">
       {[r.phone, r.affiliation, r.yearsOfExperience != null ? `${r.yearsOfExperience} years` : ""].filter(Boolean).join(" · ")}
       {waiting && <span className="block text-amber-700">Waiting for the applicant&apos;s answer</span>}
       {!waiting && answered && <span className="block text-emerald-700">Applicant answered</span>}
@@ -114,16 +114,16 @@ export default function ApplicationsPanel() {
                 <tr key={r.id} className="text-xs hover:bg-gray-50/60">
                   <td className={`${td} font-semibold text-gray-800 whitespace-nowrap`}>
                     {r.firstName} {r.lastName}
-                    <span className="block text-[11px] font-normal text-gray-400">@{r.username}</span>
+                    <span className="block text-[11px] font-normal text-gray-500">@{r.username}</span>
                     {coachDetailsText(r) && (
-                      <span className="mt-1 block max-w-xs whitespace-normal text-[11px] font-normal text-gray-500" data-testid="coach-application-details">
+                      <span className="mt-1 block max-w-xs whitespace-normal text-[11px] font-normal text-gray-600" data-testid="coach-application-details">
                         {coachDetailsText(r)}
                       </span>
                     )}
                     <CoachExtraSummary r={r} />
                   </td>
-                  <td className={`${td} text-gray-500`}>{r.email}</td>
-                  <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDateTime(r.createdAt)}</td>
+                  <td className={`${td} text-gray-600`}>{r.email}</td>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`}>{formatDateTime(r.createdAt)}</td>
                   <td className={td}>
                     <Badge className={STATUS[r.status].badge}>{STATUS[r.status].label}</Badge>
                   </td>
@@ -141,7 +141,7 @@ export default function ApplicationsPanel() {
                         )}
                       </div>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-gray-500">—</span>
                     )}
                   </td>
                 </tr>

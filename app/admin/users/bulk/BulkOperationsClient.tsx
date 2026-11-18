@@ -110,10 +110,10 @@ function OperationRow({ op, open, onToggle }: { op: BulkOperation; open: boolean
       <tr>
         <td className={`${td} text-sm text-gray-800`}>
           {actionLabel(op.action)}
-          {op.params?.role && <span className="block text-[11px] text-gray-500">to {op.params.role}</span>}
-          {op.params?.gradeLevel && <span className="block text-[11px] text-gray-500">to {op.params.gradeLevel}</span>}
-          {op.params?.subject && <span className="block text-[11px] text-gray-500 truncate max-w-[220px]">“{op.params.subject}”</span>}
-          {op.params?.permission && <span className="block text-[11px] text-gray-500">{delegationLabel(op.params.permission)}</span>}
+          {op.params?.role && <span className="block text-[11px] text-gray-600">to {op.params.role}</span>}
+          {op.params?.gradeLevel && <span className="block text-[11px] text-gray-600">to {op.params.gradeLevel}</span>}
+          {op.params?.subject && <span className="block text-[11px] text-gray-600 truncate max-w-[220px]">“{op.params.subject}”</span>}
+          {op.params?.permission && <span className="block text-[11px] text-gray-600">{delegationLabel(op.params.permission)}</span>}
         </td>
         <td className={td}>
           <Badge className={meta?.badge ?? "bg-slate-100 text-slate-700"}>{operationStatusLabel(op.status)}</Badge>
@@ -123,7 +123,7 @@ function OperationRow({ op, open, onToggle }: { op: BulkOperation; open: boolean
           {op.succeeded} done · {op.failed} failed · {op.skipped} skipped / {op.total}
         </td>
         <td className={`${td} text-xs text-gray-600`}>{op.actor ? personName(op.actor) : "deleted account"}</td>
-        <td className={`${td} text-[11px] text-gray-500 whitespace-nowrap`}>{formatDateTime(op.createdAt)}</td>
+        <td className={`${td} text-[11px] text-gray-600 whitespace-nowrap`}>{formatDateTime(op.createdAt)}</td>
         <td className={`${td} text-right`}>
           <button type="button" className={linkBtn} onClick={onToggle} aria-expanded={open}>
             {open ? "Hide" : "Details"}
@@ -238,7 +238,7 @@ function OperationDetail({ id }: { id: string }) {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-left text-gray-400 uppercase tracking-wider text-[10px]">
+              <tr className="text-left text-gray-500 uppercase tracking-wider text-[10px]">
                 <th className="py-2 pr-4">Account</th>
                 <th className="py-2 pr-4">Result</th>
                 <th className="py-2 pr-4">Details</th>
@@ -247,13 +247,13 @@ function OperationDetail({ id }: { id: string }) {
             <tbody className="divide-y divide-gray-100">
               {items.isPending ? (
                 <tr>
-                  <td colSpan={3} className="py-3 text-gray-400">
+                  <td colSpan={3} className="py-3 text-gray-500">
                     Loading…
                   </td>
                 </tr>
               ) : (items.data?.data ?? []).length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="py-3 text-gray-400">
+                  <td colSpan={3} className="py-3 text-gray-500">
                     No accounts with this result.
                   </td>
                 </tr>
@@ -263,14 +263,14 @@ function OperationDetail({ id }: { id: string }) {
                     <td className="py-2 pr-4 text-gray-700">
                       {it.user ? (
                         <Link href={`/admin/users/${it.userId}`} className="hover:underline">
-                          {it.user.firstName} {it.user.lastName} <span className="text-gray-400">@{it.user.username}</span>
+                          {it.user.firstName} {it.user.lastName} <span className="text-gray-500">@{it.user.username}</span>
                         </Link>
                       ) : (
-                        <span className="text-gray-400">deleted account</span>
+                        <span className="text-gray-500">deleted account</span>
                       )}
                     </td>
                     <td className="py-2 pr-4 text-gray-700">{it.outcome.toLowerCase()}</td>
-                    <td className="py-2 pr-4 text-gray-500">
+                    <td className="py-2 pr-4 text-gray-600">
                       {[itemCodeLabel(it.code), it.message, it.stillBlockedBy.length ? `still blocked by: ${it.stillBlockedBy.join(", ")}` : ""].filter(Boolean).join(" — ")}
                     </td>
                   </tr>

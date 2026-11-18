@@ -19,9 +19,9 @@ import type { ResourceKind } from './ResourcesTab';
 
 const StatCard = ({ title, value, subtext }: { title: string; value: string; subtext: string }) => (
   <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-2">
-    <span className="text-sm font-medium text-slate-500">{title}</span>
+    <span className="text-sm font-medium text-slate-600">{title}</span>
     <div className="text-3xl font-extrabold text-blue-600 tracking-tight">{value}</div>
-    <div className="text-xs text-slate-400">{subtext}</div>
+    <div className="text-xs text-slate-500">{subtext}</div>
   </div>
 );
 
@@ -42,7 +42,7 @@ export default function OverviewTab({ scope, onOpenTab }: { scope: TeachingScope
               type="button"
               onClick={() => setActiveSubTab(tab)}
               className={`py-3 px-1 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                activeSubTab === tab ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                activeSubTab === tab ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-600 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               {tab}
@@ -98,7 +98,7 @@ function OverviewPanel({ scope, data, onOpenTab }: { scope: TeachingScope; data:
                 </div>
                 <span className="text-xs font-semibold text-gray-600">{completion}%</span>
               </div>
-              <p className="text-xs text-gray-400 font-medium">
+              <p className="text-xs text-gray-500 font-medium">
                 {data.students.completed} of {data.students.total} students completed · {data.students.rolled} in progress · {data.students.unrolled} not started
               </p>
             </div>
@@ -117,14 +117,14 @@ function OverviewPanel({ scope, data, onOpenTab }: { scope: TeachingScope; data:
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <h3 className="text-base font-bold text-gray-900 mb-6">Assignments</h3>
           {data.assignments.length === 0 ? (
-            <p className="text-sm text-gray-500">No published assignments in this course yet.</p>
+            <p className="text-sm text-gray-600">No published assignments in this course yet.</p>
           ) : (
             <div className="space-y-4">
               {data.assignments.map((a) => (
                 <div key={a.id} className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-gray-800 truncate">{a.title}</p>
-                    <p className="text-[11px] text-gray-400">
+                    <p className="text-[11px] text-gray-500">
                       Due {formatDate(a.deadline)} · {a.submissions} submissions ({pct(a.submissionRate)}) · {a.publishedResults} results published
                     </p>
                   </div>
@@ -135,7 +135,7 @@ function OverviewPanel({ scope, data, onOpenTab }: { scope: TeachingScope; data:
           )}
           {pipeline.length > 0 && (
             <div className="mt-6 pt-4 border-t border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 mb-2">Review pipeline (all coaches)</p>
+              <p className="text-xs font-semibold text-gray-600 mb-2">Review pipeline (all coaches)</p>
               <div className="flex flex-wrap gap-2">
                 {pipeline.map(([status, n]) => (
                   <span key={status} className="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full">
@@ -152,7 +152,7 @@ function OverviewPanel({ scope, data, onOpenTab }: { scope: TeachingScope; data:
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <h3 className="text-base font-bold text-gray-900 mb-6">Upcoming</h3>
           {upcoming.length === 0 ? (
-            <p className="text-sm text-gray-500">No upcoming deadlines.</p>
+            <p className="text-sm text-gray-600">No upcoming deadlines.</p>
           ) : (
             <div className="space-y-5">
               {upcoming.map((a) => (
@@ -163,7 +163,7 @@ function OverviewPanel({ scope, data, onOpenTab }: { scope: TeachingScope; data:
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-gray-800">Assignment</p>
                     <p className="text-xs text-gray-600 mt-0.5 truncate">{a.title}</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Due {formatDate(a.deadline)}</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">Due {formatDate(a.deadline)}</p>
                   </div>
                 </div>
               ))}
@@ -178,7 +178,7 @@ function OverviewPanel({ scope, data, onOpenTab }: { scope: TeachingScope; data:
             <ResourceLink icon={<FileText className="w-4 h-4" />} label="Past Papers" count={counts.papers} onClick={() => onOpenTab('papers')} />
             <ResourceLink icon={<FileText className="w-4 h-4" />} label="Notes & Materials" count={counts.notes} onClick={() => onOpenTab('notes')} />
           </div>
-          <p className="mt-4 text-[11px] text-gray-400">
+          <p className="mt-4 text-[11px] text-gray-500">
             {data.resources.published} published · {data.resources.totalViews} views by {data.resources.uniqueViewers} students
           </p>
         </div>
@@ -216,9 +216,9 @@ function ReportsPanel({ scope, data }: { scope: TeachingScope; data: Analytics }
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-500">Results and participation for {scope.course.title} · {scope.division.name} division.</p>
+      <p className="text-sm text-slate-600">Results and participation for {scope.course.title} · {scope.division.name} division.</p>
       <div className="flex flex-col">
-        <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-1">Assignment</span>
+        <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">Assignment</span>
         <div className="relative w-fit">
           <select
             value={selected}
@@ -232,7 +232,7 @@ function ReportsPanel({ scope, data }: { scope: TeachingScope; data: Analytics }
               </option>
             ))}
           </select>
-          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <ChevronDown className="w-4 h-4 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
       </div>
 
@@ -248,7 +248,7 @@ function ReportsPanel({ scope, data }: { scope: TeachingScope; data: Analytics }
             <BarChart3 className="w-4 h-4" /> Score Distribution
           </h3>
           {buckets.every((b) => b.count === 0) ? (
-            <p className="text-sm text-slate-500">No published scores yet.</p>
+            <p className="text-sm text-slate-600">No published scores yet.</p>
           ) : (
             <div className="relative h-56 flex items-end justify-between gap-3 px-2 border-b border-slate-200">
               {buckets.map((b) => (
@@ -259,7 +259,7 @@ function ReportsPanel({ scope, data }: { scope: TeachingScope; data: Analytics }
               ))}
             </div>
           )}
-          <div className="flex justify-between gap-3 px-2 pt-3 text-xs font-semibold text-slate-400">
+          <div className="flex justify-between gap-3 px-2 pt-3 text-xs font-semibold text-slate-500">
             {buckets.map((b) => (
               <span key={b.label} className="flex-1 text-center">
                 {b.label}%
@@ -271,18 +271,18 @@ function ReportsPanel({ scope, data }: { scope: TeachingScope; data: Analytics }
         <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
           <div className="flex items-center justify-between pb-4 border-b border-slate-100">
             <h3 className="text-sm font-bold tracking-wider text-slate-800 uppercase">Top Students ({scope.division.name})</h3>
-            <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">Points</span>
+            <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">Points</span>
           </div>
           {top.isPending ? (
-            <p className="py-4 text-xs text-slate-400">Loading…</p>
+            <p className="py-4 text-xs text-slate-500">Loading…</p>
           ) : top.isError || !top.data?.data.length ? (
-            <p className="py-4 text-xs text-slate-500">No rankings yet.</p>
+            <p className="py-4 text-xs text-slate-600">No rankings yet.</p>
           ) : (
             <div className="divide-y divide-slate-50">
               {top.data.data.map((s) => (
                 <div key={s.id} className="flex items-center justify-between py-3.5 text-sm">
                   <div className="flex items-center space-x-3">
-                    <span className="text-xs font-semibold text-slate-400 w-4">{s.rank}.</span>
+                    <span className="text-xs font-semibold text-slate-500 w-4">{s.rank}.</span>
                     <span className="font-semibold text-slate-800">{s.displayName}</span>
                   </div>
                   <span className="font-bold text-slate-800">{formatNumber(s.points)}</span>
@@ -290,7 +290,7 @@ function ReportsPanel({ scope, data }: { scope: TeachingScope; data: Analytics }
               ))}
             </div>
           )}
-          <p className="pt-4 border-t border-slate-100 text-xs text-slate-400">Division leaderboard (all courses).</p>
+          <p className="pt-4 border-t border-slate-100 text-xs text-slate-500">Division leaderboard (all courses).</p>
         </div>
       </div>
     </div>
@@ -302,7 +302,7 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
     <div className="flex items-center gap-3">
       <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">{icon}</div>
       <div>
-        <p className="text-xs text-gray-400">{label}</p>
+        <p className="text-xs text-gray-500">{label}</p>
         <p className="text-xs font-bold text-gray-800">{value}</p>
       </div>
     </div>
@@ -316,12 +316,12 @@ function ResourceLink({ icon, label, count, onClick }: { icon: React.ReactNode; 
         <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">{icon}</div>
         <div>
           <p className="text-xs font-bold text-gray-800">{label}</p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             {count} resource{count === 1 ? '' : 's'}
           </p>
         </div>
       </div>
-      <ChevronRight className="w-4 h-4 text-gray-400" />
+      <ChevronRight className="w-4 h-4 text-gray-500" />
     </button>
   );
 }

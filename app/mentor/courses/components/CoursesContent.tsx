@@ -60,7 +60,7 @@ export default function CoursesContent() {
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{scope.course.title}</h1>
-          <p className="text-sm text-gray-500 mt-1">{scope.division.name} division</p>
+          <p className="text-sm text-gray-600 mt-1">{scope.division.name} division</p>
         </div>
         {list.length > 1 && <ScopeSelect scopes={list} value={scopeKey(scope)} onChange={(v) => go({ scope: v })} label="Course and division" />}
       </div>
@@ -74,7 +74,7 @@ export default function CoursesContent() {
             aria-selected={activeTab === tab.id}
             onClick={() => go({ tab: tab.id })}
             className={`pb-3 transition-colors relative whitespace-nowrap ${
-              activeTab === tab.id ? "text-blue-600 font-semibold border-b-2 border-blue-600 -mb-[2px]" : "text-slate-500 hover:text-slate-800"
+              activeTab === tab.id ? "text-blue-600 font-semibold border-b-2 border-blue-600 -mb-[2px]" : "text-slate-600 hover:text-slate-800"
             }`}
           >
             {tab.label}
@@ -122,7 +122,7 @@ function NoTeachingScope() {
         <>
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Programme courses</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-600 mt-1">
               The courses of {headed.programmes.map((p) => p.name).join(", ")}. To prepare or review work in a course, an administrator gives you course access;
               participation per division and course analytics are under Programme → Courses.
             </p>

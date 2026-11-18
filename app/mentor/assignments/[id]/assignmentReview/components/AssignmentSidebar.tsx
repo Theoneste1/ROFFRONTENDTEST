@@ -33,26 +33,26 @@ export default function AssignmentSidebar({ assignment: a }: { assignment: Mento
         <div className="divide-y divide-slate-100 text-xs">
           <Link href={`/mentor/assignments/${a.id}`} className={link}>
             <span className="flex items-center gap-2">
-              <FileText className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600" />
+              <FileText className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-600" />
               View Assignment Details
             </span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-600" />
           </Link>
           {editable && (
             <Link href={`/mentor/assignments/${a.id}/edit`} className={link}>
               <span className="flex items-center gap-2">
-                <Edit className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600" />
+                <Edit className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-600" />
                 Edit Assignment
               </span>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600" />
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-600" />
             </Link>
           )}
           <Link href={`/mentor/courses?scope=${encodeURIComponent(`${a.courseId}:${a.divisionId}`)}&tab=overview`} className={link}>
             <span className="flex items-center gap-2">
-              <BookOpen className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600" />
+              <BookOpen className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-600" />
               Course Analytics
             </span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-600" />
           </Link>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default function AssignmentSidebar({ assignment: a }: { assignment: Mento
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <span className="text-slate-400 block mb-0.5">{label}</span>
+      <span className="text-slate-500 block mb-0.5">{label}</span>
       <span className="font-semibold text-slate-800">{value}</span>
     </div>
   );

@@ -153,7 +153,7 @@ export default function TeacherApplicationsReview() {
                 <tr key={a.id}>
                   <td className={td}>
                     <p className="font-semibold text-gray-800">{fullName(a)}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       @{a.username} · {a.email}
                     </p>
                   </td>
@@ -167,7 +167,7 @@ export default function TeacherApplicationsReview() {
                     ) : (
                       <>
                         {formatDate(a.decidedAt)}
-                        {a.decidedBy && <span className="block text-gray-400">by {fullName(a.decidedBy)}</span>}
+                        {a.decidedBy && <span className="block text-gray-500">by {fullName(a.decidedBy)}</span>}
                       </>
                     )}
                   </td>
@@ -295,12 +295,12 @@ function SchoolCell({ app }: { app: TeacherApplication }) {
       <>
         {app.school.name}
         {isMissingSchoolApplication(app) && app.schoolVerifiedAt && <span className="ml-1 text-[11px] text-emerald-700">(verified)</span>}
-        <span className="block text-xs text-gray-400">
+        <span className="block text-xs text-gray-500">
           {app.school.code ? `code ${app.school.code} · ` : ""}
           {place}
         </span>
         {app.proposedSchoolName && app.proposedSchoolName !== app.school.name && (
-          <span className="block text-[11px] text-gray-400">applied as &ldquo;{app.proposedSchoolName}&rdquo;</span>
+          <span className="block text-[11px] text-gray-500">applied as &ldquo;{app.proposedSchoolName}&rdquo;</span>
         )}
       </>
     );
@@ -308,7 +308,7 @@ function SchoolCell({ app }: { app: TeacherApplication }) {
   return (
     <>
       {app.proposedSchoolName ?? "—"} <span className="text-[11px] text-amber-700">(not listed — verify first)</span>
-      <span className="block text-xs text-gray-400">{place || "No place given"}</span>
+      <span className="block text-xs text-gray-500">{place || "No place given"}</span>
     </>
   );
 }
@@ -316,7 +316,7 @@ function SchoolCell({ app }: { app: TeacherApplication }) {
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-3 py-2">
-      <dt className="text-xs font-semibold text-gray-500">{label}</dt>
+      <dt className="text-xs font-semibold text-gray-600">{label}</dt>
       <dd className="sm:col-span-2 text-sm text-gray-800 break-words">{children}</dd>
     </div>
   );
@@ -356,7 +356,7 @@ function DetailDialog({
           {missing && (
             <Row label="School requested (not listed)">
               {a.proposedSchoolName ?? "—"}
-              <span className="block text-xs text-gray-500">{[a.schoolSector, a.schoolDistrict, a.schoolProvince].filter(Boolean).join(", ") || "No place given"}</span>
+              <span className="block text-xs text-gray-600">{[a.schoolSector, a.schoolDistrict, a.schoolProvince].filter(Boolean).join(", ") || "No place given"}</span>
             </Row>
           )}
           {missing && (
@@ -374,7 +374,7 @@ function DetailDialog({
           {a.school && (
             <Row label={missing ? "Official school" : "School"}>
               {a.school.name}
-              <span className="block text-xs text-gray-500">
+              <span className="block text-xs text-gray-600">
                 {a.school.code ? `School code ${a.school.code}` : "No school code"} · Sector {a.school.sector ?? "—"} · {[a.school.district, a.school.province].filter(Boolean).join(", ")}
               </span>
             </Row>
@@ -435,7 +435,7 @@ function NoteField({ id, value, onChange, max }: { id: string; value: string; on
   return (
     <div>
       <label htmlFor={id} className="block text-xs font-semibold text-gray-600 mb-1">
-        Note <span className="font-normal text-gray-400">(optional)</span>
+        Note <span className="font-normal text-gray-500">(optional)</span>
       </label>
       <textarea
         id={id}
@@ -603,7 +603,7 @@ function ApproveDialog({
           <p className="text-sm text-gray-800">
             School: <strong>{app.school.name}</strong>
             {app.school.code ? ` (code ${app.school.code})` : ""}
-            <span className="block text-xs text-gray-500">{applicationSchoolPlace(app)}</span>
+            <span className="block text-xs text-gray-600">{applicationSchoolPlace(app)}</span>
           </p>
         )}
         {blocked ? (

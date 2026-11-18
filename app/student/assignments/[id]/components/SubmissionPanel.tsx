@@ -73,7 +73,7 @@ function SubmissionConfirmed({ onClose }: { onClose: () => void }) {
         </div>
         <hr className="border-gray-100 my-4" />
         <h3 className="text-2xl font-bold text-gray-900">Submission confirmed!</h3>
-        <p className="text-sm text-gray-500">Your work has been received.</p>
+        <p className="text-sm text-gray-600">Your work has been received.</p>
       </div>
     </div>
   );
@@ -101,11 +101,11 @@ function SubmissionStatusCard({ assignment: a, submission, onShowResults }: { as
           </div>
           <dl className="text-xs space-y-1.5">
             <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Submitted</dt>
+              <dt className="text-gray-600">Submitted</dt>
               <dd className="font-semibold text-gray-800 text-right">{formatDateTime(a.submission.submittedAt)}</dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Attempts</dt>
+              <dt className="text-gray-600">Attempts</dt>
               <dd className="font-semibold text-gray-800">{submission?.revisions.length ?? a.submission.revisionCount + 1}</dd>
             </div>
           </dl>
@@ -126,7 +126,7 @@ function SubmissionStatusCard({ assignment: a, submission, onShowResults }: { as
               View your result
             </button>
           ) : (
-            <p className="text-[11px] text-gray-500">
+            <p className="text-[11px] text-gray-600">
               {a.displayStatus === 'Pending Review'
                 ? 'A coach is reviewing your work. Your result appears here once it is published.'
                 : 'Your work has been received and will be reviewed by a coach.'}
@@ -245,10 +245,10 @@ function SubmissionForm({ assignment: a, isResubmission, onSubmitted }: { assign
               maxLength={SUBMISSION_UPLOAD.answerMax}
               onChange={(e) => setAnswer(e.target.value)}
               placeholder="Type your answer, or share a link to your work (Google Drive, Desmos, …)"
-              className="w-full h-32 p-4 text-xs border border-gray-200 rounded-2xl bg-white outline-none focus:ring-2 focus:ring-blue-300 resize-y placeholder:text-gray-400"
+              className="w-full h-32 p-4 text-xs border border-gray-200 rounded-2xl bg-white outline-none focus:ring-2 focus:ring-blue-300 resize-y placeholder:text-gray-500"
             />
             {answer.length > SUBMISSION_UPLOAD.answerMax * 0.9 && (
-              <p className="text-[10px] text-gray-400 text-right">
+              <p className="text-[10px] text-gray-500 text-right">
                 {answer.length} / {SUBMISSION_UPLOAD.answerMax}
               </p>
             )}
@@ -266,9 +266,9 @@ function SubmissionForm({ assignment: a, isResubmission, onSubmitted }: { assign
             className={`block border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition bg-gray-50/50 ${dragging ? 'border-blue-400 bg-blue-50/50' : 'border-gray-200 hover:border-blue-300'}`}
           >
             <input ref={inputRef} type="file" multiple accept={SUBMISSION_UPLOAD.accept} className="sr-only" onChange={(e) => addFiles(e.target.files)} />
-            <UploadCloud className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+            <UploadCloud className="w-8 h-8 text-gray-500 mx-auto mb-2" />
             <p className="text-xs font-bold text-gray-700">Upload Files</p>
-            <p className="text-[10px] text-gray-400 mt-1">{SUBMISSION_UPLOAD.label}</p>
+            <p className="text-[10px] text-gray-500 mt-1">{SUBMISSION_UPLOAD.label}</p>
           </label>
           {fileError && <p className="text-[11px] text-red-600 -mt-3">{fileError}</p>}
 
@@ -280,8 +280,8 @@ function SubmissionForm({ assignment: a, isResubmission, onSubmitted }: { assign
                   <span className="text-xs font-medium text-gray-800 truncate flex-1" title={f.name}>
                     {f.name}
                   </span>
-                  <span className="text-[10px] text-gray-400">{formatFileSize(f.size)}</span>
-                  <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} className="p-1 text-gray-400 hover:text-red-600" aria-label={`Remove ${f.name}`}>
+                  <span className="text-[10px] text-gray-500">{formatFileSize(f.size)}</span>
+                  <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} className="p-1 text-gray-500 hover:text-red-600" aria-label={`Remove ${f.name}`}>
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </li>
@@ -311,7 +311,7 @@ function SubmissionForm({ assignment: a, isResubmission, onSubmitted }: { assign
             {isResubmission ? 'Resubmit' : 'Submit'}
           </button>
 
-          <p className="text-[11px] text-gray-400 text-center">Your assignment will be reviewed by a coach.</p>
+          <p className="text-[11px] text-gray-500 text-center">Your assignment will be reviewed by a coach.</p>
         </div>
       </div>
 
@@ -327,12 +327,12 @@ function SubmissionForm({ assignment: a, isResubmission, onSubmitted }: { assign
                 <h3 id="confirm-title" className="text-2xl font-bold text-gray-900 leading-tight">
                   Confirm Submission?
                 </h3>
-                <p className="text-sm text-gray-500 mt-2 leading-snug">
+                <p className="text-sm text-gray-600 mt-2 leading-snug">
                   {canResubmitAgain
                     ? `You can still replace this work until a coach starts reviewing it or the deadline passes${remaining !== null ? ` (${remaining} resubmission${remaining === 1 ? '' : 's'} left after this one)` : ''}.`
                     : 'You are about to submit this work. No changes can be made after submitting.'}
                 </p>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-gray-500 mt-2">
                   {files.length} file{files.length === 1 ? '' : 's'}
                   {answer.trim() ? ' · typed answer' : ''}
                 </p>

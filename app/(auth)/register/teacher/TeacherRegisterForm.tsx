@@ -104,7 +104,7 @@ export default function TeacherRegisterForm() {
       <div className="space-y-5" data-testid="teacher-register-loading">
         <Heading />
         <LoadingBlock label="Preparing the registration form…" />
-        <p className="text-center text-xs text-slate-500">This can take up to a minute while the server wakes up.</p>
+        <p className="text-center text-xs text-slate-600">This can take up to a minute while the server wakes up.</p>
         <Footer />
       </div>
     );
@@ -155,7 +155,7 @@ export default function TeacherRegisterForm() {
 function Section({ step, title, description, children }: { step: number; title: string; description?: string; children: ReactNode }) {
   return (
     <FormSection step={step} title={title}>
-      {description && <p className="-mt-2 text-xs text-slate-500">{description}</p>}
+      {description && <p className="-mt-2 text-xs text-slate-600">{description}</p>}
       {children}
     </FormSection>
   );
@@ -377,7 +377,7 @@ function OpenForm() {
             />
           </div>
         )}
-        {locations.isError && <p className="text-xs text-slate-500">Load the list of places above to choose your home location.</p>}
+        {locations.isError && <p className="text-xs text-slate-600">Load the list of places above to choose your home location.</p>}
       </Section>
 
       <Section step={5} title="Your account">

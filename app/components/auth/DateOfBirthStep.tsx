@@ -77,7 +77,7 @@ export default function DateOfBirthStep({ firstName }: { firstName: string }) {
         <div className="mt-4 text-center">
           <button
             type="button"
-            className="text-sm text-slate-500 underline hover:text-slate-700 disabled:opacity-60"
+            className="text-sm text-slate-600 underline hover:text-slate-700 disabled:opacity-60"
             disabled={signingOut}
             onClick={async () => {
               setSigningOut(true);

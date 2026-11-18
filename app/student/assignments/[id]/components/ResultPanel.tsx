@@ -51,11 +51,11 @@ export default function ResultPanel({ assignment: a, onAsk }: { assignment: Stud
         <div className="w-full bg-gray-200 rounded-full h-3" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
           <div className="bg-blue-600 h-3 rounded-full" style={{ width: `${pct}%` }} />
         </div>
-        <div className="flex flex-wrap justify-between gap-2 mt-2 text-sm text-gray-500">
+        <div className="flex flex-wrap justify-between gap-2 mt-2 text-sm text-gray-600">
           <p>You scored {r.percentage}% on this assignment</p>
           <p className="font-semibold text-indigo-700">+{r.pointsAwarded} leaderboard points</p>
         </div>
-        <p className="text-xs text-gray-400 mt-2">Published {formatDateTime(r.publishedAt)}</p>
+        <p className="text-xs text-gray-500 mt-2">Published {formatDateTime(r.publishedAt)}</p>
       </div>
 
       {/* Feedback */}
@@ -64,7 +64,7 @@ export default function ResultPanel({ assignment: a, onAsk }: { assignment: Stud
         {r.feedback.text ? (
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{r.feedback.text}</p>
-            <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+            <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
               <span className="font-semibold">{personName(r.feedback.mentor, 'Your coach')}</span>
               {r.reviewedAt && (
                 <>
@@ -75,7 +75,7 @@ export default function ResultPanel({ assignment: a, onAsk }: { assignment: Stud
             </div>
           </div>
         ) : (
-          <p className="text-sm text-gray-500">No written feedback for this result.</p>
+          <p className="text-sm text-gray-600">No written feedback for this result.</p>
         )}
         {r.feedback.files.length > 0 && (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -96,7 +96,7 @@ export default function ResultPanel({ assignment: a, onAsk }: { assignment: Stud
                 <span>
                   {v.score} marks ({v.percentage}%)
                 </span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-500">
                   Published {formatDateTime(v.publishedAt)}
                   {v.withdrawnAt ? ` · withdrawn ${formatDateTime(v.withdrawnAt)}` : ''}
                 </span>

@@ -41,7 +41,7 @@ import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Badge, Modal, btnPrimary, btnSecondary, linkBtn } from "../../components/adminUi";
 
 const input =
-  "w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500";
+  "w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-600";
 
 export default function SchoolFormDialog({
   school,
@@ -123,12 +123,12 @@ export default function SchoolFormDialog({
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                 <span className="min-w-0">
                   <span className="font-semibold text-gray-800">{c.name}</span>
-                  <span className="block text-xs text-gray-500">
+                  <span className="block text-xs text-gray-600">
                     {[c.code && `Code ${c.code}`, c.district, c.countryCode].filter(Boolean).join(" · ")}
                   </span>
                 </span>
                 <span className="flex items-center gap-3">
-                  {!c.isActive && <Badge className="bg-gray-100 text-gray-500">Inactive</Badge>}
+                  {!c.isActive && <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>}
                   <Link href={`/admin/schools/${c.id}`} target="_blank" rel="noopener" className={linkBtn}>
                     Open
                   </Link>
@@ -178,7 +178,7 @@ export default function SchoolFormDialog({
             </select>
           )}
         </Field>
-        {countryLocked && <p className="-mt-2 text-[11px] text-gray-500">A school with an official code stays in Rwanda.</p>}
+        {countryLocked && <p className="-mt-2 text-[11px] text-gray-600">A school with an official code stays in Rwanda.</p>}
 
         {rwanda ? (
           <>
@@ -298,7 +298,7 @@ export default function SchoolFormDialog({
         )}
 
         {!school && (
-          <p className="text-[11px] text-gray-500" data-testid="school-create-note">
+          <p className="text-[11px] text-gray-600" data-testid="school-create-note">
             {rwanda
               ? "The school is created active. Students can find it by its name or place when they register or change their school; without an official code it is listed without one (no code is made up). Invitations and CSV imports name it by its official code or its id."
               : "The school is created active. Students at a school outside Rwanda type its name, and an administrator links their request to this school. Invitations and CSV imports name it by its id."}
@@ -356,7 +356,7 @@ function Field({
           {error}
         </p>
       ) : hint ? (
-        <p id={noteId} className="mt-1 text-[11px] text-gray-500">
+        <p id={noteId} className="mt-1 text-[11px] text-gray-600">
           {hint}
         </p>
       ) : null}

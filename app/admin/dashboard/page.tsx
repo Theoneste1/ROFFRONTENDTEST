@@ -30,7 +30,7 @@ function AttentionItem({ title, description, href }: AttentionItemProps) {
     <>
       <div>
         <h3 className="font-semibold text-gray-900 text-sm">{title}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+        <p className="text-xs text-gray-600 mt-0.5">{description}</p>
       </div>
       {href && <ArrowRight className="w-4 h-4 text-indigo-600 transition-transform group-hover:translate-x-1 shrink-0 ml-3" aria-hidden="true" />}
     </>
@@ -115,7 +115,7 @@ export default function DashboardMain() {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
           {greeting(now)}, {user?.firstName ?? 'Admin'}
         </h1>
-        <p className="text-sm text-gray-500 mt-1 font-normal">
+        <p className="text-sm text-gray-600 mt-1 font-normal">
           Platform overview — manage users, curriculum, assignments and the results workflow.
         </p>
       </div>
@@ -146,7 +146,7 @@ export default function DashboardMain() {
         {/* Needs Attention Card */}
         <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100/80" aria-labelledby="attention-title">
           <h2 id="attention-title" className="text-xl font-bold text-gray-900">Needs attention</h2>
-          <p className="text-xs text-gray-500 mb-6">What requires action right now.</p>
+          <p className="text-xs text-gray-600 mb-6">What requires action right now.</p>
           {overview.isPending ? (
             <LoadingBlock />
           ) : overview.isError ? (
@@ -173,7 +173,7 @@ export default function DashboardMain() {
             })()
           )}
           {d && d.reviews.pendingMentorReview > 0 && (
-            <p className="text-xs text-gray-400 mt-4">{plural(d.reviews.pendingMentorReview, 'submission is', 'submissions are')} currently with coaches.</p>
+            <p className="text-xs text-gray-500 mt-4">{plural(d.reviews.pendingMentorReview, 'submission is', 'submissions are')} currently with coaches.</p>
           )}
         </section>
 
@@ -182,7 +182,7 @@ export default function DashboardMain() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 id="activity-title" className="text-xl font-bold text-gray-900">Recent activity</h2>
-              <p className="text-xs text-gray-500 mb-4">Latest events across the platform.</p>
+              <p className="text-xs text-gray-600 mb-4">Latest events across the platform.</p>
             </div>
             <Link href="/admin/audit-log" className="text-xs font-medium text-indigo-600 hover:text-indigo-800 shrink-0">
               View audit log
@@ -199,7 +199,7 @@ export default function DashboardMain() {
               {activity.data.data.map((e) => (
                 <li key={e.id} className="flex items-center justify-between gap-4 py-3 text-xs">
                   <span className="text-gray-700 font-medium min-w-0 break-words">{describeAudit(e)}</span>
-                  <time dateTime={e.createdAt} className="text-gray-400 font-medium shrink-0">
+                  <time dateTime={e.createdAt} className="text-gray-500 font-medium shrink-0">
                     {formatRelative(e.createdAt, now)}
                   </time>
                 </li>

@@ -35,19 +35,19 @@ export default function AccountSettingsPage() {
         <Section title="Sign-in details" icon={<AtSign className="w-5 h-5" />} description="How you sign in. Administrators change these on request.">
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="min-w-0">
-              <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Username</dt>
+              <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Username</dt>
               <dd className="mt-0.5 break-words text-sm text-gray-800">{user.username}</dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400">E-mail</dt>
+              <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-500">E-mail</dt>
               <dd className="mt-0.5 break-words text-sm text-gray-800" data-testid="settings-email">{user.email}</dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Account</dt>
+              <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Account</dt>
               <dd className="mt-0.5 text-sm text-gray-800">{roleLabel(user.role)}</dd>
             </div>
           </dl>
-          <p className="mt-4 text-xs text-gray-500">
+          <p className="mt-4 text-xs text-gray-600">
             Your name and picture are on <Link href={portalPath(user.role, "profile")} className="font-semibold text-[#2B2BB2] hover:underline">My Profile</Link>.
           </p>
         </Section>

@@ -33,20 +33,20 @@ export default function MessageSentSuccess() {
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           Message Sent
         </h1>
-        <p className="mt-2 text-base text-slate-500">
+        <p className="mt-2 text-base text-slate-600">
           Your message has been sent to {recipientCount} students.
         </p>
 
         {/* Info Card */}
         <div className="mt-8 w-full max-w-md rounded-xl border border-slate-200/60 bg-[#F2F4FA] p-5 text-left shadow-sm">
           <div className="grid grid-cols-[80px_1fr] gap-y-3 text-sm">
-            <span className="font-medium text-slate-500">To:</span>
+            <span className="font-medium text-slate-600">To:</span>
             <span className="font-semibold text-slate-900">{recipientLabel}</span>
 
-            <span className="font-medium text-slate-500">Subject:</span>
+            <span className="font-medium text-slate-600">Subject:</span>
             <span className="font-semibold text-[#1D3B8A]">{subject}</span>
 
-            <span className="font-medium text-slate-500">Sent:</span>
+            <span className="font-medium text-slate-600">Sent:</span>
             <span className="text-slate-700">{sentDate}</span>
           </div>
         </div>

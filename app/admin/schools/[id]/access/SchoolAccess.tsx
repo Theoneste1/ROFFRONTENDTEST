@@ -149,16 +149,16 @@ export default function SchoolAccess({ schoolId }: { schoolId: string }) {
       <Card className="p-6 mb-6">
         <h2 className="text-base font-bold text-gray-900 mb-3">Teachers of this school</h2>
         {a.teachers.length === 0 ? (
-          <p className="text-sm text-gray-500">No teacher is assigned to this school. Assign a school on the teacher&apos;s user page.</p>
+          <p className="text-sm text-gray-600">No teacher is assigned to this school. Assign a school on the teacher&apos;s user page.</p>
         ) : (
           <ul className="divide-y divide-gray-100" data-testid="access-teachers">
             {a.teachers.map((t) => (
               <li key={t.teacher.id} className="py-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                 <div className="min-w-0">
                   <Link href={`/admin/users/${t.teacher.id}`} className="font-semibold text-gray-800 hover:text-indigo-700">{personName(t.teacher)}</Link>
-                  <span className="text-xs text-gray-400"> @{t.teacher.username} · {t.assignedStudents} assigned student{t.assignedStudents === 1 ? "" : "s"} of this school</span>
+                  <span className="text-xs text-gray-500"> @{t.teacher.username} · {t.assignedStudents} assigned student{t.assignedStudents === 1 ? "" : "s"} of this school</span>
                   {t.delegations.length === 0 ? (
-                    <p className="text-xs text-gray-500 mt-1">No extra permissions: sees the student list only.</p>
+                    <p className="text-xs text-gray-600 mt-1">No extra permissions: sees the student list only.</p>
                   ) : (
                     <ul className="mt-1 space-y-0.5">
                       {t.delegations.map((d) => (
@@ -247,7 +247,7 @@ export default function SchoolAccess({ schoolId }: { schoolId: string }) {
                   </td>
                   <td className={td}>
                     <p className="font-semibold text-gray-800">{personName(s)}</p>
-                    <p className="text-xs text-gray-400">@{s.username}</p>
+                    <p className="text-xs text-gray-500">@{s.username}</p>
                   </td>
                   <td className={`${td} text-gray-600`}>{s.gradeLevel ?? "—"}</td>
                   <td className={td}>
@@ -257,12 +257,12 @@ export default function SchoolAccess({ schoolId }: { schoolId: string }) {
                   </td>
                   <td className={td}>
                     {s.teachers.length === 0 ? (
-                      <span className="text-xs text-gray-400">None</span>
+                      <span className="text-xs text-gray-500">None</span>
                     ) : (
                       <ul className="space-y-0.5">
                         {s.teachers.map((t) => (
                           <li key={t.assignmentId} className="text-xs text-gray-700 flex items-center gap-2">
-                            {personName(t)}{t.crossSchool && <span className="text-gray-400">(other school)</span>}
+                            {personName(t)}{t.crossSchool && <span className="text-gray-500">(other school)</span>}
                             <button type="button" className={linkBtn} disabled={end.isPending} aria-label={`End ${personName(t)}'s assignment to ${personName(s)}`}
                               onClick={() => { if (window.confirm(`End ${personName(t)}'s assignment to ${personName(s)}? It stays in the history.`)) end.mutate(t.assignmentId); }}>
                               End
@@ -394,7 +394,7 @@ function ActionDialog({ action, schoolTeachers, students, onClose, onDone }: {
                   {others.data!.data.map((u) => (
                     <li key={u.id}>
                       <button type="button" className={`w-full text-left px-3 py-1.5 text-sm ${u.id === teacherId ? "bg-indigo-50" : ""}`} onClick={() => setTeacherId(u.id)}>
-                        {personName(u)} <span className="text-xs text-gray-400">@{u.username}</span>
+                        {personName(u)} <span className="text-xs text-gray-500">@{u.username}</span>
                       </button>
                     </li>
                   ))}
@@ -431,7 +431,7 @@ function ActionDialog({ action, schoolTeachers, students, onClose, onDone }: {
             {action === "revoke" && <li>Permissions for the whole school or for assigned students are not changed here: revoke those on the teacher&apos;s page.</li>}
             <li>Nothing is deleted: every change is kept in the history and the audit log.</li>
           </ul>
-          <details className="text-xs text-gray-500">
+          <details className="text-xs text-gray-600">
             <summary>Show the students</summary>
             <p className="mt-1">{students.map((s) => personName(s)).join(", ")}</p>
           </details>

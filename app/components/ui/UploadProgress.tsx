@@ -43,7 +43,7 @@ export default function UploadProgress() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-800">{label}</p>
           {sum.total > 0 && !sum.processing && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
               {formatFileSize(sum.loaded)} of {formatFileSize(sum.total)} · keep this page open
             </p>
           )}

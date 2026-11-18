@@ -110,7 +110,7 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
             className={`pb-3 whitespace-nowrap transition-colors ${
-              tab === t.id ? "border-b-2 border-indigo-600 font-semibold text-indigo-600" : "text-gray-500 hover:text-gray-800"
+              tab === t.id ? "border-b-2 border-indigo-600 font-semibold text-indigo-600" : "text-gray-600 hover:text-gray-800"
             }`}
           >
             {t.label}
@@ -129,25 +129,25 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
 
               <div className="grid grid-cols-2 gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
                 <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Division</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Division</p>
                   <p className="mt-1 font-medium text-gray-800">{divisionLabel(user?.division) || "—"}</p>
 
-                  <p className="mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Discipline</p>
+                  <p className="mt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Discipline</p>
                   <p className="mt-1 font-medium text-gray-800">{c.discipline.name}</p>
 
-                  <p className="mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Assignments</p>
+                  <p className="mt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Assignments</p>
                   <p className="mt-1 font-medium text-gray-800">{c.counts.assignments}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Progress</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Progress</p>
                   <p className="mt-1 font-medium text-gray-800">{c.displayStatus ?? "—"}</p>
 
-                  <p className="mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Resources</p>
+                  <p className="mt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Resources</p>
                   <p className="mt-1 font-medium text-gray-800">
                     {byType(TAB_TYPES.books).length} books · {byType(TAB_TYPES.papers).length} papers · {byType(TAB_TYPES.notes).length} notes
                   </p>
 
-                  <p className="mt-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Discussion</p>
+                  <p className="mt-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Discussion</p>
                   <p className="mt-1 font-medium text-gray-800">{c.discussionsEnabled ? "Open" : "Turned off"}</p>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
               </div>
               <div>
                 <p className="font-bold text-gray-900">{c.displayStatus ?? "—"}</p>
-                <p className="text-xs text-gray-500">{completed && c.completedAt ? `Completed ${formatDate(c.completedAt)}` : c.title}</p>
+                <p className="text-xs text-gray-600">{completed && c.completedAt ? `Completed ${formatDate(c.completedAt)}` : c.title}</p>
               </div>
             </div>
 
@@ -256,7 +256,7 @@ function ResourceList({
       ) : query.isError ? (
         <ErrorState error={query.error} title="Couldn't load resources" onRetry={() => query.refetch()} />
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-500">{empty}</p>
+        <p className="text-sm text-gray-600">{empty}</p>
       ) : (
         items.map((r) => (
           <div
@@ -270,7 +270,7 @@ function ResourceList({
               <Icon className="h-6 w-6 text-indigo-600 shrink-0 mt-0.5" />
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-gray-900">{r.title}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-600">
                   {[r.author && `By ${r.author}`, r.year && `Year: ${r.year}`, r.source].filter(Boolean).join(" · ")}
                 </p>
                 {r.description && <p className="mt-2 text-sm text-gray-600 whitespace-pre-line">{r.description}</p>}
@@ -292,7 +292,7 @@ function ResourceList({
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-xs text-gray-400">No file attached.</p>
+              <p className="mt-3 text-xs text-gray-500">No file attached.</p>
             )}
           </div>
         ))

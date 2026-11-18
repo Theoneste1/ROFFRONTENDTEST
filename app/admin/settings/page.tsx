@@ -75,7 +75,7 @@ function Control({ s, value, onChange, error }: { s: PlatformSetting; value: Set
     return (
       <span className="inline-flex items-center gap-2">
         <input id={id} type="number" min={s.min} max={s.max} step={1} value={value === null ? "" : String(value)} onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))} className={`${cls} sm:w-28`} />
-        {s.unit && <span className="text-xs text-gray-500">{s.unit}</span>}
+        {s.unit && <span className="text-xs text-gray-600">{s.unit}</span>}
       </span>
     );
   return (
@@ -123,7 +123,7 @@ function SettingsForm({ settings }: { settings: PlatformSetting[] }) {
       {ORDER.filter((c) => settings.some((s) => s.category === c)).map((c) => (
         <Card key={c} className="p-6">
           <h2 className="text-base font-bold text-gray-900">{CATEGORY[c].title}</h2>
-          <p className="text-xs text-gray-500 mb-4">{CATEGORY[c].description}</p>
+          <p className="text-xs text-gray-600 mb-4">{CATEGORY[c].description}</p>
           <div className="divide-y divide-gray-100">
             {settings
               .filter((s) => s.category === c)
@@ -133,8 +133,8 @@ function SettingsForm({ settings }: { settings: PlatformSetting[] }) {
                     <label htmlFor={`setting-${s.key}`} className="text-sm font-semibold text-gray-800">
                       {labelOf(s.key)}
                     </label>
-                    <p className="text-xs text-gray-500 mt-0.5">{s.description}</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-600 mt-0.5">{s.description}</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
                       Default: {s.default === null || s.default === "" ? "none" : String(s.default)}
                       {s.updatedAt && ` · changed ${formatDateTime(s.updatedAt)} by ${personName(s.updatedBy, "—")}`}
                     </p>
@@ -171,7 +171,7 @@ function SettingsForm({ settings }: { settings: PlatformSetting[] }) {
 
       <Card className="p-6">
         <h2 className="text-base font-bold text-gray-900">Maintenance</h2>
-        <p className="text-xs text-gray-500 mb-4">Recalculate every student&apos;s points from their published results. Use it if the leaderboard looks wrong.</p>
+        <p className="text-xs text-gray-600 mb-4">Recalculate every student&apos;s points from their published results. Use it if the leaderboard looks wrong.</p>
         <button type="button" onClick={() => setConfirmRecompute(true)} className={btnSecondary}>
           <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Recompute leaderboard
         </button>

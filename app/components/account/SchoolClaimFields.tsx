@@ -71,7 +71,7 @@ export default function SchoolClaimFields({
           {placeComplete(place) && <SchoolInSector place={place} value={value} onChange={onChange} errors={errors} />}
         </>
       )}
-      <p className="text-xs text-slate-500">An administrator verifies your school before it is shown as confirmed.</p>
+      <p className="text-xs text-slate-600">An administrator verifies your school before it is shown as confirmed.</p>
     </fieldset>
   );
 }

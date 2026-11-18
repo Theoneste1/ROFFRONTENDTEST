@@ -70,12 +70,12 @@ export default function SchoolTeachersTab({ schoolId }: { schoolId: string }) {
                 <tr key={a.id} className="text-xs">
                   <td className={`${td} font-semibold text-gray-800`}>
                     {a.teacher.firstName} {a.teacher.lastName}
-                    <span className="block text-[11px] font-normal text-gray-400">@{a.teacher.username}</span>
+                    <span className="block text-[11px] font-normal text-gray-500">@{a.teacher.username}</span>
                   </td>
                   <td className={td}>
-                    <Badge className={a.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}>{a.isActive ? "Current" : "Ended"}</Badge>
+                    <Badge className={a.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}>{a.isActive ? "Current" : "Ended"}</Badge>
                   </td>
-                  <td className={`${td} text-gray-500`}>{assignmentPeriod(a, formatDate)}</td>
+                  <td className={`${td} text-gray-600`}>{assignmentPeriod(a, formatDate)}</td>
                   <td className={td}>
                     <Link href={`/admin/users/${a.teacher.id}`} className={linkBtn}>
                       View

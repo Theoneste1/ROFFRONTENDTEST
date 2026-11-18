@@ -214,13 +214,13 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="min-w-0">
           <h3 className="font-bold text-gray-900 truncate">{thread.title}</h3>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             Started by {personName(thread.createdBy, "a former member")} · {formatRelative(thread.createdAt)}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {locked && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
               <Lock className="w-3 h-3" /> {thread.status === "LOCKED" ? "Locked" : thread.status === "HIDDEN" ? "Hidden by moderators" : "Closed"}
             </span>
           )}
@@ -231,7 +231,7 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
                 setReportingTopic(true);
                 setTopicNotice(null);
               }}
-              className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-red-600 px-2 py-1 rounded-lg"
+              className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600 px-2 py-1 rounded-lg"
               title="Report this topic"
             >
               <Flag className="w-3.5 h-3.5" /> Report topic
@@ -373,7 +373,7 @@ function CommentCard({
               )}
               {mine && <span className="bg-indigo-900 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">You</span>}
             </div>
-            <p className="text-xs text-gray-400 font-medium mt-0.5" title={formatDateTime(comment.createdAt)}>
+            <p className="text-xs text-gray-500 font-medium mt-0.5" title={formatDateTime(comment.createdAt)}>
               {formatRelative(comment.createdAt)}
               {comment.editedAt && " · edited"}
             </p>
@@ -413,7 +413,7 @@ function CommentCard({
           </div>
         </form>
       ) : (
-        <p className={`text-sm mt-4 leading-relaxed whitespace-pre-line ${deleted ? "italic text-gray-400" : "text-gray-700"}`}>{comment.content}</p>
+        <p className={`text-sm mt-4 leading-relaxed whitespace-pre-line ${deleted ? "italic text-gray-500" : "text-gray-700"}`}>{comment.content}</p>
       )}
 
       {/* Reactions and reply */}
@@ -446,7 +446,7 @@ function CommentCard({
             <button
               type="button"
               onClick={() => setReplying((r) => !r)}
-              className="text-xs font-semibold text-gray-500 hover:text-gray-800 ml-1 transition-colors"
+              className="text-xs font-semibold text-gray-600 hover:text-gray-800 ml-1 transition-colors"
             >
               Reply
             </button>
@@ -539,7 +539,7 @@ function CommentMenu({ mine, onEdit, onDelete, onReport }: { mine: boolean; onEd
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors"
+        className="text-gray-500 hover:text-gray-600 p-1 rounded-lg transition-colors"
         aria-label="Comment options"
         aria-expanded={open}
       >

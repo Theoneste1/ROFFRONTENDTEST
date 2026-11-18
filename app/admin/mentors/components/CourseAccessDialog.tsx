@@ -75,7 +75,7 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
 
   return (
     <Modal wide title={`Course access — ${name}`} onClose={action.isPending ? () => undefined : onClose}>
-      <p className="text-xs text-gray-500 mb-4">
+      <p className="text-xs text-gray-600 mb-4">
         {isHeadCoach
           ? "A Head Coach prepares assignments and reviews submissions only in the courses and divisions listed here — and only on courses of a programme they head (set on their user page)."
           : "A coach prepares assignments, reviews submissions and manages resources only in the courses and divisions listed here."}
@@ -93,9 +93,9 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
       ) : (
         <div className="space-y-5">
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Current access</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Current access</h3>
             {active.length === 0 ? (
-              <p className="text-sm text-amber-600 font-semibold">No access yet.</p>
+              <p className="text-sm text-amber-700 font-semibold">No access yet.</p>
             ) : (
               <ul className="divide-y divide-gray-100 border border-gray-100 rounded-xl">
                 {active.map((s) => {

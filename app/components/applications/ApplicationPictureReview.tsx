@@ -55,11 +55,11 @@ export default function ApplicationPictureReview({
           ) : picture.isPending ? (
             <Spinner className="h-4 w-4" />
           ) : (
-            <span className="px-1 text-center text-[11px] text-gray-500">Couldn&apos;t load the picture</span>
+            <span className="px-1 text-center text-[11px] text-gray-600">Couldn&apos;t load the picture</span>
           )}
         </div>
         <div className="text-sm">
-          <label htmlFor={checkboxId} className={`flex items-start gap-2 ${loaded ? "text-gray-800" : "text-gray-400"}`}>
+          <label htmlFor={checkboxId} className={`flex items-start gap-2 ${loaded ? "text-gray-800" : "text-gray-500"}`}>
             <input
               id={checkboxId}
               type="checkbox"
@@ -70,7 +70,7 @@ export default function ApplicationPictureReview({
             />
             <span>{KEEP_PICTURE_LABEL}</span>
           </label>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-600">
             Leave it unticked to discard the picture. It is never published unless you tick this box.
           </p>
         </div>

@@ -147,7 +147,7 @@ export default function DateOfBirthCard({ userId, dateOfBirth }: { userId: strin
         {history.isError && <Alert tone="error">{errorMessage(history.error)}</Alert>}
         {history.data &&
           (history.data.length === 0 ? (
-            <p className="text-sm text-gray-500">No date-of-birth changes were recorded for this account.</p>
+            <p className="text-sm text-gray-600">No date-of-birth changes were recorded for this account.</p>
           ) : (
             <ol className="space-y-3 border-l border-gray-200 pl-4">
               {history.data.map((e, i) => {
@@ -155,7 +155,7 @@ export default function DateOfBirthCard({ userId, dateOfBirth }: { userId: strin
                 return (
                   <li key={`${e.at}-${i}`} className="text-sm">
                     <p className="font-medium text-gray-900">{line.title}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-600">
                       {formatDateTime(e.at)} · {historyActor(e, (r) => roleLabel(r as never))}
                     </p>
                     {line.change && <p className="text-xs text-gray-800 mt-0.5">{line.change}</p>}

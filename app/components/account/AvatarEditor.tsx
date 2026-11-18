@@ -37,7 +37,7 @@ function UploadBar() {
         aria-label="Uploading picture"
         className="h-2 w-full overflow-hidden rounded-full appearance-none bg-slate-200 [&::-webkit-progress-bar]:bg-slate-200 [&::-webkit-progress-value]:bg-amber-400 [&::-moz-progress-bar]:bg-amber-400"
       />
-      <p className="mt-1 text-[11px] text-slate-500">{s?.processing ? "Saving…" : `Uploading… ${pct}%`}</p>
+      <p className="mt-1 text-[11px] text-slate-600">{s?.processing ? "Saving…" : `Uploading… ${pct}%`}</p>
     </div>
   );
 }
@@ -113,10 +113,10 @@ export default function AvatarEditor({ user }: { user: CurrentUser }) {
               </button>
             )}
           </div>
-          <p className="mt-2 text-[11px] text-slate-500">JPEG, PNG or WebP, up to 2 MB.</p>
+          <p className="mt-2 text-[11px] text-slate-600">JPEG, PNG or WebP, up to 2 MB.</p>
         </>
       ) : (
-        <p className="mt-3 text-[11px] text-slate-500" data-testid="avatar-unavailable">Profile pictures are not available yet; your avatar is generated from your name.</p>
+        <p className="mt-3 text-[11px] text-slate-600" data-testid="avatar-unavailable">Profile pictures are not available yet; your avatar is generated from your name.</p>
       )}
       {message && (
         <div className="mt-3 w-full text-left" role="status">

@@ -15,7 +15,7 @@ import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 const STATUS: Record<CourseStatus, { label: string; badge: string }> = {
   PUBLISHED: { label: "Published", badge: "bg-emerald-50 text-emerald-700" },
-  DRAFT: { label: "Unpublished", badge: "bg-gray-100 text-gray-500" },
+  DRAFT: { label: "Unpublished", badge: "bg-gray-100 text-gray-600" },
   ARCHIVED: { label: "Archived", badge: "bg-amber-50 text-amber-700" },
 };
 
@@ -68,7 +68,7 @@ function EditCourseModal({ course, onClose }: { course: Course; onClose: () => v
           <h2 id="edit-course-title" className="text-xl font-bold text-gray-900">
             Edit {course.title}
           </h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100" aria-label="Close" data-dialog-close>
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100" aria-label="Close" data-dialog-close>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -101,7 +101,7 @@ function EditCourseModal({ course, onClose }: { course: Course; onClose: () => v
           <div className="bg-gray-50/70 rounded-2xl p-4 flex items-center justify-between border border-gray-100">
             <div>
               <h3 className="text-xs font-semibold text-gray-900">Course discussions</h3>
-              <p className="text-[11px] text-gray-400 mt-0.5 font-medium">Students and coaches can post in this course&apos;s discussion threads.</p>
+              <p className="text-[11px] text-gray-500 mt-0.5 font-medium">Students and coaches can post in this course&apos;s discussion threads.</p>
             </div>
             <button
               type="button"
@@ -118,9 +118,9 @@ function EditCourseModal({ course, onClose }: { course: Course; onClose: () => v
           {/* Visibility: publish / unpublish / archive */}
           <div className="bg-gray-50/70 rounded-2xl p-4 border border-gray-100">
             <h3 className="text-xs font-semibold text-gray-900">
-              Course visibility · <span className="font-medium text-gray-500">{STATUS[course.status].label}</span>
+              Course visibility · <span className="font-medium text-gray-600">{STATUS[course.status].label}</span>
             </h3>
-            <p className="text-[11px] text-gray-400 mt-0.5 font-medium mb-3">Unpublished and archived courses are hidden from students. Both divisions always study all four courses.</p>
+            <p className="text-[11px] text-gray-500 mt-0.5 font-medium mb-3">Unpublished and archived courses are hidden from students. Both divisions always study all four courses.</p>
             <div className="flex flex-wrap gap-2">
               {stateActions.map((a) => (
                 <button key={a} type="button" onClick={() => setConfirm(a)} className={`px-4 py-1.5 text-xs font-semibold rounded-xl border ${STATE_CONFIRM[a].danger ? "border-red-200 text-red-700 hover:bg-red-50" : "border-indigo-200 text-indigo-700 hover:bg-indigo-50"}`}>
@@ -179,7 +179,7 @@ export default function CoursesWithEditModal() {
       {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Courses</h1>
-        <p className="text-sm text-gray-500 mt-1 font-medium">The Mathematics curriculum is fixed to four areas: Algebra, Geometry, Number Theory and Combinatorics.</p>
+        <p className="text-sm text-gray-600 mt-1 font-medium">The Mathematics curriculum is fixed to four areas: Algebra, Geometry, Number Theory and Combinatorics.</p>
       </div>
 
       {/* Top Metric Summary Cards */}
@@ -201,18 +201,18 @@ export default function CoursesWithEditModal() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Course</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Division</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Students</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Coaches</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Status</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500 text-right sm:pr-10">Action</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-600">Course</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-600">Division</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-600">Students</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-600">Coaches</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-600">Status</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-600 text-right sm:pr-10">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/80">
                 {list.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-xs text-gray-400 font-medium">
+                    <td colSpan={6} className="px-6 py-10 text-center text-xs text-gray-500 font-medium">
                       No courses yet.
                     </td>
                   </tr>
@@ -221,7 +221,7 @@ export default function CoursesWithEditModal() {
                   <tr key={c.id} className="hover:bg-gray-50/60 transition-colors text-xs">
                     <td className="px-4 sm:px-6 py-4 font-bold text-gray-900 whitespace-nowrap">
                       {c.title}
-                      {!c.discussionsEnabled && <span className="block text-[11px] font-normal text-gray-400">Discussions off</span>}
+                      {!c.discussionsEnabled && <span className="block text-[11px] font-normal text-gray-500">Discussions off</span>}
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-gray-600 font-medium whitespace-nowrap">Junior &amp; Senior</td>
                     <td className="px-4 sm:px-6 py-4 text-gray-600 font-medium">{dash(studentsFor(c.id))}</td>

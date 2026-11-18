@@ -204,7 +204,7 @@ export default function BulkActionDialog({
                   Message
                 </label>
                 <textarea id="bulk-body" className={inputCls} rows={6} maxLength={10_000} value={params.body} onChange={(e) => setParams((p) => ({ ...p, body: e.target.value }))} />
-                <p className="mt-1 text-xs text-slate-400">Sent once to each active account in the selection.</p>
+                <p className="mt-1 text-xs text-slate-500">Sent once to each active account in the selection.</p>
               </div>
             </>
           )}
@@ -231,7 +231,7 @@ export default function BulkActionDialog({
                   <dd className="inline">
                     {teacher && teacher.id === preview.params.teacherId ? (
                       <>
-                        {teacher.firstName} {teacher.lastName} <span className="text-slate-500">@{teacher.username}</span>
+                        {teacher.firstName} {teacher.lastName} <span className="text-slate-600">@{teacher.username}</span>
                       </>
                     ) : (
                       preview.params.teacherId
@@ -255,10 +255,10 @@ export default function BulkActionDialog({
               <ul className="mt-3 text-xs text-slate-600 space-y-0.5">
                 {preview.sample.map((u) => (
                   <li key={u.id}>
-                    {u.firstName} {u.lastName} <span className="text-slate-400">@{u.username}</span> · {roleLabel(u.role)} · {u.accountStatus.toLowerCase()}
+                    {u.firstName} {u.lastName} <span className="text-slate-500">@{u.username}</span> · {roleLabel(u.role)} · {u.accountStatus.toLowerCase()}
                   </li>
                 ))}
-                {preview.total > preview.sample.length && <li className="text-slate-400">…and {preview.total - preview.sample.length} more</li>}
+                {preview.total > preview.sample.length && <li className="text-slate-500">…and {preview.total - preview.sample.length} more</li>}
               </ul>
             )}
           </div>
@@ -293,7 +293,7 @@ export default function BulkActionDialog({
                 value={confirm.currentPassword}
                 onChange={(e) => setConfirm((c) => ({ ...c, currentPassword: e.target.value }))}
               />
-              <p className="mt-1 text-xs text-slate-400">Needed because the change involves Administrator roles. It is checked once and never stored.</p>
+              <p className="mt-1 text-xs text-slate-500">Needed because the change involves Administrator roles. It is checked once and never stored.</p>
             </div>
           )}
           <label className="flex items-start gap-2 text-sm text-slate-700">
@@ -326,7 +326,7 @@ export default function BulkActionDialog({
               </Button>
             </div>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Progress and per-account results appear under <Link href="/admin/users/bulk" className="underline">Bulk operations</Link>.
           </p>
         </form>
@@ -375,7 +375,7 @@ function TeacherParams({ params, setParams, teacher, setTeacher, withPermission 
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-slate-400">Only students in the selection are affected; other accounts are skipped.</p>
+        <p className="mt-1 text-xs text-slate-500">Only students in the selection are affected; other accounts are skipped.</p>
       </div>
       {withPermission && (
         <div>

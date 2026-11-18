@@ -15,7 +15,7 @@ export default function CoursesPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-gray-900">Courses</h1>
-      {user?.division && <p className="mt-1 mb-6 text-sm text-gray-500">{divisionLabel(user.division)}</p>}
+      {user?.division && <p className="mt-1 mb-6 text-sm text-gray-600">{divisionLabel(user.division)}</p>}
 
       {courses.isPending ? (
         <LoadingBlock label="Loading courses…" />
@@ -49,10 +49,10 @@ export default function CoursesPage() {
                       <h2 className="text-xl font-bold text-gray-900 hover:text-indigo-600 transition-colors">{course.title}</h2>
                     </Link>
                     {course.displayStatus && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{course.displayStatus}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{course.displayStatus}</span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">{course.description}</p>
+                  <p className="mt-1 text-xs text-gray-600">{course.description}</p>
                 </div>
 
                 <hr className="my-4 border-gray-200" />

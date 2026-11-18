@@ -126,7 +126,7 @@ export default function AffiliationsReview() {
                     <p className="font-semibold text-gray-800">
                       {c.student.firstName} {c.student.lastName}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       @{c.student.username}
                       {c.student.gradeLevel ? ` · ${c.student.gradeLevel}` : ""}
                     </p>
@@ -135,7 +135,7 @@ export default function AffiliationsReview() {
                     {c.school ? (
                       <>
                         {c.school.name}
-                        <span className="block text-xs text-gray-400">
+                        <span className="block text-xs text-gray-500">
                           {c.school.code ? `code ${c.school.code} · ` : ""}
                           {c.school.location}
                         </span>
@@ -143,16 +143,16 @@ export default function AffiliationsReview() {
                     ) : (
                       <>
                         {c.claimedName ?? "—"} <span className="text-[11px] text-amber-700">(not in the directory)</span>
-                        <span className="block text-xs text-gray-400">
+                        <span className="block text-xs text-gray-500">
                           {c.claimedCountry && c.claimedCountry !== "RW" ? countryLabel(c.claimedCountry) : [c.claimedSector, c.claimedDistrict, c.claimedProvince].filter(Boolean).join(", ") || "No place given"}
                         </span>
                       </>
                     )}
-                    {(c.decisionReason || c.revokeReason) && <span className="block text-xs text-gray-500 mt-1">Reason: {c.revokeReason ?? c.decisionReason}</span>}
+                    {(c.decisionReason || c.revokeReason) && <span className="block text-xs text-gray-600 mt-1">Reason: {c.revokeReason ?? c.decisionReason}</span>}
                   </td>
                   <td className={`${td} text-gray-600 text-xs`}>
                     {formatDate(c.createdAt)}
-                    <span className="block text-gray-400">{c.source.toLowerCase()}</span>
+                    <span className="block text-gray-500">{c.source.toLowerCase()}</span>
                   </td>
                   <td className={`${td} text-right whitespace-nowrap space-x-3`}>
                     {c.status === "PENDING" && c.school && (
@@ -235,24 +235,24 @@ function MatchDialog({ claim, onClose, onMatched }: { claim: SchoolAffiliation; 
   return (
     <Modal wide title={`Match “${claim.claimedName ?? ""}” to a school`} onClose={onClose}>
       <div className="space-y-4" data-testid="match-dialog">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-600">
           The student named a school that isn&apos;t linked to the directory. Choose the right one; the claim stays waiting until you verify it.
         </p>
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Schools with this name</h3>
+        <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">Schools with this name</h3>
         {candidates.isPending ? (
           <LoadingBlock />
         ) : candidates.isError ? (
           <ErrorState error={candidates.error} />
         ) : candidates.data.length === 0 ? (
-          <p className="text-sm text-gray-500">No school with this name. Search below.</p>
+          <p className="text-sm text-gray-600">No school with this name. Search below.</p>
         ) : (
           <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
             {candidates.data.map((s) => (
               <li key={s.id} className="px-3 py-2 flex items-center justify-between gap-3 text-sm">
                 <span className="min-w-0">
                   {s.name}
-                  {!s.isActive && <span className="ml-1.5 text-[11px] text-gray-400">(inactive)</span>}
-                  <span className="block text-xs text-gray-400">
+                  {!s.isActive && <span className="ml-1.5 text-[11px] text-gray-500">(inactive)</span>}
+                  <span className="block text-xs text-gray-500">
                     {s.code ? `code ${s.code} · ` : ""}
                     {[s.sector, s.district, s.province].filter(Boolean).join(", ") || s.countryCode}
                   </span>

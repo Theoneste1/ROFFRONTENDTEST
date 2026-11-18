@@ -94,7 +94,7 @@ export default function SubmissionActions({
               {busy === 'markAndSubmit' ? <Spinner className="h-4 w-4 !text-white" /> : <Send className="w-4 h-4" />}
               Send Review to Admin
             </button>
-            <p className="text-[11px] text-gray-400 text-center">The administrator approves the review and publishes the result to the student.</p>
+            <p className="text-[11px] text-gray-500 text-center">The administrator approves the review and publishes the result to the student.</p>
           </>
         )}
 
@@ -114,7 +114,7 @@ export default function SubmissionActions({
               <h3 id="req-title" className="text-lg font-bold text-gray-900">
                 Ask for a new attempt
               </h3>
-              <button type="button" onClick={() => setShowRequest(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close" data-dialog-close>
+              <button type="button" onClick={() => setShowRequest(false)} className="text-gray-500 hover:text-gray-600" aria-label="Close" data-dialog-close>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -161,7 +161,7 @@ export default function SubmissionActions({
                   <p className="text-sm text-gray-600 mt-1">{successMessage.body}</p>
                 </div>
               </div>
-              <button type="button" onClick={onCloseSuccess} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+              <button type="button" onClick={onCloseSuccess} className="text-gray-500 hover:text-gray-600" aria-label="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>

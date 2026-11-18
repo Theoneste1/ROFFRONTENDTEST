@@ -42,7 +42,7 @@ export default function ProgrammeOverview({ showDashboard, showActivity }: { sho
                   {dash.data.students.byCourse.map((c) => (
                     <li key={c.id} className="flex items-center justify-between gap-3 py-2">
                       <span className="font-medium text-gray-800">{c.title}</span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-600">
                         {formatNumber(c.participating)} participating · {formatNumber(c.completed)} completed
                       </span>
                     </li>
@@ -61,11 +61,11 @@ export default function ProgrammeOverview({ showDashboard, showActivity }: { sho
         ) : (
           <Card className="p-6">
             <h2 className="text-sm font-bold text-gray-900 mb-1">Last 30 days</h2>
-            <p className="text-xs text-gray-500 mb-4" data-testid="active-users">
+            <p className="text-xs text-gray-600 mb-4" data-testid="active-users">
               {formatNumber(activity.data.activeUsers)} active {activity.data.activeUsers === 1 ? "member" : "members"}
             </p>
             {activityBreakdown(activity.data.byType).length === 0 ? (
-              <p className="text-sm text-gray-500">No activity recorded in this period.</p>
+              <p className="text-sm text-gray-600">No activity recorded in this period.</p>
             ) : (
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 text-sm">
                 {activityBreakdown(activity.data.byType).map((a) => (

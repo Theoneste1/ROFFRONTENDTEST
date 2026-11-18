@@ -34,7 +34,7 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
   const subs = useAdminSubmissions({ assignmentId, status: status || undefined, page, limit: 20 }, !!a);
 
   const back = (
-    <Link href="/admin/results" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 mb-3 transition-colors">
+    <Link href="/admin/results" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-gray-700 mb-3 transition-colors">
       <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
       <span>Results</span>
     </Link>
@@ -55,7 +55,7 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
       {/* Header Section */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{a!.title}</h1>
-        <p className="text-sm text-gray-500 mt-1 font-medium">
+        <p className="text-sm text-gray-600 mt-1 font-medium">
           {a!.division.name.replace(/ division$/i, "")} · {a!.course.title}
           {row && ` · ${row.expectedStudents} students`}
         </p>
@@ -79,7 +79,7 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
           ["Average score", v(row ? row.averageScore : undefined, "%")],
         ].map(([label, value]) => (
           <div key={label} className="bg-white rounded-2xl p-5 shadow-xs border border-gray-100/80">
-            <p className="text-[11px] font-bold text-gray-400 tracking-wider uppercase mb-1">{label}</p>
+            <p className="text-[11px] font-bold text-gray-500 tracking-wider uppercase mb-1">{label}</p>
             <p className="text-2xl font-bold text-gray-900">{value}</p>
           </div>
         ))}
@@ -112,7 +112,7 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
               <thead>
                 <tr className="border-b border-gray-100">
                   {["Student", "Score", "Coach", "Feedback", "Status", ""].map((h) => (
-                    <th key={h} className="px-4 sm:px-6 py-3.5 text-xs font-semibold text-gray-500">
+                    <th key={h} className="px-4 sm:px-6 py-3.5 text-xs font-semibold text-gray-600">
                       {h || <span className="sr-only">Action</span>}
                     </th>
                   ))}
@@ -121,13 +121,13 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
               <tbody className={`divide-y divide-gray-100/80 ${subs.isFetching && subs.data ? "opacity-60" : ""}`}>
                 {subs.isPending ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-xs text-gray-400">
+                    <td colSpan={6} className="px-6 py-10 text-center text-xs text-gray-500">
                       Loading reviews…
                     </td>
                   </tr>
                 ) : subs.data.data.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-xs text-gray-400">
+                    <td colSpan={6} className="px-6 py-10 text-center text-xs text-gray-500">
                       No submissions in this state.
                     </td>
                   </tr>
@@ -137,7 +137,7 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
                       <td className="px-4 sm:px-6 py-3.5 font-bold text-gray-900 whitespace-nowrap">{personName(s.student)}</td>
                       <td className="px-4 sm:px-6 py-3.5 text-gray-600 font-medium whitespace-nowrap">{s.review?.percentage != null ? `${s.review.percentage}%` : "—"}</td>
                       <td className="px-4 sm:px-6 py-3.5 text-gray-600 font-medium whitespace-nowrap">{personName(s.review?.mentor, "—")}</td>
-                      <td className="px-4 sm:px-6 py-3.5 text-gray-500 font-normal max-w-xs truncate" title={s.review?.feedback ?? undefined}>
+                      <td className="px-4 sm:px-6 py-3.5 text-gray-600 font-normal max-w-xs truncate" title={s.review?.feedback ?? undefined}>
                         {s.review?.feedback || "—"}
                       </td>
                       <td className="px-4 sm:px-6 py-3.5">

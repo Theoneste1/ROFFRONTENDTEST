@@ -105,7 +105,7 @@ export default function ProgrammeMembers({
               </button>
             )
           ) : (
-            <p className="text-xs text-gray-500" data-testid="add-member-note">
+            <p className="text-xs text-gray-600" data-testid="add-member-note">
               You can end a {noun}&apos;s membership here and add them back. To add a {noun} who is not in the programme yet, ask an administrator — there is no {noun} search for your role.
             </p>
           )}
@@ -178,7 +178,7 @@ function MemberRow({
     <tr>
       <td className={td}>
         <p className="font-semibold text-gray-800">{name}</p>
-        <p className="text-xs text-gray-400">@{m.username}{!m.isActive && " · suspended"}</p>
+        <p className="text-xs text-gray-500">@{m.username}{!m.isActive && " · suspended"}</p>
       </td>
       {student && <td className={`${td} text-gray-600`}>{m.gradeLevel ?? "—"}</td>}
       {student && <td className={`${td} text-gray-600`}>{m.division?.name ?? "—"}</td>}
@@ -252,18 +252,18 @@ function AddPanel({
         </button>
       </div>
       {kind === "candidates" && (
-        <p className="text-xs text-gray-500" data-testid="candidates-note">
+        <p className="text-xs text-gray-600" data-testid="candidates-note">
           Only students who are not in a programme yet are listed. To move a student from another programme, ask an administrator.
         </p>
       )}
       {search.trim().length < 2 ? (
-        <p className="text-xs text-gray-500">Type at least two letters.</p>
+        <p className="text-xs text-gray-600">Type at least two letters.</p>
       ) : people.isError ? (
         <Alert tone="error">{errorMessage(people.error)}</Alert>
       ) : people.isPending ? (
         <Spinner className="h-4 w-4" />
       ) : rows.length === 0 ? (
-        <p className="text-xs text-gray-500">No {noun} matches “{search.trim()}”.</p>
+        <p className="text-xs text-gray-600">No {noun} matches “{search.trim()}”.</p>
       ) : (
         <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
           {rows.map((u) => {
@@ -271,8 +271,8 @@ function AddPanel({
             return (
               <li key={u.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                 <span className="min-w-0">
-                  <span className="font-medium text-gray-800">{name}</span> <span className="text-xs text-gray-400">@{u.username}</span>
-                  {u.detail && <span className="block text-xs text-gray-500">{u.detail}</span>}
+                  <span className="font-medium text-gray-800">{name}</span> <span className="text-xs text-gray-500">@{u.username}</span>
+                  {u.detail && <span className="block text-xs text-gray-600">{u.detail}</span>}
                 </span>
                 <button type="button" className={linkBtn} disabled={busy} onClick={() => void onAdd(u.id, name)} aria-label={`Add ${name} to the programme`}>
                   Add

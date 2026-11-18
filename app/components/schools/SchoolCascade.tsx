@@ -25,16 +25,16 @@ const STYLES: Record<CascadeVariant, { label: string; select: (bad: boolean) => 
   public: {
     label: "block text-sm font-semibold text-slate-700 mb-2",
     select: (bad) =>
-      `w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 disabled:bg-slate-50 disabled:text-slate-400 ${bad ? "border-red-400 focus:ring-red-500/20" : "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500"}`,
+      `w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 disabled:bg-slate-50 disabled:text-slate-500 ${bad ? "border-red-400 focus:ring-red-500/20" : "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500"}`,
     error: "mt-1.5 text-xs text-red-600",
-    hint: "mt-1.5 text-xs text-slate-500",
+    hint: "mt-1.5 text-xs text-slate-600",
   },
   admin: {
     label: "block text-xs font-semibold text-gray-600 mb-1",
     select: (bad) =>
-      `w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-400 ${bad ? "border-red-400" : "border-gray-200"}`,
+      `w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 ${bad ? "border-red-400" : "border-gray-200"}`,
     error: "mt-1 text-[11px] text-red-600",
-    hint: "mt-1 text-[11px] text-gray-400",
+    hint: "mt-1 text-[11px] text-gray-500",
   },
 };
 
@@ -138,7 +138,7 @@ export function PlaceSelects({
 /** The chosen school's official information (read-only, from its directory record). */
 export function SchoolFactsPanel({ facts, variant = "public" }: { facts: { label: string; value: string }[]; variant?: CascadeVariant }) {
   const box = variant === "public" ? "rounded-lg border border-slate-200 bg-slate-50 px-4 py-3" : "rounded-lg border border-gray-100 bg-gray-50 px-3 py-2";
-  const term = variant === "public" ? "text-xs text-slate-500" : "text-[11px] text-gray-400";
+  const term = variant === "public" ? "text-xs text-slate-600" : "text-[11px] text-gray-500";
   const desc = variant === "public" ? "text-sm text-slate-800" : "text-xs text-gray-800";
   return (
     <dl className={`${box} grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5`} data-testid="school-facts">

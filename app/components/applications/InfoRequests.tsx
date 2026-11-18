@@ -15,11 +15,11 @@ export function InfoRequestHistory({ requests }: { requests: readonly InfoReques
   if (!requests?.length) return null;
   return (
     <div className="mt-3" data-testid="info-requests">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Questions to the applicant</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Questions to the applicant</h3>
       <ol className="space-y-2">
         {requests.map((r) => (
           <li key={r.id} className="rounded-lg border border-gray-100 p-2 text-xs">
-            <p className="text-gray-500">
+            <p className="text-gray-600">
               {formatDateTime(r.requestedAt)}
               {r.requestedBy ? ` · ${r.requestedBy.firstName} ${r.requestedBy.lastName}` : ""} · <strong>{INFO_STATE_LABEL[infoRequestState(r)]}</strong>
             </p>

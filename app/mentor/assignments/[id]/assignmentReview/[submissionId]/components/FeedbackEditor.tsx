@@ -31,8 +31,8 @@ export default function FeedbackEditor({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100/50 overflow-hidden">
       <div className="p-6 pb-3 flex items-center justify-between">
-        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Coach Feedback</h2>
-        <span className="text-[11px] text-gray-400">
+        <h2 className="text-xs font-bold text-gray-600 uppercase tracking-wider">Coach Feedback</h2>
+        <span className="text-[11px] text-gray-500">
           {value.length}/{REVIEW_RULES.feedback.max}
         </span>
       </div>
@@ -44,21 +44,21 @@ export default function FeedbackEditor({
           maxLength={REVIEW_RULES.feedback.max}
           disabled={disabled}
           aria-label="Coach feedback"
-          className="w-full text-sm text-gray-700 focus:outline-none resize-y bg-transparent disabled:text-gray-500"
+          className="w-full text-sm text-gray-700 focus:outline-none resize-y bg-transparent disabled:text-gray-600"
           placeholder={disabled ? 'Start the review to write feedback.' : 'Write feedback for the student (they see it once the result is published)...'}
         />
         {error && <p className="text-xs text-red-600">{error}</p>}
 
         {existing.length > 0 && (
           <div className="space-y-2">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase">Feedback files</p>
+            <p className="text-[11px] font-semibold text-gray-600 uppercase">Feedback files</p>
             {existing.map((a) => (
               <div key={a.id} className="flex items-center gap-2">
                 <div className="flex-1 min-w-0">
                   <FileButton file={a.file} fetchFile={() => reviewsApi.feedbackFile(submissionId, a.id, a.file.originalName)} />
                 </div>
                 {onRemoveExisting && !disabled && (
-                  <button type="button" onClick={() => onRemoveExisting(a.id)} className="p-2 text-gray-400 hover:text-red-600" aria-label={`Remove ${a.file.originalName}`}>
+                  <button type="button" onClick={() => onRemoveExisting(a.id)} className="p-2 text-gray-500 hover:text-red-600" aria-label={`Remove ${a.file.originalName}`}>
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}

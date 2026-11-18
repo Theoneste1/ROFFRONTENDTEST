@@ -59,15 +59,15 @@ export default function ReadOnlySchoolDetail({ schoolId }: { schoolId: string })
               <tr key={st.id} className="text-xs hover:bg-gray-50/60">
                 <td className={`${td} font-semibold text-gray-800 whitespace-nowrap`}>
                   {st.firstName} {st.lastName}
-                  <span className="block text-[11px] font-normal text-gray-400">@{st.username}</span>
+                  <span className="block text-[11px] font-normal text-gray-500">@{st.username}</span>
                 </td>
                 <td className={`${td} text-gray-600 whitespace-nowrap`}>
                   {st.division?.name.replace(/ division$/i, "") ?? "—"}
-                  {st.gradeLevel && <span className="text-gray-400"> · {st.gradeLevel}</span>}
+                  {st.gradeLevel && <span className="text-gray-500"> · {st.gradeLevel}</span>}
                 </td>
                 <td className={`${td} text-gray-600`}>{formatNumber(st.points)}</td>
                 <td className={td}>
-                  <Badge className={st.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}>{st.isActive ? "Active" : "Suspended"}</Badge>
+                  <Badge className={st.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}>{st.isActive ? "Active" : "Suspended"}</Badge>
                 </td>
                 <td className={td}>
                   <Link href={`/admin/users/${st.id}`} className={linkBtn}>

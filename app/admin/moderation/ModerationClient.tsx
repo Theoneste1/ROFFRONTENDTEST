@@ -96,13 +96,13 @@ function ReportsTab() {
                 <tr key={r.id} className="text-xs hover:bg-gray-50/60">
                   <td className={`${td} text-gray-700 max-w-[320px]`}>
                     <span className="block font-semibold text-gray-800">{r.targetType === "COMMENT" ? "Comment" : "Thread"} in “{excerpt(r.thread?.title, 60)}”</span>
-                    <span className="block text-gray-500 break-words">{excerpt(r.contentSnapshot)}</span>
+                    <span className="block text-gray-600 break-words">{excerpt(r.contentSnapshot)}</span>
                   </td>
                   <td className={td}>
                     <Badge className="bg-rose-50 text-rose-600">{REASON_LABEL[r.reason] ?? r.reason}</Badge>
                   </td>
                   <td className={`${td} text-gray-600 whitespace-nowrap`}>{personName(r.reporter, "—")}</td>
-                  <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDateTime(r.createdAt)}</td>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`}>{formatDateTime(r.createdAt)}</td>
                   <td className={td}>
                     <Badge className={REPORT_STATUS[r.status].badge}>{REPORT_STATUS[r.status].label}</Badge>
                   </td>
@@ -164,7 +164,7 @@ function HiddenTab() {
                   <td className={`${td} text-gray-700 max-w-[320px] break-words`}>{excerpt(c.content)}</td>
                   <td className={`${td} text-gray-600 whitespace-nowrap`}>{personName(c.author, "—")}</td>
                   <td className={`${td} text-gray-600`}>{excerpt(c.thread.title, 50)}</td>
-                  <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDateTime(c.createdAt)}</td>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`}>{formatDateTime(c.createdAt)}</td>
                   <td className={td}>
                     <button type="button" onClick={() => setRestore(c)} className={linkBtn}>
                       Restore
@@ -224,11 +224,11 @@ function ActionsTab() {
         ) : (
           actions.data.data.map((a) => (
             <tr key={a.id} className="text-xs">
-              <td className={`${td} text-gray-400 whitespace-nowrap`}>{formatDateTime(a.createdAt)}</td>
+              <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDateTime(a.createdAt)}</td>
               <td className={`${td} text-gray-700 font-semibold whitespace-nowrap`}>{personName(a.moderator, "—")}</td>
               <td className={`${td} text-gray-700`}>{humanizeAction(a.action)}</td>
-              <td className={`${td} text-gray-500 max-w-[280px] break-words`}>{a.comment ? excerpt(a.comment.content, 80) : a.thread ? `Thread “${excerpt(a.thread.title, 60)}”` : "—"}</td>
-              <td className={`${td} text-gray-500`}>{a.reason || "—"}</td>
+              <td className={`${td} text-gray-600 max-w-[280px] break-words`}>{a.comment ? excerpt(a.comment.content, 80) : a.thread ? `Thread “${excerpt(a.thread.title, 60)}”` : "—"}</td>
+              <td className={`${td} text-gray-600`}>{a.reason || "—"}</td>
             </tr>
           ))
         )}
@@ -255,7 +255,7 @@ export default function ModerationClient() {
     <>
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Moderation</h1>
-        <p className="text-sm text-gray-500 mt-1 font-medium">Reported discussion content, hidden comments and every moderation action.</p>
+        <p className="text-sm text-gray-600 mt-1 font-medium">Reported discussion content, hidden comments and every moderation action.</p>
       </div>
       <div className="flex gap-6 border-b border-gray-200 mb-6 overflow-x-auto" role="tablist">
         {TABS.map((t) => (
@@ -265,7 +265,7 @@ export default function ModerationClient() {
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => router.replace(t.id === "reports" ? pathname : `${pathname}?tab=${t.id}`, { scroll: false })}
-            className={`pb-3 text-sm font-semibold -mb-px border-b-2 whitespace-nowrap transition-colors ${tab === t.id ? "border-indigo-600 text-indigo-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+            className={`pb-3 text-sm font-semibold -mb-px border-b-2 whitespace-nowrap transition-colors ${tab === t.id ? "border-indigo-600 text-indigo-700" : "border-transparent text-gray-600 hover:text-gray-700"}`}
           >
             {t.label}
             {t.id === "reports" && !!openCount && <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px]">{openCount}</span>}

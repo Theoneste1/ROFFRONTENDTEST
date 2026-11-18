@@ -45,7 +45,7 @@ export default function OlympiadInterestsField({
       {error ? (
         <p id={`${idPrefix}-error`} className="mt-1.5 text-xs text-red-600">{error}</p>
       ) : (
-        <p id={`${idPrefix}-hint`} className="mt-1.5 text-xs text-slate-500">{hint}</p>
+        <p id={`${idPrefix}-hint`} className="mt-1.5 text-xs text-slate-600">{hint}</p>
       )}
     </fieldset>
   );

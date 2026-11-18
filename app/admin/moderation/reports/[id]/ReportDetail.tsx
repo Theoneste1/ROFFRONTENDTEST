@@ -39,7 +39,7 @@ const THREAD_OPS: { op: ThreadOp; label: string; from: string[] }[] = [
 function Info({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</dt>
+      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{label}</dt>
       <dd className="text-sm text-gray-800 mt-0.5 break-words">{children}</dd>
     </div>
   );
@@ -97,12 +97,12 @@ export default function ReportDetail({ reportId }: { reportId: string }) {
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-6 space-y-4">
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Reported text (as it was when reported)</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Reported text (as it was when reported)</h2>
               <div className="text-sm text-gray-800 whitespace-pre-wrap break-words bg-gray-50 border border-gray-100 rounded-xl p-4">{r.contentSnapshot}</div>
             </div>
             {r.comment && r.comment.content !== r.contentSnapshot && (
               <div>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Current text {r.comment.editedAt && `(edited ${formatDateTime(r.comment.editedAt)})`}</h2>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Current text {r.comment.editedAt && `(edited ${formatDateTime(r.comment.editedAt)})`}</h2>
                 <div className="text-sm text-gray-800 whitespace-pre-wrap break-words bg-gray-50 border border-gray-100 rounded-xl p-4">{r.comment.content}</div>
               </div>
             )}
@@ -126,7 +126,7 @@ export default function ReportDetail({ reportId }: { reportId: string }) {
               <Info label="Content status">{contentStatus ? contentStatus.toLowerCase() : "—"}</Info>
             </dl>
             {!open && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-600">
                 {REPORT_STATUS[r.status].label} {formatDateTime(r.resolvedAt)} by {personName(r.resolvedBy, "—")}
                 {r.resolutionNote && ` — ${r.resolutionNote}`}
               </p>
@@ -143,7 +143,7 @@ export default function ReportDetail({ reportId }: { reportId: string }) {
                       {REASON_LABEL[o.reason] ?? o.reason}
                     </Link>{" "}
                     · {personName(o.reporter, "—")} · {formatDateTime(o.createdAt)} · {REPORT_STATUS[o.status].label}
-                    {o.details && <span className="block text-gray-500">{o.details}</span>}
+                    {o.details && <span className="block text-gray-600">{o.details}</span>}
                   </li>
                 ))}
               </ul>
@@ -156,7 +156,7 @@ export default function ReportDetail({ reportId }: { reportId: string }) {
             <h2 className="text-base font-bold text-gray-900 mb-1">Resolve report</h2>
             {open ? (
               <>
-                <p className="text-xs text-gray-500 mb-4">{removed ? "The content has already been removed; the report can only be dismissed." : "Choose what to do with the reported content."}</p>
+                <p className="text-xs text-gray-600 mb-4">{removed ? "The content has already been removed; the report can only be dismissed." : "Choose what to do with the reported content."}</p>
                 <div className="flex flex-col gap-2">
                   {resolveActions.map((a) => (
                     <button key={a} type="button" onClick={() => askResolve(a)} className={a === "NONE" ? btnSecondary : RESOLVE[a].danger ? btnDanger : btnPrimary}>
@@ -166,14 +166,14 @@ export default function ReportDetail({ reportId }: { reportId: string }) {
                 </div>
               </>
             ) : (
-              <p className="text-xs text-gray-500">This report has been handled.</p>
+              <p className="text-xs text-gray-600">This report has been handled.</p>
             )}
           </Card>
 
           {r.thread && (
             <Card className="p-6">
               <h2 className="text-base font-bold text-gray-900 mb-1">Thread</h2>
-              <p className="text-xs text-gray-500 mb-4">Status: {r.thread.status.toLowerCase()}</p>
+              <p className="text-xs text-gray-600 mb-4">Status: {r.thread.status.toLowerCase()}</p>
               <div className="flex flex-col gap-2">
                 {THREAD_OPS.filter((o) => o.from.includes(r.thread!.status)).map((o) => (
                   <button

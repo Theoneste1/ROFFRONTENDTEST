@@ -39,7 +39,7 @@ export function SearchInput({ value, onChange, placeholder = "Search…", label 
   }, [text, value, delay]);
   return (
     <div className="relative flex-1 min-w-[min(200px,100%)] max-w-xs">
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
+      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
       <input
         type="search"
         aria-label={label}
@@ -47,7 +47,7 @@ export function SearchInput({ value, onChange, placeholder = "Search…", label 
         value={text}
         maxLength={100}
         onChange={(e) => setText(e.target.value)}
-        className="w-full bg-white text-xs pl-10 pr-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-400 shadow-2xs"
+        className="w-full bg-white text-xs pl-10 pr-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-500 shadow-2xs"
       />
     </div>
   );
@@ -57,7 +57,7 @@ export function SelectFilter({ label, value, onChange, options, id }: { label: s
   const autoId = useId();
   const selectId = id ?? autoId;
   return (
-    <label htmlFor={selectId} className="flex items-center gap-2 text-xs text-gray-500">
+    <label htmlFor={selectId} className="flex items-center gap-2 text-xs text-gray-600">
       <span className="font-semibold">{label}</span>
       <select
         id={selectId}
@@ -77,7 +77,7 @@ export function SelectFilter({ label, value, onChange, options, id }: { label: s
 
 // ─── Tables ─────────────────────────────────────────────────────────────────
 
-export const th = "px-4 sm:px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-400 whitespace-nowrap";
+export const th = "px-4 sm:px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 whitespace-nowrap";
 export const td = "px-4 sm:px-6 py-3.5";
 
 /** Table card with horizontal scroll inside the card (never the page). */
@@ -95,7 +95,7 @@ export function TableCard({ children, footer }: { children: ReactNode; footer?: 
 export function TableMessage({ colSpan, children }: { colSpan: number; children: ReactNode }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="px-6 py-10 text-center text-xs text-gray-400 font-medium">
+      <td colSpan={colSpan} className="px-6 py-10 text-center text-xs text-gray-500 font-medium">
         {children}
       </td>
     </tr>
@@ -174,7 +174,7 @@ export function CsvButton({ onDownload, label = "Export CSV", disabledReason, no
         {label}
       </button>
       {(disabledReason || note) && (
-        <span id={hintId} className="text-[11px] text-gray-500 max-w-[16rem] text-right">
+        <span id={hintId} className="text-[11px] text-gray-600 max-w-[16rem] text-right">
           {disabledReason ?? note}
         </span>
       )}
@@ -210,7 +210,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
           <h2 id={titleId} className="text-lg font-bold text-gray-900">
             {title}
           </h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close" data-dialog-close>
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-600" aria-label="Close" data-dialog-close>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -283,7 +283,7 @@ export function ConfirmDialog({
         {note && (
           <div>
             <label htmlFor={noteId} className="block text-xs font-semibold text-gray-600 mb-1">
-              {note.label} {note.required ? <span className="text-red-500">*</span> : <span className="font-normal text-gray-400">(optional)</span>}
+              {note.label} {note.required ? <span className="text-red-500">*</span> : <span className="font-normal text-gray-500">(optional)</span>}
             </label>
             <textarea
               id={noteId}
@@ -319,7 +319,7 @@ export function Notice({ tone = "success", children, onClose }: { tone?: "succes
         <Alert tone={tone}>{children}</Alert>
       </div>
       {onClose && (
-        <button type="button" onClick={onClose} className="mt-2 text-gray-400 hover:text-gray-600" aria-label="Dismiss">
+        <button type="button" onClick={onClose} className="mt-2 text-gray-500 hover:text-gray-600" aria-label="Dismiss">
           <X className="w-4 h-4" />
         </button>
       )}
@@ -333,10 +333,10 @@ export function MetricCard({ label, value, subtext }: { label: string; value: Re
   return (
     <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between">
       <div>
-        <p className="text-xs font-semibold text-gray-400 tracking-wider uppercase mb-1">{label}</p>
+        <p className="text-xs font-semibold text-gray-500 tracking-wider uppercase mb-1">{label}</p>
         <p className="text-2xl font-bold text-gray-900">{value}</p>
       </div>
-      {subtext && <p className="text-xs text-gray-400 mt-2 font-medium">{subtext}</p>}
+      {subtext && <p className="text-xs text-gray-500 mt-2 font-medium">{subtext}</p>}
     </div>
   );
 }

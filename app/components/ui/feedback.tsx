@@ -25,7 +25,7 @@ export function LoadingBlock({ label = "Loading…" }: { label?: string }) {
   return (
     <div className="w-full py-16 flex flex-col items-center justify-center gap-3" role="status">
       <Spinner className="h-7 w-7" />
-      <span className="text-sm text-slate-500">{label}</span>
+      <span className="text-sm text-slate-600">{label}</span>
     </div>
   );
 }
@@ -46,7 +46,7 @@ export function ErrorState({
       <AlertCircle className="h-8 w-8 text-red-500" aria-hidden="true" />
       <h2 className="text-base font-semibold text-slate-900">{title}</h2>
       <p className="text-sm text-slate-600 max-w-md">{errorMessage(error)}</p>
-      {requestId && <p className="text-xs text-slate-400 font-mono">Reference: {requestId}</p>}
+      {requestId && <p className="text-xs text-slate-500 font-mono">Reference: {requestId}</p>}
       {onRetry && (
         <button
           type="button"
@@ -64,9 +64,9 @@ export function ErrorState({
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return (
     <div className="w-full py-14 flex flex-col items-center text-center gap-2">
-      <Inbox className="h-9 w-9 text-slate-400" aria-hidden="true" />
+      <Inbox className="h-9 w-9 text-slate-500" aria-hidden="true" />
       <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
-      {description && <p className="text-sm text-slate-500 max-w-sm">{description}</p>}
+      {description && <p className="text-sm text-slate-600 max-w-sm">{description}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   );

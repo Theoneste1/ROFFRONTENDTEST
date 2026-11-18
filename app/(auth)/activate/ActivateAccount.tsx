@@ -83,7 +83,7 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
     <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Welcome, {info.firstName}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
           {info.requiresPassword
             ? "Choose a password to activate your account."
             : "Confirm your e-mail address to activate your account."}
@@ -91,9 +91,9 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
       </div>
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
-        <dt className="text-slate-500">Username</dt>
+        <dt className="text-slate-600">Username</dt>
         <dd className="font-medium text-slate-800 break-all">{info.username}</dd>
-        <dt className="text-slate-500">E-mail</dt>
+        <dt className="text-slate-600">E-mail</dt>
         <dd className="font-medium text-slate-800 break-all">{info.email}</dd>
       </dl>
 
@@ -124,7 +124,7 @@ function ResendActivation({ invalidLink = false }: { invalidLink?: boolean }) {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{invalidLink ? "Link not valid" : "Activate your account"}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
           {invalidLink
             ? "This activation link is invalid, has already been used, or has expired."
             : "Open the activation link from your e-mail, or request a new one below."}

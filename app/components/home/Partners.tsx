@@ -36,7 +36,7 @@ export default function Partners() {
                 ) : (
                   <span className="text-center">
                     <span className="block text-3xl font-extrabold tracking-tight text-[#001E4E]">{p.name}</span>
-                    {p.fullName !== p.name && <span className="mt-1 block text-sm font-medium text-slate-500">{p.fullName}</span>}
+                    {p.fullName !== p.name && <span className="mt-1 block text-sm font-medium text-slate-600">{p.fullName}</span>}
                   </span>
                 )}
               </Tile>

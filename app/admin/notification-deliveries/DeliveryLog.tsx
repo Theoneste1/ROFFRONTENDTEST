@@ -135,11 +135,11 @@ export default function DeliveryLog() {
                   <tr key={d.id}>
                     <td className={`${td} text-sm text-gray-800`}>
                       {deliveryTypeLabel(d.type)}
-                      <span className="block text-[11px] text-gray-400 font-mono">{d.type}</span>
+                      <span className="block text-[11px] text-gray-500 font-mono">{d.type}</span>
                     </td>
                     <td className={`${td} text-sm text-gray-700 break-all`}>
                       {d.recipientEmail}
-                      {!d.recipientUserId && <span className="block text-[11px] text-gray-400">no account (e-mail only)</span>}
+                      {!d.recipientUserId && <span className="block text-[11px] text-gray-500">no account (e-mail only)</span>}
                     </td>
                     <td className={`${td} text-xs text-gray-600`} title={`${d.entityType} ${d.entityId}`}>
                       {deliveryEntityLabel(d)}
@@ -149,7 +149,7 @@ export default function DeliveryLog() {
                     </td>
                     <td className={`${td} text-sm text-gray-700`}>{d.attempts}</td>
                     <td className={`${td} text-xs text-red-700 max-w-[260px] break-words`}>{d.lastError || <span className="text-gray-300">—</span>}</td>
-                    <td className={`${td} text-[11px] text-gray-500 whitespace-nowrap`}>
+                    <td className={`${td} text-[11px] text-gray-600 whitespace-nowrap`}>
                       <span className="block">Queued {formatDateTime(d.createdAt)}</span>
                       {d.sentAt && <span className="block">Sent {formatDateTime(d.sentAt)}</span>}
                       {!d.sentAt && d.nextAttemptAt && <span className="block">Next try {formatDateTime(d.nextAttemptAt)}</span>}

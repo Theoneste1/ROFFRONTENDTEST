@@ -149,7 +149,7 @@ export default function ApplyForm() {
           </>
         )}
         {teacherSelfRegistration ? (
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-slate-600">
             Questions? <Link href="/?subject=teacher#contact" className="font-medium text-[#2B2BB2] hover:underline">Contact us</Link>
           </p>
         ) : (
@@ -157,7 +157,7 @@ export default function ApplyForm() {
             Contact us
           </Link>
         )}
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-sm text-slate-600">
           Want to mentor ROF students? <Link href="/apply" className="font-medium text-[#2B2BB2] hover:underline">Apply as a coach</Link>
         </p>
       </div>
@@ -191,10 +191,10 @@ export default function ApplyForm() {
       <JoinSwitch active="coach" />
       <div>
         <AuthHeading title={`Join as a ${role.toLowerCase()}`} />
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
           Coaches mentor ROF students: you prepare assignments, share resources and review student work for the courses you are assigned. An administrator reviews every application.
         </p>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-slate-600">
           A school teacher?{" "}
           <Link href={teacherHref} className="font-medium text-[#2B2BB2] hover:underline">
             Join as a teacher

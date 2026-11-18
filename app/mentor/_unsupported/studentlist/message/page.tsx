@@ -50,7 +50,7 @@ export default function NewMessage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">New Message</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-600">
           Compose and send message to filtered students.
         </p>
       </div>
@@ -107,7 +107,7 @@ export default function NewMessage() {
                   type="button"
                   className="flex items-center rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
                 >
-                  Paragraph <ChevronDown className="ml-1 h-3.5 w-3.5 text-gray-500" />
+                  Paragraph <ChevronDown className="ml-1 h-3.5 w-3.5 text-gray-600" />
                 </button>
               </div>
               <div className="h-4 w-px bg-gray-300" />
@@ -195,7 +195,7 @@ export default function NewMessage() {
                 onChange={handleFileChange}
               />
             </label>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-600">
               {selectedFile ? selectedFile.name : 'No file chosen'}
             </span>
           </div>

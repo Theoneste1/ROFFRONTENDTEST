@@ -7,7 +7,7 @@ import { Spinner } from "./feedback";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 
 const inputBase =
-  "w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all disabled:bg-slate-50 disabled:text-slate-500";
+  "w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 transition-all disabled:bg-slate-50 disabled:text-slate-600";
 const inputOk = "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500";
 const inputBad = "border-red-400 focus:ring-red-500/20 focus:border-red-500";
 
@@ -43,7 +43,7 @@ export const TextField = forwardRef<HTMLInputElement, FieldProps>(function TextF
           {error}
         </p>
       ) : hint ? (
-        <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-slate-500">
+        <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-slate-600">
           {hint}
         </p>
       ) : null}
@@ -79,7 +79,7 @@ export const PasswordField = forwardRef<HTMLInputElement, Omit<FieldProps, "type
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-500 hover:text-slate-700"
+          className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-600 hover:text-slate-700"
           aria-label={visible ? "Hide password" : "Show password"}
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -90,7 +90,7 @@ export const PasswordField = forwardRef<HTMLInputElement, Omit<FieldProps, "type
           {error}
         </p>
       ) : hint ? (
-        <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-slate-500">
+        <p id={`${inputId}-hint`} className="mt-1.5 text-xs text-slate-600">
           {hint}
         </p>
       ) : null}

@@ -19,7 +19,7 @@ import SubmissionsSection from "./SubmissionsSection";
 function Info({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</dt>
+      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{label}</dt>
       <dd className="text-sm text-gray-800 mt-0.5">{children}</dd>
     </div>
   );
@@ -107,13 +107,13 @@ function ReopenDialog({ a, onClose, onDone }: { a: MentorAssignment; onClose: ()
         <p className="text-sm text-gray-600">Students can submit again. Current deadline: {formatDateTime(a.deadline)}.</p>
         <div>
           <label htmlFor="reopen-deadline" className="block text-xs font-semibold text-gray-600 mb-1">
-            New deadline {needsDeadline ? <span className="text-red-500">*</span> : <span className="font-normal text-gray-400">(optional)</span>}
+            New deadline {needsDeadline ? <span className="text-red-500">*</span> : <span className="font-normal text-gray-500">(optional)</span>}
           </label>
           <input id="reopen-deadline" type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
           <label htmlFor="reopen-note" className="block text-xs font-semibold text-gray-600 mb-1">
-            Note <span className="font-normal text-gray-400">(optional)</span>
+            Note <span className="font-normal text-gray-500">(optional)</span>
           </label>
           <textarea id="reopen-note" rows={3} value={note} maxLength={ASSIGNMENT_ADMIN_RULES.note.max} onChange={(e) => setNote(e.target.value)} className="w-full border border-gray-200 rounded-xl p-3 text-sm" />
         </div>
@@ -198,12 +198,12 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
           </dl>
           {a.description && <p className="text-sm text-gray-600">{a.description}</p>}
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Instructions</h2>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Instructions</h2>
             <div className="text-sm text-gray-800 whitespace-pre-wrap break-words bg-gray-50 border border-gray-100 rounded-xl p-4">{a.instructions}</div>
           </div>
           {a.attachments.length > 0 && (
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Brief files</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Brief files</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {a.attachments.map((att) => (
                   <FileButton key={att.id} file={att.file} fetchFile={() => mentorAssignmentsApi.briefFile(a.id, att.id, att.file.originalName)} />
@@ -216,7 +216,7 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
         <div className="space-y-6">
           <Card className="p-6">
             <h2 className="text-base font-bold text-gray-900 mb-1">Actions</h2>
-            <p className="text-xs text-gray-500 mb-4">Administrators approve, publish and close assignments. Only the coach can change their content.</p>
+            <p className="text-xs text-gray-600 mb-4">Administrators approve, publish and close assignments. Only the coach can change their content.</p>
             <div className="flex flex-col gap-2">
               {actions.map((c) => (
                 <button key={c.action} type="button" onClick={() => setConfirm(c)} className={c.action === "publish" ? btnPrimary : btnSecondary}>
@@ -228,7 +228,7 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
                   <Unlock className="h-3.5 w-3.5" aria-hidden="true" /> Reopen submissions
                 </button>
               )}
-              {actions.length === 0 && a.status !== "CLOSED" && <p className="text-xs text-gray-400">No actions are available in this state.</p>}
+              {actions.length === 0 && a.status !== "CLOSED" && <p className="text-xs text-gray-500">No actions are available in this state.</p>}
             </div>
           </Card>
           {row && (
@@ -251,14 +251,14 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
 
       <Card className="p-6 mt-6">
         <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <History className="w-4 h-4 text-gray-500" aria-hidden="true" /> History
+          <History className="w-4 h-4 text-gray-600" aria-hidden="true" /> History
         </h2>
         {history.isPending ? (
           <Spinner />
         ) : history.isError ? (
           <p className="text-sm text-red-600">{errorMessage(history.error)}</p>
         ) : history.data.length === 0 ? (
-          <p className="text-sm text-gray-500">No history yet.</p>
+          <p className="text-sm text-gray-600">No history yet.</p>
         ) : (
           <ol className="space-y-3">
             {history.data
@@ -271,13 +271,13 @@ export default function AdminAssignmentDetail({ assignmentId }: { assignmentId: 
                     <p className="font-semibold text-gray-800">
                       {humanizeAction(ev.type)}
                       {ev.toStatus && ev.fromStatus && ev.toStatus !== ev.fromStatus && (
-                        <span className="font-normal text-gray-500">
+                        <span className="font-normal text-gray-600">
                           {" "}
                           · {ADMIN_ASSIGNMENT_STATUS[ev.fromStatus]?.label ?? ev.fromStatus} → {ADMIN_ASSIGNMENT_STATUS[ev.toStatus]?.label ?? ev.toStatus}
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       {formatDateTime(ev.createdAt)} · {personName(ev.actor, "System")}
                     </p>
                     {ev.note && <p className="text-xs text-gray-600 mt-0.5 break-words">{ev.note}</p>}

@@ -233,7 +233,7 @@ export default function RegisterForm() {
         ) : (
           <div data-testid="register-loading">
             <LoadingBlock label={gate.state === "loading" && gate.waking ? "The server is waking up…" : "Preparing the registration form…"} />
-            <p className="text-center text-xs text-slate-500">This can take up to a minute while the server wakes up.</p>
+            <p className="text-center text-xs text-slate-600">This can take up to a minute while the server wakes up.</p>
           </div>
         )}
         <SignInInstead />
@@ -290,7 +290,7 @@ export default function RegisterForm() {
     <form onSubmit={onSubmit} noValidate className="space-y-5">
       <JoinSwitch active="student" />
       <AuthHeading title="Join as a student" subtitle="Create your free ROF account and start preparing for the Olympiads. It only takes a few minutes." />
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-600">
         Fields marked <span className="text-red-500">*</span> are required.
       </p>
 
@@ -392,7 +392,7 @@ export default function RegisterForm() {
           {errors.gradeLevel ? (
             <p id="gradeLevel-error" className="mt-1.5 text-xs text-red-600">{errors.gradeLevel}</p>
           ) : (
-            <p id="gradeLevel-hint" className="mt-1.5 text-xs text-slate-500">S1–S3 study in the Junior division, S4–S6 in the Senior division.</p>
+            <p id="gradeLevel-hint" className="mt-1.5 text-xs text-slate-600">S1–S3 study in the Junior division, S4–S6 in the Senior division.</p>
           )}
         </div>
 

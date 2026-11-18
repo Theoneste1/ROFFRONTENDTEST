@@ -28,15 +28,15 @@ export default function AssignmentTable({ assignments, now }: { assignments: Stu
                   <Link href={`/student/assignments/${item.id}`} className="block truncate hover:text-indigo-700" title={item.title}>
                     {item.title}
                   </Link>
-                  {item.status === 'CLOSED' && <span className="text-[10px] font-semibold text-gray-400">Closed</span>}
+                  {item.status === 'CLOSED' && <span className="text-[10px] font-semibold text-gray-500">Closed</span>}
                 </td>
                 <td className="py-4 px-6">
                   <div className="font-bold text-gray-800 text-xs">{item.course.title}</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">{item.division.name} division</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">{item.division.name} division</div>
                 </td>
                 <td className="py-4 px-6 text-xs font-bold text-gray-800">
                   <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Clock className="w-4 h-4 text-gray-500 stroke-[1.5]" />
+                    <Clock className="w-4 h-4 text-gray-600 stroke-[1.5]" />
                     <span>{formatDateTime(item.deadline)}</span>
                   </div>
                 </td>

@@ -84,8 +84,8 @@ function EmailJobs() {
                   <td className={td}>{formatNumber(j.totalRecipients)}</td>
                   <td className={td}>{formatNumber(j.sentCount)}</td>
                   <td className={`${td} ${j.failedCount > 0 ? "text-red-600 font-semibold" : ""}`}>{formatNumber(j.failedCount)}</td>
-                  <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDateTime(j.createdAt)}</td>
-                  <td className={`${td} text-gray-500`}>{j.createdBy ? `@${j.createdBy.username}` : "—"}</td>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`}>{formatDateTime(j.createdAt)}</td>
+                  <td className={`${td} text-gray-600`}>{j.createdBy ? `@${j.createdBy.username}` : "—"}</td>
                   <td className={td}>
                     <Link href={`/admin/email/jobs/${j.id}`} className={linkBtn} aria-label={`Open ${j.subject}`}>
                       Open

@@ -29,7 +29,7 @@ function Row({ icon, label, children }: { icon: ReactNode; label: string; childr
     <li className="flex items-start gap-3">
       <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600 shrink-0">{icon}</span>
       <div className="min-w-0">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</p>
         <div className="text-sm text-slate-800 break-words">{children}</div>
       </div>
     </li>
@@ -53,7 +53,7 @@ export default function SupportInfo() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Help and support</h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">{s.platformName ?? "ROF Learning Platform"}</p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">{s.platformName ?? "ROF Learning Platform"}</p>
       </div>
 
       {s.message && <p className="text-sm text-slate-700 whitespace-pre-line">{s.message}</p>}

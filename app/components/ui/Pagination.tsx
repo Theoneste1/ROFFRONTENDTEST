@@ -16,10 +16,10 @@ export default function Pagination({
 }) {
   if (totalPages <= 1) return null;
   const btn =
-    "px-3 py-1 text-xs font-medium text-slate-500 hover:text-slate-800 bg-white/50 hover:bg-white rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed";
+    "px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 bg-white/50 hover:bg-white rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed";
   return (
     <nav className="flex items-center justify-end gap-2 mt-4 px-2" aria-label="Pagination">
-      <span className="text-xs text-slate-500 mr-2">
+      <span className="text-xs text-slate-600 mr-2">
         Page {page} of {totalPages}
         {total !== undefined && ` · ${total} total`}
       </span>

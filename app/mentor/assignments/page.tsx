@@ -98,7 +98,7 @@ export default function AssignmentsDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Assignments</h1>
-          <p className="text-slate-500 text-sm mt-1">Prepare assignments for your courses. An administrator publishes them to students.</p>
+          <p className="text-slate-600 text-sm mt-1">Prepare assignments for your courses. An administrator publishes them to students.</p>
         </div>
         <Link
           href={sc ? `/mentor/assignments/create?scope=${encodeURIComponent(scope)}` : "/mentor/assignments/create"}
@@ -113,7 +113,7 @@ export default function AssignmentsDashboard() {
       <div className="flex flex-wrap items-end gap-4 mb-6 max-w-5xl">
         {scopes.data && scopes.data.length > 0 && <ScopeSelect scopes={scopes.data} value={scope} onChange={(v) => reset(() => setScope(v))} includeAll />}
         <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="search"
             value={search}
@@ -137,7 +137,7 @@ export default function AssignmentsDashboard() {
               role="tab"
               aria-selected={activeTab === t.id}
               className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
-                activeTab === t.id ? "border-indigo-600 text-indigo-600 font-semibold" : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                activeTab === t.id ? "border-indigo-600 text-indigo-600 font-semibold" : "border-transparent text-slate-600 hover:text-slate-700 hover:border-slate-300"
               }`}
             >
               {t.label}
@@ -187,10 +187,10 @@ function AssignmentCard({ item, counts }: { item: MentorAssignment; counts?: { t
             <h3 className="font-bold text-slate-900 text-base truncate">{item.title}</h3>
             <AssignmentStatusBadge status={item.status} />
           </div>
-          <p className="text-xs text-slate-400 font-medium mt-0.5">
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
             {item.course.title} · {item.division.name} division
           </p>
-          <p className="text-xs text-slate-400 mt-1">Due: {formatDateTime(item.deadline)}</p>
+          <p className="text-xs text-slate-500 mt-1">Due: {formatDateTime(item.deadline)}</p>
           {item.status === "REJECTED" && item.rejectionNote && (
             <p className="text-xs text-red-600 mt-1 line-clamp-2">Admin note: {item.rejectionNote}</p>
           )}
@@ -201,7 +201,7 @@ function AssignmentCard({ item, counts }: { item: MentorAssignment; counts?: { t
         <Metric value={item._count?.submissions ?? 0} label="Submitted" />
         <Metric value={counts?.done ?? 0} label="Reviewed" />
         <Metric value={counts?.toReview ?? 0} label="To review" />
-        <ChevronRight className="w-6 h-6 text-slate-400 hidden md:block" />
+        <ChevronRight className="w-6 h-6 text-slate-500 hidden md:block" />
       </div>
     </Link>
   );
@@ -211,7 +211,7 @@ function Metric({ value, label }: { value: number; label: string }) {
   return (
     <div className="text-center">
       <span className="block text-lg font-bold text-slate-800">{value}</span>
-      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-xs text-slate-500">{label}</span>
     </div>
   );
 }

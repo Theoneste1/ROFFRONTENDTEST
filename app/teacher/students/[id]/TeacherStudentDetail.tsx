@@ -113,7 +113,7 @@ export default function TeacherStudentDetail({ studentId }: { studentId: string 
               <Notice tone="info">No published assignments for this student&apos;s division yet.</Notice>
             ) : (
               <div className="space-y-4">
-                <p className="text-xs text-gray-500">Scores and feedback are not shown to teachers.</p>
+                <p className="text-xs text-gray-600">Scores and feedback are not shown to teachers.</p>
                 {progress.data.assignments.map((a) => (
                   <AssignmentCard key={a.id} studentId={studentId} studentName={name} assignment={a} maySubmit={maySubmit} me={user ? { id: user.id, username: user.username } : null} />
                 ))}
@@ -129,7 +129,7 @@ export default function TeacherStudentDetail({ studentId }: { studentId: string 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{label}</dt>
+      <dt className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{label}</dt>
       <dd className="text-gray-800 mt-0.5">{children}</dd>
     </div>
   );
@@ -166,13 +166,13 @@ function AssignmentCard({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="font-semibold text-gray-900">{a.title}</p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-gray-600 mt-0.5">
               {a.course.title} · due {formatDateTime(a.deadline)}
               {a.status === "CLOSED" && " · closed"}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {a.submission ? <SubmissionBadge status={a.submission.status} /> : <span className="text-xs font-medium text-gray-400">Not submitted</span>}
+            {a.submission ? <SubmissionBadge status={a.submission.status} /> : <span className="text-xs font-medium text-gray-500">Not submitted</span>}
             {canSubmitHere && !open && (
               <button type="button" className={btnSecondary} onClick={() => { setOpen(true); setDone(null); }}>
                 {a.submission ? "Submit a new attempt" : "Submit for this student"}
@@ -182,7 +182,7 @@ function AssignmentCard({
         </div>
 
         {maySubmit && !eligibility.allowed && !open && (
-          <p className="mt-2 text-xs text-gray-500" data-testid="on-behalf-unavailable">
+          <p className="mt-2 text-xs text-gray-600" data-testid="on-behalf-unavailable">
             Can&apos;t submit for this student: {eligibility.reason}
           </p>
         )}
