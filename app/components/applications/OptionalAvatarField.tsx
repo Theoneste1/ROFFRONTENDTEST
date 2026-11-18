@@ -1,11 +1,12 @@
 "use client";
 
 /** Optional profile picture at registration (REG-02): never required; same file rules as My Profile. */
-import { useId } from "react";
+import { useId, useRef } from "react";
 import { AVATAR_RULES } from "@/lib/accounts/avatar";
 
 export default function OptionalAvatarField({ file, onChange, error }: { file: File | null; onChange: (f: File | null) => void; error?: string | null }) {
   const id = useId();
+  const input = useRef<HTMLInputElement>(null);
   return (
     <div data-testid="optional-avatar">
       <label htmlFor={id} className="block text-sm font-semibold text-slate-700 mb-2">
@@ -13,6 +14,7 @@ export default function OptionalAvatarField({ file, onChange, error }: { file: F
       </label>
       <input
         id={id}
+        ref={input}
         name="avatar"
         type="file"
         accept={AVATAR_RULES.accept}
@@ -24,7 +26,15 @@ export default function OptionalAvatarField({ file, onChange, error }: { file: F
         {error ?? (file ? `Chosen: ${file.name}. It is added once your registration is sent.` : "JPEG, PNG or WebP. You can also add or change it later in My Profile.")}
       </p>
       {file && (
-        <button type="button" className="mt-1 text-xs font-semibold text-indigo-600 hover:underline" onClick={() => onChange(null)}>
+        <button
+          type="button"
+          className="mt-1 text-xs font-semibold text-indigo-600 hover:underline"
+          onClick={() => {
+            // Clear the input too, so choosing the same file again fires a change.
+            if (input.current) input.current.value = "";
+            onChange(null);
+          }}
+        >
           Remove the chosen picture
         </button>
       )}
