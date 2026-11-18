@@ -172,7 +172,8 @@ export const applicationInfoApi = {
   requestTeacher: (id: string, question: string) =>
     api<unknown>(`/admin/teacher-applications/${encodeURIComponent(id)}/request-info`, { method: "POST", body: { question } }),
   requestCoach: (id: string, question: string) => api<unknown>(`/mentor-requests/${encodeURIComponent(id)}/request-info`, { method: "POST", body: { question } }),
-  view: (token: string) => api<PublicInfoRequest>(`/applications/info-requests/${encodeURIComponent(token)}`, { auth: false }),
+  // The one-time link's token travels in the request body, never in the API URL (SEC-05: URLs reach access logs).
+  view: (token: string) => api<PublicInfoRequest>("/applications/info-requests/view", { method: "POST", body: { token }, auth: false }),
   answer: (token: string, body: Record<string, string | number>) =>
-    api<{ answered: true; kind: ApplicationKind }>(`/applications/info-requests/${encodeURIComponent(token)}`, { method: "POST", body, auth: false }),
+    api<{ answered: true; kind: ApplicationKind }>("/applications/info-requests/answer", { method: "POST", body: { ...body, token }, auth: false }),
 };

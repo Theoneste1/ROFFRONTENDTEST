@@ -2,6 +2,7 @@
  * An Administrator reviews coach applications in the browser (REG-10): asks one applicant for more information,
  * rejects one with a reason (e-mailed to the applicant) and approves one. Each outcome is checked in the database.
  * The three applications are created through the public API (as the /apply form does), with unique names per run.
+ * The applicant then answers the question through the e-mailed one-time link (/applications/respond), signed out.
  */
 import { expect, request, test, type Page } from "@playwright/test";
 import { withDb } from "../support/db";
@@ -41,7 +42,7 @@ test.describe("Administrator reviews coach applications", () => {
     for (const k of ["Ask", "Reject", "Approve"]) await applyAsCoach(k);
   });
 
-  test("ask for more information, reject with a reason, approve", async ({ page }) => {
+  test("ask for more information, reject with a reason, approve", async ({ page, browser }) => {
     test.setTimeout(180_000);
     await signIn(page, "admin");
     await openApplications(page);
@@ -57,6 +58,24 @@ test.describe("Administrator reviews coach applications", () => {
     const question = await withDb(async (c) => (await c.query(
       `SELECT question, "answeredAt" IS NULL AS open FROM "ApplicationInfoRequest" WHERE "mentorRequestId" = $1`, [asked.id])).rows[0]);
     expect(question).toMatchObject({ question: expect.stringContaining("olympiad levels"), open: true });
+
+    // 1b. The applicant answers through the e-mailed link (no account, signed out).
+    const link = await withDb(async (c) => {
+      const body = (await c.query(`SELECT body FROM "EmailDelivery" WHERE "recipientEmail" = $1 ORDER BY "createdAt" DESC LIMIT 1`, [`${who("Ask").username}@e2e.local`])).rows[0]?.body as string;
+      return /(\/applications\/respond\?token=[^\s"&<]+)/.exec(body)?.[1];
+    });
+    expect(link, "the e-mail carries the answer link").toBeTruthy();
+    const applicant = await (await browser.newContext()).newPage();
+    await applicant.goto(link!);
+    await expect(applicant.getByTestId("answer-form")).toBeVisible({ timeout: 30_000 });
+    await expect(applicant.getByText(/olympiad levels/)).toBeVisible();
+    await applicant.locator('textarea[name="answer"]').fill("National olympiad training for four years, junior and senior levels.");
+    await applicant.getByRole("button", { name: "Send my answer" }).click();
+    await expect(applicant.getByTestId("answer-sent")).toBeVisible({ timeout: 30_000 });
+    const answered = await withDb(async (c) => (await c.query(
+      `SELECT answer FROM "ApplicationInfoRequest" WHERE "mentorRequestId" = $1`, [asked.id])).rows[0].answer);
+    expect(answered).toContain("four years");
+    await applicant.close();
 
     // 2. Reject with a reason (required; e-mailed to the applicant).
     await rowOf(page, "Reject").getByRole("button", { name: "Reject" }).click();
