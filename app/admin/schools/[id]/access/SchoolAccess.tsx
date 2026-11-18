@@ -19,7 +19,7 @@ import {
 } from "@/lib/api/accounts";
 import { usersApi } from "@/lib/api/admin";
 import type { GradeLevel } from "@/lib/api/types";
-import { errorMessage } from "@/lib/api/errors";
+import { errorMessage, isApiError } from "@/lib/api/errors";
 import { personName, formatNumber } from "@/lib/format";
 import { queryKeys } from "@/lib/query/keys";
 import { useSession } from "@/lib/auth/session";
@@ -357,8 +357,11 @@ function ActionDialog({ action, schoolTeachers, students, onClose, onDone }: {
             try {
               await teachersAdminApi.removeDelegationStudent(teacherId, current.id, studentId);
               out.push({ studentId, outcome: "REMOVED" });
-            } catch {
-              out.push({ studentId, outcome: "SKIPPED", code: "NOT_APPLICABLE" });
+            } catch (e) {
+              // Only "not covered" is nothing to do; any other refusal or failure is reported as it is.
+              out.push(isApiError(e) && e.status === 404
+                ? { studentId, outcome: "SKIPPED", code: "NOT_APPLICABLE" }
+                : { studentId, outcome: "FAILED", message: errorMessage(e) });
             }
           }
         }
