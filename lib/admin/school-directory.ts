@@ -399,14 +399,24 @@ export interface ListState {
   source: SchoolSource | "";
   code: "any" | "with" | "without";
   page: number;
+  /** Schools table (backends with schoolsTable): by name (default) or by verified students. */
+  sort?: SchoolSort;
+  order?: SortOrder;
 }
+
+export type SchoolSort = "name" | "verifiedStudents";
+export type SortOrder = "asc" | "desc";
+export const SCHOOL_SORTS: readonly SchoolSort[] = ["name", "verifiedStudents"];
 
 export const initialListState = (): ListState => ({ q: "", countryCode: "", province: "", district: "", sector: "", status: "all", source: "", code: "any", page: 1 });
 
 export const LIST_PAGE_SIZE = 20;
 
-/** The request for a list state: empty filters are left out; places only for Rwanda. */
-export function listFilters(s: ListState): DirectoryListFilters {
+/**
+ * The request for a list state: empty filters are left out; places only for Rwanda. The sort is sent only to backends
+ * that support it (`sortable`: schoolsTable) and only when it is not the default (name, ascending).
+ */
+export function listFilters(s: ListState, opts: { sortable?: boolean } = {}): DirectoryListFilters {
   const out: DirectoryListFilters = { page: Math.max(1, Math.floor(s.page) || 1), limit: LIST_PAGE_SIZE };
   const q = s.q.trim().slice(0, 100);
   if (q) out.q = q;
@@ -420,13 +430,83 @@ export function listFilters(s: ListState): DirectoryListFilters {
   if (s.status !== "all") out.isActive = s.status === "active";
   if (s.source) out.source = s.source;
   if (s.code !== "any") out.hasCode = s.code === "with";
+  if (opts.sortable) {
+    const sort = s.sort ?? "name";
+    const order = s.order ?? "asc";
+    if (sort !== "name") out.sort = sort;
+    if (order !== "asc") out.order = order;
+  }
   return out;
 }
 
-/** True when any filter (other than the page) narrows the list. */
+/** True when any filter (other than the page and the sort) narrows the list. */
 export function isFiltered(s: ListState): boolean {
   return Object.keys(listFilters(s)).some((k) => k !== "page" && k !== "limit");
 }
+
+// ─── List state in the URL (schools table) ───────────────────────────────────
+
+const STATUSES: readonly ListState["status"][] = ["all", "active", "inactive"];
+const CODES: readonly ListState["code"][] = ["any", "with", "without"];
+const SOURCES: readonly SchoolSource[] = ["OFFICIAL_LIST", "ADMIN", "LEGACY"];
+
+/** The list state a URL describes (unknown or invalid values fall back to the defaults). */
+export function listStateFromParams(p: { get(name: string): string | null }): ListState {
+  const s = initialListState();
+  const str = (k: string) => (p.get(k) ?? "").trim();
+  s.q = str("q").slice(0, 100);
+  s.countryCode = str("country").toUpperCase();
+  s.province = str("province");
+  s.district = s.province ? str("district") : "";
+  s.sector = s.district ? str("sector") : "";
+  const status = str("status") as ListState["status"];
+  if (STATUSES.includes(status)) s.status = status;
+  const source = str("source") as SchoolSource;
+  if (SOURCES.includes(source)) s.source = source;
+  const code = str("code") as ListState["code"];
+  if (CODES.includes(code)) s.code = code;
+  s.page = Math.max(1, Math.floor(Number(str("page"))) || 1);
+  const sort = str("sort") as SchoolSort;
+  if (SCHOOL_SORTS.includes(sort)) s.sort = sort;
+  if (str("order") === "desc") s.order = "desc";
+  return s;
+}
+
+/** The URL query for a list state: defaults are left out, so a plain list has a plain URL. */
+export function listStateToParams(s: ListState): string {
+  const p = new URLSearchParams();
+  const put = (k: string, v: string, def = "") => {
+    if (v && v !== def) p.set(k, v);
+  };
+  put("q", s.q.trim());
+  put("country", s.countryCode);
+  put("province", s.province);
+  put("district", s.district);
+  put("sector", s.sector);
+  put("status", s.status, "all");
+  put("source", s.source);
+  put("code", s.code, "any");
+  put("sort", s.sort ?? "name", "name");
+  put("order", s.order ?? "asc", "asc");
+  if (s.page > 1) p.set("page", String(s.page));
+  return p.toString();
+}
+
+/** Clicking a column header: a new column starts ascending (verified students: most first); the same column flips. */
+export function nextSort(s: Pick<ListState, "sort" | "order">, column: SchoolSort): { sort: SchoolSort; order: SortOrder } {
+  const current = s.sort ?? "name";
+  if (current !== column) return { sort: column, order: column === "verifiedStudents" ? "desc" : "asc" };
+  return { sort: column, order: (s.order ?? "asc") === "asc" ? "desc" : "asc" };
+}
+
+/** aria-sort of a column header. */
+export function ariaSort(s: Pick<ListState, "sort" | "order">, column: SchoolSort): "ascending" | "descending" | "none" {
+  if ((s.sort ?? "name") !== column) return "none";
+  return (s.order ?? "asc") === "asc" ? "ascending" : "descending";
+}
+
+/** "—" for a missing value (district, sector). */
+export const orDash = (v: string | null | undefined) => (v && v.trim() ? v : "—");
 
 // ─── Labels ─────────────────────────────────────────────────────────────────
 

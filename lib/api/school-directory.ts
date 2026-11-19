@@ -62,7 +62,10 @@ export interface DirectorySchoolRecord {
 /** `GET /admin/schools` item. */
 export interface DirectorySchoolRow extends DirectorySchoolRecord {
   students: number;
+  /** Students whose CURRENT school claim an Administrator verified. */
   verifiedStudents: number;
+  /** Backends with primaryTeacher / schoolsTable: the school's primary teacher (main contact), or null. */
+  primaryTeacher?: { id: string; username: string; firstName: string; lastName: string } | null;
 }
 
 /** What refers to a school — none of it is changed by deactivating or reactivating. */
@@ -136,6 +139,9 @@ export interface DirectoryListFilters {
   isActive?: boolean;
   source?: SchoolSource;
   hasCode?: boolean;
+  /** Backends with schoolsTable: name (default) or verifiedStudents; asc (default) or desc. */
+  sort?: "name" | "verifiedStudents";
+  order?: "asc" | "desc";
   page?: number;
   limit?: number;
   [key: string]: QueryValue;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSchoolDirectoryMode } from "@/lib/queries/school-directory";
 import { LoadingBlock } from "@/app/components/ui/feedback";
 import { AdminPage } from "../components/adminUi";
@@ -20,5 +21,12 @@ export default function SchoolsPage() {
       </AdminPage>
     );
   }
-  return mode === "manage" ? <SchoolDirectoryList /> : <ReadOnlySchoolsList />;
+  return mode === "manage" ? (
+    // The schools table keeps its search, filters, sort and page in the URL (useSearchParams).
+    <Suspense fallback={<LoadingBlock />}>
+      <SchoolDirectoryList />
+    </Suspense>
+  ) : (
+    <ReadOnlySchoolsList />
+  );
 }

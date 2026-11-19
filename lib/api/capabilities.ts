@@ -161,6 +161,11 @@ export const KNOWN_FEATURES = [
    * `teacherSchoolRole` on TEACHER rows of the users list, and GET /teacher/schools for the teacher. Without it: no badges.
    */
   "primaryTeacher",
+  /**
+   * Schools table (2026-11-19): GET /admin/schools sorts by name or verified students (`sort`, `order`) and returns
+   * `primaryTeacher` per school. Without it: name order only, no sort controls.
+   */
+  "schoolsTable",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

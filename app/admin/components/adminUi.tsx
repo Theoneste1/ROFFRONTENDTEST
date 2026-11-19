@@ -81,11 +81,11 @@ export const th = "px-4 sm:px-6 py-4 text-[11px] font-bold uppercase tracking-wi
 export const td = "px-4 sm:px-6 py-3.5";
 
 /** Table card with horizontal scroll inside the card (never the page). */
-export function TableCard({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
+export function TableCard({ children, footer, tableClassName = "", scrollTestId }: { children: ReactNode; footer?: ReactNode; tableClassName?: string; scrollTestId?: string }) {
   return (
     <Card className="overflow-hidden">
-      <div className="relative overflow-x-auto">
-        <table className="w-full text-left border-collapse">{children}</table>
+      <div className="relative overflow-x-auto" data-testid={scrollTestId}>
+        <table className={`w-full text-left border-collapse ${tableClassName}`}>{children}</table>
       </div>
       {footer}
     </Card>
