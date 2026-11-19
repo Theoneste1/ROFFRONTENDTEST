@@ -107,7 +107,7 @@ test.describe.serial("Administrator: a test from the wizard to its marker", () =
       expect(t).toEqual({ division: "JUNIOR", answerFormat: "BOTH", maxMarks: 20, status: "DRAFT" });
       const qs = (await c.query(`SELECT "order", "maxMarks" FROM "TestQuestion" WHERE "testId" = $1 ORDER BY "order"`, [mathsTestId])).rows;
       expect(qs).toEqual([{ order: 1, maxMarks: 12 }, { order: 2, maxMarks: 8 }]);
-      const files = (await c.query(`SELECT kind FROM "TestFile" WHERE "testId" = $1 ORDER BY kind`, [mathsTestId])).rows.map((r) => r.kind);
+      const files = (await c.query(`SELECT kind FROM "TestFile" WHERE "testId" = $1`, [mathsTestId])).rows.map((r) => r.kind).sort();
       expect(files).toEqual(["MARKING_GUIDE", "PAPER"]);
     });
   });
