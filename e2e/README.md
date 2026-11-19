@@ -29,6 +29,7 @@ hour and is refused (429), as designed.
 | `admin-users` | bulk suspend with preview and reason, account history, CSV export, e-mail preferences (ACC-09/11, REG-12, NOT-03) |
 | `countries` | countries (owner decision 2026-11-19): an Administrator corrects a country on the Countries screen (audited); students register with a school abroad and in Rwanda (INT-01, INT-02, REG-03) |
 | `primary-teacher` | primary teacher of a school (owner decision 2026-11-19): badges on the school's Teachers tab, the teacher's admin page, the Users list and the teacher's profile; an Administrator reassigns (confirmed); ending the primary leaves "No primary teacher" |
+| `schools-table` | the schools table (2026-11-19): column order, search, filters, server-side sort by name and number of verified students, pagination (all kept in the URL), a row opens the school, the primary teacher link, sideways scrolling inside the table on a phone |
 | `accessibility` | axe-core WCAG 2.0/2.1 A + AA on the key pages of every portal: no serious or critical violation (PERF-03) |
 
 Projects: `desktop` (1440×900) and `mobile` (Pixel 7, files ending in `.mobile.spec.ts`). Reports: `e2e/report` (not
