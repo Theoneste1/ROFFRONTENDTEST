@@ -12,6 +12,11 @@ import { SITE } from "@/lib/site/content";
  *   offers on the left; the page's form on the right.
  * - Tablets and phones: a compact brand bar above the form; the form takes the full width.
  *
+ * - Registration pages (marked `data-signup`: student, teacher, coach): exactly one window (100dvh), the form centred,
+ *   a narrower brand panel so the two-column form can be up to 900px wide, and less padding everywhere — the steps of
+ *   those forms (app/components/forms/FormWizard) are cut so each fits without scrolling. A window too short for a step
+ *   (e.g. a phone held sideways, or a large zoom) lets the page scroll rather than cut anything off.
+ *
  * Images use explicit sizes and classes (no `fill`): the CSP blocks inline style attributes.
  * The ROF logo (both wordmarks) opens the ROF website; "Home" links keep going to the LMS home page.
  */
@@ -45,7 +50,7 @@ function Wordmark({ tone }: { tone: "light" | "dark" }) {
 
 export default function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen w-full bg-slate-50 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <div className="group/auth min-h-screen w-full bg-slate-50 has-[[data-signup]]:min-h-dvh lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:has-[[data-signup]]:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       {/* Brand panel (large screens) */}
       <aside className="relative hidden overflow-hidden bg-[#001E4E] lg:block" data-testid="auth-brand-panel">
         <div className="sticky top-0 flex h-screen flex-col justify-between p-10 xl:p-14">
@@ -93,28 +98,29 @@ export default function AuthShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Form side */}
-      <div className="relative flex min-h-screen flex-col overflow-hidden">
+      <div className="relative flex min-h-screen flex-col overflow-hidden has-[[data-signup]]:min-h-dvh">
         <div className="pointer-events-none absolute -top-40 right-0 h-80 w-80 rounded-full bg-indigo-200/40 blur-3xl" aria-hidden="true" />
         <div className="pointer-events-none absolute bottom-0 -left-32 h-72 w-72 rounded-full bg-amber-100/60 blur-3xl" aria-hidden="true" />
 
         {/* Brand bar (phones and tablets) */}
-        <header className="relative flex items-center justify-between px-4 pt-5 sm:px-8 lg:hidden">
+        <header className="relative flex items-center justify-between px-4 pt-5 group-has-[[data-signup]]/auth:pt-2 sm:px-8 lg:hidden">
           <Wordmark tone="dark" />
           <Link href="/" className="text-sm font-medium text-[#2B2BB2] hover:underline">
             Home
           </Link>
         </header>
 
-        <main className="relative flex flex-1 items-start justify-center px-4 py-8 sm:px-8 sm:py-12 lg:items-center">
-          <div className="w-full max-w-lg">
-            <div className="rounded-3xl bg-white p-6 shadow-xl shadow-indigo-950/5 ring-1 ring-slate-200/80 sm:p-10" data-testid="auth-card">
+        <main className="relative flex flex-1 items-start justify-center px-4 py-8 has-[[data-signup]]:py-2 sm:px-8 sm:py-12 sm:has-[[data-signup]]:py-3 lg:items-center wizard-wide:has-[[data-signup]]:items-center">
+          <div className="w-full max-w-lg has-[[data-signup]]:max-w-[900px]">
+            <div className="rounded-3xl bg-white p-6 shadow-xl shadow-indigo-950/5 ring-1 ring-slate-200/80 has-[[data-signup]]:rounded-2xl has-[[data-signup]]:p-3 sm:p-10 sm:has-[[data-signup]]:p-6" data-testid="auth-card">
               {children}
             </div>
           </div>
         </main>
 
-        <footer className="relative flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 pb-6 text-xs text-slate-600">
-          <span>Rwanda Olympiad Foundation · Learning platform</span>
+        <footer className="relative flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 pb-6 text-xs text-slate-600 group-has-[[data-signup]]/auth:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          {/* Registration pages on phones: the brand bar above already says it, the line is kept for "Help and support". */}
+          <span className="max-sm:group-has-[[data-signup]]/auth:hidden">Rwanda Olympiad Foundation · Learning platform</span>
           <Link href="/support" className="font-medium text-slate-600 hover:text-[#2B2BB2] hover:underline">
             Help and support
           </Link>

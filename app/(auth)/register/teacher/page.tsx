@@ -8,5 +8,9 @@ export const metadata: Metadata = { title: "Join as a teacher" };
  * reviews. Shown only on a backend advertising `teacherSelfRegistration` while registration is open.
  */
 export default function TeacherRegisterPage() {
-  return <TeacherRegisterForm />;
+  return (
+    <div data-signup className="contents">
+      <TeacherRegisterForm />
+    </div>
+  );
 }

@@ -118,3 +118,71 @@ export function wizardReducer(count: number, s: WizardState, a: WizardAction): W
   const step = a.step == null || a.step < 0 ? at : clampStep(a.step, count);
   return { index: step, seq: s.seq + 1, focus: "invalid" };
 }
+
+/**
+ * The sign-up layouts (app/components/forms/FormWizard): "wide" (more than 640px: two columns, fewer steps) and "narrow"
+ * (phones up to 640px: one column, more and smaller steps), so every step fits the window without scrolling.
+ */
+export type WizardLayout = "wide" | "narrow";
+
+/** The media query of the wide layout (the CSS variant `wizard-wide` in app/globals.css uses the same one). */
+export const WIDE_LAYOUT_QUERY = "(width > 640px)";
+
+/** A block of a form shown on one step: one field (or a group of fields shown together) and the error keys it holds. */
+export interface WizardPart {
+  id: string;
+  fields: readonly string[];
+  /** Spans both columns of the wide layout (text areas, check boxes, the picture, the school details). */
+  wide?: boolean;
+  /** Its place in the form (set by buildSteps): the parts stay in this order in the page whatever the grouping. */
+  order?: number;
+}
+
+/** A step with its parts (in the forms' order); `fields` is every error key of those parts. */
+export interface WizardPartStep extends WizardStepModel {
+  description?: string;
+  parts: readonly WizardPart[];
+}
+
+/** A step of one layout: its title and the ids of its parts. */
+export interface StepPlan {
+  id: string;
+  title: string;
+  description?: string;
+  parts: readonly string[];
+}
+
+/**
+ * The steps of one layout from the form's parts: each step keeps the parts the form shows (`present`, default all), a step
+ * left without any is dropped (e.g. the personal details on a backend that does not ask for them).
+ */
+export function buildSteps(parts: readonly WizardPart[], plan: readonly StepPlan[], present?: (id: string) => boolean): WizardPartStep[] {
+  const byId = new Map<string, WizardPart>(parts.map((p, order) => [p.id, { ...p, order }]));
+  const steps: WizardPartStep[] = [];
+  for (const s of plan) {
+    const own = s.parts.map((id) => byId.get(id)).filter((p): p is WizardPart => !!p && (present ? present(p.id) : true));
+    if (own.length) steps.push({ id: s.id, title: s.title, ...(s.description && { description: s.description }), parts: own, fields: own.flatMap((p) => p.fields) });
+  }
+  return steps;
+}
+
+/**
+ * The step to show after the grouping changed (the window crossed 640px, e.g. a phone turned; or a part came or went, e.g.
+ * a school abroad has no province): the one holding the part the person was on (`anchor`, when it is on the shown step),
+ * otherwise the shown step's first part still there. Nothing typed is lost: every part stays in the page, only the
+ * grouping changes.
+ */
+export function remapStep(from: readonly Pick<WizardPartStep, "parts">[], to: readonly Pick<WizardPartStep, "parts">[], index: number, anchor?: string | null): number {
+  const ids = (from[clampStep(index, from.length)]?.parts ?? []).map((p) => p.id);
+  const candidates = anchor && ids.includes(anchor) ? [anchor, ...ids.filter((id) => id !== anchor)] : ids;
+  for (const id of candidates) {
+    const at = to.findIndex((s) => s.parts.some((p) => p.id === id));
+    if (at !== -1) return at;
+  }
+  return clampStep(index, to.length);
+}
+
+/** What identifies a grouping: its steps and their parts (a new grouping is remapped with remapStep). */
+export function stepsSignature(steps: readonly Pick<WizardPartStep, "id" | "parts">[]): string {
+  return steps.map((s) => `${s.id}:${s.parts.map((p) => p.id).join(",")}`).join("|");
+}

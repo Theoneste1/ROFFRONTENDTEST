@@ -10,5 +10,9 @@ export const metadata: Metadata = { title: "Join as a coach" };
  */
 export default async function ApplyPage({ searchParams }: PageProps<"/apply">) {
   const { as } = await searchParams;
-  return <ApplyForm teacher={as === "teacher"} />;
+  return (
+    <div data-signup className="contents">
+      <ApplyForm teacher={as === "teacher"} />
+    </div>
+  );
 }

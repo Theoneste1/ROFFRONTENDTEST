@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* The wide layout of the registration forms (app/components/forms/FormWizard; same query as WIDE_LAYOUT_QUERY in
+   lib/forms/wizard.ts): two columns above 640px, one column on phones. */
+@custom-variant wizard-wide (@media (width > 640px));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
