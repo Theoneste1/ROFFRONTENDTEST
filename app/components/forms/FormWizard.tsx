@@ -15,21 +15,28 @@
  *   own validation and moves on (useFormWizard → next), or sends the form on the last step. Enter in a one-line field
  *   therefore moves to the next step and never sends early; a text area keeps Enter for new lines.
  * - Focus moves to the step heading after Next / Back, or to the first highlighted field when a step has errors; a live
- *   region announces the step ("Step 2 of 4: Your studies") and its errors. The progress list marks the shown step with
- *   aria-current="step".
- * - Back on the left, Next / submit on the right: never stretched on the wide layout, full width on phones.
+ *   region announces the step ("Step 2 of 4: Your studies") and its errors.
+ * - The progress indicator (the approved reference design) shows the form's named phases: numbered circles joined by
+ *   lines, the shown phase filled and marked aria-current="step", completed phases with a check mark. A phase that runs
+ *   over several steps (screens) says where the person is inside it ("2 of 3") beside the step heading.
+ * - Cancel (first step: back to the home page) or Back on the left, Next / submit on the right: never stretched on the
+ *   wide layout, side by side on phones; under them, between two thin lines, the footer ("Already have an account?").
  */
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Check } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, BriefcaseBusiness, Check, GraduationCap, House, KeyRound, ListChecks, Presentation, School, UserRound, type LucideIcon } from "lucide-react";
 import { Button } from "@/app/components/ui/form";
 import {
   clampStep,
   ignoreRepeatedClick,
   invalidAnnouncement,
+  phaseOfStep,
+  phasesOf,
+  phaseStatus,
   progressLabel,
   remapStep,
+  screenLabel,
   stepAnnouncement,
-  stepStatus,
   stepsSignature,
   wizardReducer,
   INITIAL_WIZARD,
@@ -96,23 +103,42 @@ export function useFormWizard(steps: readonly WizardPartStep[]) {
 
 export type FormWizardState = ReturnType<typeof useFormWizard>;
 
-const circle = "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-colors";
+const circle = "relative z-[1] flex flex-shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors h-7 w-7 wizard-wide:h-8 wizard-wide:w-8 wizard-wide:text-sm";
 const CIRCLE = {
-  complete: `${circle} bg-[#2B2BB2] text-white`,
-  current: `${circle} bg-indigo-50 text-[#2B2BB2] ring-2 ring-[#2B2BB2]`,
-  upcoming: `${circle} bg-white text-slate-600 ring-1 ring-slate-300`,
+  complete: `${circle} bg-brand text-white`,
+  current: `${circle} bg-brand text-white ring-4 ring-brand/15`,
+  upcoming: `${circle} bg-white text-slate-700 ring-1 ring-slate-300`,
 } as const;
 const STATUS_TEXT = { complete: "completed", current: "current step", upcoming: "not started" } as const;
 
+/** The icon beside a step heading, by phase (lib/forms/registration-steps). */
+const PHASE_ICONS: Record<string, LucideIcon> = {
+  about: UserRound,
+  studies: GraduationCap,
+  home: House,
+  teaching: Presentation,
+  school: School,
+  background: BriefcaseBusiness,
+  account: KeyRound,
+};
+
 /**
- * Compact fields inside the wizard (the shared inputs keep their size elsewhere): less space under labels, less input
- * padding, hints and errors closer to their field. Text stays 14px; inputs are 38px tall.
+ * The fields inside the wizard (the shared inputs keep their look elsewhere): 44px inputs and dropdowns with light
+ * borders and rounded corners, dark labels, hints and errors close to their field. Text stays 14px.
  */
-const COMPACT_FIELDS = [
-  "[&_label.block]:mb-1 [&_legend]:mb-1 [&_select]:py-2 [&_textarea]:py-2 [&_input:not([type=checkbox]):not([type=file])]:py-2 [&_[id$=-hint]]:mt-1 [&_[id$=-error]]:mt-1",
+const FIELD_STYLE = [
+  "[&_label.block]:mb-1.5 [&_label.block]:text-slate-800 [&_legend]:mb-1.5 [&_legend]:text-slate-800",
+  "[&_select]:h-11 [&_select]:rounded-lg [&_textarea]:py-2 [&_textarea]:rounded-lg",
+  "[&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:h-11 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-lg",
+  "[&_[id$=-hint]]:mt-1 [&_[id$=-error]]:mt-1",
+  // 16px text in fields on phones (no zoom on iOS), 14px on the wide layout.
+  "[&_input]:text-base [&_select]:text-base [&_textarea]:text-base wizard-wide:[&_input]:text-sm wizard-wide:[&_select]:text-sm wizard-wide:[&_textarea]:text-sm",
   // The chosen school's details: two columns on phones, three on the wide layout.
   "[&_[data-testid=school-facts]]:grid-cols-2 [&_[data-testid=school-facts]]:gap-y-1 [&_[data-testid=school-facts]]:py-2 wizard-wide:[&_[data-testid=school-facts]]:grid-cols-3",
 ].join(" ");
+
+/** Cancel / Back: outlined; Next / submit: solid blue (Button keeps both disabled until the page is interactive). */
+const ACTION = "h-11 rounded-lg px-6 text-sm font-semibold";
 
 export default function FormWizard({
   wizard,
@@ -125,6 +151,7 @@ export default function FormWizard({
   intro,
   notices,
   footer,
+  cancelHref = "/",
   label = "Registration steps",
 }: {
   wizard: FormWizardState;
@@ -135,14 +162,16 @@ export default function FormWizard({
   submitLabel: string;
   submittingLabel: string;
   submitting?: boolean;
-  /** Above the steps (the switch, the page heading). */
+  /** Under the progress (the page heading, the Student / Teacher / Coach switch). */
   header?: ReactNode;
   /** The page's explanation under the heading: on every step of the wide layout, on the first step on phones. */
   intro?: ReactNode;
   /** Messages above the steps (a refused submission, the administrators' instructions): always shown. */
   notices?: ReactNode;
-  /** Beside Back / Next (under them on phones), e.g. "Already have an account? Sign in". */
+  /** Under Back / Next, between two thin lines, e.g. "Already have an account? Sign in". */
   footer?: ReactNode;
+  /** Where Cancel (on the first step) goes. */
+  cancelHref?: string;
   label?: string;
 }) {
   const id = useId();
@@ -156,6 +185,9 @@ export default function FormWizard({
   const current = steps[index];
   const shown = new Set(current?.parts.map((p) => p.id));
   const narrow = layout === "narrow";
+  const phases = phasesOf(steps);
+  const phaseAt = phaseOfStep(phases, index);
+  const screen = screenLabel(phases, index);
 
   // After Next / Back: the step heading; after a failed check or a refused submission: the first highlighted field.
   // Once per move (seq), never on other renders, so typing is never interrupted.
@@ -177,23 +209,34 @@ export default function FormWizard({
   const NBSP = String.fromCharCode(0xa0);
   const live = event && event.focus !== "message" ? `${(event.focus === "invalid" ? invalidAnnouncement : stepAnnouncement)(steps, index)}${event.seq % 2 ? NBSP : ""}` : "";
   const showIntro = !!intro && (!narrow || wizard.isFirst);
+  const size = narrow ? "flex-1" : "min-w-[120px]";
 
-  const back = !wizard.isFirst && (
-    <Button type="button" variant="secondary" onClick={wizard.back} disabled={submitting} className={narrow ? "flex-1" : "min-w-[120px]"} data-testid="wizard-back">
+  const back = wizard.isFirst ? (
+    <Link
+      href={cancelHref}
+      className={`${ACTION} ${size} inline-flex items-center justify-center border border-slate-400 bg-white text-slate-800 transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2`}
+      data-testid="wizard-cancel"
+    >
+      Cancel
+    </Link>
+  ) : (
+    <Button type="button" variant="outline" onClick={wizard.back} disabled={submitting} className={`${ACTION} ${size}`} data-testid="wizard-back">
       Back
     </Button>
   );
   const next = (
     <Button
       type="submit"
+      variant="brand"
       loading={submitting && wizard.isLast}
-      className={narrow ? "flex-1" : "ml-auto min-w-[120px]"}
+      className={`${ACTION} ${narrow ? "flex-1" : "ml-auto min-w-[120px]"}`}
       onClick={(e) => {
         if (ignoreRepeatedClick(e.detail)) e.preventDefault();
       }}
       data-testid={wizard.isLast ? "wizard-submit" : "wizard-next"}
     >
       {wizard.isLast ? (submitting ? submittingLabel : submitLabel) : "Next"}
+      {!wizard.isLast && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
     </Button>
   );
 
@@ -205,66 +248,82 @@ export default function FormWizard({
       data-layout={layout}
       onFocusCapture={(e) => wizard.setAnchor((e.target as HTMLElement).closest?.("[data-part]")?.getAttribute("data-part") ?? null)}
     >
-      <div ref={body} className="space-y-2.5" data-testid="wizard-body">
-        {/* The switch and the page heading: one row from 768px (the heading on the left), stacked on phones. */}
-        {header && <div className="space-y-2.5 md:flex md:flex-row-reverse md:items-center md:justify-between md:gap-4 md:space-y-0 md:[&>nav]:w-80 md:[&>nav]:shrink-0">{header}</div>}
-        {showIntro && intro}
-        {notices}
-
+      <div ref={body} className="space-y-3 wizard-wide:space-y-4" data-testid="wizard-body">
+        {/* The phases: numbered circles joined by lines, each named under its circle. */}
         <ol aria-label={label} aria-describedby={`${id}-progress`} className="flex items-start" data-testid="wizard-steps">
-          {steps.map((s, i) => {
-            const status = stepStatus(i, index);
+          {phases.map((p, i) => {
+            const status = phaseStatus(phases, i, index);
             return (
-              <li key={s.id} aria-current={status === "current" ? "step" : undefined} className="relative flex flex-1 flex-col items-center gap-1 text-center" data-status={status}>
-                {i > 0 && <span className={`absolute right-1/2 top-3 h-0.5 w-full -translate-y-1/2 ${i <= index ? "bg-[#2B2BB2]" : "bg-slate-200"}`} aria-hidden="true" />}
-                <span className={`relative z-[1] ${CIRCLE[status]}`} aria-hidden="true">
-                  {status === "complete" ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+              <li key={p.id} aria-current={status === "current" ? "step" : undefined} className="relative flex flex-1 flex-col items-center gap-1 text-center" data-status={status} data-phase={p.id}>
+                {i > 0 && <span className={`absolute right-1/2 top-3.5 h-0.5 w-full -translate-y-1/2 wizard-wide:top-4 ${i <= phaseAt ? "bg-brand" : "bg-slate-200"}`} aria-hidden="true" />}
+                <span className={CIRCLE[status]} aria-hidden="true">
+                  {status === "complete" ? <Check className="h-3.5 w-3.5 wizard-wide:h-4 wizard-wide:w-4" strokeWidth={3} /> : i + 1}
                 </span>
-                <span className={`hidden px-1 text-[11px] leading-tight wizard-wide:block ${status === "current" ? "font-semibold text-slate-900" : "text-slate-600"}`}>{s.title}</span>
+                <span className={`px-1 text-[11px] leading-tight wizard-wide:text-[13px] ${status === "current" ? "font-semibold text-slate-900" : "text-slate-600"}`} aria-hidden="true" data-testid="wizard-phase-label">
+                  {p.title}
+                </span>
                 <span className="sr-only">
-                  {s.title} ({STATUS_TEXT[status]})
+                  {p.title} ({STATUS_TEXT[status]})
                 </span>
               </li>
             );
           })}
         </ol>
 
-        <p className="sr-only" aria-live="polite" aria-atomic="true" data-testid="wizard-live">
-          {live}
-        </p>
+        {/* The page heading on the left, the Student / Teacher / Coach switch on the right (stacked on phones, and there
+            only on the first step, like the explanation: every step must fit the window). */}
+        {header && (
+          <div className={`${narrow && !wizard.isFirst ? "[&>nav]:hidden " : ""}space-y-2 wizard-wide:flex wizard-wide:flex-row-reverse wizard-wide:items-start wizard-wide:justify-between wizard-wide:gap-4 wizard-wide:space-y-0 wizard-wide:[&>nav]:shrink-0`}>
+            {header}
+          </div>
+        )}
+        {showIntro && <div className="-mt-1 wizard-wide:-mt-2">{intro}</div>}
+        {notices}
       </div>
 
-      {/* The shown step: its heading and "Step 2 of 5" on one row, then every part of every step in the form's order
-          (only the shown step's are visible). */}
-      <section aria-labelledby={`${id}-step-${index}`} className="mt-3" data-testid="wizard-step" data-step-id={current?.id}>
+      {/* Outside the spaced block above: it takes no room. */}
+      <p className="sr-only" aria-live="polite" aria-atomic="true" data-testid="wizard-live">
+        {live}
+      </p>
+
+      {/* The shown step under a thin line: its heading and, in a phase of several steps, "2 of 3"; then every part of
+          every step in the form's order (only the shown step's are visible). */}
+      <section aria-labelledby={`${id}-step-${index}`} className="mt-3 border-t border-slate-200 pt-3 wizard-wide:mt-4 wizard-wide:pt-4" data-testid="wizard-step" data-step-id={current?.id}>
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            {steps.map((s, i) => (
-              <div key={s.id} hidden={i !== index} className="wizard-step" data-testid={`wizard-step-${s.id}`}>
-                <h2
-                  id={`${id}-step-${i}`}
-                  ref={(el) => {
-                    headings.current[i] = el;
-                  }}
-                  tabIndex={-1}
-                  className="flex items-center gap-2 rounded text-sm font-bold text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                >
-                  <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-indigo-50 text-[11px] font-bold text-[#2B2BB2]" aria-hidden="true">
-                    {i + 1}
-                  </span>
-                  {s.title}
-                </h2>
-              </div>
-            ))}
+            {steps.map((s, i) => {
+              const Icon = (s.phase && PHASE_ICONS[s.phase.id]) || ListChecks;
+              return (
+                <div key={s.id} hidden={i !== index} className="wizard-step" data-testid={`wizard-step-${s.id}`}>
+                  <h2
+                    id={`${id}-step-${i}`}
+                    ref={(el) => {
+                      headings.current[i] = el;
+                    }}
+                    tabIndex={-1}
+                    className="flex items-center gap-2 rounded text-[15px] font-bold text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  >
+                    <Icon className="h-[18px] w-[18px] flex-shrink-0 text-brand" aria-hidden="true" />
+                    {s.title}
+                  </h2>
+                </div>
+              );
+            })}
           </div>
-          <p id={`${id}-progress`} className="shrink-0 text-xs font-semibold uppercase tracking-wider text-slate-600" data-testid="wizard-progress">
-            {progressLabel(index, steps.length)}
-            {/* The title is the heading beside it: said, not shown twice. */}
-            <span className="sr-only"> · {current?.title}</span>
+          {/* "2 of 3" inside the phase (shown); the whole progress and the step's title are said. */}
+          <p id={`${id}-progress`} className="flex min-h-6 min-w-12 shrink-0 items-center justify-end" data-testid="wizard-progress">
+            {screen && (
+              <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-semibold text-brand" aria-hidden="true" data-testid="wizard-screen">
+                {screen}
+              </span>
+            )}
+            <span className="sr-only">
+              {progressLabel(index, steps.length)} · {current?.title}
+            </span>
           </p>
         </div>
         {current?.description && <p className="mt-0.5 text-xs text-slate-600">{current.description}</p>}
-        <div ref={fields} className={`mt-2.5 grid grid-cols-1 gap-x-5 gap-y-3 wizard-wide:grid-cols-2 ${COMPACT_FIELDS}`} data-testid="wizard-fields">
+        <div ref={fields} className={`mt-3 grid grid-cols-1 gap-x-6 gap-y-3 wizard-wide:grid-cols-2 wizard-wide:gap-y-4 ${FIELD_STYLE}`} data-testid="wizard-fields">
           {/* In the form's order whatever the grouping, so a new grouping never moves a part (nor the focus out of it). */}
           {steps
             .flatMap((s) => s.parts)
@@ -281,21 +340,19 @@ export default function FormWizard({
         </div>
       </section>
 
-      {narrow ? (
-        <div className="mt-3 space-y-2 border-t border-slate-100 pt-3" data-testid="wizard-actions">
-          <div className="flex gap-3">
-            {back}
-            {next}
-          </div>
-          {footer}
-        </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-4 border-t border-slate-100 pt-3 [&_p]:text-left" data-testid="wizard-actions">
+      <div className="mt-3 space-y-3 wizard-wide:mt-5" data-testid="wizard-actions">
+        <div className="flex items-center gap-3">
           {back}
-          {footer && <div className="min-w-0">{footer}</div>}
           {next}
         </div>
-      )}
+        {footer && (
+          <div className="flex items-center gap-3 [&_p]:text-center">
+            <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+            {footer}
+            <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

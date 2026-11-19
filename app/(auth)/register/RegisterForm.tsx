@@ -382,8 +382,8 @@ export default function RegisterForm() {
 
   // The fields, part by part (lib/forms/registration-steps → STUDENT_PARTS): the steps show them in two columns or one.
   const parts: Record<string, ReactNode> = {
-    firstName: <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
-    lastName: <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
+    firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
+    lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
     dateOfBirth: detailsOn && (
       <TextField
         label="Date of birth"
@@ -414,6 +414,7 @@ export default function RegisterForm() {
         label="Your phone (optional)"
         name="phone"
         type="tel"
+        placeholder="e.g. 0788 123 456"
         autoComplete="tel"
         maxLength={30}
         value={details.phone}
@@ -427,6 +428,7 @@ export default function RegisterForm() {
         label="Close-family phone"
         name="guardianPhone"
         type="tel"
+        placeholder="e.g. 0788 123 456"
         required
         maxLength={30}
         value={details.guardianPhone}
@@ -517,8 +519,8 @@ export default function RegisterForm() {
     ) : (
       <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
     ),
-    username: <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
-    email: <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} />,
+    username: <TextField label="Username" placeholder="e.g. aline.uwase" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    email: <TextField label="E-mail" placeholder="e.g. aline.uwase@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} />,
     password: <NewPasswordFields only="password" {...passwordProps} />,
     confirm: <NewPasswordFields only="confirm" {...passwordProps} />,
   };
@@ -535,14 +537,14 @@ export default function RegisterForm() {
         header={
           <>
             <JoinSwitch active="student" compact />
-            <AuthHeading title="Join as a student" compact />
+            <AuthHeading title="Create your account" compact />
           </>
         }
         intro={
-          <p className="text-sm leading-snug text-slate-600">
-            Create your free ROF account and start preparing for the Olympiads. It only takes a few minutes.{" "}
-            <span className="text-xs">
-              Fields marked <span className="text-red-500">*</span> are required.
+          <p className="text-sm leading-snug text-slate-600 wizard-wide:text-[15px]">
+            Complete the form below to get started.{" "}
+            <span className="hidden text-sm wizard-wide:inline">
+              Fields marked <span className="text-red-600">*</span> are required.
             </span>
           </p>
         }

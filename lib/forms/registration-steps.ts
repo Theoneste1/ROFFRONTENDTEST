@@ -5,11 +5,18 @@
  * twice: "wide" (more than 640px, two columns) and "narrow" (phones, one column, more and smaller steps), so that every
  * step fits the window without scrolling. Unit-tested in tests/form-wizard.test.mjs (every key those rules can produce
  * belongs to exactly one step of each layout).
+ *
+ * The progress indicator shows the form's named phases (3 or 4, the same in both layouts); each step (screen) belongs to
+ * one phase, and a phase with more fields than one window holds runs over several screens in a row ("2 of 3").
  */
-import { buildSteps, type StepPlan, type WizardLayout, type WizardPart, type WizardPartStep } from "./wizard";
+import { buildSteps, type StepPlan, type WizardLayout, type WizardPart, type WizardPartStep, type WizardPhaseName } from "./wizard";
 
 /** A step of a registration form: its title, optional explanation, parts and their error keys. */
 export type RegistrationStep = WizardPartStep;
+
+const phase = (id: string, title: string): WizardPhaseName => ({ id, title });
+const ABOUT = phase("about", "About you");
+const ACCOUNT = phase("account", "Account");
 
 const part = (id: string, fields: readonly string[] = [id], wide = false): WizardPart => (wide ? { id, fields, wide } : { id, fields });
 
@@ -48,28 +55,31 @@ export const STUDENT_PARTS: readonly WizardPart[] = [
   part("confirm"),
 ];
 
+const STUDIES = phase("studies", "Studies & school");
+const HOME = phase("home", "Home");
+
 const STUDENT_PLANS: Record<WizardLayout, readonly StepPlan[]> = {
   wide: [
-    { id: "about", title: "About you", parts: ["firstName", "lastName", "dateOfBirth", "homeCountry"] },
-    { id: "contact", title: "Phone and picture", parts: ["phone", "guardianPhone", "picture"] },
-    { id: "studies", title: "Your studies", parts: ["gradeLevel", "olympiadInterests"] },
-    { id: "school-place", title: "School location", parts: ["schoolCountry", "schoolProvince", "schoolDistrict", "schoolSector"] },
-    { id: "school", title: "Your school", parts: ["school", "schoolName", "schoolLocation", "schoolNote"] },
-    { id: "home", title: "Where you live", parts: ["homeProvince", "homeDistrict", "homeSector", "homeLocation"] },
-    { id: "account", title: "Your account", parts: ["username", "email", "password", "confirm"] },
+    { id: "about", phase: ABOUT, title: "About you", parts: ["firstName", "lastName", "dateOfBirth", "homeCountry"] },
+    { id: "contact", phase: ABOUT, title: "Phone and picture", parts: ["phone", "guardianPhone", "picture"] },
+    { id: "studies", phase: STUDIES, title: "Your studies", parts: ["gradeLevel", "olympiadInterests"] },
+    { id: "school-place", phase: STUDIES, title: "School location", parts: ["schoolCountry", "schoolProvince", "schoolDistrict", "schoolSector"] },
+    { id: "school", phase: STUDIES, title: "Your school", parts: ["school", "schoolName", "schoolLocation", "schoolNote"] },
+    { id: "home", phase: HOME, title: "Where you live", parts: ["homeProvince", "homeDistrict", "homeSector", "homeLocation"] },
+    { id: "account", phase: ACCOUNT, title: "Your account", parts: ["username", "email", "password", "confirm"] },
   ],
   narrow: [
-    { id: "about", title: "About you", parts: ["firstName", "lastName"] },
-    { id: "birth", title: "Birth and country", parts: ["dateOfBirth", "homeCountry"] },
-    { id: "phones", title: "Phone numbers", parts: ["phone", "guardianPhone"] },
-    { id: "picture", title: "Profile picture", parts: ["picture"] },
-    { id: "studies", title: "Your studies", parts: ["gradeLevel", "olympiadInterests"] },
-    { id: "school-place", title: "School location", parts: ["schoolCountry", "schoolProvince"] },
-    { id: "school-area", title: "School district and sector", parts: ["schoolDistrict", "schoolSector"] },
-    { id: "school", title: "Your school", parts: ["school", "schoolName", "schoolLocation", "schoolNote"] },
-    { id: "home", title: "Where you live", parts: ["homeProvince", "homeDistrict", "homeSector", "homeLocation"] },
-    { id: "login", title: "Your account", parts: ["username", "email"] },
-    { id: "account", title: "Your password", parts: ["password", "confirm"] },
+    { id: "about", phase: ABOUT, title: "About you", parts: ["firstName", "lastName"] },
+    { id: "birth", phase: ABOUT, title: "Birth and country", parts: ["dateOfBirth", "homeCountry"] },
+    { id: "phones", phase: ABOUT, title: "Phone numbers", parts: ["phone", "guardianPhone"] },
+    { id: "picture", phase: ABOUT, title: "Profile picture", parts: ["picture"] },
+    { id: "studies", phase: STUDIES, title: "Your studies", parts: ["gradeLevel", "olympiadInterests"] },
+    { id: "school-place", phase: STUDIES, title: "School location", parts: ["schoolCountry", "schoolProvince"] },
+    { id: "school-area", phase: STUDIES, title: "School district and sector", parts: ["schoolDistrict", "schoolSector"] },
+    { id: "school", phase: STUDIES, title: "Your school", parts: ["school", "schoolName", "schoolLocation", "schoolNote"] },
+    { id: "home", phase: HOME, title: "Where you live", parts: ["homeProvince", "homeDistrict", "homeSector", "homeLocation"] },
+    { id: "login", phase: ACCOUNT, title: "Your account", parts: ["username", "email"] },
+    { id: "account", phase: ACCOUNT, title: "Your password", parts: ["password", "confirm"] },
   ],
 };
 
@@ -106,30 +116,34 @@ export const TEACHER_PARTS: readonly WizardPart[] = [
   part("confirm"),
 ];
 
+const TEACHING = phase("teaching", "Teaching");
+const SCHOOL = phase("school", "School & home");
+
 const TEACHER_PLANS: Record<WizardLayout, readonly StepPlan[]> = {
   wide: [
-    { id: "about", title: "About you", parts: ["firstName", "lastName", "email", "phone", "country"] },
-    { id: "teaching", title: "Your teaching", parts: ["position", "yearsOfExperience", "interests", "picture"] },
-    { id: "school-place", title: "School location", description: SCHOOL_TEXT, parts: ["schoolCountry", "schoolProvince", "schoolDistrict", "schoolSector"] },
-    { id: "school", title: "Your school", description: SCHOOL_TEXT, parts: ["school", "proposedSchoolName"] },
-    { id: "home", title: "Home location", description: "Where you live (separate from your school).", parts: ["homeDistrict", "homeSector"] },
-    { id: "account", title: "Your account", parts: ["username", "password", "confirm"] },
+    { id: "about", phase: ABOUT, title: "About you", parts: ["firstName", "lastName", "email", "phone", "country"] },
+    { id: "teaching", phase: TEACHING, title: "Your teaching", parts: ["position", "yearsOfExperience", "interests"] },
+    { id: "picture", phase: TEACHING, title: "Profile picture", parts: ["picture"] },
+    { id: "school-place", phase: SCHOOL, title: "School location", description: SCHOOL_TEXT, parts: ["schoolCountry", "schoolProvince", "schoolDistrict", "schoolSector"] },
+    { id: "school", phase: SCHOOL, title: "Your school", description: SCHOOL_TEXT, parts: ["school", "proposedSchoolName"] },
+    { id: "home", phase: SCHOOL, title: "Home location", description: "Where you live (separate from your school).", parts: ["homeDistrict", "homeSector"] },
+    { id: "account", phase: ACCOUNT, title: "Your account", parts: ["username", "password", "confirm"] },
   ],
   narrow: [
-    { id: "about", title: "About you", parts: ["firstName", "lastName"] },
-    { id: "contact", title: "Contact details", parts: ["email", "phone"] },
-    { id: "country", title: "Country", parts: ["country"] },
-    { id: "teaching", title: "Your teaching", parts: ["position", "yearsOfExperience"] },
-    { id: "interests", title: "Olympiad interests", parts: ["interests"] },
-    { id: "picture", title: "Profile picture", parts: ["picture"] },
-    { id: "school-place", title: "School location", description: SCHOOL_TEXT, parts: ["schoolCountry", "schoolProvince"] },
-    { id: "school-area", title: "School district and sector", parts: ["schoolDistrict", "schoolSector"] },
-    { id: "school", title: "Your school", description: SCHOOL_TEXT, parts: ["school"] },
+    { id: "about", phase: ABOUT, title: "About you", parts: ["firstName", "lastName"] },
+    { id: "contact", phase: ABOUT, title: "Contact details", parts: ["email", "phone"] },
+    { id: "country", phase: ABOUT, title: "Country", parts: ["country"] },
+    { id: "teaching", phase: TEACHING, title: "Your teaching", parts: ["position", "yearsOfExperience"] },
+    { id: "interests", phase: TEACHING, title: "Olympiad interests", parts: ["interests"] },
+    { id: "picture", phase: TEACHING, title: "Profile picture", parts: ["picture"] },
+    { id: "school-place", phase: SCHOOL, title: "School location", description: SCHOOL_TEXT, parts: ["schoolCountry", "schoolProvince"] },
+    { id: "school-area", phase: SCHOOL, title: "School district and sector", parts: ["schoolDistrict", "schoolSector"] },
+    { id: "school", phase: SCHOOL, title: "Your school", description: SCHOOL_TEXT, parts: ["school"] },
     // Only when the school is not listed.
-    { id: "school-name", title: "School name", parts: ["proposedSchoolName"] },
-    { id: "home", title: "Home location", description: "Where you live (separate from your school).", parts: ["homeDistrict", "homeSector"] },
-    { id: "login", title: "Your username", parts: ["username"] },
-    { id: "account", title: "Your password", parts: ["password", "confirm"] },
+    { id: "school-name", phase: SCHOOL, title: "School name", parts: ["proposedSchoolName"] },
+    { id: "home", phase: SCHOOL, title: "Home location", description: "Where you live (separate from your school).", parts: ["homeDistrict", "homeSector"] },
+    { id: "login", phase: ACCOUNT, title: "Your username", parts: ["username"] },
+    { id: "account", phase: ACCOUNT, title: "Your password", parts: ["password", "confirm"] },
   ],
 };
 
@@ -163,24 +177,27 @@ export const COACH_PARTS: readonly WizardPart[] = [
 /** The parts shown only on a backend with `coachApplicationDetails` (as before: the details, the extra details and the picture). */
 const COACH_DETAIL_PARTS = new Set(["country", "occupation", "educationLevel", "olympiadInterests", "phone", "affiliation", "expertise", "relevantExperience", "yearsOfExperience", "picture"]);
 
+const BACKGROUND = phase("background", "Background");
+
 const COACH_PLANS: Record<WizardLayout, readonly StepPlan[]> = {
   wide: [
-    { id: "about", title: "About you", parts: ["firstName", "lastName", "country", "phone", "picture"] },
-    { id: "background", title: "Your background", parts: ["occupation", "educationLevel", "affiliation", "yearsOfExperience", "olympiadInterests"] },
-    { id: "experience", title: "Your experience", parts: ["expertise", "relevantExperience"] },
-    { id: "account", title: "Your account", parts: ["username", "email", "password", "confirm"] },
+    { id: "about", phase: ABOUT, title: "About you", parts: ["firstName", "lastName", "country", "phone"] },
+    { id: "picture", phase: ABOUT, title: "Profile picture", parts: ["picture"] },
+    { id: "background", phase: BACKGROUND, title: "Your background", parts: ["occupation", "educationLevel", "affiliation", "yearsOfExperience", "olympiadInterests"] },
+    { id: "experience", phase: BACKGROUND, title: "Your experience", parts: ["expertise", "relevantExperience"] },
+    { id: "account", phase: ACCOUNT, title: "Your account", parts: ["username", "email", "password", "confirm"] },
   ],
   narrow: [
-    { id: "about", title: "About you", parts: ["firstName", "lastName"] },
-    { id: "contact", title: "Country and phone", parts: ["country", "phone"] },
-    { id: "picture", title: "Profile picture", parts: ["picture"] },
-    { id: "background", title: "Your background", parts: ["occupation", "educationLevel"] },
-    { id: "affiliation", title: "Affiliation", parts: ["affiliation", "yearsOfExperience"] },
-    { id: "interests", title: "Olympiad subjects", parts: ["olympiadInterests"] },
-    { id: "expertise", title: "Your expertise", parts: ["expertise"] },
-    { id: "experience", title: "Your experience", parts: ["relevantExperience"] },
-    { id: "login", title: "Your account", parts: ["username", "email"] },
-    { id: "account", title: "Your password", parts: ["password", "confirm"] },
+    { id: "about", phase: ABOUT, title: "About you", parts: ["firstName", "lastName"] },
+    { id: "contact", phase: ABOUT, title: "Country and phone", parts: ["country", "phone"] },
+    { id: "picture", phase: ABOUT, title: "Profile picture", parts: ["picture"] },
+    { id: "background", phase: BACKGROUND, title: "Your background", parts: ["occupation", "educationLevel"] },
+    { id: "affiliation", phase: BACKGROUND, title: "Affiliation", parts: ["affiliation", "yearsOfExperience"] },
+    { id: "interests", phase: BACKGROUND, title: "Olympiad subjects", parts: ["olympiadInterests"] },
+    { id: "expertise", phase: BACKGROUND, title: "Your expertise", parts: ["expertise"] },
+    { id: "experience", phase: BACKGROUND, title: "Your experience", parts: ["relevantExperience"] },
+    { id: "login", phase: ACCOUNT, title: "Your account", parts: ["username", "email"] },
+    { id: "account", phase: ACCOUNT, title: "Your password", parts: ["password", "confirm"] },
   ],
 };
 

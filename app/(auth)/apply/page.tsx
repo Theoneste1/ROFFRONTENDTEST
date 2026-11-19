@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SignupCard } from "@/app/components/auth/AuthCard";
 import ApplyForm from "./ApplyForm";
 
 export const metadata: Metadata = { title: "Join as a coach" };
@@ -11,8 +12,10 @@ export const metadata: Metadata = { title: "Join as a coach" };
 export default async function ApplyPage({ searchParams }: PageProps<"/apply">) {
   const { as } = await searchParams;
   return (
-    <div data-signup className="contents">
-      <ApplyForm teacher={as === "teacher"} />
-    </div>
+    <SignupCard brand={as === "teacher" ? "teacher" : "coach"}>
+      <div data-signup className="contents">
+        <ApplyForm teacher={as === "teacher"} />
+      </div>
+    </SignupCard>
   );
 }

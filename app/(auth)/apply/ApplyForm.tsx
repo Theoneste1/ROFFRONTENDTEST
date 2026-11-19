@@ -246,8 +246,8 @@ function CoachApplication() {
 
   // The fields, part by part (lib/forms/registration-steps → COACH_PARTS): the steps show them in two columns or one.
   const parts: Record<string, ReactNode> = {
-    firstName: <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
-    lastName: <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
+    firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
+    lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
     country: detailsOn && (
       <CascadeSelect label="Country" value={details.country} onChange={(c) => setDetail("country", c, "country")} options={countries} placeholder="Choose your country" error={detailErrors.country} testId="coach-country" />
     ),
@@ -299,8 +299,8 @@ function CoachApplication() {
         }}
       />
     ),
-    username: <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
-    email: <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />,
+    username: <TextField label="Username" placeholder="e.g. aline.uwase" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    email: <TextField label="E-mail" placeholder="e.g. aline.uwase@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />,
     password: <NewPasswordFields only="password" {...passwordProps} />,
     confirm: <NewPasswordFields only="confirm" {...passwordProps} />,
   };
@@ -317,23 +317,21 @@ function CoachApplication() {
         header={
           <>
             <JoinSwitch active="coach" compact />
-            <AuthHeading title={`Join as a ${role.toLowerCase()}`} compact />
+            <AuthHeading title={`Apply as a ${role.toLowerCase()}`} compact />
           </>
         }
         intro={
-          <div className="space-y-1">
-            <p className="text-sm leading-snug text-slate-600">
-              Coaches mentor ROF students: you prepare assignments, share resources and review student work for the courses you are assigned. An administrator reviews every application.
-            </p>
+          <p className="text-sm leading-snug text-slate-600 wizard-wide:text-[15px]">
+            <span className="hidden wizard-wide:inline">Coaches mentor ROF students. </span>An administrator reviews every application.{" "}
             {/* On phones the switch above (Teacher) is the same link. */}
-            <p className="hidden text-xs text-slate-600 wizard-wide:block">
+            <span className="hidden wizard-wide:inline">
               A school teacher?{" "}
-              <Link href={teacherHref} className="font-medium text-[#2B2BB2] hover:underline">
+              <Link href={teacherHref} className="font-medium text-brand hover:underline">
                 Join as a teacher
               </Link>{" "}
               instead.
-            </p>
-          </div>
+            </span>
+          </p>
         }
         notices={
           <>

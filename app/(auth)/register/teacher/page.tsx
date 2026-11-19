@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SignupCard } from "@/app/components/auth/AuthCard";
 import TeacherRegisterForm from "./TeacherRegisterForm";
 
 export const metadata: Metadata = { title: "Join as a teacher" };
@@ -9,8 +10,10 @@ export const metadata: Metadata = { title: "Join as a teacher" };
  */
 export default function TeacherRegisterPage() {
   return (
-    <div data-signup className="contents">
-      <TeacherRegisterForm />
-    </div>
+    <SignupCard brand="teacher">
+      <div data-signup className="contents">
+        <TeacherRegisterForm />
+      </div>
+    </SignupCard>
   );
 }

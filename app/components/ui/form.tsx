@@ -11,6 +11,17 @@ const inputBase =
 const inputOk = "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500";
 const inputBad = "border-red-400 focus:ring-red-500/20 focus:border-red-500";
 
+/** A label; a trailing "(optional)" is shown in normal weight. */
+function LabelText({ label }: { label: string }) {
+  const m = /^(.*?)\s*(\(optional\))$/.exec(label);
+  if (!m) return <>{label}</>;
+  return (
+    <>
+      {m[1]} <span className="font-normal text-slate-600">{m[2]}</span>
+    </>
+  );
+}
+
 interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
@@ -27,7 +38,7 @@ export const TextField = forwardRef<HTMLInputElement, FieldProps>(function TextF
   return (
     <div className={className}>
       <label htmlFor={inputId} className="block text-sm font-semibold text-slate-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
+        <LabelText label={label} /> {required && <span className="text-red-500">*</span>}
       </label>
       <input
         ref={ref}
@@ -63,7 +74,7 @@ export const PasswordField = forwardRef<HTMLInputElement, Omit<FieldProps, "type
   return (
     <div className={className}>
       <label htmlFor={inputId} className="block text-sm font-semibold text-slate-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
+        <LabelText label={label} /> {required && <span className="text-red-500">*</span>}
       </label>
       <div className="relative">
         <input
@@ -100,7 +111,8 @@ export const PasswordField = forwardRef<HTMLInputElement, Omit<FieldProps, "type
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
-  variant?: "primary" | "secondary";
+  /** `brand` / `outline`: the sign-up and sign-in pages (the approved reference design). */
+  variant?: "primary" | "secondary" | "brand" | "outline";
 }
 
 /**
@@ -109,10 +121,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  */
 export function Button({ loading, variant = "primary", disabled, children, className = "", ...props }: ButtonProps) {
   const hydrated = useHydrated();
-  const styles =
-    variant === "primary"
-      ? "bg-[#2B2BB2] hover:bg-[#232c94] text-white shadow-md hover:shadow-lg"
-      : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50";
+  const styles = {
+    primary: "bg-[#2B2BB2] hover:bg-[#232c94] text-white shadow-md hover:shadow-lg",
+    secondary: "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50",
+    brand: "bg-brand hover:bg-brand-dark text-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
+    outline: "bg-white border border-slate-400 text-slate-800 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
+  }[variant];
   return (
     <button
       disabled={disabled || loading || !hydrated}

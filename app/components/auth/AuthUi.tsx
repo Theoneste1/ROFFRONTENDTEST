@@ -16,8 +16,8 @@ export function AuthHeading({ title, subtitle, eyebrow, compact = false }: { tit
   return (
     <div>
       {eyebrow && <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#2B2BB2]">{eyebrow}</p>}
-      <h1 className={`font-bold tracking-tight text-slate-900 ${compact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"}`}>{title}</h1>
-      {subtitle && <p className={`text-sm text-slate-600 ${compact ? "mt-1 leading-snug" : "mt-2 leading-relaxed"}`}>{subtitle}</p>}
+      <h1 className={`tracking-tight text-slate-900 ${compact ? "text-[22px] font-extrabold leading-tight wizard-wide:text-[28px]" : "text-2xl font-bold sm:text-3xl"}`}>{title}</h1>
+      {subtitle && <p className={`text-slate-600 ${compact ? "mt-1 text-sm leading-snug wizard-wide:text-[15px]" : "mt-2 text-sm leading-relaxed"}`}>{subtitle}</p>}
     </div>
   );
 }
@@ -39,11 +39,18 @@ function useJoinRoles() {
   return ROLES.map((r) => (r.role === "teacher" && selfRegistration ? { ...r, href: "/register/teacher" } : r));
 }
 
-/** Which kind of account to create: each is its own page and workflow; this only links between them (`compact`: less padding). */
+/**
+ * Which kind of account to create: each is its own page and workflow; this only links between them (`compact`: the small
+ * segmented control beside the heading of the registration forms).
+ */
 export function JoinSwitch({ active, compact = false }: { active: JoinRole; compact?: boolean }) {
   const roles = useJoinRoles();
   return (
-    <nav aria-label="Choose your account type" className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1" data-testid="join-switch">
+    <nav
+      aria-label="Choose your account type"
+      className={compact ? "grid grid-cols-3 gap-0.5 rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200 wizard-wide:inline-grid" : "grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1"}
+      data-testid="join-switch"
+    >
       {roles.map(({ role, label, href, icon: Icon }) => {
         const on = role === active;
         return (
@@ -51,9 +58,9 @@ export function JoinSwitch({ active, compact = false }: { active: JoinRole; comp
             key={role}
             href={href}
             aria-current={on ? "page" : undefined}
-            className={`flex items-center justify-center gap-1.5 rounded-xl px-2 ${compact ? "py-1.5" : "py-2.5"} text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-              on ? "bg-white text-[#2B2BB2] shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-800"
-            }`}
+            className={`flex items-center justify-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 ${
+              compact ? "min-h-11 rounded-lg px-3 text-sm font-semibold focus-visible:ring-brand wizard-wide:min-h-9 wizard-wide:text-[13px]" : "rounded-xl px-2 py-2.5 text-sm font-semibold focus-visible:ring-indigo-500"
+            } ${on ? `bg-white shadow-sm ring-1 ring-slate-200 ${compact ? "text-brand" : "text-[#2B2BB2]"}` : "text-slate-600 hover:text-slate-800"}`}
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
             {label}
@@ -112,9 +119,9 @@ export function FormSection({ title, step, children }: { title: string; step?: n
 /** "Already have an account? Sign in" under the registration forms. */
 export function SignInInstead() {
   return (
-    <p className="text-center text-sm text-slate-600">
+    <p className="text-center text-sm text-slate-700">
       Already have an account?{" "}
-      <Link href="/login" className="font-semibold text-[#2B2BB2] hover:underline">
+      <Link href="/login" className="font-semibold text-brand underline-offset-2 hover:underline">
         Sign in
       </Link>
     </p>

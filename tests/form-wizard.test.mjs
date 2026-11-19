@@ -16,10 +16,14 @@ import {
   firstStepWithError,
   ignoreRepeatedClick,
   invalidAnnouncement,
+  phaseOfStep,
+  phaseStatus,
+  phasesOf,
   pickStepErrors,
   progressLabel,
   remapStep,
   replaceStepErrors,
+  screenLabel,
   stepAnnouncement,
   stepOfField,
   stepStatus,
@@ -191,7 +195,7 @@ test("Student: the steps of both layouts in order, and every error of its rules 
 });
 
 test("Teacher: the steps of both layouts in order, and every error of its rules and of the server opens a step", () => {
-  assert.deepEqual(teacherSteps("wide").map((s) => s.title), ["About you", "Your teaching", "School location", "Your school", "Home location", "Your account"]);
+  assert.deepEqual(teacherSteps("wide").map((s) => s.title), ["About you", "Your teaching", "Profile picture", "School location", "Your school", "Home location", "Your account"]);
   assert.deepEqual(teacherSteps("narrow").map((s) => s.title), [
     "About you", "Contact details", "Country", "Your teaching", "Olympiad interests", "Profile picture", "School location", "School district and sector", "Your school",
     "School name", "Home location", "Your username", "Your password",
@@ -220,7 +224,7 @@ test("Teacher: the steps of both layouts in order, and every error of its rules 
 });
 
 test("Coach: About you, the details (only with the application details) and the account in both layouts; every error opens a step", () => {
-  assert.deepEqual(coachSteps("wide", true).map((s) => s.title), ["About you", "Your background", "Your experience", "Your account"]);
+  assert.deepEqual(coachSteps("wide", true).map((s) => s.title), ["About you", "Profile picture", "Your background", "Your experience", "Your account"]);
   assert.deepEqual(coachSteps("narrow", true).map((s) => s.title), [
     "About you", "Country and phone", "Profile picture", "Your background", "Affiliation", "Olympiad subjects", "Your expertise", "Your experience", "Your account", "Your password",
   ]);
@@ -259,6 +263,57 @@ test("a form's two layouts hold the same parts: crossing 640px always finds the 
     // Narrow steps are the wide steps cut smaller: each lies inside one wide step.
     for (const step of narrow) assert.equal(new Set(step.parts.map((p) => wide.findIndex((w) => w.parts.some((q) => q.id === p.id)))).size, 1, `${what}: ${step.id} inside one wide step`);
   }
+});
+
+// ─── Phases ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+test("phases: consecutive steps of a phase form one phase; where a step is inside its phase", () => {
+  const A = { id: "a", title: "About you" };
+  const B = { id: "b", title: "Account" };
+  const steps = [
+    { id: "s1", title: "Names", phase: A },
+    { id: "s2", title: "Picture", phase: A },
+    { id: "s3", title: "Alone" },
+    { id: "s4", title: "Login", phase: B },
+    { id: "s5", title: "Password", phase: B },
+    { id: "s6", title: "Done", phase: B },
+  ];
+  const phases = phasesOf(steps);
+  assert.deepEqual(phases, [
+    { id: "a", title: "About you", first: 0, count: 2 },
+    { id: "s3", title: "Alone", first: 2, count: 1 },
+    { id: "b", title: "Account", first: 3, count: 3 },
+  ]);
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map((i) => phaseOfStep(phases, i)), [0, 0, 1, 2, 2, 2, -1]);
+  assert.deepEqual([0, 1, 2].map((p) => phaseStatus(phases, p, 4)), ["complete", "complete", "current"]);
+  assert.deepEqual([0, 1, 2].map((p) => phaseStatus(phases, p, 1)), ["current", "upcoming", "upcoming"]);
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map((i) => screenLabel(phases, i)), ["1 of 2", "2 of 2", null, "1 of 3", "2 of 3", "3 of 3"]);
+  // A step without a phase is a phase of its own (the steps of a form that has none: one circle per step).
+  assert.deepEqual(phasesOf(STEPS).map((p) => p.title), ["About you", "Your studies", "Your account"]);
+});
+
+test("the forms' phases: 3 or 4 named phases, the same in both layouts, each part in the same phase in both", () => {
+  const titles = (steps) => phasesOf(steps).map((p) => p.title);
+  for (const [what, wide, narrow, expected] of [
+    ["student", studentSteps("wide"), studentSteps("narrow"), ["About you", "Studies & school", "Home", "Account"]],
+    ["teacher", teacherSteps("wide"), teacherSteps("narrow"), ["About you", "Teaching", "School & home", "Account"]],
+    ["coach", coachSteps("wide", true), coachSteps("narrow", true), ["About you", "Background", "Account"]],
+  ]) {
+    assert.deepEqual(titles(wide), expected, `${what} wide`);
+    assert.deepEqual(titles(narrow), expected, `${what} narrow`);
+    for (const steps of [wide, narrow]) {
+      assert.ok(steps.every((s) => s.phase), `${what}: every step has a phase`);
+      // A phase is never split by another one (each phase's steps are in a row).
+      assert.equal(phasesOf(steps).length, new Set(steps.map((s) => s.phase.id)).size, `${what}: phases in a row`);
+    }
+    const phaseOfPart = (steps) => Object.fromEntries(steps.flatMap((s) => s.parts.map((p) => [p.id, s.phase.id])));
+    assert.deepEqual(phaseOfPart(narrow), phaseOfPart(wide), `${what}: a part keeps its phase across 640px`);
+  }
+  // Phones: more screens per phase.
+  assert.deepEqual(phasesOf(studentSteps("narrow")).map((p) => p.count), [4, 4, 1, 2]);
+  assert.deepEqual(phasesOf(studentSteps("wide")).map((p) => p.count), [2, 3, 1, 1]);
+  // Without the coach application details: About you and Account.
+  assert.deepEqual(titles(coachSteps("wide", false)), ["About you", "Account"]);
 });
 
 // ─── The component ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -313,7 +368,8 @@ test("component, first step: 'Step 1 of 3', the first step is current, only its 
   for (const f of ["firstName", "gradeLevel", "username"]) assert.match(html, new RegExp(`name="${f}"`));
   assert.deepEqual(shownParts(html), ["firstName", "lastName"]);
   assert.doesNotMatch(html, /data-testid="wizard-back"/);
-  assert.match(html, /<button[^>]*type="submit"[^>]*data-testid="wizard-next"[^>]*>Next<\/button>/);
+  // "Next" and an arrow drawn beside it (hidden from assistive technology: the button is named "Next").
+  assert.match(html, /<button[^>]*type="submit"[^>]*data-testid="wizard-next"[^>]*>Next<svg[^>]*aria-hidden="true"[\s\S]*?<\/svg><\/button>/);
   assert.match(html, /aria-label="Registration steps"/);
   // The live region exists from the start and says nothing until a step changes.
   assert.match(html, /<p class="sr-only" aria-live="polite" aria-atomic="true" data-testid="wizard-live"><\/p>/);
@@ -330,7 +386,7 @@ test("component, a middle step: earlier steps completed, Back and Next, the step
   assert.deepEqual(sections(html).map((s) => s.hidden), [true, false, true]);
   assert.deepEqual(shownParts(html), ["gradeLevel"]);
   assert.match(html, /data-testid="wizard-back"[^>]*>Back<\/button>/);
-  assert.match(html, />Next<\/button>/);
+  assert.match(html, />Next<svg[^>]*aria-hidden="true"[\s\S]*?<\/svg><\/button>/);
   assert.match(html, /data-testid="wizard-live">Step 2 of 3: Your studies <\/p>/);
 });
 
@@ -350,20 +406,52 @@ test("component, wide layout: two columns, wide parts span both; Back left, Next
   assert.match(html, /class="[^"]*wizard-wide:grid-cols-2[^"]*" data-testid="wizard-fields"/);
   assert.match(html, /data-part="password" data-shown="true" class="[^"]*wizard-wide:col-span-2/);
   assert.doesNotMatch(html, /data-part="username" data-shown="true" class="[^"]*col-span-2/);
-  // Back, then the footer, then the submit button pushed to the right; at least 120px wide, never full width.
+  // Back, then the submit button pushed to the right, then the footer under them; at least 120px wide, never full width.
   const actions = html.slice(html.indexOf('data-testid="wizard-actions"'));
-  assert.ok(actions.indexOf("wizard-back") < actions.indexOf("Already have an account?") && actions.indexOf("Already have an account?") < actions.indexOf("wizard-submit"));
+  assert.ok(actions.indexOf("wizard-back") < actions.indexOf("wizard-submit") && actions.indexOf("wizard-submit") < actions.indexOf("Already have an account?"));
   for (const b of actions.match(/<button[^>]*>/g)) {
     assert.match(b, /min-w-\[120px\]/);
     assert.doesNotMatch(b, /\b(w-full|flex-1)\b/);
   }
-  // "Step 3 of 3" beside the step heading; the title is said, not shown twice.
-  assert.match(html, /data-testid="wizard-progress">Step 3 of 3<span class="sr-only"> · Your account<\/span><\/p>/);
+  // "Step 3 of 3" and the title beside the step heading: said, not shown (the phases above show the progress; a step
+  // that is the only one of its phase has no "2 of 3").
+  assert.match(html, /data-testid="wizard-progress"><span class="sr-only">Step 3 of 3 · Your account<\/span><\/p>/);
 });
 
 test("component: no gray-400 text (WCAG AA contrast), the design's numbered circles and colours", () => {
   const html = render(1);
   assert.doesNotMatch(html, /(text|placeholder)-(gray|slate)-400/);
-  assert.match(html, /data-status="complete"><span class="[^"]*rounded-full[^"]*bg-\[#2B2BB2\] text-white/, "completed step");
-  assert.match(html, /ring-2 ring-\[#2B2BB2\]/, "current step");
+  assert.match(html, /data-status="complete" data-phase="a"><span class="[^"]*rounded-full[^"]*bg-brand text-white"[^>]*><svg[^>]*lucide-check/, "completed step: filled, with a check mark");
+  assert.match(html, /data-status="current" data-phase="b"><span[^>]*><\/span><span class="[^"]*bg-brand text-white ring-4 ring-brand\/15"[^>]*>2</, "current step: filled blue, numbered");
+});
+
+test("component, phases: one circle per phase, the current phase marked, '2 of 2' inside a phase of several steps", () => {
+  const P = { id: "p", title: "About you" };
+  const Q = { id: "q", title: "Account" };
+  const steps = buildSteps(
+    ["firstName", "picture", "username"].map((f) => ({ id: f, fields: [f] })),
+    [
+      { id: "a", title: "Names", phase: P, parts: ["firstName"] },
+      { id: "b", title: "Picture", phase: P, parts: ["picture"] },
+      { id: "c", title: "Login", phase: Q, parts: ["username"] },
+    ],
+  );
+  const parts = Object.fromEntries(["firstName", "picture", "username"].map((f) => [f, createElement("input", { name: f, "aria-label": f })]));
+  const at = (index) =>
+    renderToStaticMarkup(createElement(FormWizard, { wizard: wizardAt(index, steps.length), steps, parts, submitLabel: "Send", submittingLabel: "Sending…" }));
+  const second = at(1);
+  assert.equal((second.match(/<li /g) ?? []).length, 2);
+  assert.match(second, /<li aria-current="step"[^>]*data-status="current" data-phase="p"/);
+  assert.match(second, /About you \(current step\)/);
+  assert.match(second, /Account \(not started\)/);
+  assert.match(second, /data-testid="wizard-screen">2 of 2<\/span>/);
+  assert.match(second, /Step 2 of 3 · Picture/);
+  // The last phase, one step: the first phase completed, no "2 of 2".
+  const third = at(2);
+  assert.match(third, /data-status="complete" data-phase="p"/);
+  assert.match(third, /<li aria-current="step"[^>]*data-phase="q"/);
+  assert.doesNotMatch(third, /data-testid="wizard-screen"/);
+  // The first step: Cancel (a link to the home page) instead of Back.
+  assert.match(at(0), /<a [^>]*data-testid="wizard-cancel" href="\/">Cancel<\/a>/);
+  assert.doesNotMatch(at(0), /wizard-back/);
 });
