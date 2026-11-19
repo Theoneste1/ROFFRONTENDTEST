@@ -6,7 +6,7 @@
  * database.
  */
 import { useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { testMarkingApi, type HistoryMarkRow, type HistoryReviewRow, type HistoryStatusRow, type HistoryType } from "@/lib/api/test-marking";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime, personName } from "@/lib/format";
@@ -27,7 +27,12 @@ export default function HistoryPanel({ testId }: { testId: string }) {
   const [type, setType] = useState<HistoryType>("status");
   const [page, setPage] = useState(1);
   const filters = { type, page, limit: 25 };
-  const list = useQuery({ queryKey: queryKeys.tests.markingHistory(testId, filters), queryFn: () => testMarkingApi.history(testId, filters), placeholderData: keepPreviousData });
+  const list = useQuery({
+    queryKey: queryKeys.tests.markingHistory(testId, filters),
+    queryFn: () => testMarkingApi.history(testId, filters),
+    // Keep the previous page while the next one loads — never rows of another kind (their shapes differ).
+    placeholderData: (prev, prevQuery) => ((prevQuery?.queryKey.at(-1) as { type?: HistoryType } | undefined)?.type === type ? prev : undefined),
+  });
   const who = (s: { publicCode: string; student: { firstName: string; lastName: string } }) => (
     <><span className="font-semibold text-gray-900">{personName(s.student)}</span> <span className="font-mono text-gray-600">{s.publicCode}</span></>
   );

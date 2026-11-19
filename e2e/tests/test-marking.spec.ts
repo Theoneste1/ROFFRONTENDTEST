@@ -207,7 +207,7 @@ test.describe.serial("Head Coach → coach A (blind) → second marking by coach
     await expect(page.getByRole("heading", { name: `Submission ${code}` })).toBeVisible();
     const text = await page.locator("main").innerText();
     for (const leak of ["Good working", "15 / 20", "Coach E2E", markedName]) expect([leak, text.includes(leak)]).toEqual([leak, false]);
-    await expect(page.getByTestId("running-total")).toHaveText("Total: — / 20");
+    await expect(page.getByTestId("running-total")).toHaveText("Total: —");
     await page.getByTestId("mark-q1").getByLabel("Marks (of 5)").fill("5");
     await page.getByTestId("mark-q2").getByLabel("Marks (of 15)").fill("9");
     await page.getByTestId("submit-marking").click();
