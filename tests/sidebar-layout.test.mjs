@@ -86,3 +86,19 @@ test("split by heights: opening a group moves the items below it under More inst
   // A very short screen still keeps the two most used pages.
   assert.deepEqual(splitByHeights(60, opened, 48), { primary: 2, hasMore: true });
 });
+
+test("More panel: never above the header (8 px gap), never negative", async () => {
+  const { morePanelMaxHeight, MORE_PANEL_HEADER_GAP_PX } = await import("../lib/navigation/sidebar-layout.ts");
+  assert.equal(MORE_PANEL_HEADER_GAP_PX, 8);
+  // More button bottom at 860 px, header bottom at 80 px (5rem): 860 − 80 − 8.
+  assert.equal(morePanelMaxHeight(860, 80), 772);
+  // A short window: button bottom at 400 px → 312 px; the rest scrolls inside the panel.
+  assert.equal(morePanelMaxHeight(400, 80), 312);
+  // A taller header (wrapped) leaves less room.
+  assert.equal(morePanelMaxHeight(400, 120), 272);
+  // Fractional measurements round down, so the panel never touches the gap.
+  assert.equal(morePanelMaxHeight(400.9, 80.2), 312);
+  // No room at all (header overlapping the button): 0, never negative.
+  assert.equal(morePanelMaxHeight(60, 80), 0);
+  assert.equal(morePanelMaxHeight(400, 80, 0), 320);
+});

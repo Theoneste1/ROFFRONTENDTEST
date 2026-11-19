@@ -72,3 +72,17 @@ export function isActivePath(pathname: string, href: string, home: string): bool
   if (href === home) return pathname === home;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
+
+/** The gap kept between the top header and the "More" panel beside the sidebar (rail layout). */
+export const MORE_PANEL_HEADER_GAP_PX = 8;
+/** The top header's height in the portal shell (PortalShell: the sidebar sits at `top-20`, `calc(100dvh - 5rem)`). */
+export const PORTAL_HEADER_FALLBACK = "5rem";
+
+/**
+ * Maximum height of the "More" panel beside the sidebar. The panel is anchored at the bottom of the More button and
+ * grows upwards, so it may use the space from the button's bottom edge up to `gapPx` below the header's bottom edge
+ * (viewport coordinates, e.g. getBoundingClientRect().bottom). Never negative; items beyond it scroll inside the panel.
+ */
+export function morePanelMaxHeight(anchorBottomPx: number, headerBottomPx: number, gapPx = MORE_PANEL_HEADER_GAP_PX): number {
+  return Math.max(0, Math.floor(anchorBottomPx - headerBottomPx - gapPx));
+}
