@@ -37,6 +37,44 @@ async function openApplications(page: Page) {
 
 const rowOf = (page: Page, k: string) => page.locator("tr", { hasText: `Review ${k}${RUN}` });
 
+const LINK = /(\/applications\/respond\?token=[^\s"&<]+)/;
+
+/**
+ * Asks the "Ask" applicant a question and returns the answer link from the queued e-mail. The watch (one connection,
+ * every 25 ms) starts before the question is sent, so the link is read while the message is queued; the worker clears
+ * the body once it sends. If the worker wins anyway (a sent row with no body), the question is asked again — which
+ * replaces the earlier question and link — up to three times.
+ */
+async function askAndCaptureLink(page: Page, question: string): Promise<string | undefined> {
+  const recipient = `${who("Ask").username}@e2e.local`;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    // The newest message for this applicant before asking; the watch waits for a different (newer) one. (Ids, not
+    // timestamps: "createdAt" is stored without a time zone, so comparing it with a local Date would be off by the offset.)
+    const latest = `SELECT id, body FROM "EmailDelivery" WHERE "recipientEmail" = $1 ORDER BY "createdAt" DESC, id DESC LIMIT 1`;
+    const before = await withDb(async (c) => (await c.query<{ id: string }>(latest, [recipient])).rows[0]?.id ?? null);
+    const watch = withDb(async (c) => {
+      const until = Date.now() + 30_000;
+      while (Date.now() < until) {
+        const found = (await c.query<{ id: string; body: string | null }>(latest, [recipient])).rows[0];
+        const row = found && found.id !== before ? found : undefined;
+        if (row?.body) return LINK.exec(row.body)?.[1];
+        if (row && row.body === null) return null;   // already sent and cleared: ask again
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      return undefined;
+    });
+    await rowOf(page, "Ask").getByTestId("ask-for-information").click();
+    const ask = page.getByRole("dialog");
+    await ask.getByLabel(/Question/).fill(question);
+    await ask.getByRole("button", { name: "Send question" }).click();
+    await expect(page.getByText(/question sent by e-mail/)).toBeVisible({ timeout: 30_000 });
+    const link = await watch;
+    if (link !== null) return link;
+    test.info().annotations.push({ type: "e-mail sent before capture", description: `attempt ${attempt}: asked again` });
+  }
+  return undefined;
+}
+
 test.describe("Administrator reviews coach applications", () => {
   test.beforeAll(async () => {
     for (const k of ["Ask", "Reject", "Approve"]) await applyAsCoach(k);
@@ -48,11 +86,10 @@ test.describe("Administrator reviews coach applications", () => {
     await openApplications(page);
 
     // 1. Ask for more information: the question is stored and the application stays pending.
-    await rowOf(page, "Ask").getByTestId("ask-for-information").click();
-    const ask = page.getByRole("dialog");
-    await ask.getByLabel(/Question/).fill("Please tell us which olympiad levels you have coached and for how long.");
-    await ask.getByRole("button", { name: "Send question" }).click();
-    await expect(page.getByText(/question sent by e-mail/)).toBeVisible({ timeout: 30_000 });
+    //    The e-mail worker (every 10 s) clears a sent message's body — one-time links are not kept — so the answer link
+    //    is captured from the outbox while it is queued: the watch starts before "Send question". Should the worker
+    //    still send it first, the Administrator asks again (that replaces the question and its link, as in real use).
+    const link = await askAndCaptureLink(page, "Please tell us which olympiad levels you have coached and for how long.");
     const asked = await statusOf(who("Ask").username);
     expect(asked.status).toBe("PENDING");
     const question = await withDb(async (c) => (await c.query(
@@ -60,10 +97,6 @@ test.describe("Administrator reviews coach applications", () => {
     expect(question).toMatchObject({ question: expect.stringContaining("olympiad levels"), open: true });
 
     // 1b. The applicant answers through the e-mailed link (no account, signed out).
-    const link = await withDb(async (c) => {
-      const body = (await c.query(`SELECT body FROM "EmailDelivery" WHERE "recipientEmail" = $1 ORDER BY "createdAt" DESC LIMIT 1`, [`${who("Ask").username}@e2e.local`])).rows[0]?.body as string;
-      return /(\/applications\/respond\?token=[^\s"&<]+)/.exec(body)?.[1];
-    });
     expect(link, "the e-mail carries the answer link").toBeTruthy();
     const applicant = await (await browser.newContext()).newPage();
     await applicant.goto(link!);
