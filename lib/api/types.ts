@@ -44,7 +44,9 @@ export type Permission =
   // Account states, bulk operations and form availability (backend develop, Administrators and Super Admins).
   | "users.viewStatusHistory" | "users.changeStatus" | "users.suspend" | "users.archive"
   | "users.bulkManage" | "users.export"
-  | "forms.view" | "forms.manageAvailability" | "forms.editMessages";
+  | "forms.view" | "forms.manageAvailability" | "forms.editMessages"
+  // Countries (owner decision 2026-11-19): Administrators and Super Admins.
+  | "reference.manage";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 

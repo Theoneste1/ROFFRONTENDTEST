@@ -6,8 +6,9 @@
  * edit / deactivate / reactivate. The students' school-claim review stays where it was
  * (/admin/schools/affiliations, `schoolAffiliations` + `schools.manage`).
  */
-import { countryOptions } from "@/lib/schools/countries";
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { useCountryOptions } from "@/lib/queries/countries";
+import { countryDisplayName } from "@/lib/countries/reference";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -43,7 +44,9 @@ export default function SchoolDirectoryList() {
   const update = (patch: Partial<ListState>) => setState((s) => ({ ...s, ...patch, page: patch.page ?? 1 }));
   // Province / district / sector belong to Rwanda: offered for "Any" and Rwanda, not for another country.
   const showPlaces = !state.countryCode || state.countryCode === RWANDA;
-  const countries = useMemo(() => countryOptions(), []);
+  // Every country (capability countries: the reference list; otherwise the built-in list, as before).
+  const countryList = useCountryOptions();
+  const countries = countryList.options;
   const provinces = locations.data ?? [];
   const districts = provinces.find((p) => p.province === state.province)?.districts ?? [];
   const sectors = districts.find((d) => d.district === state.district)?.sectors ?? [];
@@ -192,6 +195,7 @@ export default function SchoolDirectoryList() {
             <tr className="border-b border-gray-100">
               <th className={th}>School</th>
               <th className={th}>Place</th>
+              <th className={th}>Country</th>
               <th className={th}>Source</th>
               <th className={th}>Students</th>
               <th className={th}>Status</th>
@@ -202,9 +206,9 @@ export default function SchoolDirectoryList() {
           </thead>
           <tbody className={`divide-y divide-gray-100/80 ${schools.isFetching && schools.data ? "opacity-60" : ""}`}>
             {schools.isPending ? (
-              <TableMessage colSpan={6}>Loading schools…</TableMessage>
+              <TableMessage colSpan={7}>Loading schools…</TableMessage>
             ) : schools.data.data.length === 0 ? (
-              <TableMessage colSpan={6}>{isFiltered(state) ? "No schools match the filters." : "No schools yet."}</TableMessage>
+              <TableMessage colSpan={7}>{isFiltered(state) ? "No schools match the filters." : "No schools yet."}</TableMessage>
             ) : (
               schools.data.data.map((s) => (
                 <tr key={s.id} className="text-xs hover:bg-gray-50/60" data-testid="school-row">
@@ -213,6 +217,7 @@ export default function SchoolDirectoryList() {
                     {s.code && <span className="block text-[11px] font-normal text-gray-500">Code {s.code}</span>}
                   </td>
                   <td className={`${td} text-gray-600`}>{placeLabel(s)}</td>
+                  <td className={`${td} text-gray-600`} data-testid="school-country">{countryDisplayName(s.countryCode, countryList.countries)}</td>
                   <td className={`${td} text-gray-600`}>{SOURCE_LABEL[s.source] ?? s.source}</td>
                   <td className={`${td} text-gray-600 whitespace-nowrap`}>
                     {formatNumber(s.students)}

@@ -40,12 +40,15 @@ export default function SchoolClaimFields({
   onChange,
   errors,
   hideLegend = false,
+  countryOptions,
 }: {
   value: SchoolClaimDraft;
   onChange: (d: SchoolClaimDraft) => void;
   errors: Partial<Record<SchoolClaimField, string>>;
   /** The form already titles this part (e.g. "Your school"): the legend stays for screen readers only. */
   hideLegend?: boolean;
+  /** Every country from the reference list (capability `countries`); default: the built-in list. */
+  countryOptions?: { value: string; label: string }[];
 }) {
   const country = value.mode === "abroad" ? value.country : RWANDA;
   const place = placeOf(value);
@@ -55,6 +58,7 @@ export default function SchoolClaimFields({
         School <span className="text-red-500">*</span>
       </legend>
       <CountrySelect
+        options={countryOptions}
         value={country}
         // Changing the country clears every later step.
         onChange={(c) => onChange(c === RWANDA ? emptyDraft("directory") : { mode: "abroad", country: c, name: "" })}

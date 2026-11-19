@@ -66,6 +66,12 @@ export const ADMIN_NOTIFICATION_DELIVERIES: NavItem = { href: "/admin/notificati
  */
 export const ADMIN_FORMS: NavItem = { href: "/admin/forms", label: "Forms", permission: FORMS_VIEW_PERMISSION };
 
+/**
+ * Countries (correct a country's name or calling code; owner decision 2026-11-19). Separately gated like the items above:
+ * a backend advertising `countries` and the known reference.manage (lib/countries/reference.ts → countriesNavVisible).
+ */
+export const ADMIN_COUNTRIES: NavItem = { href: "/admin/countries", label: "Countries", permission: "reference.manage" };
+
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
 

@@ -144,6 +144,11 @@ export const KNOWN_FEATURES = [
    * cancel it; `POST /admin/users/bulk/export` (users.export) downloads the selection as CSV. Without it: none of this.
    */
   "bulkUserOperations",
+  /**
+   * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
+   * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
+   */
+  "countries",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

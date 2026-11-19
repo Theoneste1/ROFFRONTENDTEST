@@ -10,7 +10,7 @@ import type { AccountKey } from "../support/accounts";
 
 const PAGES: Array<{ who: AccountKey | null; paths: string[] }> = [
   { who: null, paths: ["/", "/login", "/register", "/register/teacher", "/apply", "/forgot-password", "/support"] },
-  { who: "admin", paths: ["/admin/dashboard", "/admin/users", "/admin/forms", "/admin/mentors", "/admin/schools", "/admin/courses"] },
+  { who: "admin", paths: ["/admin/dashboard", "/admin/users", "/admin/forms", "/admin/countries", "/admin/mentors", "/admin/schools", "/admin/courses"] },
   { who: "student", paths: ["/student/dashboard", "/student/courses", "/student/assignments", "/student/account", "/student/leaderboard"] },
   { who: "coach", paths: ["/mentor/dashboard", "/mentor/reviews", "/mentor/assignments", "/mentor/assignments/create"] },
   { who: "teacher", paths: ["/teacher/dashboard", "/teacher/account"] },

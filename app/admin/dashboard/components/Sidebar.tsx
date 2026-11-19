@@ -20,12 +20,14 @@ import {
   School,
   UserPlus,
   MailCheck,
-  ClipboardList
+  ClipboardList,
+  Globe
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { ADMIN_FORMS, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { countriesNavVisible } from "@/lib/countries/reference";
 import { teacherApplicationsNavVisible } from "@/lib/admin/teacher-applications";
 import { notificationDeliveriesNavVisible } from "@/lib/admin/notification-deliveries";
 import { formsNavVisible } from "@/lib/admin/form-availability";
@@ -53,6 +55,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/teacher-applications": UserPlus,
   "/admin/notification-deliveries": MailCheck,
   "/admin/forms": ClipboardList,
+  "/admin/countries": Globe,
 };
 
 /**
@@ -73,6 +76,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     ...(notificationDeliveriesNavVisible(detection, knownPermissions) ? [ADMIN_NOTIFICATION_DELIVERIES] : []),
     // Forms: the backend feature AND the known forms.view (lib/admin/form-availability.ts).
     ...(formsNavVisible(detection, knownPermissions) ? [ADMIN_FORMS] : []),
+    // Countries: the backend feature AND the known reference.manage (lib/countries/reference.ts).
+    ...(countriesNavVisible(detection, knownPermissions) ? [ADMIN_COUNTRIES] : []),
   ];
 
   // Function to check if link is active

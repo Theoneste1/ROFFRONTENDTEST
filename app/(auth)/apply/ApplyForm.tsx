@@ -10,7 +10,8 @@
  * administrators create Teacher accounts, so the page says so and links to the
  * contact form either way.
  */
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { useCountryOptions } from "@/lib/queries/countries";
 import Link from "next/link";
 import { AuthHeading, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
 import { useSearchParams } from "next/navigation";
@@ -34,7 +35,6 @@ import {
   type CoachDetailsDraft,
   type CoachDetailsField,
 } from "@/lib/accounts/coach-application";
-import { countryOptions } from "@/lib/schools/countries";
 import { CascadeSelect } from "@/app/components/schools/SchoolCascade";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
 import { FormSection } from "@/app/components/auth/AuthUi";
@@ -60,7 +60,8 @@ export default function ApplyForm() {
   const [extraErrors, setExtraErrors] = useState<Partial<Record<keyof CoachExtraDraft, string>>>({});
   const [details, setDetails] = useState<CoachDetailsDraft>(emptyCoachDetails);
   const [detailErrors, setDetailErrors] = useState<Partial<Record<CoachDetailsField, string>>>({});
-  const countries = useMemo(() => countryOptions(), []);
+  // Every country (capability countries: the reference list; otherwise the built-in list, as before).
+  const countries = useCountryOptions().options;
   const setDetail = <K extends keyof CoachDetailsDraft>(k: K, val: CoachDetailsDraft[K], field: CoachDetailsField) => {
     setDetails((s) => ({ ...s, [k]: val }));
     setDetailErrors((s) => ({ ...s, [field]: undefined }));

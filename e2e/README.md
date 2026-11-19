@@ -25,6 +25,7 @@ hour and is refused (429), as designed.
 | `registration-forms` | student sign-up with and without the optional picture, teacher and coach applications, closed form (REG-02/05/06/08, UX-01) |
 | `application-review` | Administrator asks for information, rejects with a reason, approves (REG-10) |
 | `admin-users` | bulk suspend with preview and reason, account history, CSV export, e-mail preferences (ACC-09/11, REG-12, NOT-03) |
+| `countries` | countries (owner decision 2026-11-19): an Administrator corrects a country on the Countries screen (audited); students register with a school abroad and in Rwanda (INT-01, INT-02, REG-03) |
 | `accessibility` | axe-core WCAG 2.0/2.1 A + AA on the key pages of every portal: no serious or critical violation (PERF-03) |
 
 Projects: `desktop` (1440×900) and `mobile` (Pixel 7, files ending in `.mobile.spec.ts`). Reports: `e2e/report` (not
