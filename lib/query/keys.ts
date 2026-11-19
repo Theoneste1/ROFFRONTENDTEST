@@ -72,6 +72,12 @@ export const queryKeys = {
     all: ["notification-deliveries"] as const,
     list: (filters: object) => [...queryKeys.notificationDeliveries.all, "list", filters] as const,
   },
+  /** Countries (lib/api/countries.ts): the public list and the administrators' screen. */
+  countries: {
+    all: ["countries"] as const,
+    list: () => ["countries", "list"] as const,
+    admin: () => ["countries", "admin"] as const,
+  },
   /** Administrators' form management (lib/api/admin-forms.ts). */
   adminForms: {
     all: ["admin-forms"] as const,

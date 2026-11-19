@@ -60,7 +60,8 @@ import {
   type StudentDetailsField,
 } from "@/lib/accounts/student-details";
 import { PHONE_HINT } from "@/lib/accounts/phone";
-import { countryOptions, RWANDA } from "@/lib/schools/countries";
+import { RWANDA } from "@/lib/schools/countries";
+import { useCountryOptions } from "@/lib/queries/countries";
 import { CascadeSelect, PlaceSelects } from "@/app/components/schools/SchoolCascade";
 import {
   SCHOOL_CLAIM_ERRORS,
@@ -110,7 +111,9 @@ export default function RegisterForm() {
   const [detailsOn, setDetailsOn] = useState(false);
   const [details, setDetails] = useState<StudentDetailsDraft>(emptyStudentDetails);
   const [detailErrors, setDetailErrors] = useState<Partial<Record<StudentDetailsField, string>>>({});
-  const countries = useMemo(() => countryOptions(), []);
+  // Every country (capability countries: the reference list; otherwise the built-in list, as before).
+  const countryList = useCountryOptions();
+  const countries = countryList.options;
   const bounds = useMemo(() => birthDateBounds(new Date()), []);
   const setDetail = (next: StudentDetailsDraft, field?: StudentDetailsField) => {
     setDetails(next);
@@ -418,6 +421,7 @@ export default function RegisterForm() {
             }}
             errors={claimErrors}
             hideLegend
+            countryOptions={countryList.supported ? countries : undefined}
           />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">

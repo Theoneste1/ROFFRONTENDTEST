@@ -15,7 +15,8 @@
  * read-only, never sent), or "My school is not listed" (name + sector, reviewed by an
  * Administrator). Home location: district → sector, separate from the school.
  */
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
+import { useCountryOptions } from "@/lib/queries/countries";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { teacherRegistrationApi, type TeacherRegistrationResult } from "@/lib/api/teacher-registration";
@@ -35,7 +36,6 @@ import {
   TEACHER_REGISTER_ERRORS,
   TEACHER_RULES,
   buildTeacherPayload,
-  countryOptions,
   emptyTeacherDraft,
   homeDistrictsOf,
   homeSectorsOf,
@@ -185,7 +185,8 @@ function OpenForm() {
   const [pictureError, setPictureError] = useState<string | null>(null);
   const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
   const locations = useSchoolLocations();
-  const countries = useMemo(() => countryOptions(), []);
+  // Every country (capability countries: the reference list; otherwise the built-in list, as before).
+  const countries = useCountryOptions().options;
   const set = <K extends keyof TeacherDraft>(k: K, v: TeacherDraft[K]) => setD((s) => ({ ...s, [k]: v }));
   const update = (fn: (s: TeacherDraft) => TeacherDraft) => setD(fn);
 

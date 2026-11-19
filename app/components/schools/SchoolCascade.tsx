@@ -98,9 +98,9 @@ export function CascadeSelect({
 }
 
 /** Country: Rwanda first, then every country the backend accepts, by name. */
-export function CountrySelect({ value, onChange, error, variant = "public", label = "Country" }: { value: string; onChange: (code: string) => void; error?: string; variant?: CascadeVariant; label?: string }) {
-  const options = useMemo(() => countryOptions(), []);
-  return <CascadeSelect label={label} value={value} onChange={onChange} options={options} placeholder="Choose the country" error={error} variant={variant} testId="cascade-country" />;
+export function CountrySelect({ value, onChange, error, variant = "public", label = "Country", options }: { value: string; onChange: (code: string) => void; error?: string; variant?: CascadeVariant; label?: string; /** The reference list (capability `countries`); default: the built-in ISO list. */ options?: { value: string; label: string }[] }) {
+  const builtIn = useMemo(() => countryOptions(), []);
+  return <CascadeSelect label={label} value={value} onChange={onChange} options={options ?? builtIn} placeholder="Choose the country" error={error} variant={variant} testId="cascade-country" />;
 }
 
 /**

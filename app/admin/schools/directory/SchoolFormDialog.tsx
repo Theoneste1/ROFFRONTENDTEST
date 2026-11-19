@@ -11,8 +11,8 @@
  *   back or save anyway (confirmPossibleDuplicate, recorded in the audit log).
  * - 409 SCHOOL_CODE_TAKEN points to the school that has the code.
  */
-import { countryOptions } from "@/lib/schools/countries";
 import { useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCountryOptions } from "@/lib/queries/countries";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { adminSchoolsApi, type DirectorySchoolRecord, type DuplicateCandidate } from "@/lib/api/school-directory";
@@ -62,7 +62,8 @@ export default function SchoolFormDialog({
   const locations = useSchoolLocations();
   const rwanda = f.countryCode.trim().toUpperCase() === RWANDA;
   const countryLocked = !!school?.code; // a school with a code stays in Rwanda (a code cannot be removed)
-  const countries = useMemo(() => countryOptions(), []);
+  // Every country (capability countries: the reference list; otherwise the built-in list, as before).
+  const countries = useCountryOptions().options;
   const payload = school ? updatePayload(school, f) : null;
   const needsReason = !!school && !!payload && reasonRequired(school, payload);
 
