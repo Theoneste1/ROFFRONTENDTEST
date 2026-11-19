@@ -86,6 +86,19 @@ export const ADMIN_TESTS: NavItem = { href: "/admin/tests", label: "Tests", perm
  */
 export const MENTOR_TESTS: NavItem = { href: "/mentor/tests", label: "Tests", permission: "tests.view" };
 
+/**
+ * My tests in the student portal (Test Management Phase 2): the student's tests, deadlines and answers. Separately gated:
+ * a backend advertising `testSubmissions` and the known tests.submit (lib/test-management/submissions.ts →
+ * answerNavVisible). The student menu is written in its sidebar; this item is added after it.
+ */
+export const STUDENT_TESTS: NavItem = { href: "/student/tests", label: "My tests", permission: "tests.submit" };
+
+/**
+ * Tests in the teacher portal (G2: every teacher of the school submits for its verified students). Same gate with
+ * tests.submitForStudents; not part of TEACHER_NAV.
+ */
+export const TEACHER_TESTS: NavItem = { href: "/teacher/tests", label: "Tests", permission: "tests.submitForStudents" };
+
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
 

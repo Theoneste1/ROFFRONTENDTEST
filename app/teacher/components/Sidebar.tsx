@@ -1,17 +1,22 @@
 'use client';
 
 import { usePathname } from "next/navigation";
-import { Users } from "lucide-react";
+import { FileQuestion, Users } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { TEACHER_NAV, visibleNav } from "@/lib/auth/navigation";
+import { TEACHER_NAV, TEACHER_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { answerNavVisible } from "@/lib/test-management/submissions";
 
 /** The teacher portal menu (same look as the coach portal; items follow /me/permissions). */
 export default function Sidebar({ isOpen }: { isOpen: boolean }) {
   const pathname = usePathname();
   const { knownPermissions } = useSession();
   const isActive = (href: string) => (href === "/teacher/dashboard" ? pathname === href || pathname.startsWith("/teacher/students") : pathname.startsWith(href));
+  // Tests (G2): a backend with `testSubmissions` AND the known tests.submitForStudents.
+  const { detection } = useBackendCapabilities();
+  const items = [...visibleNav(TEACHER_NAV, knownPermissions), ...(answerNavVisible(detection, knownPermissions, "tests.submitForStudents") ? [TEACHER_TESTS] : [])];
 
   return (
     <aside
@@ -24,7 +29,7 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
         <SidebarNav
           isOpen={isOpen}
           label="Teacher portal"
-          items={visibleNav(TEACHER_NAV, knownPermissions).map((item) => ({ href: item.href, label: item.label, icon: Users, active: isActive(item.href) }))}
+          items={items.map((item) => ({ href: item.href, label: item.label, icon: item.href === TEACHER_TESTS.href ? FileQuestion : Users, active: isActive(item.href) }))}
         />
       </div>
       <SidebarUtilities isOpen={isOpen} settingsHref="/teacher/account" />

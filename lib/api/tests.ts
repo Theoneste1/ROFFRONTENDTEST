@@ -83,6 +83,8 @@ export interface TestSummary {
 
 export interface TestDetail extends TestSummary {
   questions: TestQuestion[];
+  /** Phase 2 (testSubmissions): how many students have submitted; above 0 the test keeps its essentials. */
+  submissionCount?: number;
 }
 
 export interface TestFilters {

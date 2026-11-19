@@ -48,7 +48,10 @@ export type Permission =
   // Countries (owner decision 2026-11-19): Administrators and Super Admins.
   | "reference.manage"
   // Test Management (capability testManagement, 2026-11-19): Administrators (every subject), Head Coaches (their subjects).
-  | "tests.view" | "tests.manage" | "tests.manageMarkers";
+  | "tests.view" | "tests.manage" | "tests.manageMarkers"
+  // Test Management, Phase 2 (capability testSubmissions): extensions and tracking (Administrators, Head Coaches), a
+  // student's own answers, a teacher's answers for the verified students of their schools (G2).
+  | "tests.extensions" | "tests.viewSubmissions" | "tests.submit" | "tests.submitForStudents";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 

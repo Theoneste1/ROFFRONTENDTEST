@@ -142,6 +142,15 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.tests.all, "detail", id] as const,
     markers: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "markers", filters] as const,
     candidates: (subjectId: string, q: string) => [...queryKeys.tests.all, "candidates", subjectId, q] as const,
+    // Phase 2 (lib/api/test-submissions.ts)
+    mine: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "mine", filters] as const,
+    teacher: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "teacher", filters] as const,
+    teacherStudents: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "teacher-students", testId, filters] as const,
+    answer: (testId: string, studentId: string | null) => [...queryKeys.tests.all, "answer", testId, studentId ?? "me"] as const,
+    tracking: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "tracking", testId, filters] as const,
+    submission: (testId: string, submissionId: string) => [...queryKeys.tests.all, "submission", testId, submissionId] as const,
+    extensions: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "extensions", testId, filters] as const,
+    extensionTargets: (testId: string, kind: string, q: string) => [...queryKeys.tests.all, "extension-targets", testId, kind, q] as const,
   },
   /** Backend-wide information (`GET /api/v1`), the same for every user. */
   backend: {
