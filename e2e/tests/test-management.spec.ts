@@ -10,7 +10,13 @@
  */
 import { expect, test, type Page } from "@playwright/test";
 import { idOf, withDb } from "../support/db";
-import { navigateViaSidebar, signIn } from "../support/session";
+import { signIn } from "../support/session";
+
+/** The portal's menu offers the page (directly or under "More"); then open it. */
+async function openFromMenu(page: Page, href: string) {
+  await expect(page.getByTestId("sidebar-nav").first().locator(`a[href="${href}"]`)).toHaveCount(1);
+  await page.goto(href);
+}
 
 const run = Date.now().toString(36);
 const mathsTitle = `E2E Algebra test ${run}`;
@@ -52,7 +58,7 @@ test.describe.serial("Administrator: a test from the wizard to its marker", () =
 
   test("creates a test with questions, a paper and a marking guide", async () => {
     test.setTimeout(120_000);
-    await navigateViaSidebar(page, "/admin/tests");
+    await openFromMenu(page, "/admin/tests");
     await expect(page.getByRole("heading", { name: "Tests", level: 1 })).toBeVisible();
     await page.getByTestId("new-test").click();
     await page.waitForURL(/\/admin\/tests\/new$/);
@@ -148,7 +154,7 @@ test.describe.serial("Head Coach: only the subjects they head", () => {
   test.afterAll(async () => page.close());
 
   test("the coach portal lists Physics tests only, offers only Physics, and refuses the Mathematics test", async () => {
-    await navigateViaSidebar(page, "/mentor/tests");
+    await openFromMenu(page, "/mentor/tests");
     const list = page.getByTestId("tests-list");
     await expect(list.getByTestId(`test-row-${physicsTestId}`)).toContainText(physicsTitle);
     await expect(list.getByText(mathsTitle)).toHaveCount(0);
