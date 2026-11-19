@@ -18,7 +18,6 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { useCountryOptions } from "@/lib/queries/countries";
 import Link from "next/link";
 import { AuthHeading, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
-import { useSearchParams } from "next/navigation";
 import { publicApi } from "@/lib/api/auth";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
 import { Alert } from "@/app/components/ui/feedback";
@@ -51,8 +50,8 @@ const FIELDS = ["firstName", "lastName", "username", "email", "password"] as con
 type F = (typeof FIELDS)[number] | "confirm";
 const DETAIL_FIELDS = ["country", "occupation", "educationLevel", "olympiadInterests"] as const;
 
-export default function ApplyForm() {
-  const teacher = useSearchParams().get("as") === "teacher";
+/** `teacher`: the page was opened with `?as=teacher` (read by page.tsx). */
+export default function ApplyForm({ teacher }: { teacher: boolean }) {
   return teacher ? <TeacherJoin /> : <CoachApplication />;
 }
 
