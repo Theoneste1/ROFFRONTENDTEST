@@ -60,3 +60,13 @@ html:focus-within { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) {
   html:focus-within { scroll-behavior: auto; }
 }
+
+/* ─── Multi-step registration forms (app/components/forms/FormWizard): a light fade when a step is shown ─── */
+@keyframes wizard-step-in {
+  from { opacity: 0; transform: translateX(6px); }
+  to { opacity: 1; transform: none; }
+}
+.wizard-step:not([hidden]) { animation: wizard-step-in 0.16s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .wizard-step:not([hidden]) { animation: none; }
+}

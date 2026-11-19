@@ -9,16 +9,19 @@
  * Otherwise teachers cannot register themselves: with `teacherAccounts`, only ROF
  * administrators create Teacher accounts, so the page says so and links to the
  * contact form either way.
+ *
+ * Steps (app/components/forms/FormWizard): About you, Your background (with the coach application details), Your account,
+ * one at a time. Next checks the shown step with the form's rules; a refused field goes back to its step. The teacher
+ * page (`?as=teacher`) is its own component, so switching between Coach and Teacher always starts the coach form afresh.
  */
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { useCountryOptions } from "@/lib/queries/countries";
 import Link from "next/link";
 import { AuthHeading, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
-import { useSearchParams } from "next/navigation";
 import { publicApi } from "@/lib/api/auth";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
 import { Alert } from "@/app/components/ui/feedback";
-import { Button, TextField } from "@/app/components/ui/form";
+import { TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -37,7 +40,9 @@ import {
 } from "@/lib/accounts/coach-application";
 import { CascadeSelect } from "@/app/components/schools/SchoolCascade";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
-import { FormSection } from "@/app/components/auth/AuthUi";
+import FormWizard, { useFormWizard, WIZARD_FORM_CLASS, type WizardStep } from "@/app/components/forms/FormWizard";
+import { errorKeys, firstStepWithError, replaceStepErrors } from "@/lib/forms/wizard";
+import { coachSteps } from "@/lib/forms/registration-steps";
 
 const USERNAME = /^[a-z0-9._-]{3,30}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -45,10 +50,64 @@ const FIELDS = ["firstName", "lastName", "username", "email", "password"] as con
 type F = (typeof FIELDS)[number] | "confirm";
 const DETAIL_FIELDS = ["country", "occupation", "educationLevel", "olympiadInterests"] as const;
 
-export default function ApplyForm() {
-  const teacher = useSearchParams().get("as") === "teacher";
+/** `teacher`: the page was opened with `?as=teacher` (read by page.tsx). */
+export default function ApplyForm({ teacher }: { teacher: boolean }) {
+  return teacher ? <TeacherJoin /> : <CoachApplication />;
+}
+
+/** `?as=teacher`: how teachers join (the teacher application, or the contact form). */
+function TeacherJoin() {
   const detection = useBackendCapabilities().detection;
   const teacherAccounts = hasFeature(detection, "teacherAccounts");
+  // The backend implements the teacher application (whether it is open is checked on that page).
+  const teacherSelfRegistration = hasFeature(detection, "teacherSelfRegistration");
+  return (
+    <div className="space-y-5" data-testid="apply-teacher">
+      <JoinSwitch active="teacher" />
+      <AuthHeading title="Join as a teacher" />
+      {teacherSelfRegistration ? (
+        <>
+          <p className="text-sm text-slate-700">
+            Teachers apply for an account with their school and contact details. An administrator reviews every application and links the account to your school.
+          </p>
+          <Link href="/register/teacher" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]" data-testid="apply-teacher-register">
+            Apply as a teacher
+          </Link>
+        </>
+      ) : teacherAccounts ? (
+        <>
+          <Alert tone="info">Teacher accounts are created by ROF administrators. There is no self-registration for teachers.</Alert>
+          <p className="text-sm text-slate-700">
+            Send us a message with your name, your school and its school code. An administrator creates your account, links it to your school and e-mails you an activation link.
+          </p>
+        </>
+      ) : (
+        <>
+          <Alert tone="info">Teacher accounts are not available on ROF LMS yet.</Alert>
+          <p className="text-sm text-slate-700">
+            If you teach at a school and would like to connect your students with the Rwanda Olympiad Foundation, send us a message and we will get in touch.
+          </p>
+        </>
+      )}
+      {teacherSelfRegistration ? (
+        <p className="text-center text-sm text-slate-600">
+          Questions? <Link href="/?subject=teacher#contact" className="font-medium text-[#2B2BB2] hover:underline">Contact us</Link>
+        </p>
+      ) : (
+        <Link href="/?subject=teacher#contact" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
+          Contact us
+        </Link>
+      )}
+      <p className="text-center text-sm text-slate-600">
+        Want to mentor ROF students? <Link href="/apply" className="font-medium text-[#2B2BB2] hover:underline">Apply as a coach</Link>
+      </p>
+    </div>
+  );
+}
+
+/** The coach application itself. */
+function CoachApplication() {
+  const detection = useBackendCapabilities().detection;
   // The backend implements the teacher application (whether it is open is checked on that page).
   const teacherSelfRegistration = hasFeature(detection, "teacherSelfRegistration");
   const role = "Coach";
@@ -79,6 +138,8 @@ export default function ApplyForm() {
   const [pictureError, setPictureError] = useState<string | null>(null);
   const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
+  const stepModels = coachSteps(detailsOn);
+  const wizard = useFormWizard(stepModels.length);
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
@@ -93,11 +154,25 @@ export default function ApplyForm() {
     if (p.confirm) e.confirm = p.confirm;
     const de = detailsOn ? validateCoachDetails(details) : {};
     const xe = extraOn ? validateCoachExtra(extra) : {};
+    const pe = { picture: pictureError };
+    if (!wizard.isLast) {
+      // Next (or Enter in a field): the same rules, for the fields of the shown step only.
+      const step = stepModels[wizard.index];
+      setErrors((s) => replaceStepErrors(step, s, e));
+      setDetailErrors((s) => replaceStepErrors(step, s, de));
+      setExtraErrors((s) => replaceStepErrors(step, s, xe));
+      if (firstStepWithError([step], errorKeys(e, de, xe, pe)) === 0) wizard.showErrors();
+      else wizard.next();
+      return;
+    }
     setErrors(e);
     setDetailErrors(de);
     setExtraErrors(xe);
     setError(null);
-    if (Object.keys(e).length || Object.keys(de).length || Object.keys(xe).length || pictureError) return;
+    if (Object.keys(e).length || Object.keys(de).length || Object.keys(xe).length || pictureError) {
+      wizard.showErrors(firstStepWithError(stepModels, errorKeys(e, de, xe, pe)));
+      return;
+    }
     setSubmitting(true);
     try {
       const applied = await publicApi.applyAsMentor({
@@ -113,56 +188,17 @@ export default function ApplyForm() {
       setDone(true);
     } catch (err) {
       setError(err);
-      setErrors(fieldErrors(err, FIELDS));
-      if (detailsOn) setDetailErrors(fieldErrors(err, DETAIL_FIELDS));
+      const fe = fieldErrors(err, FIELDS);
+      setErrors(fe);
+      const sde = detailsOn ? fieldErrors(err, DETAIL_FIELDS) : {};
+      if (detailsOn) setDetailErrors(sde);
+      // A refused field: back to its step. Other refusals stay on this step with their message above the steps.
+      const at = firstStepWithError(stepModels, errorKeys(fe, sde));
+      if (at !== -1) wizard.showErrors(at);
+      else wizard.showMessage();
     } finally {
       setSubmitting(false);
     }
-  }
-
-  if (teacher) {
-    return (
-      <div className="space-y-5" data-testid="apply-teacher">
-        <JoinSwitch active="teacher" />
-        <AuthHeading title="Join as a teacher" />
-        {teacherSelfRegistration ? (
-          <>
-            <p className="text-sm text-slate-700">
-              Teachers apply for an account with their school and contact details. An administrator reviews every application and links the account to your school.
-            </p>
-            <Link href="/register/teacher" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]" data-testid="apply-teacher-register">
-              Apply as a teacher
-            </Link>
-          </>
-        ) : teacherAccounts ? (
-          <>
-            <Alert tone="info">Teacher accounts are created by ROF administrators. There is no self-registration for teachers.</Alert>
-            <p className="text-sm text-slate-700">
-              Send us a message with your name, your school and its school code. An administrator creates your account, links it to your school and e-mails you an activation link.
-            </p>
-          </>
-        ) : (
-          <>
-            <Alert tone="info">Teacher accounts are not available on ROF LMS yet.</Alert>
-            <p className="text-sm text-slate-700">
-              If you teach at a school and would like to connect your students with the Rwanda Olympiad Foundation, send us a message and we will get in touch.
-            </p>
-          </>
-        )}
-        {teacherSelfRegistration ? (
-          <p className="text-center text-sm text-slate-600">
-            Questions? <Link href="/?subject=teacher#contact" className="font-medium text-[#2B2BB2] hover:underline">Contact us</Link>
-          </p>
-        ) : (
-          <Link href="/?subject=teacher#contact" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
-            Contact us
-          </Link>
-        )}
-        <p className="text-center text-sm text-slate-600">
-          Want to mentor ROF students? <Link href="/apply" className="font-medium text-[#2B2BB2] hover:underline">Apply as a coach</Link>
-        </p>
-      </div>
-    );
   }
 
   if (done) {
@@ -187,32 +223,10 @@ export default function ApplyForm() {
   const fieldErr = Object.keys(fieldErrors(error, detailsOn ? [...FIELDS, ...DETAIL_FIELDS] : FIELDS)).length > 0;
   const teacherHref = teacherSelfRegistration ? "/register/teacher" : "/apply?as=teacher";
 
-  return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
-      <JoinSwitch active="coach" />
-      <div>
-        <AuthHeading title={`Join as a ${role.toLowerCase()}`} />
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Coaches mentor ROF students: you prepare assignments, share resources and review student work for the courses you are assigned. An administrator reviews every application.
-        </p>
-        <p className="mt-2 text-xs text-slate-600">
-          A school teacher?{" "}
-          <Link href={teacherHref} className="font-medium text-[#2B2BB2] hover:underline">
-            Join as a teacher
-          </Link>{" "}
-          instead.
-        </p>
-      </div>
-
-      {error != null && !fieldErr && (
-        <Alert tone="error">
-          {taken ? "That username or e-mail is already in use or has a pending application. Try another, or sign in if you already have an account." : errorMessage(error)}
-        </Alert>
-      )}
-
-      {error != null && fieldErr && <Alert tone="error">Please check the highlighted fields.</Alert>}
-
-      <FormSection step={1} title="About you">
+  // The fields of each step, as they were in the form's numbered sections.
+  const content: Record<string, ReactNode> = {
+    about: (
+      <>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />
           <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />
@@ -220,70 +234,104 @@ export default function ApplyForm() {
         {detailsOn && (
           <CascadeSelect label="Country" value={details.country} onChange={(c) => setDetail("country", c, "country")} options={countries} placeholder="Choose your country" error={detailErrors.country} testId="coach-country" />
         )}
-      </FormSection>
-
-      {detailsOn && (
-        <FormSection step={2} title="Your background">
-          <TextField
-            label="Current or most recent occupation"
-            name="occupation"
-            required
-            maxLength={200}
-            value={details.occupation}
-            onChange={(e) => setDetail("occupation", e.target.value, "occupation")}
-            error={detailErrors.occupation}
-            hint="For example: mathematics teacher, engineering student, software developer."
+      </>
+    ),
+    background: (
+      <>
+        <TextField
+          label="Current or most recent occupation"
+          name="occupation"
+          required
+          maxLength={200}
+          value={details.occupation}
+          onChange={(e) => setDetail("occupation", e.target.value, "occupation")}
+          error={detailErrors.occupation}
+          hint="For example: mathematics teacher, engineering student, software developer."
+        />
+        <CascadeSelect
+          label="Highest level of education"
+          value={details.educationLevel}
+          onChange={(l) => setDetail("educationLevel", l as CoachDetailsDraft["educationLevel"], "educationLevel")}
+          options={EDUCATION_LEVELS}
+          placeholder="Choose your level of education"
+          error={detailErrors.educationLevel}
+          hint="Completed or in progress."
+          testId="coach-education"
+        />
+        <OlympiadInterestsField
+          value={details.interests}
+          onChange={(next) => setDetail("interests", next, "olympiadInterests")}
+          error={detailErrors.olympiadInterests}
+          hint="The Olympiads you would like to coach. Choose one or more."
+        />
+        {extraOn && (
+          <CoachExtraFields
+            value={extra}
+            onChange={(k, val) => {
+              setExtra((s) => ({ ...s, [k]: val }));
+              setExtraErrors((s) => ({ ...s, [k]: undefined }));
+            }}
+            errors={extraErrors}
           />
-          <CascadeSelect
-            label="Highest level of education"
-            value={details.educationLevel}
-            onChange={(l) => setDetail("educationLevel", l as CoachDetailsDraft["educationLevel"], "educationLevel")}
-            options={EDUCATION_LEVELS}
-            placeholder="Choose your level of education"
-            error={detailErrors.educationLevel}
-            hint="Completed or in progress."
-            testId="coach-education"
+        )}
+        {pictureOn && (
+          <OptionalAvatarField
+            file={picture}
+            error={pictureError}
+            onChange={(f) => {
+              setPicture(f);
+              setPictureError(registrationAvatarProblem(f));
+            }}
           />
-          <OlympiadInterestsField
-            value={details.interests}
-            onChange={(next) => setDetail("interests", next, "olympiadInterests")}
-            error={detailErrors.olympiadInterests}
-            hint="The Olympiads you would like to coach. Choose one or more."
-          />
-          {extraOn && (
-            <CoachExtraFields
-              value={extra}
-              onChange={(k, val) => {
-                setExtra((s) => ({ ...s, [k]: val }));
-                setExtraErrors((s) => ({ ...s, [k]: undefined }));
-              }}
-              errors={extraErrors}
-            />
-          )}
-          {pictureOn && (
-            <OptionalAvatarField
-              file={picture}
-              error={pictureError}
-              onChange={(f) => {
-                setPicture(f);
-                setPictureError(registrationAvatarProblem(f));
-              }}
-            />
-          )}
-        </FormSection>
-      )}
-
-      <FormSection step={detailsOn ? 3 : 2} title="Your account">
+        )}
+      </>
+    ),
+    account: (
+      <>
         <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />
         <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />
         <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
-      </FormSection>
+      </>
+    ),
+  };
+  const steps: WizardStep[] = stepModels.map((st) => ({ ...st, content: content[st.id] }));
 
-      <Button type="submit" loading={submitting} className="w-full">
-        {submitting ? "Sending your application…" : `Apply as a ${role.toLowerCase()}`}
-      </Button>
+  return (
+    <form onSubmit={onSubmit} noValidate className={WIZARD_FORM_CLASS}>
+      <FormWizard
+        wizard={wizard}
+        steps={steps}
+        submitLabel={`Apply as a ${role.toLowerCase()}`}
+        submittingLabel="Sending your application…"
+        submitting={submitting}
+        header={
+          <>
+            <JoinSwitch active="coach" />
+            <div>
+              <AuthHeading title={`Join as a ${role.toLowerCase()}`} />
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Coaches mentor ROF students: you prepare assignments, share resources and review student work for the courses you are assigned. An administrator reviews every application.
+              </p>
+              <p className="mt-2 text-xs text-slate-600">
+                A school teacher?{" "}
+                <Link href={teacherHref} className="font-medium text-[#2B2BB2] hover:underline">
+                  Join as a teacher
+                </Link>{" "}
+                instead.
+              </p>
+            </div>
 
-      <SignInInstead />
+            {error != null && !fieldErr && (
+              <Alert tone="error">
+                {taken ? "That username or e-mail is already in use or has a pending application. Try another, or sign in if you already have an account." : errorMessage(error)}
+              </Alert>
+            )}
+
+            {error != null && fieldErr && <Alert tone="error">Please check the highlighted fields.</Alert>}
+          </>
+        }
+        footer={<SignInInstead />}
+      />
     </form>
   );
 }

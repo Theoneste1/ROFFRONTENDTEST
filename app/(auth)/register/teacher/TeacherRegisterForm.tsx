@@ -14,8 +14,14 @@
  * School: Country (Rwanda) → province → district → sector → school from the official directory (code and sector shown
  * read-only, never sent), or "My school is not listed" (name + sector, reviewed by an
  * Administrator). Home location: district → sector, separate from the school.
+ *
+ * Steps (app/components/forms/FormWizard): About you, Olympiad interests, Your school, Home location, Your account, one at
+ * a time. Next checks the shown step with the rules of validateTeacherRegistration; a refused field goes back to its step.
  */
 import { useState, type FormEvent, type ReactNode } from "react";
+import FormWizard, { useFormWizard, WIZARD_FORM_CLASS, type WizardStep } from "@/app/components/forms/FormWizard";
+import { errorKeys, firstStepWithError, replaceStepErrors } from "@/lib/forms/wizard";
+import { TEACHER_STEPS as STEPS } from "@/lib/forms/registration-steps";
 import { useCountryOptions } from "@/lib/queries/countries";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -56,10 +62,10 @@ import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { usePublicForm } from "@/lib/queries/forms";
 import { formGate, noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
 import ClosedFormNotice from "@/app/components/forms/ClosedFormNotice";
-import { Button, TextField } from "@/app/components/ui/form";
+import { TextField } from "@/app/components/ui/form";
 import NewPasswordFields from "@/app/components/auth/NewPasswordFields";
 import { PlaceSelect } from "@/app/components/account/SchoolPlaceFields";
-import { AuthHeading, FormSection, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
+import { AuthHeading, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
 import { CascadeSelect, PlaceSelects, SectorSchoolSelect } from "@/app/components/schools/SchoolCascade";
 import { countryName, RWANDA } from "@/lib/schools/countries";
 import type { Place } from "@/lib/schools/school-cascade";
@@ -152,15 +158,6 @@ export default function TeacherRegisterForm() {
   );
 }
 
-function Section({ step, title, description, children }: { step: number; title: string; description?: string; children: ReactNode }) {
-  return (
-    <FormSection step={step} title={title}>
-      {description && <p className="-mt-2 text-xs text-slate-600">{description}</p>}
-      {children}
-    </FormSection>
-  );
-}
-
 /** A new province, district or sector from the shared dropdowns: the steps after it start again. */
 function schoolPlaceChanged(d: TeacherDraft, p: Place): TeacherDraft {
   if (p.province !== d.schoolProvince) return setSchoolProvince(d, p.province);
@@ -189,16 +186,30 @@ function OpenForm() {
   const countries = useCountryOptions().options;
   const set = <K extends keyof TeacherDraft>(k: K, v: TeacherDraft[K]) => setD((s) => ({ ...s, [k]: v }));
   const update = (fn: (s: TeacherDraft) => TeacherDraft) => setD(fn);
+  const wizard = useFormWizard(STEPS.length);
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
     if (submitting) return;
     const e = validateTeacherRegistration(d);
     const xe = extraOn ? validateTeacherExtra(extra) : {};
+    const pe = { picture: pictureError };
+    if (!wizard.isLast) {
+      // Next (or Enter in a field): the same rules, for the fields of the shown step only.
+      const step = STEPS[wizard.index];
+      setErrors((s) => replaceStepErrors(step, s, e));
+      setExtraErrors((s) => replaceStepErrors(step, s, xe));
+      if (firstStepWithError([step], errorKeys(e, xe, pe)) === 0) wizard.showErrors();
+      else wizard.next();
+      return;
+    }
     setErrors(e);
     setExtraErrors(xe);
     setError(null);
-    if (Object.keys(e).length || Object.keys(xe).length || pictureError) return;
+    if (Object.keys(e).length || Object.keys(xe).length || pictureError) {
+      wizard.showErrors(firstStepWithError(STEPS, errorKeys(e, xe, pe)));
+      return;
+    }
     setSubmitting(true);
     try {
       const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d), ...(extraOn && teacherExtraPayload(extra)) });
@@ -210,6 +221,10 @@ function OpenForm() {
       const field = isApiError(err) ? TEACHER_ERROR_FIELDS[err.code] : undefined;
       if (field && isApiError(err)) server[field] = TEACHER_REGISTER_ERRORS[err.code];
       setErrors(server);
+      // A refused field: back to its step. Other refusals stay on this step with their message above the steps.
+      const at = firstStepWithError(STEPS, errorKeys(server));
+      if (at !== -1) wizard.showErrors(at);
+      else wizard.showMessage();
     } finally {
       setSubmitting(false);
     }
@@ -246,17 +261,10 @@ function OpenForm() {
   const places = locations.data;
   const missing = d.schoolMode === "missing";
 
-  return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5" data-testid="teacher-register-form">
-      <Heading />
-
-      {closedRefusal && <ClosedFormNotice notice={closedRefusal} />}
-      {showAlert && !closedRefusal && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
-      {teacherForm.data?.open && teacherForm.data.instructions?.trim() && (
-        <p className="whitespace-pre-line text-sm text-slate-600" data-testid="form-instructions">{teacherForm.data.instructions.trim()}</p>
-      )}
-
-      <Section step={1} title="About you">
+  // The fields of each step, as they were in the form's numbered sections.
+  const content: Record<string, ReactNode> = {
+    about: (
+      <>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={TEACHER_RULES.nameMax} value={d.firstName} onChange={(e) => set("firstName", e.target.value)} error={errors.firstName} />
           <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={TEACHER_RULES.nameMax} value={d.lastName} onChange={(e) => set("lastName", e.target.value)} error={errors.lastName} />
@@ -287,9 +295,10 @@ function OpenForm() {
             }}
           />
         )}
-      </Section>
-
-      <Section step={2} title="Olympiad interests" description="The Olympiad subjects you would like to support. Choose at least one.">
+      </>
+    ),
+    interests: (
+      <>
         <div className="flex flex-wrap gap-4" role="group" aria-label="Olympiad interests" aria-describedby={errors.interests ? "interests-error" : undefined}>
           {OLYMPIAD_SUBJECTS.map((s) => (
             <label key={s.value} className="inline-flex items-center gap-2 text-sm text-slate-700">
@@ -299,6 +308,7 @@ function OpenForm() {
                 value={s.value}
                 checked={d.interests.includes(s.value)}
                 onChange={() => set("interests", toggleInterest(d.interests, s.value))}
+                aria-invalid={errors.interests ? true : undefined}
                 className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
               />
               {s.label}
@@ -310,9 +320,10 @@ function OpenForm() {
             {errors.interests}
           </p>
         )}
-      </Section>
-
-      <Section step={3} title="Your school" description="The school where you teach, from the official list of Rwandan schools.">
+      </>
+    ),
+    school: (
+      <>
         {/* Country → Province → District → Sector → School: plain dropdowns; each step clears the ones after it. */}
         <CascadeSelect
           label="School country"
@@ -353,9 +364,10 @@ function OpenForm() {
             </p>
           </div>
         )}
-      </Section>
-
-      <Section step={4} title="Home location" description="Where you live (separate from your school).">
+      </>
+    ),
+    home: (
+      <>
         {!locations.isError && (
           <div className="grid gap-4 sm:grid-cols-2">
             <PlaceSelect
@@ -379,9 +391,10 @@ function OpenForm() {
           </div>
         )}
         {locations.isError && <p className="text-xs text-slate-600">Load the list of places above to choose your home location.</p>}
-      </Section>
-
-      <Section step={5} title="Your account">
+      </>
+    ),
+    account: (
+      <>
         <NewPasswordFields
           password={d.password}
           confirm={d.confirm}
@@ -390,13 +403,32 @@ function OpenForm() {
           errors={{ password: errors.password, confirm: errors.confirm }}
           label="Password"
         />
-      </Section>
+      </>
+    ),
+  };
+  const steps: WizardStep[] = STEPS.map((s) => ({ ...s, content: content[s.id] }));
 
-      <Button type="submit" loading={submitting} className="w-full">
-        {submitting ? "Sending your application…" : "Apply as a teacher"}
-      </Button>
+  return (
+    <form onSubmit={onSubmit} noValidate className={WIZARD_FORM_CLASS} data-testid="teacher-register-form">
+      <FormWizard
+        wizard={wizard}
+        steps={steps}
+        submitLabel="Apply as a teacher"
+        submittingLabel="Sending your application…"
+        submitting={submitting}
+        header={
+          <>
+            <Heading />
 
-      <Footer />
+            {closedRefusal && <ClosedFormNotice notice={closedRefusal} />}
+            {showAlert && !closedRefusal && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
+            {teacherForm.data?.open && teacherForm.data.instructions?.trim() && (
+              <p className="whitespace-pre-line text-sm text-slate-600" data-testid="form-instructions">{teacherForm.data.instructions.trim()}</p>
+            )}
+          </>
+        }
+        footer={<Footer />}
+      />
     </form>
   );
 }

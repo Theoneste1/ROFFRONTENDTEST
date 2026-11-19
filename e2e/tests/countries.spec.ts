@@ -5,10 +5,12 @@
  *  - a student whose school is abroad registers with the country chosen from the list and a typed school name (as today);
  *  - a Rwandan student still registers exactly as before (Province → District → Sector → School, S1–S6).
  * Each result is checked in the database. Synthetic data only; names are unique per run.
+ * The student form shows one step at a time: each step is filled, then "Next" (e2e/support/wizard).
  */
 import { expect, test, type Page } from "@playwright/test";
 import { withDb } from "../support/db";
 import { signIn } from "../support/session";
+import { nextStep } from "../support/wizard";
 
 const RUN = Date.now().toString(36);
 const PASSWORD = "Sign-Up-Pass-2026!";
@@ -36,8 +38,11 @@ async function submitAndExpect(page: Page) {
   await expect(page.getByTestId("register-done")).toBeVisible({ timeout: 30_000 });
 }
 
-/** The parts of the student form that are the same wherever the school is. */
-async function studentBasics(page: Page, username: string) {
+/**
+ * The parts of the student form that are the same wherever the school is: "About you", the grade and the Olympiad
+ * interest, the test's own school step (`school`), "Where you live" and "Your account".
+ */
+async function studentBasics(page: Page, username: string, grade: string, school: () => Promise<void>) {
   await page.goto("/register");
   await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
   await page.locator('input[name="firstName"]').fill("Grace");
@@ -45,12 +50,18 @@ async function studentBasics(page: Page, username: string) {
   await page.locator('input[name="dateOfBirth"]').fill("2011-03-10");
   await page.getByTestId("home-country").selectOption("RW");
   await page.locator('input[name="guardianPhone"]').fill("0788123456");
+  await nextStep(page, "Your studies");
+  await page.locator('select[name="gradeLevel"]').selectOption(grade);
   await page.getByTestId("olympiad-interests").getByLabel("Mathematics").check();
+  await nextStep(page, "Your school");
+  await school();
+  await nextStep(page, "Where you live");
   await selectWhenReady(page, "home-province", "Kigali City");
   await selectWhenReady(page, "home-district", "Gasabo");
   const sector = page.getByTestId("home-sector");
   await expect(sector).toBeEnabled();
   await sector.selectOption({ index: 1 });
+  await nextStep(page, "Your account");
   await page.locator('input[name="username"]').fill(username);
   await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
   await page.locator('input[name="new-password"]').fill(PASSWORD);
@@ -97,14 +108,14 @@ test.describe.serial("countries", () => {
   test("a student whose school is abroad registers with the country from the list and the school's name (as today)", async ({ page }) => {
     test.setTimeout(150_000);
     const username = `cty.abroad.${RUN}`;
-    await studentBasics(page, username);
-    await page.locator('select[name="gradeLevel"]').selectOption("S4");
-    const country = page.getByTestId("cascade-country");
-    // Every country is offered (no country is blocked).
-    await expect(country.locator("option[value]:not([value=''])")).toHaveCount(249, { timeout: 30_000 });
-    await country.selectOption("KE");
-    await expect(page.getByTestId("cascade-province")).toHaveCount(0);   // no hierarchy outside Rwanda
-    await page.getByLabel("School name").fill("Alliance High School");
+    await studentBasics(page, username, "S4", async () => {
+      const country = page.getByTestId("cascade-country");
+      // Every country is offered (no country is blocked).
+      await expect(country.locator("option[value]:not([value=''])")).toHaveCount(249, { timeout: 30_000 });
+      await country.selectOption("KE");
+      await expect(page.getByTestId("cascade-province")).toHaveCount(0);   // no hierarchy outside Rwanda
+      await page.getByLabel("School name").fill("Alliance High School");
+    });
     await submitAndExpect(page);
     const row = await withDb(async (c) => (await c.query(
       `SELECT u."gradeLevel"::text AS level, d.code::text AS division, a."claimedCountry", a."claimedName", a."schoolId"
@@ -116,13 +127,13 @@ test.describe.serial("countries", () => {
   test("a Rwandan student registers exactly as before (directory school, S1–S6)", async ({ page }) => {
     test.setTimeout(150_000);
     const username = `cty.rwanda.${RUN}`;
-    await studentBasics(page, username);
-    await page.locator('select[name="gradeLevel"]').selectOption("S2");
-    await page.getByTestId("cascade-country").selectOption("RW");
-    await selectWhenReady(page, "cascade-province", SCHOOL.province);
-    await selectWhenReady(page, "cascade-district", SCHOOL.district);
-    await selectWhenReady(page, "cascade-sector", SCHOOL.sector);
-    await selectWhenReady(page, "cascade-school", SCHOOL.name);
+    await studentBasics(page, username, "S2", async () => {
+      await page.getByTestId("cascade-country").selectOption("RW");
+      await selectWhenReady(page, "cascade-province", SCHOOL.province);
+      await selectWhenReady(page, "cascade-district", SCHOOL.district);
+      await selectWhenReady(page, "cascade-sector", SCHOOL.sector);
+      await selectWhenReady(page, "cascade-school", SCHOOL.name);
+    });
     await submitAndExpect(page);
     const row = await withDb(async (c) => (await c.query(
       `SELECT u."gradeLevel"::text AS level, d.code::text AS division, s.name AS school FROM "User" u
