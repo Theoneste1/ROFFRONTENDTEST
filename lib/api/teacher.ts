@@ -100,7 +100,16 @@ export interface TeacherStudentFilters {
   [key: string]: QueryValue;
 }
 
+/** GET /teacher/schools (primaryTeacher): your schools and whether you are the primary teacher (main contact). */
+export interface TeacherOwnSchool {
+  assignmentId: string;
+  role: "PRIMARY" | "SECONDARY";
+  since: string;
+  school: { id: string; code: string | null; name: string; location: string; district: string | null; sector: string | null };
+}
+
 export const teacherApi = {
+  schools: () => api<TeacherOwnSchool[]>("/teacher/schools"),
   students: (filters: TeacherStudentFilters = {}) => api<Page<TeacherStudent>>("/teacher/students", { query: filters }),
   summary: () => api<TeacherStudentsSummary>("/teacher/students/summary"),
   profile: (studentId: string) => api<TeacherStudentProfile>(`/teacher/students/${studentId}`),

@@ -24,6 +24,8 @@ import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { personName } from "@/lib/format";
 import { DELEGATION_LABEL, SCOPE_LABEL, STUDENT_SCOPES, scopeText, teacherStudentAccessSupported, type StudentScope } from "@/lib/accounts/teacher-student-access";
+import { displayedRole } from "@/lib/schools/primary-teacher";
+import TeacherRoleBadge from "@/app/components/teachers/TeacherRoleBadge";
 import { Card, btnPrimary, btnSecondary, linkBtn } from "../../components/adminUi";
 import { SchoolPicker, SelectInput, TextInput } from "../components/userUi";
 
@@ -113,6 +115,8 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                     <li key={a.id} className="px-3 py-2 flex items-center justify-between gap-2 text-sm">
                       <span className="min-w-0">
                         {a.school.name} <span className="text-xs text-gray-500">· {a.school.location} · since {formatDate(a.createdAt)}</span>
+                        {/* Primary teacher (owner decision 2026-11-19): the school's main contact; the same rights either way. */}
+                        {displayedRole(a) && <TeacherRoleBadge role={displayedRole(a)!} className="ml-2 align-middle" />}
                       </span>
                       <button type="button" className={linkBtn} disabled={act.isPending} onClick={() => act.mutate(() => teachersAdminApi.endAssignment(a.id))}>
                         End

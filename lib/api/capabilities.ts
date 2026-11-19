@@ -155,6 +155,12 @@ export const KNOWN_FEATURES = [
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */
   "countries",
+  /**
+   * Primary teacher of a school (owner decision 2026-11-19): `role` PRIMARY | SECONDARY on teacher–school links (filter
+   * `?role=`), POST /admin/teacher-assignments/:id/primary (users.manageTeachers), `role` on School Access rows,
+   * `teacherSchoolRole` on TEACHER rows of the users list, and GET /teacher/schools for the teacher. Without it: no badges.
+   */
+  "primaryTeacher",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

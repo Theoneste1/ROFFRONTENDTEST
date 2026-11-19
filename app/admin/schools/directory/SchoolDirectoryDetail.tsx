@@ -153,7 +153,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       {tab === "students" ? (
         <StudentsTab schoolId={s.id} />
       ) : tab === "teachers" && schoolTeachersVisible(can) ? (
-        <SchoolTeachersTab schoolId={s.id} />
+        <SchoolTeachersTab schoolId={s.id} schoolName={s.name} />
       ) : tab === "contacts" ? (
         <SchoolContactsTab schoolId={s.id} />
       ) : tab === "offerings" ? (

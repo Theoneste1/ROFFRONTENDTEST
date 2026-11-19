@@ -45,6 +45,7 @@ import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { Button, TextField } from "@/app/components/ui/form";
 import { PageFrame } from "@/app/components/ui/PageFrame";
 import SchoolAffiliationCard from "./SchoolAffiliationCard";
+import TeacherSchoolsCard from "./TeacherSchoolsCard";
 import { Section } from "./Section";
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
@@ -110,6 +111,7 @@ export default function ProfilePage() {
           {interestsOn && <InterestsCard user={user} />}
           {coachSubjectsOn && <InterestsCard user={user} coach />}
           {user.role === "STUDENT" && <SchoolAffiliationCard />}
+          {user.role === "TEACHER" && <TeacherSchoolsCard />}
           <Section title="Settings" icon={<Settings className="w-5 h-5" />} description="Your password, signed-in devices and notification e-mails.">
             <Link href={portalPath(user.role, "account")} className="inline-flex items-center gap-2 text-sm font-semibold text-[#2B2BB2] hover:underline" data-testid="profile-settings-link">
               Open Settings <ArrowRight className="h-4 w-4" aria-hidden="true" />

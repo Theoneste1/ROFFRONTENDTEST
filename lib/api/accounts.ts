@@ -12,6 +12,7 @@
 import { api, type QueryValue } from "./client";
 import type { GradeLevel, Page } from "./types";
 import type { ItemOutcome, ItemResult, StudentScope } from "../accounts/teacher-student-access";
+import type { TeacherSchoolRole } from "../schools/primary-teacher";
 
 // ─── School directory (public) ──────────────────────────────────────────────
 
@@ -135,6 +136,8 @@ export const affiliationsAdminApi = {
 export interface TeacherSchoolAssignment {
   id: string;
   isActive: boolean;
+  /** Backends with primaryTeacher: PRIMARY (the school's main contact) or SECONDARY — the same rights either way. */
+  role?: TeacherSchoolRole;
   createdAt: string;
   endedAt: string | null;
   teacher: { id: string; username: string; firstName: string; lastName: string };
@@ -188,6 +191,8 @@ export interface SchoolAccess {
   teachers: Array<{
     teacherSchoolAssignmentId: string;
     since: string;
+    /** Backends with primaryTeacher. */
+    role?: TeacherSchoolRole;
     teacher: PersonRef & { accountStatus: string };
     assignedStudents: number;
     delegations: Array<{ id: string; permission: string; studentScope: StudentScope | null; expiresAt: string | null; reviewNeededAt: string | null; reviewReason: string | null; selectedStudents: number | null }>;
@@ -224,6 +229,11 @@ export const teachersAdminApi = {
   /** A school's Teacher assignments (INT-07): names only, never contact details. */
   bySchool: (schoolId: string, q: { page?: number; isActive?: boolean } = {}) =>
     api<Page<TeacherSchoolAssignment>>("/admin/teacher-assignments", { query: { schoolId, page: q.page ?? 1, limit: 20, ...(q.isActive !== undefined && { isActive: q.isActive }) } }),
+  /** The school's active primary teacher link, or none (backends with primaryTeacher). */
+  primaryOf: (schoolId: string) =>
+    api<Page<TeacherSchoolAssignment>>("/admin/teacher-assignments", { query: { schoolId, isActive: true, role: "PRIMARY", limit: 1 } }).then((p) => p.data[0] ?? null),
+  /** Make this teacher the school's primary teacher; the previous one becomes secondary (users.manageTeachers). */
+  makePrimary: (assignmentId: string) => post<TeacherSchoolAssignment>(`/admin/teacher-assignments/${assignmentId}/primary`, {}),
   assign: (teacherId: string, schoolId: string) => post<TeacherSchoolAssignment>("/admin/teacher-assignments", { teacherId, schoolId }),
   endAssignment: (id: string) => api<TeacherSchoolAssignment>(`/admin/teacher-assignments/${id}`, { method: "DELETE" }),
   delegations: (teacherId: string) => api<DelegationRow[]>(`/admin/teachers/${teacherId}/delegations`),
