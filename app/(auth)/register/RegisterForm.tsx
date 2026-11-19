@@ -24,13 +24,19 @@
  * retry, and lets the student continue with the legacy fields. Once a form is
  * chosen it is kept, so a later re-check can't swap fields while someone types.
  *
+ * Steps (app/components/forms/FormWizard): About you, Your studies, Your school, Where you live, Your account, one at a
+ * time. Next checks the shown step with the rules below; the last step sends the form; a refused field goes back to its step.
+ *
  * Closed registration (capability formAvailability): the page shows the administrator's closed message, opening time,
  * instructions and contact (GET /forms/STUDENT_REGISTRATION) instead of the form, and a refused submission shows the
  * same texts from the 403 REGISTRATION_CLOSED body. Other backends keep the fixed closed text.
  */
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { AuthHeading, FormSection, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
+import { AuthHeading, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
+import FormWizard, { useFormWizard, WIZARD_FORM_CLASS, type WizardStep } from "@/app/components/forms/FormWizard";
+import { errorKeys, firstStepWithError, replaceStepErrors } from "@/lib/forms/wizard";
+import { STUDENT_STEPS as STEPS } from "@/lib/forms/registration-steps";
 import { publicApi, type RegisterStudentResult } from "@/lib/api/auth";
 import type { GradeLevel } from "@/lib/api/types";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
@@ -128,7 +134,7 @@ export default function RegisterForm() {
   const directory = schoolMode === "directory";
   const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
   const [claimErrors, setClaimErrors] = useState<Partial<Record<SchoolClaimField, string>>>({});
-
+  const wizard = useFormWizard(STEPS.length);
 
   function validate() {
     const e: Partial<Record<F, string>> = {};
@@ -158,11 +164,25 @@ export default function RegisterForm() {
     const e = validate();
     const ce = directory ? validateSchoolClaim(claim) : {};
     const de = detailsOn ? validateStudentDetails(details) : {};
+    const pe = { picture: pictureError };
+    if (!wizard.isLast) {
+      // Next (or Enter in a field): the same rules, for the fields of the shown step only.
+      const step = STEPS[wizard.index];
+      setErrors((s) => replaceStepErrors(step, s, e));
+      setClaimErrors((s) => replaceStepErrors(step, s, ce));
+      setDetailErrors((s) => replaceStepErrors(step, s, de));
+      if (firstStepWithError([step], errorKeys(e, ce, de, pe)) === 0) wizard.showErrors();
+      else wizard.next();
+      return;
+    }
     setErrors(e);
     setClaimErrors(ce);
     setDetailErrors(de);
     setError(null);
-    if (Object.keys(e).length || Object.keys(ce).length || Object.keys(de).length || pictureError) return;
+    if (Object.keys(e).length || Object.keys(ce).length || Object.keys(de).length || pictureError) {
+      wizard.showErrors(firstStepWithError(STEPS, errorKeys(e, ce, de, pe)));
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await publicApi.registerStudent({
@@ -180,17 +200,26 @@ export default function RegisterForm() {
       setDone(res);
     } catch (err) {
       setError(err);
-      setErrors(fieldErrors(err, FIELDS));
+      const fe = fieldErrors(err, FIELDS);
+      setErrors(fe);
+      let sde: Partial<Record<StudentDetailsField, string>> = {};
+      let sce: Partial<Record<SchoolClaimField, string>> = {};
       if (detailsOn) {
         const server: Partial<Record<StudentDetailsField, string>> = fieldErrors(err, STUDENT_DETAILS_SERVER_FIELDS);
         const coded = isApiError(err) && err.code ? STUDENT_DETAILS_ERRORS[err.code] : undefined;
         if (coded) server[coded.field] = coded.message;
         setDetailErrors(server);
+        sde = server;
       }
       if (directory) {
         const server = fieldErrors(err, CLAIM_SERVER_FIELDS);
-        setClaimErrors(Object.fromEntries(Object.entries(server).map(([k, m]) => [SCHOOL_CLAIM_SERVER_FIELDS[k], m])));
+        sce = Object.fromEntries(Object.entries(server).map(([k, m]) => [SCHOOL_CLAIM_SERVER_FIELDS[k], m]));
+        setClaimErrors(sce);
       }
+      // A refused field: back to its step. Other refusals stay on this step with their message above the steps.
+      const at = firstStepWithError(STEPS, errorKeys(fe, sde, sce));
+      if (at !== -1) wizard.showErrors(at);
+      else wizard.showMessage();
     } finally {
       setSubmitting(false);
     }
@@ -289,22 +318,10 @@ export default function RegisterForm() {
     !!coded || Object.keys(fieldErrors(error, [...(directory ? [...FIELDS, ...CLAIM_SERVER_FIELDS] : FIELDS), ...(detailsOn ? STUDENT_DETAILS_SERVER_FIELDS : [])])).length > 0;
   const homeInRwanda = details.homeCountry === RWANDA;
 
-  return (
-    <form onSubmit={onSubmit} noValidate className="space-y-5">
-      <JoinSwitch active="student" />
-      <AuthHeading title="Join as a student" subtitle="Create your free ROF account and start preparing for the Olympiads. It only takes a few minutes." />
-      <p className="text-xs text-slate-600">
-        Fields marked <span className="text-red-500">*</span> are required.
-      </p>
-
-      {closedRefusal && <ClosedFormNotice notice={closedRefusal} />}
-      {error != null && !fieldErr && !closedRefusal && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
-      {studentForm.data?.open && studentForm.data.instructions?.trim() && (
-        <p className="whitespace-pre-line text-sm text-slate-600" data-testid="form-instructions">{studentForm.data.instructions.trim()}</p>
-      )}
-      {error != null && fieldErr && <Alert tone="error">Please check the highlighted fields.</Alert>}
-
-      <FormSection step={1} title="About you">
+  // The fields of each step, as they were in the form's numbered sections.
+  const content: Record<string, ReactNode> = {
+    about: (
+      <>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />
           <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />
@@ -368,9 +385,10 @@ export default function RegisterForm() {
             </div>
           </>
         )}
-      </FormSection>
-
-      <FormSection step={2} title="Your studies">
+      </>
+    ),
+    studies: (
+      <>
         <div>
           <label htmlFor="gradeLevel" className="block text-sm font-semibold text-slate-700 mb-2">
             Grade <span className="text-red-500">*</span>
@@ -409,9 +427,10 @@ export default function RegisterForm() {
             error={errors.olympiadInterests}
           />
         )}
-      </FormSection>
-
-      <FormSection step={3} title="Your school">
+      </>
+    ),
+    school: (
+      <>
         {directory ? (
           <SchoolClaimFields
             value={claim}
@@ -429,9 +448,10 @@ export default function RegisterForm() {
             <TextField label="School location" name="schoolLocation" required maxLength={200} value={v.schoolLocation} onChange={(e) => set("schoolLocation")(e.target.value)} error={errors.schoolLocation} hint="District or city" />
           </div>
         )}
-      </FormSection>
-
-      <FormSection step={4} title="Where you live">
+      </>
+    ),
+    home: (
+      <>
         {detailsOn && homeInRwanda ? (
           // Province → District → Sector of the official list; each step clears the ones after it.
           <PlaceSelects
@@ -458,19 +478,44 @@ export default function RegisterForm() {
         ) : (
           <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
         )}
-      </FormSection>
-
-      <FormSection step={5} title="Your account">
+      </>
+    ),
+    account: (
+      <>
         <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />
         <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} />
         <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
+      </>
+    ),
+  };
+  const steps: WizardStep[] = STEPS.map((s) => ({ ...s, content: content[s.id] }));
 
-        <Button type="submit" loading={submitting} className="w-full">
-          {submitting ? "Creating your account…" : "Create my account"}
-        </Button>
-      </FormSection>
+  return (
+    <form onSubmit={onSubmit} noValidate className={WIZARD_FORM_CLASS}>
+      <FormWizard
+        wizard={wizard}
+        steps={steps}
+        submitLabel="Create my account"
+        submittingLabel="Creating your account…"
+        submitting={submitting}
+        header={
+          <>
+            <JoinSwitch active="student" />
+            <AuthHeading title="Join as a student" subtitle="Create your free ROF account and start preparing for the Olympiads. It only takes a few minutes." />
+            <p className="text-xs text-slate-600">
+              Fields marked <span className="text-red-500">*</span> are required.
+            </p>
 
-      <SignInInstead />
+            {closedRefusal && <ClosedFormNotice notice={closedRefusal} />}
+            {error != null && !fieldErr && !closedRefusal && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
+            {studentForm.data?.open && studentForm.data.instructions?.trim() && (
+              <p className="whitespace-pre-line text-sm text-slate-600" data-testid="form-instructions">{studentForm.data.instructions.trim()}</p>
+            )}
+            {error != null && fieldErr && <Alert tone="error">Please check the highlighted fields.</Alert>}
+          </>
+        }
+        footer={<SignInInstead />}
+      />
     </form>
   );
 }

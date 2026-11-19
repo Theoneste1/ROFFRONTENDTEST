@@ -23,6 +23,7 @@ hour and is refused (429), as designed.
 | `role-journeys`, `sidebar`, `sidebar.mobile` | every portal, navigation, refusal of other portals |
 | `date-of-birth-step`, `privacy`, `teacher-student-access` | first-sign-in date of birth, picture privacy, teacher access |
 | `registration-forms` | student sign-up with and without the optional picture, teacher and coach applications, closed form (REG-02/05/06/08, UX-01) |
+| `registration-wizard` | the registration forms one step at a time: progress and ARIA, Next checks the shown step, Back keeps everything, Enter, focus, a refused field back to its step, the Student / Teacher / Coach switch, the card fitting 1366×768 and 375×667 windows (inner scroll) |
 | `application-review` | Administrator asks for information, rejects with a reason, approves (REG-10) |
 | `admin-users` | bulk suspend with preview and reason, account history, CSV export, e-mail preferences (ACC-09/11, REG-12, NOT-03) |
 | `countries` | countries (owner decision 2026-11-19): an Administrator corrects a country on the Countries screen (audited); students register with a school abroad and in Rwanda (INT-01, INT-02, REG-03) |
