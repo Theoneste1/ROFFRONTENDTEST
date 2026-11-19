@@ -40,19 +40,23 @@ async function submitAndExpect(page: Page) {
 
 /**
  * The parts of the student form that are the same wherever the school is: "About you", the grade and the Olympiad
- * interest, the test's own school step (`school`), "Where you live" and "Your account".
+ * interest, the test's own school steps (`place`: "School location", `school`: "Your school"), "Where you live" and
+ * "Your account".
  */
-async function studentBasics(page: Page, username: string, grade: string, school: () => Promise<void>) {
+async function studentBasics(page: Page, username: string, grade: string, place: () => Promise<void>, school: () => Promise<void>) {
   await page.goto("/register");
   await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
   await page.locator('input[name="firstName"]').fill("Grace");
   await page.locator('input[name="lastName"]').fill(`Country${RUN}`);
   await page.locator('input[name="dateOfBirth"]').fill("2011-03-10");
   await page.getByTestId("home-country").selectOption("RW");
+  await nextStep(page, "Phone and picture");
   await page.locator('input[name="guardianPhone"]').fill("0788123456");
   await nextStep(page, "Your studies");
   await page.locator('select[name="gradeLevel"]').selectOption(grade);
   await page.getByTestId("olympiad-interests").getByLabel("Mathematics").check();
+  await nextStep(page, "School location");
+  await place();
   await nextStep(page, "Your school");
   await school();
   await nextStep(page, "Where you live");
@@ -108,14 +112,21 @@ test.describe.serial("countries", () => {
   test("a student whose school is abroad registers with the country from the list and the school's name (as today)", async ({ page }) => {
     test.setTimeout(150_000);
     const username = `cty.abroad.${RUN}`;
-    await studentBasics(page, username, "S4", async () => {
-      const country = page.getByTestId("cascade-country");
-      // Every country is offered (no country is blocked).
-      await expect(country.locator("option[value]:not([value=''])")).toHaveCount(249, { timeout: 30_000 });
-      await country.selectOption("KE");
-      await expect(page.getByTestId("cascade-province")).toHaveCount(0);   // no hierarchy outside Rwanda
-      await page.getByLabel("School name").fill("Alliance High School");
-    });
+    await studentBasics(
+      page,
+      username,
+      "S4",
+      async () => {
+        const country = page.getByTestId("cascade-country");
+        // Every country is offered (no country is blocked).
+        await expect(country.locator("option[value]:not([value=''])")).toHaveCount(249, { timeout: 30_000 });
+        await country.selectOption("KE");
+        await expect(page.getByTestId("cascade-province")).toHaveCount(0);   // no hierarchy outside Rwanda
+      },
+      async () => {
+        await page.getByLabel("School name").fill("Alliance High School");
+      },
+    );
     await submitAndExpect(page);
     const row = await withDb(async (c) => (await c.query(
       `SELECT u."gradeLevel"::text AS level, d.code::text AS division, a."claimedCountry", a."claimedName", a."schoolId"
@@ -127,13 +138,20 @@ test.describe.serial("countries", () => {
   test("a Rwandan student registers exactly as before (directory school, S1–S6)", async ({ page }) => {
     test.setTimeout(150_000);
     const username = `cty.rwanda.${RUN}`;
-    await studentBasics(page, username, "S2", async () => {
-      await page.getByTestId("cascade-country").selectOption("RW");
-      await selectWhenReady(page, "cascade-province", SCHOOL.province);
-      await selectWhenReady(page, "cascade-district", SCHOOL.district);
-      await selectWhenReady(page, "cascade-sector", SCHOOL.sector);
-      await selectWhenReady(page, "cascade-school", SCHOOL.name);
-    });
+    await studentBasics(
+      page,
+      username,
+      "S2",
+      async () => {
+        await page.getByTestId("cascade-country").selectOption("RW");
+        await selectWhenReady(page, "cascade-province", SCHOOL.province);
+        await selectWhenReady(page, "cascade-district", SCHOOL.district);
+        await selectWhenReady(page, "cascade-sector", SCHOOL.sector);
+      },
+      async () => {
+        await selectWhenReady(page, "cascade-school", SCHOOL.name);
+      },
+    );
     await submitAndExpect(page);
     const row = await withDb(async (c) => (await c.query(
       `SELECT u."gradeLevel"::text AS level, d.code::text AS division, s.name AS school FROM "User" u

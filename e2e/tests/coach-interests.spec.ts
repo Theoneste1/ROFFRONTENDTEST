@@ -53,22 +53,23 @@ test.describe("coach subjects", () => {
     await page.locator('input[name="firstName"]').fill("Sara");
     await page.locator('input[name="lastName"]').fill(`Subjects${RUN}`);
     await page.getByTestId("coach-country").selectOption("RW");
+    await page.locator('input[name="phone"]').fill("0788333444");
     await nextStep(page, "Your background");
     const subjects = page.getByTestId("olympiad-interests");
     await expect(subjects.getByText(QUESTION)).toBeVisible();
     await expect(subjects.locator("legend .text-red-500")).toHaveText("*");
     await page.locator('input[name="occupation"]').fill("Physics lecturer");
     await page.getByTestId("coach-education").selectOption("MASTER");
-    await page.locator('input[name="phone"]').fill("0788333444");
-    await page.locator('textarea[name="expertise"]').fill("Olympiad mathematics and computing.");
-    await page.locator('textarea[name="relevantExperience"]').fill("Four years of olympiad training camps.");
     // No subject: Next is refused on this step with the message.
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(page.getByText(REQUIRED)).toBeVisible();
-    await expect(progress(page)).toContainText("Step 2 of 3");
+    await expect(progress(page)).toContainText("Step 2 of 4");
     await subjects.getByLabel("Mathematics").check();
     await subjects.getByLabel("Computing").check();
     await expect(page.getByText(REQUIRED)).toHaveCount(0);
+    await nextStep(page, "Your experience");
+    await page.locator('textarea[name="expertise"]').fill("Olympiad mathematics and computing.");
+    await page.locator('textarea[name="relevantExperience"]').fill("Four years of olympiad training camps.");
     await nextStep(page, "Your account");
     await page.locator('input[name="username"]').fill(username);
     await page.locator('input[name="email"]').fill(`${username}@e2e.local`);

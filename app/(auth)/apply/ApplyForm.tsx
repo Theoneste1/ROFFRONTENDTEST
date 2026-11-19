@@ -10,8 +10,9 @@
  * administrators create Teacher accounts, so the page says so and links to the
  * contact form either way.
  *
- * Steps (app/components/forms/FormWizard): About you, Your background (with the coach application details), Your account,
- * one at a time. Next checks the shown step with the form's rules; a refused field goes back to its step. The teacher
+ * Steps (app/components/forms/FormWizard, lib/forms/registration-steps → coachSteps): About you, Your background, Your
+ * experience (with the coach application details), Your account on wider windows (two columns); more and smaller steps on
+ * phones. Each fits the window. Next checks the shown step with the form's rules; a refused field goes back to its step. The teacher
  * page (`?as=teacher`) is its own component, so switching between Coach and Teacher always starts the coach form afresh.
  */
 import { useState, type FormEvent, type ReactNode } from "react";
@@ -41,7 +42,7 @@ import {
 } from "@/lib/accounts/coach-application";
 import { CascadeSelect } from "@/app/components/schools/SchoolCascade";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
-import FormWizard, { useFormWizard, WIZARD_FORM_CLASS, type WizardStep } from "@/app/components/forms/FormWizard";
+import FormWizard, { useFormWizard, useWizardLayout, WIZARD_FORM_CLASS } from "@/app/components/forms/FormWizard";
 import { errorKeys, firstStepWithError, replaceStepErrors } from "@/lib/forms/wizard";
 import { coachSteps } from "@/lib/forms/registration-steps";
 
@@ -139,8 +140,13 @@ function CoachApplication() {
   const [pictureError, setPictureError] = useState<string | null>(null);
   const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
-  const stepModels = coachSteps(detailsOn);
-  const wizard = useFormWizard(stepModels.length);
+  // The steps of the shown layout, with the parts this backend asks for.
+  const stepModels = coachSteps(useWizardLayout(), detailsOn, (part) => {
+    if (part === "picture") return pictureOn;
+    if (["phone", "affiliation", "expertise", "relevantExperience", "yearsOfExperience"].includes(part)) return extraOn;
+    return true;
+  });
+  const wizard = useFormWizard(stepModels);
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
@@ -224,105 +230,113 @@ function CoachApplication() {
   const fieldErr = Object.keys(fieldErrors(error, detailsOn ? [...FIELDS, ...DETAIL_FIELDS] : FIELDS)).length > 0;
   const teacherHref = teacherSelfRegistration ? "/register/teacher" : "/apply?as=teacher";
 
-  // The fields of each step, as they were in the form's numbered sections.
-  const content: Record<string, ReactNode> = {
-    about: (
-      <>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />
-          <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />
-        </div>
-        {detailsOn && (
-          <CascadeSelect label="Country" value={details.country} onChange={(c) => setDetail("country", c, "country")} options={countries} placeholder="Choose your country" error={detailErrors.country} testId="coach-country" />
-        )}
-      </>
+  const extraField = (only: keyof CoachExtraDraft) =>
+    extraOn && (
+      <CoachExtraFields
+        only={only}
+        value={extra}
+        onChange={(k, val) => {
+          setExtra((s) => ({ ...s, [k]: val }));
+          setExtraErrors((s) => ({ ...s, [k]: undefined }));
+        }}
+        errors={extraErrors}
+      />
+    );
+  const passwordProps = { password, confirm, onPassword: setPassword, onConfirm: setConfirm, errors: { password: errors.password, confirm: errors.confirm }, label: "Password" };
+
+  // The fields, part by part (lib/forms/registration-steps → COACH_PARTS): the steps show them in two columns or one.
+  const parts: Record<string, ReactNode> = {
+    firstName: <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
+    lastName: <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
+    country: detailsOn && (
+      <CascadeSelect label="Country" value={details.country} onChange={(c) => setDetail("country", c, "country")} options={countries} placeholder="Choose your country" error={detailErrors.country} testId="coach-country" />
     ),
-    background: (
-      <>
-        <TextField
-          label="Current or most recent occupation"
-          name="occupation"
-          required
-          maxLength={200}
-          value={details.occupation}
-          onChange={(e) => setDetail("occupation", e.target.value, "occupation")}
-          error={detailErrors.occupation}
-          hint="For example: mathematics teacher, engineering student, software developer."
-        />
-        <CascadeSelect
-          label="Highest level of education"
-          value={details.educationLevel}
-          onChange={(l) => setDetail("educationLevel", l as CoachDetailsDraft["educationLevel"], "educationLevel")}
-          options={EDUCATION_LEVELS}
-          placeholder="Choose your level of education"
-          error={detailErrors.educationLevel}
-          hint="Completed or in progress."
-          testId="coach-education"
-        />
-        <OlympiadInterestsField
-          value={details.interests}
-          onChange={(next) => setDetail("interests", next, "olympiadInterests")}
-          error={detailErrors.olympiadInterests}
-          label={COACH_SUBJECTS_LABEL}
-          hint="Choose one or more. You can change them later on your profile."
-        />
-        {extraOn && (
-          <CoachExtraFields
-            value={extra}
-            onChange={(k, val) => {
-              setExtra((s) => ({ ...s, [k]: val }));
-              setExtraErrors((s) => ({ ...s, [k]: undefined }));
-            }}
-            errors={extraErrors}
-          />
-        )}
-        {pictureOn && (
-          <OptionalAvatarField
-            file={picture}
-            error={pictureError}
-            onChange={(f) => {
-              setPicture(f);
-              setPictureError(registrationAvatarProblem(f));
-            }}
-          />
-        )}
-      </>
+    occupation: (
+      <TextField
+        label="Current or most recent occupation"
+        name="occupation"
+        required
+        maxLength={200}
+        value={details.occupation}
+        onChange={(e) => setDetail("occupation", e.target.value, "occupation")}
+        error={detailErrors.occupation}
+        hint="For example: mathematics teacher, engineering student, software developer."
+      />
     ),
-    account: (
-      <>
-        <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />
-        <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />
-        <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={{ password: errors.password, confirm: errors.confirm }} label="Password" />
-      </>
+    educationLevel: (
+      <CascadeSelect
+        label="Highest level of education"
+        value={details.educationLevel}
+        onChange={(l) => setDetail("educationLevel", l as CoachDetailsDraft["educationLevel"], "educationLevel")}
+        options={EDUCATION_LEVELS}
+        placeholder="Choose your level of education"
+        error={detailErrors.educationLevel}
+        hint="Completed or in progress."
+        testId="coach-education"
+      />
     ),
+    olympiadInterests: (
+      <OlympiadInterestsField
+        value={details.interests}
+        onChange={(next) => setDetail("interests", next, "olympiadInterests")}
+        error={detailErrors.olympiadInterests}
+        label={COACH_SUBJECTS_LABEL}
+        hint="Choose one or more. You can change them later on your profile."
+      />
+    ),
+    phone: extraField("phone"),
+    affiliation: extraField("affiliation"),
+    expertise: extraField("expertise"),
+    relevantExperience: extraField("relevantExperience"),
+    yearsOfExperience: extraField("yearsOfExperience"),
+    picture: pictureOn && (
+      <OptionalAvatarField
+        file={picture}
+        error={pictureError}
+        onChange={(f) => {
+          setPicture(f);
+          setPictureError(registrationAvatarProblem(f));
+        }}
+      />
+    ),
+    username: <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    email: <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />,
+    password: <NewPasswordFields only="password" {...passwordProps} />,
+    confirm: <NewPasswordFields only="confirm" {...passwordProps} />,
   };
-  const steps: WizardStep[] = stepModels.map((st) => ({ ...st, content: content[st.id] }));
 
   return (
     <form onSubmit={onSubmit} noValidate className={WIZARD_FORM_CLASS}>
       <FormWizard
         wizard={wizard}
-        steps={steps}
+        steps={stepModels}
+        parts={parts}
         submitLabel={`Apply as a ${role.toLowerCase()}`}
         submittingLabel="Sending your application…"
         submitting={submitting}
         header={
           <>
-            <JoinSwitch active="coach" />
-            <div>
-              <AuthHeading title={`Join as a ${role.toLowerCase()}`} />
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Coaches mentor ROF students: you prepare assignments, share resources and review student work for the courses you are assigned. An administrator reviews every application.
-              </p>
-              <p className="mt-2 text-xs text-slate-600">
-                A school teacher?{" "}
-                <Link href={teacherHref} className="font-medium text-[#2B2BB2] hover:underline">
-                  Join as a teacher
-                </Link>{" "}
-                instead.
-              </p>
-            </div>
-
+            <JoinSwitch active="coach" compact />
+            <AuthHeading title={`Join as a ${role.toLowerCase()}`} compact />
+          </>
+        }
+        intro={
+          <div className="space-y-1">
+            <p className="text-sm leading-snug text-slate-600">
+              Coaches mentor ROF students: you prepare assignments, share resources and review student work for the courses you are assigned. An administrator reviews every application.
+            </p>
+            {/* On phones the switch above (Teacher) is the same link. */}
+            <p className="hidden text-xs text-slate-600 wizard-wide:block">
+              A school teacher?{" "}
+              <Link href={teacherHref} className="font-medium text-[#2B2BB2] hover:underline">
+                Join as a teacher
+              </Link>{" "}
+              instead.
+            </p>
+          </div>
+        }
+        notices={
+          <>
             {error != null && !fieldErr && (
               <Alert tone="error">
                 {taken ? "That username or e-mail is already in use or has a pending application. Try another, or sign in if you already have an account." : errorMessage(error)}

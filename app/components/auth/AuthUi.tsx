@@ -11,13 +11,13 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
  * the page heading and the Student / Teacher / Coach switch of the registration pages.
  */
 
-/** Title and short explanation at the top of every auth page. */
-export function AuthHeading({ title, subtitle, eyebrow }: { title: ReactNode; subtitle?: ReactNode; eyebrow?: string }) {
+/** Title and short explanation at the top of every auth page (`compact`: the registration steps, which fit the window). */
+export function AuthHeading({ title, subtitle, eyebrow, compact = false }: { title: ReactNode; subtitle?: ReactNode; eyebrow?: string; compact?: boolean }) {
   return (
     <div>
       {eyebrow && <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#2B2BB2]">{eyebrow}</p>}
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
-      {subtitle && <p className="mt-2 text-sm leading-relaxed text-slate-600">{subtitle}</p>}
+      <h1 className={`font-bold tracking-tight text-slate-900 ${compact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"}`}>{title}</h1>
+      {subtitle && <p className={`text-sm text-slate-600 ${compact ? "mt-1 leading-snug" : "mt-2 leading-relaxed"}`}>{subtitle}</p>}
     </div>
   );
 }
@@ -39,8 +39,8 @@ function useJoinRoles() {
   return ROLES.map((r) => (r.role === "teacher" && selfRegistration ? { ...r, href: "/register/teacher" } : r));
 }
 
-/** Which kind of account to create: each is its own page and workflow; this only links between them. */
-export function JoinSwitch({ active }: { active: JoinRole }) {
+/** Which kind of account to create: each is its own page and workflow; this only links between them (`compact`: less padding). */
+export function JoinSwitch({ active, compact = false }: { active: JoinRole; compact?: boolean }) {
   const roles = useJoinRoles();
   return (
     <nav aria-label="Choose your account type" className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1" data-testid="join-switch">
@@ -51,7 +51,7 @@ export function JoinSwitch({ active }: { active: JoinRole }) {
             key={role}
             href={href}
             aria-current={on ? "page" : undefined}
-            className={`flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl px-2 ${compact ? "py-1.5" : "py-2.5"} text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
               on ? "bg-white text-[#2B2BB2] shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-800"
             }`}
           >

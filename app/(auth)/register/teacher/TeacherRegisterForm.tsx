@@ -15,13 +15,14 @@
  * read-only, never sent), or "My school is not listed" (name + sector, reviewed by an
  * Administrator). Home location: district → sector, separate from the school.
  *
- * Steps (app/components/forms/FormWizard): About you, Olympiad interests, Your school, Home location, Your account, one at
- * a time. Next checks the shown step with the rules of validateTeacherRegistration; a refused field goes back to its step.
+ * Steps (app/components/forms/FormWizard, lib/forms/registration-steps → teacherSteps): About you, Your teaching, School
+ * location, Your school, Home location, Your account on wider windows (two columns); more and smaller steps on phones.
+ * Each fits the window. Next checks the shown step with the rules of validateTeacherRegistration; a refused field goes back to its step.
  */
 import { useState, type FormEvent, type ReactNode } from "react";
-import FormWizard, { useFormWizard, WIZARD_FORM_CLASS, type WizardStep } from "@/app/components/forms/FormWizard";
+import FormWizard, { useFormWizard, useWizardLayout, WIZARD_FORM_CLASS } from "@/app/components/forms/FormWizard";
 import { errorKeys, firstStepWithError, replaceStepErrors } from "@/lib/forms/wizard";
-import { TEACHER_STEPS as STEPS } from "@/lib/forms/registration-steps";
+import { teacherSteps } from "@/lib/forms/registration-steps";
 import { useCountryOptions } from "@/lib/queries/countries";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -72,11 +73,13 @@ import type { Place } from "@/lib/schools/school-cascade";
 
 const primaryLink = "inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]";
 
+const SUBTITLE = "Apply for a teacher account. An administrator reviews every application before the account is created.";
+
 function Heading() {
   return (
     <>
       <JoinSwitch active="teacher" />
-      <AuthHeading title="Join as a teacher" subtitle="Apply for a teacher account. An administrator reviews every application before the account is created." />
+      <AuthHeading title="Join as a teacher" subtitle={SUBTITLE} />
     </>
   );
 }
@@ -186,7 +189,15 @@ function OpenForm() {
   const countries = useCountryOptions().options;
   const set = <K extends keyof TeacherDraft>(k: K, v: TeacherDraft[K]) => setD((s) => ({ ...s, [k]: v }));
   const update = (fn: (s: TeacherDraft) => TeacherDraft) => setD(fn);
-  const wizard = useFormWizard(STEPS.length);
+  const missing = d.schoolMode === "missing";
+  // The steps of the shown layout, with the parts this backend and these answers ask for.
+  const STEPS = teacherSteps(useWizardLayout(), (part) => {
+    if (part === "position" || part === "yearsOfExperience") return extraOn;
+    if (part === "picture") return pictureOn;
+    if (part === "proposedSchoolName") return missing;
+    return true;
+  });
+  const wizard = useFormWizard(STEPS);
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
@@ -259,47 +270,44 @@ function OpenForm() {
   const serverFieldErrors = isApiError(error) && mapServerFieldErrors(error.validationMessages);
   const showAlert = error != null && (known || !serverFieldErrors || Object.keys(serverFieldErrors).length === 0);
   const places = locations.data;
-  const missing = d.schoolMode === "missing";
+  const schoolPlace = (only: "province" | "district" | "sector") => (
+    <PlaceSelects
+      only={only}
+      value={{ province: d.schoolProvince, district: d.schoolDistrict, sector: d.schoolSector }}
+      onChange={(p) => update((s) => schoolPlaceChanged(s, p))}
+      errors={{ province: errors.schoolProvince, district: errors.schoolDistrict, sector: errors.schoolSector }}
+    />
+  );
 
-  // The fields of each step, as they were in the form's numbered sections.
-  const content: Record<string, ReactNode> = {
-    about: (
-      <>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={TEACHER_RULES.nameMax} value={d.firstName} onChange={(e) => set("firstName", e.target.value)} error={errors.firstName} />
-          <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={TEACHER_RULES.nameMax} value={d.lastName} onChange={(e) => set("lastName", e.target.value)} error={errors.lastName} />
-        </div>
-        <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={d.username} onChange={(e) => set("username", e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />
-        <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={d.email} onChange={(e) => set("email", e.target.value)} error={errors.email} />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <PlaceSelect label="Country" value={d.country} onChange={(v) => set("country", v)} options={countries} placeholder="Choose your country" error={errors.country} />
-          <TextField label="Phone" name="phone" type="tel" autoComplete="tel" required maxLength={30} value={d.phone} onChange={(e) => set("phone", e.target.value)} error={errors.phone} hint={PHONE_HINT} />
-        </div>
-        {extraOn && (
-          <TeacherExtraFields
-            value={extra}
-            onChange={(k, val) => {
-              setExtra((s) => ({ ...s, [k]: val }));
-              setExtraErrors((s) => ({ ...s, [k]: undefined }));
-            }}
-            errors={extraErrors}
-          />
-        )}
-        {pictureOn && (
-          <OptionalAvatarField
-            file={picture}
-            error={pictureError}
-            onChange={(f) => {
-              setPicture(f);
-              setPictureError(registrationAvatarProblem(f));
-            }}
-          />
-        )}
-      </>
-    ),
+  const extraField = (only: keyof TeacherExtraDraft) =>
+    extraOn && (
+      <TeacherExtraFields
+        only={only}
+        value={extra}
+        onChange={(k, val) => {
+          setExtra((s) => ({ ...s, [k]: val }));
+          setExtraErrors((s) => ({ ...s, [k]: undefined }));
+        }}
+        errors={extraErrors}
+      />
+    );
+  const passwordProps = { password: d.password, confirm: d.confirm, onPassword: (v: string) => set("password", v), onConfirm: (v: string) => set("confirm", v), errors: { password: errors.password, confirm: errors.confirm }, label: "Password" };
+
+  // The fields, part by part (lib/forms/registration-steps → TEACHER_PARTS): the steps show them in two columns or one.
+  const parts: Record<string, ReactNode> = {
+    firstName: <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={TEACHER_RULES.nameMax} value={d.firstName} onChange={(e) => set("firstName", e.target.value)} error={errors.firstName} />,
+    lastName: <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={TEACHER_RULES.nameMax} value={d.lastName} onChange={(e) => set("lastName", e.target.value)} error={errors.lastName} />,
+    email: <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={d.email} onChange={(e) => set("email", e.target.value)} error={errors.email} />,
+    phone: <TextField label="Phone" name="phone" type="tel" autoComplete="tel" required maxLength={30} value={d.phone} onChange={(e) => set("phone", e.target.value)} error={errors.phone} hint={PHONE_HINT} />,
+    country: <PlaceSelect label="Country" value={d.country} onChange={(v) => set("country", v)} options={countries} placeholder="Choose your country" error={errors.country} />,
+    position: extraField("position"),
+    yearsOfExperience: extraField("yearsOfExperience"),
     interests: (
-      <>
-        <div className="flex flex-wrap gap-4" role="group" aria-label="Olympiad interests" aria-describedby={errors.interests ? "interests-error" : undefined}>
+      <div>
+        <p className="mb-1 text-sm font-semibold text-slate-700">
+          Olympiad interests <span className="text-red-500">*</span>
+        </p>
+        <div className="flex flex-wrap gap-4" role="group" aria-label="Olympiad interests" aria-describedby={errors.interests ? "interests-error" : "interests-hint"}>
           {OLYMPIAD_SUBJECTS.map((s) => (
             <label key={s.value} className="inline-flex items-center gap-2 text-sm text-slate-700">
               <input
@@ -315,111 +323,116 @@ function OpenForm() {
             </label>
           ))}
         </div>
-        {errors.interests && (
-          <p id="interests-error" className="text-xs text-red-600">
+        {errors.interests ? (
+          <p id="interests-error" className="mt-1 text-xs text-red-600">
             {errors.interests}
           </p>
+        ) : (
+          <p id="interests-hint" className="mt-1 text-xs text-slate-600">
+            The Olympiad subjects you would like to support. Choose at least one.
+          </p>
         )}
-      </>
+      </div>
     ),
+    picture: pictureOn && (
+      <OptionalAvatarField
+        file={picture}
+        error={pictureError}
+        onChange={(f) => {
+          setPicture(f);
+          setPictureError(registrationAvatarProblem(f));
+        }}
+      />
+    ),
+    // Country → Province → District → Sector → School: plain dropdowns; each step clears the ones after it.
+    schoolCountry: (
+      <CascadeSelect
+        label="School country"
+        value={RWANDA}
+        onChange={() => undefined}
+        options={[{ value: RWANDA, label: countryName(RWANDA) }]}
+        disabled
+        hint="Teacher applications are for schools in Rwanda."
+        testId="teacher-school-country"
+      />
+    ),
+    schoolProvince: schoolPlace("province"),
+    schoolDistrict: schoolPlace("district"),
+    schoolSector: schoolPlace("sector"),
     school: (
-      <>
-        {/* Country → Province → District → Sector → School: plain dropdowns; each step clears the ones after it. */}
-        <CascadeSelect
-          label="School country"
-          value={RWANDA}
-          onChange={() => undefined}
-          options={[{ value: RWANDA, label: countryName(RWANDA) }]}
-          disabled
-          hint="Teacher applications are for schools in Rwanda."
-          testId="teacher-school-country"
-        />
-        <PlaceSelects
-          value={{ province: d.schoolProvince, district: d.schoolDistrict, sector: d.schoolSector }}
-          onChange={(p) => update((s) => schoolPlaceChanged(s, p))}
-          errors={{ province: errors.schoolProvince, district: errors.schoolDistrict, sector: errors.schoolSector }}
-        />
-        <SectorSchoolSelect
-          teacherEligible
-          place={{ province: d.schoolProvince, district: d.schoolDistrict, sector: d.schoolSector }}
-          schoolId={missing ? "" : d.school?.id ?? ""}
-          onChange={(school) => update((s) => ({ ...setSchoolMode(s, "listed"), school }))}
-          notListed={{ selected: missing, onSelect: () => update((s) => setSchoolMode(s, "missing")) }}
-          error={errors.school}
-        />
-        {missing && (
-          <div className="space-y-4 rounded-lg border border-amber-200 bg-amber-50/50 p-4">
-            <TextField
-              label="School name"
-              name="proposedSchoolName"
-              required
-              maxLength={TEACHER_RULES.schoolNameMax}
-              value={d.proposedSchoolName}
-              onChange={(e) => set("proposedSchoolName", e.target.value)}
-              error={errors.proposedSchoolName}
-              hint={`Your school in ${d.schoolSector}, ${d.schoolDistrict}.`}
-            />
-            <p className="text-xs text-slate-600">
-              An administrator will review this school before approving your application. Nothing is added to the school directory automatically.
-            </p>
-          </div>
-        )}
-      </>
+      <SectorSchoolSelect
+        teacherEligible
+        place={{ province: d.schoolProvince, district: d.schoolDistrict, sector: d.schoolSector }}
+        schoolId={missing ? "" : d.school?.id ?? ""}
+        onChange={(school) => update((s) => ({ ...setSchoolMode(s, "listed"), school }))}
+        notListed={{ selected: missing, onSelect: () => update((s) => setSchoolMode(s, "missing")) }}
+        error={errors.school}
+      />
     ),
-    home: (
-      <>
-        {!locations.isError && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <PlaceSelect
-              label="Home district"
-              value={d.homeDistrict}
-              onChange={(v) => update((s) => setHomeDistrict(s, v))}
-              options={homeDistrictsOf(places)}
-              placeholder={locations.isPending ? "Loading…" : "Choose"}
-              disabled={locations.isPending}
-              error={errors.homeDistrict}
-            />
-            <PlaceSelect
-              label="Home sector"
-              value={d.homeSector}
-              onChange={(v) => set("homeSector", v)}
-              options={homeSectorsOf(places, d.homeDistrict)}
-              placeholder={d.homeDistrict ? "Choose" : "Choose the district first"}
-              disabled={!d.homeDistrict}
-              error={errors.homeSector}
-            />
-          </div>
-        )}
-        {locations.isError && <p className="text-xs text-slate-600">Load the list of places above to choose your home location.</p>}
-      </>
-    ),
-    account: (
-      <>
-        <NewPasswordFields
-          password={d.password}
-          confirm={d.confirm}
-          onPassword={(v) => set("password", v)}
-          onConfirm={(v) => set("confirm", v)}
-          errors={{ password: errors.password, confirm: errors.confirm }}
-          label="Password"
+    proposedSchoolName: missing && (
+      <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+        <TextField
+          label="School name"
+          name="proposedSchoolName"
+          required
+          maxLength={TEACHER_RULES.schoolNameMax}
+          value={d.proposedSchoolName}
+          onChange={(e) => set("proposedSchoolName", e.target.value)}
+          error={errors.proposedSchoolName}
+          hint={`Your school in ${d.schoolSector}, ${d.schoolDistrict}.`}
         />
-      </>
+        <p className="text-xs text-slate-600">
+          An administrator will review this school before approving your application. Nothing is added to the school directory automatically.
+        </p>
+      </div>
     ),
+    homeDistrict: locations.isError ? (
+      <p className="text-xs text-slate-600">Load the list of places above to choose your home location.</p>
+    ) : (
+      <PlaceSelect
+        label="Home district"
+        value={d.homeDistrict}
+        onChange={(v) => update((s) => setHomeDistrict(s, v))}
+        options={homeDistrictsOf(places)}
+        placeholder={locations.isPending ? "Loading…" : "Choose"}
+        disabled={locations.isPending}
+        error={errors.homeDistrict}
+      />
+    ),
+    homeSector: !locations.isError && (
+      <PlaceSelect
+        label="Home sector"
+        value={d.homeSector}
+        onChange={(v) => set("homeSector", v)}
+        options={homeSectorsOf(places, d.homeDistrict)}
+        placeholder={d.homeDistrict ? "Choose" : "Choose the district first"}
+        disabled={!d.homeDistrict}
+        error={errors.homeSector}
+      />
+    ),
+    username: <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={d.username} onChange={(e) => set("username", e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    password: <NewPasswordFields only="password" {...passwordProps} />,
+    confirm: <NewPasswordFields only="confirm" {...passwordProps} />,
   };
-  const steps: WizardStep[] = STEPS.map((s) => ({ ...s, content: content[s.id] }));
 
   return (
     <form onSubmit={onSubmit} noValidate className={WIZARD_FORM_CLASS} data-testid="teacher-register-form">
       <FormWizard
         wizard={wizard}
-        steps={steps}
+        steps={STEPS}
+        parts={parts}
         submitLabel="Apply as a teacher"
         submittingLabel="Sending your application…"
         submitting={submitting}
         header={
           <>
-            <Heading />
-
+            <JoinSwitch active="teacher" compact />
+            <AuthHeading title="Join as a teacher" compact />
+          </>
+        }
+        intro={<p className="text-sm leading-snug text-slate-600">{SUBTITLE}</p>}
+        notices={
+          <>
             {closedRefusal && <ClosedFormNotice notice={closedRefusal} />}
             {showAlert && !closedRefusal && <Alert tone="error">{known ?? errorMessage(error)}</Alert>}
             {teacherForm.data?.open && teacherForm.data.instructions?.trim() && (
