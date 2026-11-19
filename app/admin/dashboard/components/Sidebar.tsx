@@ -21,12 +21,14 @@ import {
   UserPlus,
   MailCheck,
   ClipboardList,
-  Globe
+  Globe,
+  FileQuestion
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, ADMIN_TESTS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { testsNavVisible } from "@/lib/test-management/rules";
 import { countriesNavVisible } from "@/lib/countries/reference";
 import { teacherApplicationsNavVisible } from "@/lib/admin/teacher-applications";
 import { notificationDeliveriesNavVisible } from "@/lib/admin/notification-deliveries";
@@ -56,6 +58,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/notification-deliveries": MailCheck,
   "/admin/forms": ClipboardList,
   "/admin/countries": Globe,
+  "/admin/tests": FileQuestion,
 };
 
 /**
@@ -78,6 +81,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     ...(formsNavVisible(detection, knownPermissions) ? [ADMIN_FORMS] : []),
     // Countries: the backend feature AND the known reference.manage (lib/countries/reference.ts).
     ...(countriesNavVisible(detection, knownPermissions) ? [ADMIN_COUNTRIES] : []),
+    // Tests: the backend feature AND the known tests.view (lib/test-management/rules.ts).
+    ...(testsNavVisible(detection, knownPermissions) ? [ADMIN_TESTS] : []),
   ];
 
   // Function to check if link is active

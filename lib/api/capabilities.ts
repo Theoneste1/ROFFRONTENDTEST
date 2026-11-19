@@ -166,6 +166,13 @@ export const KNOWN_FEATURES = [
    * `primaryTeacher` per school. Without it: name order only, no sort controls.
    */
   "schoolsTable",
+  /**
+   * Test Management, Phase 1 (owner-approved plan 2026-11-19): `/admin/tests` (tests, questions with the sum rule, the
+   * paper and the marking guide; tests.view / tests.manage) and `/admin/test-markers` (marker authorisations per coach
+   * and subject; tests.manageMarkers). Administrators: every subject; Head Coaches: the subjects they head (coach portal).
+   * Without it: no Tests screens.
+   */
+  "testManagement",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

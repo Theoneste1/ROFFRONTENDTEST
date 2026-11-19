@@ -72,6 +72,20 @@ export const ADMIN_FORMS: NavItem = { href: "/admin/forms", label: "Forms", perm
  */
 export const ADMIN_COUNTRIES: NavItem = { href: "/admin/countries", label: "Countries", permission: "reference.manage" };
 
+/**
+ * Tests (Test Management, owner-approved plan 2026-11-19): every subject for Administrators. Separately gated like the
+ * items above: a backend advertising `testManagement` and the known tests.view (lib/test-management/rules.ts →
+ * testsNavVisible). Never part of the frozen ADMIN_NAV.
+ */
+export const ADMIN_TESTS: NavItem = { href: "/admin/tests", label: "Tests", permission: "tests.view" };
+
+/**
+ * Tests in the coach portal: a Head Coach manages the tests of the subjects they head (tests.view, programme scope).
+ * Coaches hold no test permission (authorised markers arrive in a later phase). Same gate as ADMIN_TESTS; not part of
+ * MENTOR_NAV.
+ */
+export const MENTOR_TESTS: NavItem = { href: "/mentor/tests", label: "Tests", permission: "tests.view" };
+
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
 
