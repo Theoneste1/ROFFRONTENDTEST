@@ -37,6 +37,7 @@ import {
   validateCoachDetails,
   type CoachDetailsDraft,
   type CoachDetailsField,
+  COACH_SUBJECTS_LABEL,
 } from "@/lib/accounts/coach-application";
 import { CascadeSelect } from "@/app/components/schools/SchoolCascade";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
@@ -262,7 +263,8 @@ function CoachApplication() {
           value={details.interests}
           onChange={(next) => setDetail("interests", next, "olympiadInterests")}
           error={detailErrors.olympiadInterests}
-          hint="The Olympiads you would like to coach. Choose one or more."
+          label={COACH_SUBJECTS_LABEL}
+          hint="Choose one or more. You can change them later on your profile."
         />
         {extraOn && (
           <CoachExtraFields

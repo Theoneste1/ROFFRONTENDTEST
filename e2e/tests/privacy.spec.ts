@@ -33,15 +33,27 @@ async function apiToken(request: APIRequestContext, username: string, password: 
   throw new Error("sign-in kept being rate-limited");
 }
 
+/**
+ * Submit a coach application (POST /mentor-requests). Registration endpoints allow 10 requests a minute per address (not
+ * weakened for tests); in a full run other specs may have used them, so a 429 waits out the window and sends again.
+ */
+async function applyAsCoach(request: APIRequestContext, data: Record<string, unknown>) {
+  for (let i = 0; i < 3; i++) {
+    const r = await request.post("/api/v1/mentor-requests", { data });
+    if (r.status() !== 429) return r;
+    test.info().setTimeout(test.info().timeout + 65_000);
+    await new Promise((res) => setTimeout(res, 61_000));
+  }
+  return request.post("/api/v1/mentor-requests", { data });
+}
+
 test.describe.serial("Coach applications: each attempt keeps its own questions and answers", () => {
   const username = `e2e.coachapp.${tag}`;
   let firstId = "";
   let secondId = "";
 
   test.beforeAll(async ({ request }) => {
-    const first = await request.post("/api/v1/mentor-requests", {
-      data: { firstName: "Vera", lastName: "First", username, email: `${username}@e2e.local`, password: "Mentor123" },
-    });
+    const first = await applyAsCoach(request, { firstName: "Vera", lastName: "First", username, email: `${username}@e2e.local`, password: "Mentor123", olympiadInterests: ["MATHEMATICS"] });
     expect(first.status()).toBe(201);
     firstId = (await first.json()).id;
     // The Administrator asked a private question and the first applicant answered; then the application was rejected.
@@ -55,9 +67,7 @@ test.describe.serial("Coach applications: each attempt keeps its own questions a
       await c.query(`UPDATE "MentorRequest" SET status = 'REJECTED', "passwordHash" = NULL WHERE id = $1`, [firstId]);
     });
     // Someone else applies with the same username.
-    const second = await request.post("/api/v1/mentor-requests", {
-      data: { firstName: "Nora", lastName: "Second", username, email: `other.${username}@e2e.local`, password: "Mentor123" },
-    });
+    const second = await applyAsCoach(request, { firstName: "Nora", lastName: "Second", username, email: `other.${username}@e2e.local`, password: "Mentor123", olympiadInterests: ["MATHEMATICS"] });
     expect(second.status()).toBe(201);
     const body = await second.json();
     secondId = body.id;

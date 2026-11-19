@@ -28,6 +28,8 @@ import { personalDetailRows } from "@/lib/accounts/admin-user-details";
 import RegistrationHistoryCard from "./RegistrationHistoryCard";
 import DateOfBirthCard from "./DateOfBirthCard";
 import { canCorrectDateOfBirth } from "@/lib/accounts/date-of-birth-correction";
+import { canEditCoachSubjects, coachInterestsSupported } from "@/lib/accounts/coach-application";
+import CoachSubjectsCard from "./CoachSubjectsCard";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -42,7 +44,7 @@ type Confirm = { action: UserAction; title: string; body: ReactNode; label: stri
 
 export default function UserDetail({ userId }: { userId: string }) {
   const router = useRouter();
-  const { user: me, can } = useSession();
+  const { user: me, can, permissionOverrides } = useSession();
   // Account states (archive instead of delete): only on a backend that advertises them; null while not known yet
   // (loading or UNKNOWN), when neither Delete nor Archive is offered.
   const { detection } = useBackendCapabilities();
@@ -255,6 +257,8 @@ export default function UserDetail({ userId }: { userId: string }) {
           </div>
         </Card>
 
+        {/* A Coach's subjects (capability coachOlympiadInterests): shown, and edited by administrators (users.manage and users.manageCoaches, as the backend checks; canEditCoachSubjects). */}
+        {u.role === "MENTOR" && coachInterestsSupported(detection) && <CoachSubjectsCard userId={u.id} subjects={u.olympiadInterests} canEdit={canEditCoachSubjects({ role: me?.role, can, overrides: permissionOverrides })} />}
         {/* Students' date of birth: correction with a reason, and its history (capability dateOfBirthCorrection). */}
         {canCorrectDateOfBirth(detection, u.role, can("users.manage")) && <DateOfBirthCard userId={u.id} dateOfBirth={u.dateOfBirth} />}
         {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}

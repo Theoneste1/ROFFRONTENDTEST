@@ -34,7 +34,7 @@ import { signInThenClearCooldown, type RefreshOutcome } from "@/lib/api/refresh-
 import { authApi, meApi } from "@/lib/api/auth";
 import { clearSignedOut, confirmSignedOut, isMarkedSignedOut, isSignedOutEvent, markSignedOut, needsServerLogout } from "@/lib/auth/signed-out";
 import { queryKeys } from "@/lib/query/keys";
-import type { CurrentUser, Permission, Role } from "@/lib/api/types";
+import type { CurrentUser, MePermissions, Permission, Role } from "@/lib/api/types";
 
 export type SessionStatus = "loading" | "authenticated" | "unauthenticated" | "error";
 
@@ -56,6 +56,8 @@ interface SessionValue {
    */
   permissionsStatus: "loading" | "ready" | "error";
   can: (permission: Permission) => boolean;
+  /** Active individual overrides from `GET /me/permissions` (empty on older backends or before it answers). */
+  permissionOverrides: NonNullable<MePermissions["overrides"]>;
   login: (username: string, password: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
   logoutEverywhere: () => Promise<void>;
@@ -263,6 +265,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       knownPermissions,
       permissionsStatus: knownPermissions ? "ready" : signedIn && permissionsQuery.isError ? "error" : "loading",
       can: (p) => permissions.has(p),
+      permissionOverrides: signedIn ? (permissionsQuery.data?.overrides ?? []) : [],
       login,
       logout,
       logoutEverywhere,

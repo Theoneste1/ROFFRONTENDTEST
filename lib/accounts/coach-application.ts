@@ -3,10 +3,15 @@
  * current or recent occupation, education level and Olympiad interests. An application never grants
  * an account or permissions: an administrator approves or rejects it. No passport or national ID is
  * asked (owner decision). Pure rules, unit-tested in tests/coach-application.test.mjs.
+ *
+ * Subjects (owner decision 2026-11-19, capability `coachOlympiadInterests`): "Which subjects are you interested in
+ * coaching?" — at least one, at registration, on the coach's profile and when an Administrator edits a coach. The same
+ * `olympiadInterests` values; information only (never grants marking or any permission). A coach without any shows
+ * "Not set"; nothing is filled in for them.
  */
 import { hasFeature, type BackendDetection } from "../api/capabilities";
 import { countryName, isCountryCode, RWANDA } from "../schools/countries";
-import { interestsText, validateInterests, type OlympiadSubject } from "./olympiad-interests";
+import { interestsText, type OlympiadSubject } from "./olympiad-interests";
 
 export const EDUCATION_LEVELS = [
   { value: "SECONDARY", label: "Secondary school" },
@@ -37,13 +42,51 @@ export function coachDetailsSupported(detection: BackendDetection | null | undef
   return hasFeature(detection, "coachApplicationDetails");
 }
 
+/** The question asked of coaches about their subjects (registration, profile, administrators' edit). */
+export const COACH_SUBJECTS_LABEL = "Which subjects are you interested in coaching?";
+export const COACH_SUBJECTS_REQUIRED = "Please choose at least one subject";
+/** Shown for a coach who has not chosen any subject (existing coaches): never filled in automatically. */
+export const COACH_SUBJECTS_NOT_SET = "Not set";
+
+/** The backend lets coaches and administrators view and edit a coach's subjects. */
+export function coachInterestsSupported(detection: BackendDetection | null | undefined): boolean {
+  return hasFeature(detection, "coachOlympiadInterests");
+}
+
+/** The error to show, or undefined when at least one subject is chosen. */
+/**
+ * Whether the signed-in user may edit a Coach's subjects: PATCH /admin/users/:id needs users.manage AND
+ * users.manageCoaches. GET /me/permissions keeps the frozen original list for an Administrator, which never names
+ * users.manageCoaches although every Administrator holds it by default; an individual DENY override on it (listed in
+ * `overrides`) removes it. So: listed → yes; otherwise an Administrator with users.manage → yes unless such a DENY is
+ * active. Nothing is granted here: the backend decides, this only avoids offering a button that would be refused.
+ */
+export function canEditCoachSubjects(me: {
+  role: string | null | undefined;
+  can: (permission: "users.manage" | "users.manageCoaches") => boolean;
+  overrides: readonly { permission: string; effect: string }[];
+}): boolean {
+  if (!me.can("users.manage")) return false;
+  if (me.can("users.manageCoaches")) return true;
+  return me.role === "ADMIN" && !me.overrides.some((o) => o.permission === "users.manageCoaches" && o.effect === "DENY");
+}
+
+export function validateCoachSubjects(interests: readonly OlympiadSubject[]): string | undefined {
+  return interests.length === 0 ? COACH_SUBJECTS_REQUIRED : undefined;
+}
+
+/** "Mathematics, Physics", or "Not set" for a coach without subjects. */
+export function coachSubjectsText(values: readonly string[] | null | undefined): string {
+  return interestsText(values) || COACH_SUBJECTS_NOT_SET;
+}
+
 export function validateCoachDetails(d: CoachDetailsDraft): Partial<Record<CoachDetailsField, string>> {
   const e: Partial<Record<CoachDetailsField, string>> = {};
   if (!isCountryCode(d.country)) e.country = "Choose your country.";
   const n = d.occupation.trim().length;
   if (n < COACH_RULES.occupationMin || n > COACH_RULES.occupationMax) e.occupation = "Enter your current or most recent occupation (2–200 characters).";
   if (!EDUCATION_LEVELS.some((l) => l.value === d.educationLevel)) e.educationLevel = "Choose your highest level of education.";
-  const i = validateInterests(d.interests);
+  const i = validateCoachSubjects(d.interests);
   if (i) e.olympiadInterests = i;
   return e;
 }

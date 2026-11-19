@@ -14,7 +14,9 @@
  * - students, on a backend advertising `schoolAffiliations`: their school and its
  *   verification, and asking for another school (SchoolAffiliationCard.tsx);
  * - students, on a backend advertising `studentOlympiadInterests`: their Olympiad interests
- *   (`PATCH /me` olympiadInterests; at least one).
+ *   (`PATCH /me` olympiadInterests; at least one);
+ * - coaches, on a backend advertising `coachOlympiadInterests`: the subjects they are interested in coaching (the same
+ *   `PATCH /me` olympiadInterests, at least one; "Not set" until chosen). Information only: no access changes.
  */
 import { homePlaceText, studentDetailsSupported } from "@/lib/accounts/student-details";
 import { countryName } from "@/lib/schools/countries";
@@ -30,6 +32,7 @@ import {
   type OlympiadSubject,
 } from "@/lib/accounts/olympiad-interests";
 import OlympiadInterestsField from "./OlympiadInterestsField";
+import { COACH_SUBJECTS_LABEL, coachInterestsSupported, coachSubjectsText, validateCoachSubjects } from "@/lib/accounts/coach-application";
 import { useSession } from "@/lib/auth/session";
 import { portalPath, roleLabel } from "@/lib/auth/roles";
 import Link from "next/link";
@@ -59,6 +62,7 @@ export default function ProfilePage() {
   if (!user) return <LoadingBlock />;
   const interestsOn = user.role === "STUDENT" && studentInterestsSupported(caps.detection);
   const detailsOn = user.role === "STUDENT" && studentDetailsSupported(caps.detection);
+  const coachSubjectsOn = user.role === "MENTOR" && coachInterestsSupported(caps.detection);
 
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
   return (
@@ -72,6 +76,7 @@ export default function ProfilePage() {
             <dl className="mt-6 w-full grid grid-cols-1 gap-4 text-left">
               <Detail label="Username">{user.username}</Detail>
               <Detail label="E-mail">{user.email}</Detail>
+              {coachSubjectsOn && <Detail label="Coaching subjects">{coachSubjectsText(user.olympiadInterests)}</Detail>}
               {user.role === "STUDENT" && (
                 <>
                   <Detail label="Division">{user.division?.name}</Detail>
@@ -103,6 +108,7 @@ export default function ProfilePage() {
         <div className="xl:col-span-2 space-y-6 min-w-0">
           <DetailsForm user={user} />
           {interestsOn && <InterestsCard user={user} />}
+          {coachSubjectsOn && <InterestsCard user={user} coach />}
           {user.role === "STUDENT" && <SchoolAffiliationCard />}
           <Section title="Settings" icon={<Settings className="w-5 h-5" />} description="Your password, signed-in devices and notification e-mails.">
             <Link href={portalPath(user.role, "account")} className="inline-flex items-center gap-2 text-sm font-semibold text-[#2B2BB2] hover:underline" data-testid="profile-settings-link">
@@ -213,9 +219,31 @@ function DetailsForm({ user }: { user: CurrentUser }) {
   );
 }
 
-// ─── Olympiad interests (PATCH /me olympiadInterests) ───────────────────────
+// ─── Olympiad interests (PATCH /me olympiadInterests): a student's Olympiads, a coach's subjects ───────────────
 
-function InterestsCard({ user }: { user: CurrentUser }) {
+const INTEREST_TEXTS = {
+  student: {
+    title: "Olympiad interests",
+    description: "The Olympiads you would like to take part in. This does not change your courses or what you can access.",
+    label: undefined,
+    hint: "Choose at least one.",
+    saved: "Your Olympiad interests were saved.",
+    save: "Save interests",
+    validate: validateInterests,
+  },
+  coach: {
+    title: "Coaching subjects",
+    description: "The subjects you are interested in coaching. Information only: it does not change your courses, marking or what you can access.",
+    label: COACH_SUBJECTS_LABEL,
+    hint: "Choose one or more.",
+    saved: "Your coaching subjects were saved.",
+    save: "Save subjects",
+    validate: validateCoachSubjects,
+  },
+} as const;
+
+function InterestsCard({ user, coach = false }: { user: CurrentUser; coach?: boolean }) {
+  const t = INTEREST_TEXTS[coach ? "coach" : "student"];
   const update = useUpdateMe();
   const [interests, setInterests] = useState<OlympiadSubject[]>(() => normaliseInterests(user.olympiadInterests));
   const [error, setError] = useState<string | undefined>();
@@ -226,7 +254,7 @@ function InterestsCard({ user }: { user: CurrentUser }) {
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSaved(false);
-    const err = validateInterests(interests);
+    const err = t.validate(interests);
     setError(err);
     if (err || unchanged || update.isPending) return;
     update.mutate({ olympiadInterests: interests }, {
@@ -238,13 +266,9 @@ function InterestsCard({ user }: { user: CurrentUser }) {
   }
 
   return (
-    <Section
-      title="Olympiad interests"
-      icon={<Trophy className="w-5 h-5" />}
-      description="The Olympiads you would like to take part in. This does not change your courses or what you can access."
-    >
-      <form onSubmit={onSubmit} noValidate className="space-y-4" data-testid="interests-form">
-        {saved && <Alert tone="success">Your Olympiad interests were saved.</Alert>}
+    <Section title={t.title} icon={<Trophy className="w-5 h-5" />} description={t.description}>
+      <form onSubmit={onSubmit} noValidate className="space-y-4" data-testid={coach ? "coach-subjects-form" : "interests-form"}>
+        {saved && <Alert tone="success">{t.saved}</Alert>}
         {update.isError && !serverError && <Alert tone="error">{errorMessage(update.error)}</Alert>}
         <OlympiadInterestsField
           value={interests}
@@ -255,11 +279,12 @@ function InterestsCard({ user }: { user: CurrentUser }) {
           }}
           error={error ?? serverError}
           idPrefix="profile-interests"
-          hint="Choose at least one."
+          {...(t.label && { label: t.label })}
+          hint={t.hint}
         />
         <div className="flex justify-end">
           <Button type="submit" loading={update.isPending} disabled={unchanged}>
-            Save interests
+            {t.save}
           </Button>
         </div>
       </form>
