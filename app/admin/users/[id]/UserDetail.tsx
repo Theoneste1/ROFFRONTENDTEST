@@ -28,6 +28,8 @@ import { personalDetailRows } from "@/lib/accounts/admin-user-details";
 import RegistrationHistoryCard from "./RegistrationHistoryCard";
 import DateOfBirthCard from "./DateOfBirthCard";
 import { canCorrectDateOfBirth } from "@/lib/accounts/date-of-birth-correction";
+import { coachInterestsSupported } from "@/lib/accounts/coach-application";
+import CoachSubjectsCard from "./CoachSubjectsCard";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -255,6 +257,8 @@ export default function UserDetail({ userId }: { userId: string }) {
           </div>
         </Card>
 
+        {/* A Coach's subjects (capability coachOlympiadInterests): shown, and edited by administrators (the backend also checks users.manageCoaches). */}
+        {u.role === "MENTOR" && coachInterestsSupported(detection) && <CoachSubjectsCard userId={u.id} subjects={u.olympiadInterests} canEdit={can("users.manage")} />}
         {/* Students' date of birth: correction with a reason, and its history (capability dateOfBirthCorrection). */}
         {canCorrectDateOfBirth(detection, u.role, can("users.manage")) && <DateOfBirthCard userId={u.id} dateOfBirth={u.dateOfBirth} />}
         {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}

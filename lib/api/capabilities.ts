@@ -109,6 +109,12 @@ export const KNOWN_FEATURES = [
    */
   "coachApplicationDetails",
   /**
+   * Coaches' subject interests (owner decision 2026-11-19): `POST /mentor-requests` requires `olympiadInterests` (at
+   * least one); a Coach edits their own on `PATCH /me`; an Administrator edits a Coach's with `olympiadInterests` on
+   * `PATCH /admin/users/:id` (Coach accounts only). Information only. Without it: neither shown on profiles nor editable.
+   */
+  "coachOlympiadInterests",
+  /**
    * Application details and requests for more information (backend ADR-009): Teacher position and years of
    * experience; Coach phone, affiliation, expertise, experience; a Coach rejection reason; administrators ask the
    * applicant a question, answered through a one-time link. Without it: none of this is shown or sent.

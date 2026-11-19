@@ -40,7 +40,7 @@ test.describe.serial("Coach applications: each attempt keeps its own questions a
 
   test.beforeAll(async ({ request }) => {
     const first = await request.post("/api/v1/mentor-requests", {
-      data: { firstName: "Vera", lastName: "First", username, email: `${username}@e2e.local`, password: "Mentor123" },
+      data: { firstName: "Vera", lastName: "First", username, email: `${username}@e2e.local`, password: "Mentor123", olympiadInterests: ["MATHEMATICS"] },
     });
     expect(first.status()).toBe(201);
     firstId = (await first.json()).id;
@@ -56,7 +56,7 @@ test.describe.serial("Coach applications: each attempt keeps its own questions a
     });
     // Someone else applies with the same username.
     const second = await request.post("/api/v1/mentor-requests", {
-      data: { firstName: "Nora", lastName: "Second", username, email: `other.${username}@e2e.local`, password: "Mentor123" },
+      data: { firstName: "Nora", lastName: "Second", username, email: `other.${username}@e2e.local`, password: "Mentor123", olympiadInterests: ["MATHEMATICS"] },
     });
     expect(second.status()).toBe(201);
     const body = await second.json();

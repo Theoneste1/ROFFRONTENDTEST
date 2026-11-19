@@ -5,6 +5,7 @@
  */
 import { api, apiBlob, saveFile, type QueryValue } from "./client";
 import type { DateOfBirthHistoryEntry } from "../accounts/date-of-birth-correction";
+import type { OlympiadSubject } from "./teacher-registration";
 import type {
   AdminDashboard,
   AdminDivision,
@@ -154,6 +155,8 @@ export interface InviteUserInput {
 export type UpdateUserInput = Partial<Omit<CreateUserInput, "password" | "schoolId">> & {
   schoolId?: string | null;
   currentPassword?: string;
+  /** A Coach's subjects (capability coachOlympiadInterests; Coach accounts only, at least one). */
+  olympiadInterests?: OlympiadSubject[];
 };
 
 /** Drop empty strings so optional fields are omitted, not sent as "". */
