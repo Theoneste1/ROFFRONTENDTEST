@@ -15,7 +15,7 @@ import { SITE } from "@/lib/site/content";
  *   offers on the left; the page's form on the right.
  * - Tablets and phones: a compact brand bar above the form; the form takes the full width.
  *
- * - The registration pages (student, teacher, coach: FRAMED) draw their own page, one centred card with
+ * - Sign in and the registration pages (student, teacher, coach: FRAMED) draw their own page, one centred card with
  *   the brand panel inside it (app/components/auth/AuthCard, the approved reference design): this layout only passes
  *   them through.
  *
@@ -51,7 +51,7 @@ function Wordmark({ tone }: { tone: "light" | "dark" }) {
 }
 
 /** The pages that draw their own card (app/components/auth/AuthCard). */
-const FRAMED = new Set(["/register", "/register/teacher", "/apply"]);
+const FRAMED = new Set(["/login", "/register", "/register/teacher", "/apply"]);
 
 export default function AuthShell({ children }: { children: ReactNode }) {
   const path = usePathname()?.replace(/\/$/, "") || "/";

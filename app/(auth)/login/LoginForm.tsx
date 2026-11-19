@@ -1,7 +1,10 @@
 "use client";
 
+/**
+ * Sign in (the approved reference design: app/components/auth/AuthCard → LoginCard draws the card and the navy panel).
+ * The fields, rules, request, messages and redirects are those of the existing sign-in.
+ */
 import Link from "next/link";
-import { AuthHeading, JoinLinks } from "@/app/components/auth/AuthUi";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth/session";
@@ -67,8 +70,17 @@ export default function LoginForm() {
   const statusMessage = isApiError(error) ? accountRefusalMessage(error.code) : null;
 
   return (
-    <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
-      <AuthHeading eyebrow="Sign in" title="Welcome back" subtitle="Sign in with your ROF username or e-mail address to continue learning." />
+    <form
+      method="post"
+      onSubmit={onSubmit}
+      noValidate
+      className="mx-auto w-full max-w-md space-y-5 [&_input]:h-12 [&_input]:rounded-xl [&_input]:text-base [&_label.block]:text-slate-800 sm:[&_input]:text-sm"
+      data-testid="login-form"
+    >
+      <div>
+        <h1 className="text-[28px] font-extrabold tracking-tight text-[#0b1f4d] sm:text-[32px]">Sign in</h1>
+        <p className="mt-1.5 text-[15px] text-slate-600">Enter your account details to continue.</p>
+      </div>
 
       {notice && error == null && <Alert tone="success">{LOGIN_NOTICE_TEXT[notice]}</Alert>}
 
@@ -108,7 +120,7 @@ export default function LoginForm() {
       )}
 
       <TextField
-        label="Username or e-mail"
+        label="Username or email"
         name="username"
         autoComplete="username"
         autoFocus
@@ -121,7 +133,7 @@ export default function LoginForm() {
           setFieldErrors((s) => ({ ...s, username: undefined }));
         }}
         error={fieldErrors.username}
-        placeholder="e.g. student.s2"
+        placeholder="Enter your username or email"
       />
 
       <div>
@@ -137,23 +149,29 @@ export default function LoginForm() {
             setFieldErrors((s) => ({ ...s, password: undefined }));
           }}
           error={fieldErrors.password}
+          placeholder="Enter your password"
         />
-        <div className="mt-2 text-right">
-          <Link href="/forgot-password" className="text-xs font-medium text-[#2B2BB2] hover:underline">
+        <div className="mt-1 flex justify-end">
+          <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand hover:underline" data-testid="login-forgot">
             Forgot password?
           </Link>
         </div>
       </div>
 
-      <Button type="submit" loading={submitting} className="w-full">
+      <Button type="submit" variant="brand" loading={submitting} className="h-12 w-full rounded-xl text-[15px]">
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
 
-      <JoinLinks />
+      <p className="text-center text-sm text-slate-700">
+        Don&apos;t have an account?{" "}
+        <Link href="/register" className="font-semibold text-brand hover:underline" data-testid="login-create-account">
+          Create account
+        </Link>
+      </p>
 
       <p className="text-center text-xs text-slate-600">
         Need help?{" "}
-        <Link href="/support" className="font-medium text-[#2B2BB2] hover:underline">
+        <Link href="/support" className="font-medium text-brand hover:underline">
           Help and support
         </Link>
       </p>

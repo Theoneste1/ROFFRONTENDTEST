@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import Image from "@/app/components/ui/Image";
 
 /**
- * The sign-up pages (the owner's approved reference design): a light page with ONE centred rounded card. On
+ * The sign-up and sign-in pages (the owner's approved reference design): a light page with ONE centred rounded card. On
  * large screens (1024px and up) the card holds a deep-blue brand panel on the left (the ROF logo, "ROF LMS", a headline,
  * a short text and a real ROF photograph) and the page's form on the right; below 1024px the panel becomes a slim blue
  * bar at the top of the card and the form takes the full width. The card fits the window at the agreed sizes; a window
@@ -98,6 +98,35 @@ export function SignupCard({ brand, children }: { brand: SignupBrand; children: 
         </aside>
         <SlimBar />
         <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3 sm:px-8 sm:py-5 lg:px-12 lg:py-6 xl:px-14">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/** The sign-in page: a deep navy panel ("Welcome back!", a framed photograph), the form on the white half. */
+export function LoginCard({ children }: { children: ReactNode }) {
+  return (
+    <div className={PAGE} data-auth-frame="login">
+      <div className={`${CARD} max-w-[1120px]`} data-testid="auth-card">
+        <aside className="relative hidden w-1/2 flex-shrink-0 flex-col overflow-hidden rounded-l-[28px] bg-gradient-to-br from-[#0d2a66] to-[#0a1f4f] px-10 py-9 lg:flex xl:px-12" data-testid="auth-brand-panel">
+          <BrandMark size="panel" />
+          <p className="mt-8 text-[40px] font-extrabold leading-tight tracking-tight text-white">Welcome back!</p>
+          <p className="mt-2 max-w-md text-base leading-relaxed text-white/90">Your Olympiad journey continues here. Learn, explore and challenge yourself.</p>
+          <div className="relative mt-6 min-h-[200px] flex-1 overflow-hidden rounded-3xl ring-1 ring-white/15">
+            <Image
+              src="/home/students-solving.jpg"
+              alt="ROF students working together around a table"
+              width={960}
+              height={540}
+              sizes="(min-width: 1024px) 45vw, 1px"
+              priority
+              className="absolute inset-0 h-full w-full object-cover object-[55%_50%]"
+            />
+          </div>
+          <p className="mt-4 text-sm font-medium text-white/90">Discover your potential. Think beyond limits.</p>
+        </aside>
+        <SlimBar />
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-5 py-6 sm:px-10 sm:py-8 lg:px-14 xl:px-20">{children}</div>
       </div>
     </div>
   );

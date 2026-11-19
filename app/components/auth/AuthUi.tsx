@@ -71,34 +71,6 @@ export function JoinSwitch({ active, compact = false }: { active: JoinRole; comp
   );
 }
 
-/** "New to ROF?": the three ways to join, under the sign-in form. */
-export function JoinLinks() {
-  const roles = useJoinRoles();
-  return (
-    <div className="space-y-3" data-testid="signup-links">
-      <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-slate-500">
-        <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
-        Don&apos;t have an account?
-        <span className="h-px flex-1 bg-slate-200" aria-hidden="true" />
-      </div>
-      <ul className="grid grid-cols-3 gap-2">
-        {roles.map(({ role, label, href, icon: Icon }) => (
-          <li key={role}>
-            <Link
-              href={href}
-              className="flex h-full flex-col items-center gap-1.5 rounded-xl border border-slate-200 px-2 py-3 text-center text-xs font-semibold text-slate-700 transition-colors hover:border-indigo-300 hover:bg-indigo-50/60 hover:text-[#2B2BB2] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            >
-              <Icon className="h-5 w-5 text-[#2B2BB2]" aria-hidden="true" />
-              {role === "student" ? "Join as a student" : role === "teacher" ? "I'm a teacher" : "Apply as a coach"}
-              <span className="sr-only">({label})</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 /** A titled group of fields in a long form (e.g. "About you", "Your school"). */
 export function FormSection({ title, step, children }: { title: string; step?: number; children: ReactNode }) {
   return (
