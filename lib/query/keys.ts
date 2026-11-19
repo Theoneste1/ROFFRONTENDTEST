@@ -38,6 +38,8 @@ export const queryKeys = {
     students: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "students", id, page] as const,
     /** Teacher assignments of the school (INT-07). */
     teachers: (id: string, filter: string, page: number) => [...queryKeys.schoolDirectory.all, "teachers", id, filter, page] as const,
+    /** The school's primary teacher (primaryTeacher). */
+    primaryTeacher: (id: string) => [...queryKeys.schoolDirectory.all, "teachers", id, "primary"] as const,
     history: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "history", id, page] as const,
     contacts: (id: string, includeRemoved: boolean) => [...queryKeys.schoolDirectory.all, "contacts", id, includeRemoved] as const,
     offerings: (id: string) => [...queryKeys.schoolDirectory.all, "offerings", id] as const,
@@ -112,6 +114,7 @@ export const queryKeys = {
     all: ["teacher"] as const,
     students: (filters: Record<string, unknown> = {}) => [...queryKeys.teacher.all, "students", filters] as const,
     summary: () => [...queryKeys.teacher.all, "summary"] as const,
+    schools: () => [...queryKeys.teacher.all, "schools"] as const,
     profile: (studentId: string) => [...queryKeys.teacher.all, "profile", studentId] as const,
     progress: (studentId: string) => [...queryKeys.teacher.all, "progress", studentId] as const,
   },

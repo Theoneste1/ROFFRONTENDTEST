@@ -15,6 +15,7 @@ import { assignableRoles } from "@/lib/auth/role-rules";
 import { MAX_SELECTED, bulkAvailable, bulkRoleOptions, buildSelection, exportAvailable, toggleId, togglePage, type SelectionChoice } from "@/lib/admin/bulk-users";
 import { roleLabel } from "@/lib/auth/roles";
 import CoachSubjectsNote from "./CoachSubjectsNote";
+import TeacherRoleBadge from "@/app/components/teachers/TeacherRoleBadge";
 import { roleFilterTabs } from "@/lib/auth/role-rules";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { useAdminDivisions, useAdminUsers, useCreateUser } from "@/lib/queries/admin";
@@ -257,7 +258,11 @@ export default function UsersTableClient() {
                     <span className="block text-[11px] font-normal text-gray-500">@{u.username}</span>
                   </td>
                   <td className={`${td} text-gray-600 font-medium`}>{u.email}</td>
-                  <td className={`${td} text-gray-600 font-medium`}>{roleLabel(u.role)}<CoachSubjectsNote role={u.role} subjects={u.olympiadInterests} /></td>
+                  <td className={`${td} text-gray-600 font-medium`}>
+                    {roleLabel(u.role)}
+                    {u.teacherSchoolRole && <TeacherRoleBadge role={u.teacherSchoolRole} className="ml-2" />}
+                    <CoachSubjectsNote role={u.role} subjects={u.olympiadInterests} />
+                  </td>
                   <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>
                     {u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}
                   </td>

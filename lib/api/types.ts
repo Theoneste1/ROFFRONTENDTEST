@@ -838,6 +838,11 @@ export interface AdminUser {
   /** The account state (backends with accountStates); isActive is true exactly when it is ACTIVE. */
   accountStatus?: AccountState;
   /**
+   * TEACHER rows of the users list (backends with primaryTeacher): PRIMARY when the teacher is the primary teacher (main
+   * contact) of at least one school, SECONDARY when only a secondary one, null without an active school.
+   */
+  teacherSchoolRole?: "PRIMARY" | "SECONDARY" | null;
+  /**
    * Registration details (backends with studentRegistrationDetails): full values for ONE account
    * (GET /admin/users/:id, users.manage); lists return phones masked ("+250••••••456").
    */
