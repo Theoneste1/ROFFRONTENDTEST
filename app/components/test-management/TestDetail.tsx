@@ -4,7 +4,10 @@
  * One test (`/admin/tests/:id`, `/mentor/tests/:id`): Details (edit), Questions (add / edit / reorder / remove with the sum
  * against the maximum), Files (paper and marking guide: private, neutral names), Submissions (Phase 2 tracking and every
  * version; tests.viewSubmissions), Extensions (Phase 2; tests.extensions) and Markers (coaches authorised for the
- * subject; authorise / revoke with a reason). Publish, unpublish and delete (drafts) in the header. Once students have
+ * subject; authorise / revoke with a reason). Phase 3 (capability testMarking): Markers & distribution (tests.distribute:
+ * even distribution, assign / reassign, progress per coach — with the authorisations), Review (tests.review: side by side,
+ * approve, return, second marking, choose / adjust — Head Coaches only, G4 —, unlock) and History (status changes, the
+ * mark-change log, decisions). Publish, unpublish and delete (drafts) in the header. Once students have
  * submitted, the test keeps its essentials (the backend refuses: 409 TEST_LOCKED_BY_SUBMISSIONS / TEST_HAS_SUBMISSIONS).
  * Controls the user cannot use are hidden; the backend checks every request (a Head Coach of another subject gets 403).
  */
@@ -34,8 +37,12 @@ import { DetailsFields, StatusBadge, TestsGate, inputBad, inputCls, inputOk, lab
 import MarkersPanel from "./MarkersPanel";
 import SubmissionsPanel from "./SubmissionsPanel";
 import ExtensionsPanel from "./ExtensionsPanel";
+import DistributionPanel from "./DistributionPanel";
+import ReviewPanel from "./ReviewPanel";
+import HistoryPanel from "./HistoryPanel";
+import { TESTS_DISTRIBUTE, TESTS_REVIEW, markingTabVisible } from "@/lib/test-management/marking";
 
-type Tab = "details" | "questions" | "files" | "submissions" | "extensions" | "markers";
+type Tab = "details" | "questions" | "files" | "submissions" | "extensions" | "markers" | "review" | "history";
 
 export default function TestDetail({ id, base }: { id: string; base: string }) {
   return (
@@ -58,6 +65,8 @@ function Detail({ id, base }: { id: string; base: string }) {
   const { detection } = useBackendCapabilities();
   const canSubmissions = staffTabVisible(detection, actionAllowed(TESTS_VIEW_SUBMISSIONS, permissionsStatus, can));
   const canExtensions = staffTabVisible(detection, actionAllowed(TESTS_EXTENSIONS, permissionsStatus, can));
+  const canDistribute = markingTabVisible(detection, actionAllowed(TESTS_DISTRIBUTE, permissionsStatus, can));
+  const canReview = markingTabVisible(detection, actionAllowed(TESTS_REVIEW, permissionsStatus, can));
 
   /** Every change answers with the whole test: show it and refresh the lists. */
   const apply = async (t: Test, message: string) => {
@@ -83,7 +92,8 @@ function Detail({ id, base }: { id: string; base: string }) {
     { id: "files", label: "Files" },
     ...(canSubmissions ? [{ id: "submissions" as const, label: t.submissionCount ? `Submissions (${t.submissionCount})` : "Submissions" }] : []),
     ...(canExtensions ? [{ id: "extensions" as const, label: "Extensions" }] : []),
-    ...(canMarkers ? [{ id: "markers" as const, label: "Markers" }] : []),
+    ...(canMarkers || canDistribute ? [{ id: "markers" as const, label: canDistribute ? "Markers & distribution" : "Markers" }] : []),
+    ...(canReview ? [{ id: "review" as const, label: "Review" }, { id: "history" as const, label: "History" }] : []),
   ];
   const locked = (t.submissionCount ?? 0) > 0;
 
@@ -120,7 +130,14 @@ function Detail({ id, base }: { id: string; base: string }) {
         {tab === "files" && <FilesTab test={t} canManage={canManage} onChanged={apply} />}
         {tab === "submissions" && canSubmissions && <SubmissionsPanel testId={t.id} />}
         {tab === "extensions" && canExtensions && <ExtensionsPanel test={t} />}
-        {tab === "markers" && canMarkers && <MarkersPanel subject={t.subject} />}
+        {tab === "markers" && (
+          <div className="space-y-10">
+            {canDistribute && t.status === "PUBLISHED" && <DistributionPanel testId={t.id} />}
+            {canMarkers && <MarkersPanel subject={t.subject} />}
+          </div>
+        )}
+        {tab === "review" && canReview && <ReviewPanel testId={t.id} />}
+        {tab === "history" && canReview && <HistoryPanel testId={t.id} />}
       </Tabs>
 
       {confirm === "publish" && (

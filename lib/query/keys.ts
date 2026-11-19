@@ -151,6 +151,13 @@ export const queryKeys = {
     submission: (testId: string, submissionId: string) => [...queryKeys.tests.all, "submission", testId, submissionId] as const,
     extensions: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "extensions", testId, filters] as const,
     extensionTargets: (testId: string, kind: string, q: string) => [...queryKeys.tests.all, "extension-targets", testId, kind, q] as const,
+    // Phase 3 (lib/api/test-marking.ts)
+    marking: (testId: string) => [...queryKeys.tests.all, "marking", testId] as const,
+    review: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "marking", testId, "review", filters] as const,
+    reviewDetail: (testId: string, submissionId: string) => [...queryKeys.tests.all, "marking", testId, "detail", submissionId] as const,
+    markingHistory: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "marking", testId, "history", filters] as const,
+    queue: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "queue", filters] as const,
+    toMark: (code: string) => [...queryKeys.tests.all, "to-mark", code] as const,
   },
   /** Backend-wide information (`GET /api/v1`), the same for every user. */
   backend: {
