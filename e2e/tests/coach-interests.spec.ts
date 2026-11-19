@@ -3,7 +3,9 @@
  *  - the coach application asks "Which subjects are you interested in coaching?" (at least one) and sends them;
  *  - a Coach sees "Not set", then chooses and saves their subjects on My Profile (at least one; kept after reload);
  *  - an Administrator sees and edits a Coach's subjects on the account page; the Admin Users list shows them, and
- *    "Not set" for a coach without any.
+ *    "Not set" for a coach without any;
+ *  - an Administrator whose users.manageCoaches is removed by an individual DENY override sees the subjects but no
+ *    "Edit subjects" (the backend refuses that edit with 403).
  * Each result is checked in the database. Synthetic data only; usernames are unique per run.
  */
 import { expect, test, type Page } from "@playwright/test";
@@ -136,5 +138,40 @@ test.describe("coach subjects", () => {
     await expect(rowOf(edited).getByTestId("coach-subjects-note")).toHaveText("Subjects: Computing", { timeout: 30_000 });
     await expect(rowOf(untouched).getByTestId("coach-subjects-note")).toHaveText("Subjects: Not set");
     expect(await interestsOf(untouched)).toBe("{}");
+  });
+
+  test("an Administrator denied users.manageCoaches sees the subjects but is not offered Edit subjects (the API refuses it)", async ({ page, request }) => {
+    test.setTimeout(120_000);
+    const coachId = await createCoach(`subjects.denied.${RUN}`);
+    const adminName = `subjects.admin-denied.${RUN}`;
+    await withDb(async (c) => {
+      const adminId = (await c.query<{ id: string }>(
+        `INSERT INTO "User" (id, username, "firstName", "lastName", email, role, "passwordHash", "activatedAt", "isApproved", "updatedAt")
+         VALUES (gen_random_uuid()::text, $1, 'Denied', $2, $3, 'ADMIN', $4, now(), true, now()) RETURNING id`,
+        [adminName, `Admin${RUN}`, `${adminName}@e2e.local`, hashSync(PASSWORD, 4)],
+      )).rows[0].id;
+      await c.query(
+        `INSERT INTO "UserPermissionOverride" (id, "userId", permission, effect, reason)
+         VALUES (gen_random_uuid()::text, $1, 'users.manageCoaches', 'DENY', 'e2e: coach management removed for this Administrator')`,
+        [adminId],
+      );
+    });
+    // The backend refuses the edit for this Administrator (users.manageCoaches is denied)...
+    const api = process.env.E2E_API_URL ?? "http://127.0.0.1:4100";
+    const login = await request.post(`${api}/api/v1/auth/login`, { data: { username: adminName, password: PASSWORD } });
+    expect(login.ok(), await login.text()).toBe(true);
+    const token = (await login.json()).access_token as string;
+    const refused = await request.patch(`${api}/api/v1/admin/users/${coachId}`, {
+      headers: { authorization: `Bearer ${token}` }, data: { olympiadInterests: ["PHYSICS"] },
+    });
+    expect(refused.status()).toBe(403);
+    expect(await interestsOf(`subjects.denied.${RUN}`)).toBe("{}");
+    // ...so the page shows the subjects without offering the button.
+    await signInWith(page, adminName, PASSWORD);
+    await page.goto(`/admin/users/${coachId}`);
+    const card = page.getByTestId("coach-subjects-card");
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    await expect(card.getByTestId("coach-subjects")).toHaveText("Not set");
+    await expect(card.getByRole("button", { name: "Edit subjects" })).toHaveCount(0);
   });
 });

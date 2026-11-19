@@ -54,6 +54,23 @@ export function coachInterestsSupported(detection: BackendDetection | null | und
 }
 
 /** The error to show, or undefined when at least one subject is chosen. */
+/**
+ * Whether the signed-in user may edit a Coach's subjects: PATCH /admin/users/:id needs users.manage AND
+ * users.manageCoaches. GET /me/permissions keeps the frozen original list for an Administrator, which never names
+ * users.manageCoaches although every Administrator holds it by default; an individual DENY override on it (listed in
+ * `overrides`) removes it. So: listed → yes; otherwise an Administrator with users.manage → yes unless such a DENY is
+ * active. Nothing is granted here: the backend decides, this only avoids offering a button that would be refused.
+ */
+export function canEditCoachSubjects(me: {
+  role: string | null | undefined;
+  can: (permission: "users.manage" | "users.manageCoaches") => boolean;
+  overrides: readonly { permission: string; effect: string }[];
+}): boolean {
+  if (!me.can("users.manage")) return false;
+  if (me.can("users.manageCoaches")) return true;
+  return me.role === "ADMIN" && !me.overrides.some((o) => o.permission === "users.manageCoaches" && o.effect === "DENY");
+}
+
 export function validateCoachSubjects(interests: readonly OlympiadSubject[]): string | undefined {
   return interests.length === 0 ? COACH_SUBJECTS_REQUIRED : undefined;
 }

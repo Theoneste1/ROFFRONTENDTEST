@@ -7,6 +7,7 @@ import {
   COACH_SUBJECTS_REQUIRED,
   coachDetailsPayload,
   coachDetailsSupported,
+  canEditCoachSubjects,
   coachInterestsSupported,
   coachSubjectsText,
   validateCoachSubjects,
@@ -72,4 +73,22 @@ test("subjects: shown as stored (the backend keeps the fixed order), or 'Not set
   assert.equal(coachSubjectsText([]), "Not set");
   assert.equal(coachSubjectsText(null), "Not set");
   assert.equal(coachSubjectsText(undefined), "Not set");
+});
+
+test("Edit subjects is offered only to those the backend allows (users.manage AND users.manageCoaches)", () => {
+  const me = (role, perms, overrides = []) => ({ role, can: (p) => perms.includes(p), overrides });
+  // An Administrator: the frozen /me/permissions list names users.manage but never users.manageCoaches, which every
+  // Administrator holds by default.
+  assert.equal(canEditCoachSubjects(me("ADMIN", ["users.manage"])), true);
+  // ...unless an individual DENY override removes it (the backend then refuses with 403).
+  assert.equal(canEditCoachSubjects(me("ADMIN", ["users.manage"], [{ permission: "users.manageCoaches", effect: "DENY" }])), false);
+  // Other overrides change nothing here.
+  assert.equal(canEditCoachSubjects(me("ADMIN", ["users.manage"], [{ permission: "users.manageTeachers", effect: "DENY" }])), true);
+  // A Super Administrator: the effective list names both.
+  assert.equal(canEditCoachSubjects(me("SUPER_ADMIN", ["users.manage", "users.manageCoaches"])), true);
+  // Without users.manage (denied, or another role): never.
+  assert.equal(canEditCoachSubjects(me("ADMIN", [])), false);
+  assert.equal(canEditCoachSubjects(me("HEAD_COACH", ["users.manageCoaches"])), false);
+  // A role whose effective list does not name users.manageCoaches is not given it by this rule.
+  assert.equal(canEditCoachSubjects(me("TEACHER", ["users.manage"])), false);
 });
