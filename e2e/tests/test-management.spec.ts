@@ -81,10 +81,10 @@ test.describe.serial("Administrator: a test from the wizard to its marker", () =
     // Step 2: two questions; the sum is shown against the maximum and may not exceed it.
     await expect(page.getByTestId("wizard-step-questions")).toBeVisible();
     await page.getByTestId("wizard-add-question").click();
-    await page.getByLabel("Question 1").fill("Solve x^2 - 5x + 6 = 0.");
+    await page.getByLabel("Question 1", { exact: true }).fill("Solve x^2 - 5x + 6 = 0.");
     await page.getByLabel("Marks", { exact: true }).first().fill("15");
     await page.getByTestId("wizard-add-question").click();
-    await page.getByLabel("Question 2").fill("Prove that the square root of 2 is irrational.");
+    await page.getByLabel("Question 2", { exact: true }).fill("Prove that the square root of 2 is irrational.");
     await page.getByLabel("Marks", { exact: true }).nth(1).fill("8");
     await expect(page.getByTestId("question-sum")).toContainText("3 too many");
     await page.getByTestId("wizard-next").click();
