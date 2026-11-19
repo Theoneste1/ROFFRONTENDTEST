@@ -13,7 +13,16 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react";
-import { DEFAULT_CHILD_PX, DEFAULT_ITEM_PX, activeInMore, groupExtraPx, splitByHeights } from "@/lib/navigation/sidebar-layout";
+import {
+  DEFAULT_CHILD_PX,
+  DEFAULT_ITEM_PX,
+  MORE_PANEL_HEADER_GAP_PX,
+  PORTAL_HEADER_FALLBACK,
+  activeInMore,
+  groupExtraPx,
+  morePanelMaxHeight,
+  splitByHeights,
+} from "@/lib/navigation/sidebar-layout";
 import { useSidebarPlacement } from "./sidebar-placement";
 
 export interface SidebarChild {
@@ -96,6 +105,31 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
     };
   }, []);
 
+  // Rail panel height: anchored at the bottom of the More button and growing upwards, it may use the space up to 8 px
+  // below the top header (PortalShell's `portal-topbar`, measured, so a taller or wrapped header is respected). Taller
+  // content scrolls inside the panel. Re-measured while open: on resize, on scroll and when the sidebar resizes.
+  const [panelMaxPx, setPanelMaxPx] = useState<number | null>(null);
+  useIsoLayoutEffect(() => {
+    if (!moreOpen || drawer) return;
+    const fit = () => {
+      const anchor = moreRef.current;
+      if (!anchor) return;
+      const header = document.querySelector<HTMLElement>('[data-testid="portal-topbar"]');
+      const headerBottom = header ? header.getBoundingClientRect().bottom : null;
+      setPanelMaxPx(headerBottom === null ? null : morePanelMaxHeight(anchor.getBoundingClientRect().bottom, headerBottom));
+    };
+    fit();
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(fit);
+    if (moreRef.current) ro?.observe(moreRef.current);
+    window.addEventListener("resize", fit);
+    window.addEventListener("scroll", fit, true);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", fit);
+      window.removeEventListener("scroll", fit, true);
+    };
+  }, [moreOpen, drawer]);
+
   // The panel closes on Escape and on a click outside it.
   useEffect(() => {
     if (!moreOpen || drawer) return;
@@ -164,9 +198,15 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
                 ? // Drawer: expands inline below the button (the drawer scrolls if needed).
                   `flex flex-col gap-1 overflow-hidden rounded-xl bg-white/[0.03] transition-all duration-200 ease-out ${moreOpen ? "max-h-[2000px] opacity-100 p-1" : "max-h-0 opacity-0 p-0 invisible"}`
                 : // Rail: a panel beside the sidebar, so the sidebar never has to scroll.
-                  `absolute bottom-0 left-full ml-3 z-50 w-60 max-h-[80vh] overflow-y-auto rounded-xl bg-[#001E4E] border border-blue-900/60 shadow-2xl p-2 flex flex-col gap-1 transition-all duration-200 ease-out ${
+                  `absolute bottom-0 left-full ml-3 z-50 w-60 overflow-y-auto overscroll-contain rounded-xl bg-[#001E4E] border border-blue-900/60 shadow-2xl p-2 flex flex-col gap-1 transition-all duration-200 ease-out ${
                     moreOpen ? "opacity-100 translate-x-0 visible" : "opacity-0 -translate-x-2 invisible pointer-events-none"
                   }`
+            }
+            // Rail: never above the header (8 px gap); measured while open, with the shell's 5rem header as fallback.
+            style={
+              drawer
+                ? undefined
+                : { maxHeight: panelMaxPx !== null ? `${panelMaxPx}px` : `calc(100dvh - ${PORTAL_HEADER_FALLBACK} - ${MORE_PANEL_HEADER_GAP_PX}px)` }
             }
             data-testid="sidebar-more-panel"
             onClick={(e) => {

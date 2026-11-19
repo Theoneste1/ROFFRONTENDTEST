@@ -109,3 +109,79 @@ for (const c of PORTALS) {
     await page.close();
   });
 }
+
+/**
+ * Regression (More panel clipped under the top header): the panel is anchored at the bottom of the More button and
+ * grows upwards; it must stop 8 px below the header, scroll inside when the items do not fit, stay attached to More,
+ * and keep the page and the sidebar still — on short and laptop heights and after resizing while open.
+ */
+test.describe("More panel stays below the top header", () => {
+  test("laptop and short heights, resizing while open: first item visible, last reachable, attached, scrolls inside, page still", async ({ browser }) => {
+    test.setTimeout(180_000);
+    const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
+    try {
+      await signIn(page, "admin");
+      await page.goto("/admin/dashboard");
+      const toggle = page.getByTestId("sidebar-more-toggle");
+      const panel = page.getByTestId("sidebar-more-panel");
+      const items = panel.locator("a[href], button");
+      const headerBottom = async () => {
+        const h = (await page.getByTestId("portal-topbar").boundingBox())!;
+        return h.y + h.height;
+      };
+      const scrollState = () =>
+        page.evaluate(() => ({ page: window.scrollY, sidebar: document.querySelector('[data-testid="portal-sidebar"]')?.scrollTop ?? 0 }));
+
+      /** One viewport height: open the panel if needed, then check every rule. Returns whether the panel scrolls (null: no More at this height). */
+      const verify = async (height: number) => {
+        await page.setViewportSize({ width: 1280, height });
+        // The sidebar re-measures after a resize: wait for More (a tall window may have none: then nothing to check).
+        const hasMore = await toggle.waitFor({ state: "visible", timeout: 3_000 }).then(() => true, () => false);
+        if (!hasMore) return null;
+        const before = await scrollState();
+        if (!(await panel.isVisible())) await toggle.click();
+        await expect(panel).toBeVisible();
+        // Top edge: at least 8 px below the header (re-measured after a resize).
+        await expect.poll(async () => (await panel.boundingBox())!.y - (await headerBottom()), { timeout: 5_000 }).toBeGreaterThanOrEqual(8 - 0.5);
+        const box = (await panel.boundingBox())!;
+        const more = (await page.getByTestId("sidebar-more").boundingBox())!;
+        expect(Math.abs(box.y + box.height - (more.y + more.height)), `${height}px: attached to More`).toBeLessThanOrEqual(1);
+        // First item: fully visible, below the header.
+        await panel.evaluate((el) => el.scrollTo({ top: 0 }));
+        expect((await items.first().boundingBox())!.y, `${height}px: first item below the header`).toBeGreaterThanOrEqual(await headerBottom());
+        await expect(items.first()).toBeInViewport({ ratio: 1 });
+        const m = await panel.evaluate((el) => ({
+          scrolls: el.scrollHeight > el.clientHeight + 1,
+          overflowY: getComputedStyle(el).overflowY,
+          overscroll: getComputedStyle(el).overscrollBehaviorY,
+        }));
+        expect(m.overflowY).toBe("auto");
+        expect(m.overscroll).toBe("contain");
+        // Last item: reachable by scrolling inside the panel; scrolling past the end moves neither the page nor the sidebar.
+        await panel.hover();
+        await page.mouse.wheel(0, 4000);
+        const last = panel.locator("a[href]").last();
+        await last.scrollIntoViewIfNeeded();
+        await expect(last).toBeInViewport();
+        expect(await scrollState(), `${height}px: page and sidebar did not scroll`).toEqual(before);
+        return m.scrolls;
+      };
+
+      expect(await verify(480), "480px: the items do not fit, so the panel scrolls").toBe(true);
+      await verify(560); // resized while open
+      await verify(640);
+      await verify(768); // common laptop height
+      const at900 = await verify(900);
+      if (at900 !== null) expect(at900, "900px: a list that fits shows no scrollbar").toBe(false);
+      const at1100 = await verify(1100);
+      if (at1100 !== null) expect(at1100).toBe(false);
+      await page.setViewportSize({ width: 1280, height: 640 });
+      if (await panel.isVisible()) {
+        await page.keyboard.press("Escape");
+        await expect(panel).toBeHidden();
+      }
+    } finally {
+      await page.close();
+    }
+  });
+});
