@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, LoadingBlock } from '@/app/components/ui/feedba
 import { MetricCard } from '../components/adminUi';
 import { describeAudit } from '../components/auditText';
 import type { ReportsOverview } from '@/lib/api/types';
+import { StaffTestsWidget } from '@/app/components/test-management/ResultViews';
 
 function greeting(now: number) {
   const h = new Date(now).getHours();
@@ -119,6 +120,9 @@ export default function DashboardMain() {
           Platform overview — manage users, curriculum, assignments and the results workflow.
         </p>
       </div>
+
+      {/* Tests (Test Management Phase 4: capability testResults, tests.view) */}
+      <div className="mb-8"><StaffTestsWidget portal="admin" /></div>
 
       {/* Metric Cards Row */}
       {dashboard.isPending ? (

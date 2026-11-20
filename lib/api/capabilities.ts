@@ -189,6 +189,14 @@ export const KNOWN_FEATURES = [
    * `/mentor/marking` (tests.mark). Without it: none of these.
    */
   "testMarking",
+  /**
+   * Test Management, Phase 4 (owner-approved plan 2026-11-19): publication of the approved results (tests.publishResults;
+   * the Administrators' override with a mandatory reason: tests.overridePublication), results with identity, the report and
+   * CSV exports (tests.viewResults), internal rankings (tests.viewRankings), the reporting overview, students' own results
+   * (tests.viewOwnResults), teachers' school results (tests.viewSchoolResults) and the role dashboards' test widgets.
+   * Without it: none of these.
+   */
+  "testResults",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

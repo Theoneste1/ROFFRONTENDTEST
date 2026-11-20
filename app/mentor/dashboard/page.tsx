@@ -20,6 +20,7 @@ import { dayStart } from '@/lib/assessment/my-assignments-query';
 import { formatDate, formatRelative } from '@/lib/format';
 import { ErrorState, Spinner } from '@/app/components/ui/feedback';
 import { OPEN_REVIEW_STATUSES } from '../components/mentorUi';
+import { CoachTestsWidget, StaffTestsWidget } from "@/app/components/test-management/ResultViews";
 
 export default function MentorDashboard() {
   const { user } = useSession();
@@ -96,6 +97,10 @@ export default function MentorDashboard() {
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
           <p className="text-slate-600 mt-1">Welcome back, {user?.firstName}! Here&apos;s what&apos;s happening in your courses.</p>
         </div>
+
+        {/* Tests (Phase 4): Head Coaches see their subjects' overview (tests.view); coaches their own marking (tests.mark). */}
+        <StaffTestsWidget portal="mentor" />
+        <CoachTestsWidget />
 
         {scopes.isError && <ErrorState error={scopes.error} title="Couldn't load your courses" onRetry={() => scopes.refetch()} />}
 

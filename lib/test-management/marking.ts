@@ -90,6 +90,8 @@ export const REVIEW_FILTERS: ReadonlyArray<{ label: string; value: "" | Submissi
   { label: "Returned", value: "RETURNED" },
   { label: "Second marking", value: "AWAITING_SECOND_MARKING" },
   { label: "Approved", value: "APPROVED" },
+  // Phase 4 (capability testResults): published results can be unlocked too (G6: that withdraws them).
+  { label: "Published", value: "PUBLISHED" },
 ];
 
 export const KIND_LABEL: Record<MarkingKind, string> = { FIRST: "First marking", SECOND: "Second marking", ADJUSTMENT: "Adjusted" };

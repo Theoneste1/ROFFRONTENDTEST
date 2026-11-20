@@ -95,8 +95,9 @@ test("the even-share preview and labels", () => {
   assert.equal(marksText(null, 20), "—");
   assert.equal(marksText(17, 20), "17 / 20");
   assert.deepEqual(Object.keys(QUEUE_BADGE), ["NOT_STARTED", "IN_PROGRESS", "MARKED"]);
-  // Every status has a badge; the review filter offers every Phase 3 status (Published belongs to Phase 4).
+  // Every status has a badge; the review filter offers every status (Published since Phase 4: published results can be
+  // unlocked — G6 withdrawal).
   assert.equal(Object.keys(STATUS_BADGE).length, 8);
   assert.deepEqual(REVIEW_FILTERS.map((f) => f.value).filter(Boolean).sort(),
-    ["APPROVED", "ASSIGNED", "AWAITING_SECOND_MARKING", "MARKED", "MARKING_IN_PROGRESS", "RETURNED", "SUBMITTED"]);
+    ["APPROVED", "ASSIGNED", "AWAITING_SECOND_MARKING", "MARKED", "MARKING_IN_PROGRESS", "PUBLISHED", "RETURNED", "SUBMITTED"]);
 });

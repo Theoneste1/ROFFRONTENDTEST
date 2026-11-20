@@ -158,6 +158,19 @@ export const queryKeys = {
     markingHistory: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "marking", testId, "history", filters] as const,
     queue: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "queue", filters] as const,
     toMark: (code: string) => [...queryKeys.tests.all, "to-mark", code] as const,
+    // Phase 4 (lib/api/test-results.ts)
+    publication: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "results", testId, "preview", filters] as const,
+    publications: (testId: string) => [...queryKeys.tests.all, "results", testId, "publications"] as const,
+    results: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "results", testId, "list", filters] as const,
+    rankings: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "results", testId, "rankings", filters] as const,
+    report: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "results", testId, "report", filters] as const,
+    reports: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "reports", filters] as const,
+    myResults: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "my-results", filters] as const,
+    myResult: (testId: string) => [...queryKeys.tests.all, "my-result", testId] as const,
+    schoolResultTests: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "school-results", filters] as const,
+    schoolResults: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "school-results", testId, filters] as const,
+    schoolResult: (testId: string, studentId: string) => [...queryKeys.tests.all, "school-result", testId, studentId] as const,
+    dashboard: (who: string) => [...queryKeys.tests.all, "dashboard", who] as const,
   },
   /** Backend-wide information (`GET /api/v1`), the same for every user. */
   backend: {

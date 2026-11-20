@@ -97,6 +97,8 @@ function ReviewDialog({ testId, submissionId, onClose }: { testId: string; submi
   const done = async (d: ReviewDetail, message: string) => {
     qc.setQueryData(queryKeys.tests.reviewDetail(testId, submissionId), d);
     await qc.invalidateQueries({ queryKey: queryKeys.tests.all, predicate: (x) => x.queryKey.includes("marking") && !x.queryKey.includes("detail") });
+    // Phase 4: an approval or an unlock (G6 withdrawal) changes what Publishing, Results and Rankings show.
+    await qc.invalidateQueries({ queryKey: [...queryKeys.tests.all, "results", testId] });
     setNotice(message);
   };
   return (
@@ -140,6 +142,12 @@ function ReviewBody({ d, testId, notice, onNotice, onDone, onConflict }: {
       </div>
       {notice && <Notice tone="success" onClose={() => onNotice(null)}>{notice}</Notice>}
       {d.status === "APPROVED" && <Alert tone="info">Approved and locked. Unlock it (with a reason) to change anything.</Alert>}
+      {d.status === "PUBLISHED" && (
+        <Alert tone="info">
+          Published: the student and their school&apos;s teachers can see this result. Unlocking it (with a reason) withdraws it from their views until it is
+          approved and published again; they are told once.
+        </Alert>
+      )}
 
       <section aria-label="Marks side by side">
         <h4 className="mb-2 text-sm font-bold text-slate-900">Marks</h4>
@@ -303,7 +311,10 @@ function DecisionDialog({ d, testId, decision, markers, submitted, onClose, onDo
     approve: { title: "Approve this result?", label: "Approve", text: null as null | { label: string; max: number } },
     return: { title: "Return for correction", label: "Return", text: { label: "Comment for the marker", max: COMMENT_MAX } },
     choose: { title: "Choose the mark that counts", label: "Confirm", text: { label: "Reason", max: 500 } },
-    unlock: { title: "Unlock this approved result?", label: "Unlock", text: { label: "Reason", max: 500 } },
+    unlock: {
+      title: d.status === "PUBLISHED" ? "Unlock and withdraw this published result?" : "Unlock this approved result?",
+      label: d.status === "PUBLISHED" ? "Unlock and withdraw" : "Unlock", text: { label: "Reason", max: 500 },
+    },
   }[decision];
 
   async function submit(e: FormEvent) {
@@ -323,7 +334,8 @@ function DecisionDialog({ d, testId, decision, markers, submitted, onClose, onDo
       await run(onConflict, async () => {
         if (decision === "approve") await onDone(await testMarkingApi.approve(testId, d.id, common), "Approved: the result is locked.");
         else if (decision === "return") await onDone(await testMarkingApi.returnForCorrection(testId, d.id, { ...common, comment: text.trim(), ...(twoMarkings && { kind }) }), "Returned to the marker for correction.");
-        else if (decision === "unlock") await onDone(await testMarkingApi.unlock(testId, d.id, { ...common, reason: text.trim() }), "Unlocked: it can be reviewed again.");
+        else if (decision === "unlock") await onDone(await testMarkingApi.unlock(testId, d.id, { ...common, reason: text.trim() }),
+          d.status === "PUBLISHED" ? "Unlocked and withdrawn: the student and their teachers no longer see it until it is published again." : "Unlocked: it can be reviewed again.");
         else await onDone(await testMarkingApi.choose(testId, d.id, {
           ...common, source, reason: text.trim(), ...(source === "ADJUSTMENT" && { marks: marksBody(d.test.questions, marks) }),
         }), source === "ADJUSTMENT" ? "Adjusted marks recorded as the final mark." : `The ${source === "FIRST" ? "first" : "second"} marking is the final mark.`);

@@ -1,11 +1,12 @@
 'use client';
 
 import { usePathname } from "next/navigation";
-import { FileQuestion, Users } from "lucide-react";
+import { Award, FileQuestion, Users } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { TEACHER_NAV, TEACHER_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { TEACHER_NAV, TEACHER_RESULTS, TEACHER_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { resultsNavVisible } from "@/lib/test-management/results";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { answerNavVisible } from "@/lib/test-management/submissions";
 
@@ -16,7 +17,13 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
   const isActive = (href: string) => (href === "/teacher/dashboard" ? pathname === href || pathname.startsWith("/teacher/students") : pathname.startsWith(href));
   // Tests (G2): a backend with `testSubmissions` AND the known tests.submitForStudents.
   const { detection } = useBackendCapabilities();
-  const items = [...visibleNav(TEACHER_NAV, knownPermissions), ...(answerNavVisible(detection, knownPermissions, "tests.submitForStudents") ? [TEACHER_TESTS] : [])];
+  // Results (Phase 4): a backend with `testResults` AND the known tests.viewSchoolResults.
+  const items = [
+    ...visibleNav(TEACHER_NAV, knownPermissions),
+    ...(answerNavVisible(detection, knownPermissions, "tests.submitForStudents") ? [TEACHER_TESTS] : []),
+    ...(resultsNavVisible(detection, knownPermissions, "tests.viewSchoolResults") ? [TEACHER_RESULTS] : []),
+  ];
+  const iconOf = (href: string) => (href === TEACHER_TESTS.href ? FileQuestion : href === TEACHER_RESULTS.href ? Award : Users);
 
   return (
     <aside
@@ -29,7 +36,7 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
         <SidebarNav
           isOpen={isOpen}
           label="Teacher portal"
-          items={items.map((item) => ({ href: item.href, label: item.label, icon: item.href === TEACHER_TESTS.href ? FileQuestion : Users, active: isActive(item.href) }))}
+          items={items.map((item) => ({ href: item.href, label: item.label, icon: iconOf(item.href), active: isActive(item.href) }))}
         />
       </div>
       <SidebarUtilities isOpen={isOpen} settingsHref="/teacher/account" />
