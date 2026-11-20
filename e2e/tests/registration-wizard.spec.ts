@@ -51,12 +51,12 @@ test.describe("registration forms, one step at a time", () => {
     await page.goto("/register");
     await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
 
-    // Step 1 of 7: the first step is current, the other steps' fields are not shown, no Back.
+    // Step 1 of 7: its phase ("About you", the first of the 4 phases) is current, the other steps' fields are not shown, no Back.
     await expect(progress(page)).toContainText("Step 1 of 7");
     await expect(progress(page)).toContainText("About you");
     await expect(current(page)).toHaveCount(1);
     await expect(current(page)).toContainText("About you");
-    await expect(page.getByTestId("wizard-steps").locator("li")).toHaveCount(7);
+    await expect(page.getByTestId("wizard-steps").locator("li")).toHaveCount(4);
     await expect(page.locator('input[name="username"]')).toBeHidden();
     await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
@@ -76,11 +76,16 @@ test.describe("registration forms, one step at a time", () => {
     await expect(progress(page)).toContainText("Step 2 of 7");
     await expect(page.getByRole("heading", { name: "Phone and picture" })).toBeFocused();
     await expect(live(page)).toContainText("Step 2 of 7: Phone and picture");
-    await expect(page.getByTestId("wizard-steps").locator("li").first()).toHaveAttribute("data-status", "complete");
-    await expect(current(page)).toContainText("Phone and picture");
+    // Still in the first phase ("About you", screen 2 of 2): it stays current until its last screen is done.
+    await expect(page.getByTestId("wizard-steps").locator("li").first()).toHaveAttribute("data-status", "current");
+    await expect(current(page)).toContainText("About you");
+    await expect(page.getByTestId("wizard-screen")).toHaveText("2 of 2");
     await expect(page.getByTestId("register-done")).toHaveCount(0);
     await page.locator('input[name="guardianPhone"]').fill("0788123456");
     await nextStep(page, "Your studies");
+    // The next phase: the first one completed (a check mark), "Studies & school" current.
+    await expect(page.getByTestId("wizard-steps").locator("li").first()).toHaveAttribute("data-status", "complete");
+    await expect(current(page)).toContainText("Studies & school");
 
     // Step 3's own rule.
     await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -142,6 +147,7 @@ test.describe("registration forms, one step at a time", () => {
     await nextStep(page, "Your teaching");
     await form.locator('input[name="position"]').fill("Mathematics teacher");
     await form.getByLabel("Mathematics").check();
+    await nextStep(page, "Profile picture");   // the optional picture: its own screen of "Teaching"
     await nextStep(page, "School location");
     await selectWhenReady(page, "cascade-province", SCHOOL.province);
     await selectWhenReady(page, "cascade-district", SCHOOL.district);
@@ -156,9 +162,9 @@ test.describe("registration forms, one step at a time", () => {
     await form.locator('input[name="username"]').fill(username);
     await page.locator('input[name="new-password"]').fill(PASSWORD);
     await page.locator('input[name="confirm-password"]').fill(PASSWORD);
-    await submitUntilAnswered(page, "Apply as a teacher", () => expect(progress(page)).toContainText("Step 1 of 6", { timeout: 30_000 }));
+    await submitUntilAnswered(page, "Apply as a teacher", () => expect(progress(page)).toContainText("Step 1 of 7", { timeout: 30_000 }));
 
-    await expect(progress(page)).toContainText("Step 1 of 6");
+    await expect(progress(page)).toContainText("Step 1 of 7");
     await expect(page.getByText("email must be an email")).toBeVisible();
     await expect(form.locator('input[name="email"]')).toBeFocused();
     await expect(live(page)).toContainText("Please check the highlighted fields.");
@@ -172,11 +178,12 @@ test.describe("registration forms, one step at a time", () => {
     test.setTimeout(150_000);
     await page.goto("/apply");
     await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
-    await expect(progress(page)).toContainText("Step 1 of 4");
+    await expect(progress(page)).toContainText("Step 1 of 5");
     await page.locator('input[name="firstName"]').fill("Claude");
     await page.locator('input[name="lastName"]').fill(`Wizard${RUN}`);
     await page.getByTestId("coach-country").selectOption("RW");
     await page.locator('input[name="phone"]').fill("0788111222");
+    await nextStep(page, "Profile picture");   // the optional picture: its own screen of "About you"
     await nextStep(page, "Your background");
     await page.locator('input[name="occupation"]').fill("Engineer");
     await page.getByTestId("coach-education").selectOption("BACHELOR");
@@ -188,7 +195,7 @@ test.describe("registration forms, one step at a time", () => {
     await expertise.press("Enter");
     await expertise.pressSequentially("Olympiad problem solving");
     await expect(expertise).toHaveValue("Mechanics\nOlympiad problem solving");
-    await expect(progress(page)).toContainText("Step 3 of 4");
+    await expect(progress(page)).toContainText("Step 4 of 5");
     await page.locator('textarea[name="relevantExperience"]').fill("Three years coaching national olympiad teams.");
     await nextStep(page, "Your account");
     // "admin" is taken: the backend refuses the application without naming a field.
@@ -200,7 +207,7 @@ test.describe("registration forms, one step at a time", () => {
     await submitUntilAnswered(page, "Apply as a coach", () => taken.waitFor({ timeout: 30_000 }));
     await expect(taken).toBeVisible();
     await expect(taken).toBeInViewport();
-    await expect(progress(page)).toContainText("Step 4 of 4");
+    await expect(progress(page)).toContainText("Step 5 of 5");
     await expect(page.getByTestId("apply-done")).toHaveCount(0);
   });
 
@@ -213,18 +220,18 @@ test.describe("registration forms, one step at a time", () => {
     await page.getByTestId("join-switch").getByRole("link", { name: "Coach" }).click();
     await expect(page).toHaveURL(/\/apply$/);
     await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
-    await expect(progress(page)).toContainText("Step 1 of 4");
+    await expect(progress(page)).toContainText("Step 1 of 5");
     await expect(page.locator('input[name="firstName"]')).toHaveValue("");
     await page.locator('input[name="firstName"]').fill("Zed");
 
     await page.getByTestId("join-switch").getByRole("link", { name: "Teacher" }).click();
     await page.getByTestId("teacher-register-form").waitFor({ timeout: 60_000 });
-    await expect(progress(page)).toContainText("Step 1 of 6");
+    await expect(progress(page)).toContainText("Step 1 of 7");
     await expect(page.locator('input[name="firstName"]')).toHaveValue("");
 
     await page.getByTestId("join-switch").getByRole("link", { name: "Coach" }).click();
     await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
-    await expect(progress(page)).toContainText("Step 1 of 4");
+    await expect(progress(page)).toContainText("Step 1 of 5");
     await expect(page.locator('input[name="firstName"]')).toHaveValue("");
 
     await page.getByTestId("join-switch").getByRole("link", { name: "Student" }).click();

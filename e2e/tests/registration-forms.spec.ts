@@ -129,6 +129,7 @@ test.describe("public sign-up forms", () => {
     await nextStep(page, "Your teaching");
     await form.locator('input[name="position"]').fill("Mathematics teacher");
     await form.getByLabel("Mathematics").check();
+    await nextStep(page, "Profile picture");   // the optional picture: its own screen of "Teaching"
     await nextStep(page, "School location");
     const schoolCountry = page.getByTestId("teacher-school-country");
     if (await schoolCountry.isEnabled()) await schoolCountry.selectOption("RW");   // Rwanda only: preselected and fixed
@@ -164,6 +165,7 @@ test.describe("public sign-up forms", () => {
     await page.locator('input[name="lastName"]').fill(`Coach${RUN}`);
     await page.getByTestId("coach-country").selectOption("RW");
     await page.locator('input[name="phone"]').fill("0788111222");
+    await nextStep(page, "Profile picture");   // the optional picture: its own screen of "About you"
     await nextStep(page, "Your background");
     await page.locator('input[name="occupation"]').fill("Engineer");
     await page.getByTestId("coach-education").selectOption("BACHELOR");

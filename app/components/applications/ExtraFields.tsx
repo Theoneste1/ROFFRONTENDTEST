@@ -38,7 +38,7 @@ export function TeacherExtraFields({ value, onChange, errors, only }: {
   return (
     <>
       {on("position") && <TextField label="Position or teaching role" name="position" required maxLength={LIMITS.position[1]} value={value.position} onChange={(e) => onChange("position", e.target.value)} error={errors.position} hint="For example: Mathematics teacher, Head of sciences, Director of studies." />}
-      {on("yearsOfExperience") && <TextField label="Years of teaching experience" name="yearsOfExperience" inputMode="numeric" maxLength={2} value={value.yearsOfExperience} onChange={(e) => onChange("yearsOfExperience", e.target.value)} error={errors.yearsOfExperience} hint="Optional." />}
+      {on("yearsOfExperience") && <TextField label="Years of teaching experience (optional)" name="yearsOfExperience" inputMode="numeric" maxLength={2} value={value.yearsOfExperience} onChange={(e) => onChange("yearsOfExperience", e.target.value)} error={errors.yearsOfExperience} hint="Optional." />}
     </>
   );
 }
@@ -52,10 +52,10 @@ export function CoachExtraFields({ value, onChange, errors, only }: {
   return (
     <>
       {on("phone") && <TextField label="Phone number" name="phone" type="tel" autoComplete="tel" required maxLength={40} value={value.phone} onChange={(e) => onChange("phone", e.target.value)} error={errors.phone} hint="Rwanda: 07XXXXXXXX. Elsewhere: +country code and number." />}
-      {on("affiliation") && <TextField label="Institution or affiliation" name="affiliation" maxLength={LIMITS.affiliation[1]} value={value.affiliation} onChange={(e) => onChange("affiliation", e.target.value)} error={errors.affiliation} hint="Optional: your university, school, company or club." />}
+      {on("affiliation") && <TextField label="Institution or affiliation (optional)" name="affiliation" maxLength={LIMITS.affiliation[1]} value={value.affiliation} onChange={(e) => onChange("affiliation", e.target.value)} error={errors.affiliation} hint="Optional: your university, school, company or club." />}
       {on("expertise") && <AreaField label="Areas of expertise" name="expertise" required max={LIMITS.expertise[1]} value={value.expertise} onChange={(v) => onChange("expertise", v)} error={errors.expertise} hint="For example: combinatorics, number theory, algorithms." />}
       {on("relevantExperience") && <AreaField label="Relevant experience" name="relevantExperience" required max={LIMITS.relevantExperience[1]} value={value.relevantExperience} onChange={(v) => onChange("relevantExperience", v)} error={errors.relevantExperience} hint="Olympiad participation or coaching, teaching, competitions, mentoring." />}
-      {on("yearsOfExperience") && <TextField label="Years of relevant experience" name="yearsOfExperience" inputMode="numeric" maxLength={2} value={value.yearsOfExperience} onChange={(e) => onChange("yearsOfExperience", e.target.value)} error={errors.yearsOfExperience} hint="Optional." />}
+      {on("yearsOfExperience") && <TextField label="Years of relevant experience (optional)" name="yearsOfExperience" inputMode="numeric" maxLength={2} value={value.yearsOfExperience} onChange={(e) => onChange("yearsOfExperience", e.target.value)} error={errors.yearsOfExperience} hint="Optional." />}
     </>
   );
 }

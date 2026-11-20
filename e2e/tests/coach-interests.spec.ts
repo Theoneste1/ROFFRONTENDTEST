@@ -54,6 +54,7 @@ test.describe("coach subjects", () => {
     await page.locator('input[name="lastName"]').fill(`Subjects${RUN}`);
     await page.getByTestId("coach-country").selectOption("RW");
     await page.locator('input[name="phone"]').fill("0788333444");
+    await nextStep(page, "Profile picture");   // the optional picture: its own screen of "About you"
     await nextStep(page, "Your background");
     const subjects = page.getByTestId("olympiad-interests");
     await expect(subjects.getByText(QUESTION)).toBeVisible();
@@ -63,7 +64,7 @@ test.describe("coach subjects", () => {
     // No subject: Next is refused on this step with the message.
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(page.getByText(REQUIRED)).toBeVisible();
-    await expect(progress(page)).toContainText("Step 2 of 4");
+    await expect(progress(page)).toContainText("Step 3 of 5");
     await subjects.getByLabel("Mathematics").check();
     await subjects.getByLabel("Computing").check();
     await expect(page.getByText(REQUIRED)).toHaveCount(0);

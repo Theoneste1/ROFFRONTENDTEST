@@ -138,17 +138,29 @@ export interface WizardPart {
   order?: number;
 }
 
+/**
+ * A named phase of a form ("About you", "Studies & school", "Account"): the progress indicator shows the phases; a phase
+ * with more fields than one window holds is shown on several steps (screens) in a row, "2 of 3" inside the phase.
+ */
+export interface WizardPhaseName {
+  id: string;
+  title: string;
+}
+
 /** A step with its parts (in the forms' order); `fields` is every error key of those parts. */
 export interface WizardPartStep extends WizardStepModel {
   description?: string;
+  /** The phase this step (screen) belongs to; a step without one is a phase of its own. */
+  phase?: WizardPhaseName;
   parts: readonly WizardPart[];
 }
 
-/** A step of one layout: its title and the ids of its parts. */
+/** A step of one layout: its title, its phase and the ids of its parts. */
 export interface StepPlan {
   id: string;
   title: string;
   description?: string;
+  phase?: WizardPhaseName;
   parts: readonly string[];
 }
 
@@ -161,7 +173,8 @@ export function buildSteps(parts: readonly WizardPart[], plan: readonly StepPlan
   const steps: WizardPartStep[] = [];
   for (const s of plan) {
     const own = s.parts.map((id) => byId.get(id)).filter((p): p is WizardPart => !!p && (present ? present(p.id) : true));
-    if (own.length) steps.push({ id: s.id, title: s.title, ...(s.description && { description: s.description }), parts: own, fields: own.flatMap((p) => p.fields) });
+    if (own.length)
+      steps.push({ id: s.id, title: s.title, ...(s.description && { description: s.description }), ...(s.phase && { phase: s.phase }), parts: own, fields: own.flatMap((p) => p.fields) });
   }
   return steps;
 }
@@ -185,4 +198,44 @@ export function remapStep(from: readonly Pick<WizardPartStep, "parts">[], to: re
 /** What identifies a grouping: its steps and their parts (a new grouping is remapped with remapStep). */
 export function stepsSignature(steps: readonly Pick<WizardPartStep, "id" | "parts">[]): string {
   return steps.map((s) => `${s.id}:${s.parts.map((p) => p.id).join(",")}`).join("|");
+}
+
+// ─── Phases ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** A phase as shown: its name, its first step and how many steps (screens) it has. */
+export interface WizardPhase extends WizardPhaseName {
+  first: number;
+  count: number;
+}
+
+/**
+ * The phases of a grouping, in order: consecutive steps of the same phase form one phase (a phase whose steps all left,
+ * e.g. the details on an older backend, is not shown); a step without a phase is a phase of its own, named after it.
+ */
+export function phasesOf(steps: readonly Pick<WizardPartStep, "id" | "title" | "phase">[]): WizardPhase[] {
+  const phases: WizardPhase[] = [];
+  steps.forEach((s, i) => {
+    const name = s.phase ?? { id: s.id, title: s.title };
+    const last = phases[phases.length - 1];
+    if (last && s.phase && last.id === name.id) last.count += 1;
+    else phases.push({ id: name.id, title: name.title, first: i, count: 1 });
+  });
+  return phases;
+}
+
+/** The phase holding a step (-1 when none does). */
+export function phaseOfStep(phases: readonly WizardPhase[], index: number): number {
+  return phases.findIndex((p) => index >= p.first && index < p.first + p.count);
+}
+
+/** Phases before the shown step's are complete, its own is current, the rest are still to come. */
+export function phaseStatus(phases: readonly WizardPhase[], phase: number, index: number): StepStatus {
+  return stepStatus(phase, phaseOfStep(phases, index));
+}
+
+/** Where a step is inside its phase: "2 of 3" (null when the phase has one step: nothing to say). */
+export function screenLabel(phases: readonly WizardPhase[], index: number): string | null {
+  const p = phases[phaseOfStep(phases, index)];
+  if (!p || p.count < 2) return null;
+  return `${index - p.first + 1} of ${p.count}`;
 }

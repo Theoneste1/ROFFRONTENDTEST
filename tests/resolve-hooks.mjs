@@ -1,6 +1,6 @@
 // Module resolution for `npm test` only (not used by the app or its build):
 // lets node --test import the app's TypeScript modules as they are written —
-// `@/…` (tsconfig "paths") and extensionless relative imports such as "./x".
+// `@/…` (tsconfig "paths"), extensionless relative imports such as "./x" and Next.js entry points such as "next/link".
 // Node strips the TypeScript types itself; .tsx (JSX) is compiled here with the project's own
 // TypeScript (transpile only, `jsx: react-jsx`), so components can be rendered with react-dom/server.
 import { readFile } from "node:fs/promises";
@@ -14,6 +14,8 @@ export async function resolve(specifier, context, nextResolve) {
   try {
     return await nextResolve(specifier, context);
   } catch (error) {
+    // Next.js entry points without an exports map ("next/link" is next/link.js).
+    if (/^next\/[\w-]+$/.test(specifier)) return nextResolve(`${specifier}.js`, context);
     const relative = specifier.startsWith("./") || specifier.startsWith("../") || specifier.startsWith("file:");
     if (!relative || /\.[cm]?[jt]sx?$/.test(specifier)) throw error;
     for (const ext of EXTENSIONS) {

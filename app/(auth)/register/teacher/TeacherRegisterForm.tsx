@@ -295,10 +295,10 @@ function OpenForm() {
 
   // The fields, part by part (lib/forms/registration-steps → TEACHER_PARTS): the steps show them in two columns or one.
   const parts: Record<string, ReactNode> = {
-    firstName: <TextField label="First name" name="firstName" autoComplete="given-name" required maxLength={TEACHER_RULES.nameMax} value={d.firstName} onChange={(e) => set("firstName", e.target.value)} error={errors.firstName} />,
-    lastName: <TextField label="Last name" name="lastName" autoComplete="family-name" required maxLength={TEACHER_RULES.nameMax} value={d.lastName} onChange={(e) => set("lastName", e.target.value)} error={errors.lastName} />,
-    email: <TextField label="E-mail" name="email" type="email" autoComplete="email" required maxLength={254} value={d.email} onChange={(e) => set("email", e.target.value)} error={errors.email} />,
-    phone: <TextField label="Phone" name="phone" type="tel" autoComplete="tel" required maxLength={30} value={d.phone} onChange={(e) => set("phone", e.target.value)} error={errors.phone} hint={PHONE_HINT} />,
+    firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={TEACHER_RULES.nameMax} value={d.firstName} onChange={(e) => set("firstName", e.target.value)} error={errors.firstName} />,
+    lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={TEACHER_RULES.nameMax} value={d.lastName} onChange={(e) => set("lastName", e.target.value)} error={errors.lastName} />,
+    email: <TextField label="E-mail" placeholder="e.g. aline.uwase@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={d.email} onChange={(e) => set("email", e.target.value)} error={errors.email} />,
+    phone: <TextField label="Phone" placeholder="e.g. 0788 123 456" name="phone" type="tel" autoComplete="tel" required maxLength={30} value={d.phone} onChange={(e) => set("phone", e.target.value)} error={errors.phone} hint={PHONE_HINT} />,
     country: <PlaceSelect label="Country" value={d.country} onChange={(v) => set("country", v)} options={countries} placeholder="Choose your country" error={errors.country} />,
     position: extraField("position"),
     yearsOfExperience: extraField("yearsOfExperience"),
@@ -410,7 +410,7 @@ function OpenForm() {
         error={errors.homeSector}
       />
     ),
-    username: <TextField label="Username" name="username" autoComplete="username" required maxLength={30} value={d.username} onChange={(e) => set("username", e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    username: <TextField label="Username" placeholder="e.g. aline.uwase" name="username" autoComplete="username" required maxLength={30} value={d.username} onChange={(e) => set("username", e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
     password: <NewPasswordFields only="password" {...passwordProps} />,
     confirm: <NewPasswordFields only="confirm" {...passwordProps} />,
   };
@@ -427,10 +427,16 @@ function OpenForm() {
         header={
           <>
             <JoinSwitch active="teacher" compact />
-            <AuthHeading title="Join as a teacher" compact />
+            <AuthHeading title="Apply as a teacher" compact />
           </>
         }
-        intro={<p className="text-sm leading-snug text-slate-600">{SUBTITLE}</p>}
+        intro={
+          <p className="text-sm leading-snug text-slate-600 wizard-wide:text-[15px]">
+            {/* Phones: the short version (the steps must fit the window). */}
+            <span className="hidden wizard-wide:inline">{SUBTITLE}</span>
+            <span className="wizard-wide:hidden">An administrator reviews every application.</span>
+          </p>
+        }
         notices={
           <>
             {closedRefusal && <ClosedFormNotice notice={closedRefusal} />}
