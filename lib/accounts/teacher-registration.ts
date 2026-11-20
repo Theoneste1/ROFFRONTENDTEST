@@ -149,6 +149,8 @@ export interface TeacherDraft {
   proposedSchoolName: string;
   /** The school's sector: chosen before the school (sent only for a missing school). */
   schoolSector: string;
+  /** Home location (lib/accounts/home-location, homeLocationRules): `country` is the home country; the place for Rwanda. */
+  homeProvince: string;
   homeDistrict: string;
   homeSector: string;
   password: string;
@@ -169,6 +171,7 @@ export const emptyTeacherDraft = (): TeacherDraft => ({
   school: null,
   proposedSchoolName: "",
   schoolSector: "",
+  homeProvince: "",
   homeDistrict: "",
   homeSector: "",
   password: "",
@@ -195,6 +198,16 @@ export function setSchoolMode(d: TeacherDraft, mode: SchoolChoiceMode): TeacherD
   return mode === d.schoolMode ? d : { ...d, schoolMode: mode, school: null, proposedSchoolName: mode === "missing" ? d.proposedSchoolName : "" };
 }
 
+/** A new home country: the home province, district and sector start again (they are asked only for Rwanda). */
+export function setHomeCountry(d: TeacherDraft, country: string): TeacherDraft {
+  return country === d.country ? d : { ...d, country, homeProvince: "", homeDistrict: "", homeSector: "" };
+}
+
+/** A new home province: the home district and sector start again. */
+export function setHomeProvince(d: TeacherDraft, province: string): TeacherDraft {
+  return { ...d, homeProvince: province, homeDistrict: "", homeSector: "" };
+}
+
 /** A new home district: the home sector starts again. */
 export function setHomeDistrict(d: TeacherDraft, district: string): TeacherDraft {
   return { ...d, homeDistrict: district, homeSector: "" };
@@ -216,6 +229,7 @@ export type TeacherField =
   | "school"
   | "proposedSchoolName"
   | "schoolSector"
+  | "homeProvince"
   | "homeDistrict"
   | "homeSector"
   | "password"
@@ -236,7 +250,7 @@ const PASSWORD_HINT = "At least 8 characters, with at least one letter and one n
 const strongPassword = (p: string) => p.length >= TEACHER_RULES.passwordMin && p.length <= TEACHER_RULES.passwordMax && /[a-zA-Z]/.test(p) && /[0-9]/.test(p);
 
 /** Field errors, or an empty object when the draft can be sent. */
-export function validateTeacherRegistration(d: TeacherDraft): Partial<Record<TeacherField, string>> {
+export function validateTeacherRegistration(d: TeacherDraft, homeRules = false): Partial<Record<TeacherField, string>> {
   const e: Partial<Record<TeacherField, string>> = {};
   const first = d.firstName.trim();
   const last = d.lastName.trim();
@@ -246,7 +260,7 @@ export function validateTeacherRegistration(d: TeacherDraft): Partial<Record<Tea
   else if (last.length > TEACHER_RULES.nameMax) e.lastName = "At most 100 characters.";
   if (!TEACHER_RULES.usernamePattern.test(d.username)) e.username = "3–30 characters: lowercase letters, digits, “.”, “_” or “-”.";
   if (!TEACHER_RULES.emailPattern.test(d.email.trim())) e.email = "Enter a valid e-mail address.";
-  if (!TEACHER_RULES.countryPattern.test(d.country.trim().toUpperCase())) e.country = "Choose your country.";
+  if (!TEACHER_RULES.countryPattern.test(d.country.trim().toUpperCase())) e.country = homeRules ? "Choose your home country." : "Choose your country.";
   if (!d.phone.trim()) e.phone = "Enter your phone number.";
   else if (!normalisePhone(d.phone)) e.phone = `Enter a valid phone number. ${PHONE_HINT}`;
   if (d.interests.length === 0) e.interests = "Choose at least one Olympiad subject.";
@@ -259,15 +273,25 @@ export function validateTeacherRegistration(d: TeacherDraft): Partial<Record<Tea
     const n = d.proposedSchoolName.trim().length;
     if (n < TEACHER_RULES.schoolNameMin || n > TEACHER_RULES.schoolNameMax) e.proposedSchoolName = "Enter your school's name (2–200 characters).";
   }
-  if (!d.homeDistrict) e.homeDistrict = "Choose the district where you live.";
-  if (!d.homeSector) e.homeSector = "Choose the sector where you live.";
+  // homeLocationRules: province, district and sector only for a home in Rwanda; older backends always ask district and sector.
+  const placeAsked = !homeRules || d.country.trim().toUpperCase() === "RW";
+  if (homeRules && placeAsked && !d.homeProvince) e.homeProvince = "Choose the province where you live.";
+  if (placeAsked && !d.homeDistrict) e.homeDistrict = "Choose the district where you live.";
+  if (placeAsked && !d.homeSector) e.homeSector = "Choose the sector where you live.";
   if (!strongPassword(d.password)) e.password = PASSWORD_HINT;
   if (d.confirm !== d.password) e.confirm = "The passwords don't match.";
   return e;
 }
 
 /** The request body for a valid draft (call validateTeacherRegistration first). */
-export function buildTeacherPayload(d: TeacherDraft): TeacherRegistrationInput {
+export function buildTeacherPayload(d: TeacherDraft, homeRules = false): TeacherRegistrationInput {
+  const country = d.country.trim().toUpperCase();
+  // homeLocationRules: the place only for Rwanda (all three); older backends: district and sector as before.
+  const home = !homeRules
+    ? { homeDistrict: d.homeDistrict, homeSector: d.homeSector }
+    : country === "RW"
+      ? { homeProvince: d.homeProvince, homeDistrict: d.homeDistrict, homeSector: d.homeSector }
+      : {};
   const base = {
     firstName: d.firstName.trim(),
     lastName: d.lastName.trim(),
@@ -275,13 +299,12 @@ export function buildTeacherPayload(d: TeacherDraft): TeacherRegistrationInput {
     email: d.email.trim().toLowerCase(),
     password: d.password,
     confirmPassword: d.confirm,
-    country: d.country.trim().toUpperCase(),
+    country,
     phone: normalisePhone(d.phone) ?? d.phone.trim(),
     olympiadInterests: OLYMPIAD_SUBJECTS.map((s) => s.value).filter((v) => d.interests.includes(v)),
     schoolProvince: d.schoolProvince,
     schoolDistrict: d.schoolDistrict,
-    homeDistrict: d.homeDistrict,
-    homeSector: d.homeSector,
+    ...home,
   };
   if (d.schoolMode === "listed") return { ...base, schoolId: d.school!.id };
   return { ...base, proposedSchoolName: d.proposedSchoolName.trim(), schoolSector: d.schoolSector };
@@ -298,7 +321,9 @@ export const TEACHER_REGISTER_ERRORS: Readonly<Record<string, string>> = {
   UNKNOWN_SCHOOL: "That school isn't in the directory any more. Choose your school again.",
   SCHOOL_LOCATION_MISMATCH: "That school isn't in the province and district you chose. Choose them again.",
   UNKNOWN_SCHOOL_LOCATION: "That province, district and sector don't match the official list. Choose them again.",
-  UNKNOWN_HOME_LOCATION: "That home district and sector don't match the official list. Choose them again.",
+  UNKNOWN_HOME_LOCATION: "That home province, district and sector don't match the official list. Choose them again.",
+  HOME_LOCATION_RWANDA_ONLY: "Province, district and sector are only for homes in Rwanda.",
+  HOME_PLACE_REQUIRED: "Choose your home province, district and sector.",
   SCHOOL_CHOICE_REQUIRED: "Choose your school, or choose “My school is not listed” and enter its name.",
 };
 
@@ -310,6 +335,8 @@ export const TEACHER_ERROR_FIELDS: Readonly<Record<string, TeacherField>> = {
   SCHOOL_LOCATION_MISMATCH: "school",
   UNKNOWN_SCHOOL_LOCATION: "schoolSector",
   UNKNOWN_HOME_LOCATION: "homeSector",
+  HOME_LOCATION_RWANDA_ONLY: "country",
+  HOME_PLACE_REQUIRED: "homeProvince",
   SCHOOL_CHOICE_REQUIRED: "school",
 };
 
@@ -330,6 +357,7 @@ export const TEACHER_SERVER_FIELDS: Readonly<Record<string, TeacherField>> = {
   schoolId: "school",
   proposedSchoolName: "proposedSchoolName",
   schoolSector: "schoolSector",
+  homeProvince: "homeProvince",
   homeDistrict: "homeDistrict",
   homeSector: "homeSector",
 };

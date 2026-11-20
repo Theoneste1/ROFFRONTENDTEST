@@ -38,14 +38,16 @@ export interface TeacherRegistrationBase {
   email: string;
   password: string;
   confirmPassword: string;
-  /** ISO 3166-1 alpha-2. */
+  /** The applicant's home country, ISO 3166-1 alpha-2. */
   country: string;
   phone: string;
   olympiadInterests: OlympiadSubject[];
   schoolProvince: string;
   schoolDistrict: string;
-  homeDistrict: string;
-  homeSector: string;
+  /** Home place: with homeLocationRules only for a home in Rwanda (all three); older backends require district and sector. */
+  homeProvince?: string;
+  homeDistrict?: string;
+  homeSector?: string;
   /** Backends with applicationDetails. */
   position?: string;
   yearsOfExperience?: number;

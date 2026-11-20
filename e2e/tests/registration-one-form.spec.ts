@@ -7,6 +7,7 @@
  * Against the real backend; synthetic data only.
  */
 import { expect, test, type Page } from "@playwright/test";
+import { pickCountry } from "../support/signup-layout";
 import { withDb } from "../support/db";
 
 const RUN = Date.now().toString(36);
@@ -77,7 +78,7 @@ test.describe("registration forms, one continuous form", () => {
     await page.locator('input[name="lastName"]').fill(`OneForm${RUN}`);
     await page.locator('input[name="gender"][value="FEMALE"]').check();
     await page.locator('input[name="dateOfBirth"]').fill("2011-06-15");
-    await page.getByTestId("home-country").selectOption("RW");
+    await pickCountry(page, "home-country", "Rwanda");
     await page.locator('input[name="guardianPhone"]').fill("0788123456");
     await page.getByRole("button", { name: "Create my account" }).click();
     await expect(page.locator('select[name="gradeLevel"]')).toBeFocused();
@@ -114,7 +115,7 @@ test.describe("registration forms, one continuous form", () => {
     await form.locator('input[name="gender"][value="FEMALE"]').check();
     // Passes the form's own e-mail check; the server's stricter check refuses it.
     await form.locator('input[name="email"]').fill(`${username}@exa_mple.com`);
-    await form.getByLabel("Country *", { exact: true }).selectOption("RW");
+    await pickCountry(page, "home-country", "Rwanda");
     await form.locator('input[name="phone"]').fill("0788654321");
     await form.locator('input[name="position"]').fill("Mathematics teacher");
     await form.getByLabel("Mathematics").check();
@@ -122,9 +123,10 @@ test.describe("registration forms, one continuous form", () => {
     await selectWhenReady(page, "cascade-district", SCHOOL.district);
     await selectWhenReady(page, "cascade-sector", SCHOOL.sector);
     await selectWhenReady(page, "cascade-school", SCHOOL.name);
-    await form.getByLabel("Home district *").selectOption({ label: "Gasabo" });
-    await expect(form.getByLabel("Home sector *")).toBeEnabled();
-    await form.getByLabel("Home sector *").selectOption({ index: 1 });
+    await selectWhenReady(page, "home-province", "Kigali City");
+    await selectWhenReady(page, "home-district", "Gasabo");
+    await expect(page.getByTestId("home-sector")).toBeEnabled();
+    await page.getByTestId("home-sector").selectOption({ index: 1 });
     await form.locator('input[name="username"]').fill(username);
     await page.locator('input[name="new-password"]').fill(PASSWORD);
     await page.locator('input[name="confirm-password"]').fill(PASSWORD);
@@ -149,7 +151,7 @@ test.describe("registration forms, one continuous form", () => {
     await page.locator('input[name="firstName"]').fill("Claude");
     await page.locator('input[name="lastName"]').fill(`OneForm${RUN}`);
     await page.locator('input[name="gender"][value="FEMALE"]').check();
-    await page.getByTestId("coach-country").selectOption("RW");
+    await pickCountry(page, "coach-country", "Kenya");
     await page.locator('input[name="phone"]').fill("0788111222");
     await page.locator('input[name="occupation"]').fill("Engineer");
     await page.getByTestId("coach-education").selectOption("BACHELOR");

@@ -5,6 +5,7 @@
  * The forms are one continuous form: every field is filled, then the form is sent.
  */
 import { expect, request, test, type Page } from "@playwright/test";
+import { pickCountry } from "../support/signup-layout";
 import { withDb } from "../support/db";
 import { passwordOf } from "../support/accounts";
 
@@ -70,7 +71,7 @@ async function studentForm(page: Page, username: string, withPicture: boolean) {
   await page.locator('input[name="lastName"]').fill(`Signup${RUN}`);
   await page.locator('input[name="gender"][value="FEMALE"]').check();
   await page.locator('input[name="dateOfBirth"]').fill("2011-06-15");
-  await page.getByTestId("home-country").selectOption("RW");
+  await pickCountry(page, "home-country", "Rwanda");
   if (withPicture) await page.locator('input[name="avatar"]').setInputFiles({ name: "me.png", mimeType: "image/png", buffer: PNG });
   await page.locator('input[name="guardianPhone"]').fill("0788123456");
   await page.locator('select[name="gradeLevel"]').selectOption("S2");
@@ -119,7 +120,7 @@ test.describe("public sign-up forms", () => {
     await form.locator('input[name="lastName"]').fill(`Teacher${RUN}`);
     await form.locator('input[name="gender"][value="FEMALE"]').check();
     await form.locator('input[name="email"]').fill(`${username}@e2e.local`);
-    await form.getByLabel("Country *", { exact: true }).selectOption("RW");
+    await pickCountry(page, "home-country", "Rwanda");
     await form.locator('input[name="phone"]').fill("0788654321");
     await form.locator('input[name="position"]').fill("Mathematics teacher");
     await form.getByLabel("Mathematics").check();
@@ -130,9 +131,9 @@ test.describe("public sign-up forms", () => {
     await selectWhenReady(page, "cascade-district", SCHOOL.district);
     await selectWhenReady(page, "cascade-sector", SCHOOL.sector);
     await selectWhenReady(page, "cascade-school", SCHOOL.name);
-    const homeDistrict = form.getByLabel("Home district *");
-    await homeDistrict.selectOption({ label: "Gasabo" });   // the home province follows from the district
-    const homeSector = form.getByLabel("Home sector *");
+    await selectWhenReady(page, "home-province", "Kigali City");
+    await selectWhenReady(page, "home-district", "Gasabo");
+    const homeSector = page.getByTestId("home-sector");
     await expect(homeSector).toBeEnabled();
     await homeSector.selectOption({ index: 1 });
     await form.locator('input[name="username"]').fill(username);
@@ -153,7 +154,12 @@ test.describe("public sign-up forms", () => {
     await page.locator('input[name="firstName"]').fill("Claude");
     await page.locator('input[name="lastName"]').fill(`Coach${RUN}`);
     await page.locator('input[name="gender"][value="FEMALE"]').check();
-    await page.getByTestId("coach-country").selectOption("RW");
+    await pickCountry(page, "coach-country", "Rwanda");
+    // Home in Rwanda: province → district → sector.
+    await selectWhenReady(page, "home-province", "Kigali City");
+    await selectWhenReady(page, "home-district", "Gasabo");
+    await expect(page.getByTestId("home-sector")).toBeEnabled();
+    await page.getByTestId("home-sector").selectOption({ index: 1 });
     await page.locator('input[name="phone"]').fill("0788111222");
     await page.locator('input[name="occupation"]').fill("Engineer");
     await page.getByTestId("coach-education").selectOption("BACHELOR");

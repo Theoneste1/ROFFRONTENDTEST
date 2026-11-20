@@ -82,13 +82,29 @@ export function dateOfBirthProblem(dateOfBirth: string, today: Date = new Date()
   return null;
 }
 
-export function validateStudentDetails(d: StudentDetailsDraft, today: Date = new Date()): Partial<Record<StudentDetailsField, string>> {
+/** The date of birth and the phones (homeLocationRules: the home location is validated by lib/accounts/home-location). */
+export function validateStudentPersonal(d: StudentDetailsDraft, today: Date = new Date()): Partial<Record<StudentDetailsField, string>> {
   const e: Partial<Record<StudentDetailsField, string>> = {};
   const dob = dateOfBirthProblem(d.dateOfBirth, today);
   if (dob) e.dateOfBirth = dob;
   if (d.phone.trim() && !normalisePhone(d.phone)) e.phone = `Enter a valid phone number, or leave it empty. ${PHONE_HINT}`;
   if (!d.guardianPhone.trim()) e.guardianPhone = "Enter the phone number of a parent or close family member.";
   else if (!normalisePhone(d.guardianPhone)) e.guardianPhone = `Enter a valid phone number. ${PHONE_HINT}`;
+  return e;
+}
+
+/** The date of birth and the phones of the request (homeLocationRules: the home location comes from the form's HomeDraft). */
+export function studentPersonalPayload(d: StudentDetailsDraft) {
+  const phone = d.phone.trim() ? normalisePhone(d.phone) : null;
+  return {
+    dateOfBirth: d.dateOfBirth,
+    ...(phone && { phone }),
+    guardianPhone: normalisePhone(d.guardianPhone) ?? d.guardianPhone.trim(),
+  };
+}
+
+export function validateStudentDetails(d: StudentDetailsDraft, today: Date = new Date()): Partial<Record<StudentDetailsField, string>> {
+  const e: Partial<Record<StudentDetailsField, string>> = validateStudentPersonal(d, today);
   if (!isCountryCode(d.homeCountry)) e.homeCountry = "Choose the country where you live.";
   else if (d.homeCountry === RWANDA) {
     if (!d.home.province) e.homeProvince = "Choose your home province.";

@@ -17,7 +17,7 @@ async function applyAsCoach(k: string) {
     const p = who(k);
     const r = await api.post("/api/v1/mentor-requests", {
       data: {
-        ...p, email: `${p.username}@e2e.local`, password: "Coach-Pass-2026!", gender: "FEMALE", country: "RW", occupation: "Engineer", educationLevel: "BACHELOR",
+        ...p, email: `${p.username}@e2e.local`, password: "Coach-Pass-2026!", gender: "FEMALE", country: "KE", occupation: "Engineer", educationLevel: "BACHELOR",
         olympiadInterests: ["MATHEMATICS"], phone: "0788222333", expertise: "Number theory.", relevantExperience: "Two years of olympiad training.",
       },
     });

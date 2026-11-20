@@ -33,6 +33,8 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
 import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
 import GenderField from "@/app/components/account/GenderField";
+import SearchableSelect from "@/app/components/ui/SearchableSelect";
+import { homeLocationRulesSupported } from "@/lib/accounts/home-location";
 import { genderSupported, validateGender, type Gender } from "@/lib/accounts/gender";
 import { applicationDetailsSupported, emptyTeacherExtra, teacherExtraPayload, validateTeacherExtra, type TeacherExtraDraft } from "@/lib/accounts/application-details";
 import { TeacherExtraFields } from "@/app/components/applications/ExtraFields";
@@ -49,6 +51,7 @@ import {
   homeDistrictsOf,
   homeSectorsOf,
   mapServerFieldErrors,
+  setHomeCountry,
   setHomeDistrict,
   setSchoolDistrict,
   setSchoolMode,
@@ -180,6 +183,10 @@ function OpenForm() {
   const [errors, setErrors] = useState<Partial<Record<TeacherField, string>>>({});
   // Gender (required) on a backend with registrationGender.
   const genderOn = genderSupported(useBackendCapabilities().detection);
+  // Home location (homeLocationRules): Home country (searchable; Rwanda by default — teacher schools are in Rwanda — and
+  // kept once chosen) → Rwanda only: province → district → sector (lib/accounts/home-location).
+  const homeRules = homeLocationRulesSupported(useBackendCapabilities().detection);
+  const homeInRwanda = d.country.trim().toUpperCase() === RWANDA;
   const [gender, setGender] = useState<Gender | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -200,6 +207,8 @@ function OpenForm() {
     if (part === "position" || part === "yearsOfExperience") return extraOn;
     if (part === "picture") return pictureOn;
     if (part === "gender") return genderOn;
+    if (part === "homeProvince") return homeRules && homeInRwanda;
+    if (part === "homeDistrict" || part === "homeSector") return !homeRules || homeInRwanda;
     if (part === "proposedSchoolName") return missing;
     return true;
   });
@@ -208,7 +217,7 @@ function OpenForm() {
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
     if (submitting) return;
-    const e = validateTeacherRegistration(d);
+    const e = validateTeacherRegistration(d, homeRules);
     const ge = genderOn ? validateGender(gender) : undefined;
     if (ge) e.gender = ge;
     const xe = extraOn ? validateTeacherExtra(extra) : {};
@@ -221,7 +230,7 @@ function OpenForm() {
     }
     setSubmitting(true);
     try {
-      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d), ...(extraOn && teacherExtraPayload(extra)), ...(genderOn && gender && { gender }) });
+      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d, homeRules), ...(extraOn && teacherExtraPayload(extra)), ...(genderOn && gender && { gender }) });
       if (pictureOn) setPictureResult(await uploadRegistrationAvatar(result.avatarUploadToken, picture));
       setDone(result);
     } catch (err) {
@@ -289,6 +298,19 @@ function OpenForm() {
         errors={extraErrors}
       />
     );
+  const homePlace = (only: "province" | "district" | "sector") => (
+    <PlaceSelects
+      only={only}
+      labelPrefix="Home "
+      testIdPrefix="home"
+      value={{ province: d.homeProvince, district: d.homeDistrict, sector: d.homeSector }}
+      onChange={(p) => {
+        update((s) => ({ ...s, homeProvince: p.province, homeDistrict: p.district, homeSector: p.sector }));
+        setErrors((s) => ({ ...s, homeProvince: undefined, homeDistrict: undefined, homeSector: undefined }));
+      }}
+      errors={{ province: errors.homeProvince, district: errors.homeDistrict, sector: errors.homeSector }}
+    />
+  );
   const passwordProps = { password: d.password, confirm: d.confirm, onPassword: (v: string) => set("password", v), onConfirm: (v: string) => set("confirm", v), errors: { password: errors.password, confirm: errors.confirm }, label: "Password" };
 
   // The fields, part by part (lib/forms/registration-fields → TEACHER_PARTS), in two columns or one.
@@ -307,7 +329,23 @@ function OpenForm() {
     ),
     email: <TextField label="E-mail" placeholder="e.g. aline.uwase@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={d.email} onChange={(e) => set("email", e.target.value)} error={errors.email} />,
     phone: <TextField label="Phone" placeholder="e.g. 0788 123 456" name="phone" type="tel" autoComplete="tel" required maxLength={30} value={d.phone} onChange={(e) => set("phone", e.target.value)} error={errors.phone} hint={PHONE_HINT} />,
-    country: <PlaceSelect label="Country" value={d.country} onChange={(v) => set("country", v)} options={countries} placeholder="Choose your country" error={errors.country} />,
+    country: homeRules ? (
+      <SearchableSelect
+        label="Home country"
+        value={d.country}
+        onChange={(c) => {
+          update((s) => setHomeCountry(s, c));
+          setErrors((s) => ({ ...s, country: undefined, homeProvince: undefined, homeDistrict: undefined, homeSector: undefined }));
+        }}
+        options={countries}
+        placeholder="Type to search for your country"
+        error={errors.country}
+        hint="Where you live. It starts as Rwanda, your school's country; change it if you live elsewhere."
+        testId="home-country"
+      />
+    ) : (
+      <PlaceSelect label="Country" value={d.country} onChange={(v) => set("country", v)} options={countries} placeholder="Choose your country" error={errors.country} />
+    ),
     position: extraField("position"),
     yearsOfExperience: extraField("yearsOfExperience"),
     interests: (
@@ -394,7 +432,9 @@ function OpenForm() {
         </p>
       </div>
     ),
-    homeDistrict: locations.isError ? (
+    // homeLocationRules: Province → District → Sector of the official list; each step clears the ones after it.
+    homeProvince: homeRules && homeInRwanda && homePlace("province"),
+    homeDistrict: homeRules ? homeInRwanda && homePlace("district") : locations.isError ? (
       <p className="text-xs text-slate-600">Load the list of places above to choose your home location.</p>
     ) : (
       <PlaceSelect
@@ -407,7 +447,7 @@ function OpenForm() {
         error={errors.homeDistrict}
       />
     ),
-    homeSector: !locations.isError && (
+    homeSector: homeRules ? homeInRwanda && homePlace("sector") : !locations.isError && (
       <PlaceSelect
         label="Home sector"
         value={d.homeSector}

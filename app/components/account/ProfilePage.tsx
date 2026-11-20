@@ -46,6 +46,8 @@ import { Button, TextField } from "@/app/components/ui/form";
 import { PageFrame } from "@/app/components/ui/PageFrame";
 import SchoolAffiliationCard from "./SchoolAffiliationCard";
 import TeacherSchoolsCard from "./TeacherSchoolsCard";
+import HomeLocationCard from "./HomeLocationCard";
+import { homeLocationRulesSupported } from "@/lib/accounts/home-location";
 import { Section } from "./Section";
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
@@ -64,6 +66,8 @@ export default function ProfilePage() {
   const interestsOn = user.role === "STUDENT" && studentInterestsSupported(caps.detection);
   const detailsOn = user.role === "STUDENT" && studentDetailsSupported(caps.detection);
   const coachSubjectsOn = user.role === "MENTOR" && coachInterestsSupported(caps.detection);
+  // homeLocationRules: every role edits their home location here (country; Rwanda: province, district, sector).
+  const homeRulesOn = homeLocationRulesSupported(caps.detection);
 
   const fullName = `${user.firstName} ${user.lastName}`.trim() || user.username;
   return (
@@ -88,7 +92,7 @@ export default function ProfilePage() {
                   {detailsOn && (
                     <>
                       <Detail label="Date of birth">{user.dateOfBirth ? formatDate(user.dateOfBirth.slice(0, 10)) : null}</Detail>
-                      <Detail label="Country">{user.country ? countryName(user.country) : null}</Detail>
+                      <Detail label={homeRulesOn ? "Home country" : "Country"}>{user.country ? countryName(user.country) : null}</Detail>
                       <Detail label="Phone">{user.phone}</Detail>
                       <Detail label="Close-family phone">{user.guardianPhone}</Detail>
                       {homePlaceText(user) && <Detail label="Home">{homePlaceText(user)}</Detail>}
@@ -101,13 +105,14 @@ export default function ProfilePage() {
             </dl>
             <p className="mt-5 text-xs text-gray-500">
               Username, e-mail{user.role === "STUDENT" ? ", grade and school" : ""} are managed by the administrators.
-              {detailsOn && " To correct your date of birth, phones or home, contact ROF support."}
+              {detailsOn && (homeRulesOn ? " To correct your date of birth or phones, contact ROF support." : " To correct your date of birth, phones or home, contact ROF support.")}
             </p>
           </section>
         </div>
 
         <div className="xl:col-span-2 space-y-6 min-w-0">
-          <DetailsForm user={user} />
+          <DetailsForm user={user} freeTextHome={!homeRulesOn} />
+          {homeRulesOn && <HomeLocationCard user={user} />}
           {interestsOn && <InterestsCard user={user} />}
           {coachSubjectsOn && <InterestsCard user={user} coach />}
           {user.role === "STUDENT" && <SchoolAffiliationCard />}
@@ -127,7 +132,7 @@ export default function ProfilePage() {
 
 type DetailErrors = Partial<Record<keyof UpdateMeInput, string>>;
 
-function DetailsForm({ user }: { user: CurrentUser }) {
+function DetailsForm({ user, freeTextHome = true }: { user: CurrentUser; freeTextHome?: boolean }) {
   const update = useUpdateMe();
   const [firstName, setFirstName] = useState(user.firstName);
   const [lastName, setLastName] = useState(user.lastName);
@@ -147,7 +152,7 @@ function DetailsForm({ user }: { user: CurrentUser }) {
     if (f.length < 1 || f.length > 100) errs.firstName = "Enter your first name (up to 100 characters).";
     if (l.length < 1 || l.length > 100) errs.lastName = "Enter your last name (up to 100 characters).";
     if (h && (h.length < 2 || h.length > 200)) errs.homeLocation = "Use 2 to 200 characters.";
-    if (!h && user.homeLocation) errs.homeLocation = "Your home location can be changed but not removed.";
+    if (freeTextHome && !h && user.homeLocation) errs.homeLocation = "Your home location can be changed but not removed.";
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
@@ -155,7 +160,7 @@ function DetailsForm({ user }: { user: CurrentUser }) {
     const input: UpdateMeInput = {};
     if (f !== user.firstName) input.firstName = f;
     if (l !== user.lastName) input.lastName = l;
-    if (h && h !== (user.homeLocation ?? "")) input.homeLocation = h;
+    if (freeTextHome && h && h !== (user.homeLocation ?? "")) input.homeLocation = h;
     if (Object.keys(input).length === 0) {
       setNothing(true);
       return;
@@ -199,7 +204,7 @@ function DetailsForm({ user }: { user: CurrentUser }) {
           />
         </div>
         {/* A home chosen from the official Province → District → Sector list is shown above, not typed here. */}
-        {!homePlaceText(user) && (
+        {freeTextHome && !homePlaceText(user) && (
         <TextField
           label="Home location"
           name="homeLocation"

@@ -17,11 +17,11 @@ export async function layoutProblems(page: Page): Promise<string[]> {
     if (doc.scrollWidth > doc.clientWidth) problems.push(`the page scrolls sideways (${doc.scrollWidth} > ${doc.clientWidth})`);
     const card = document.querySelector<HTMLElement>('[data-testid="auth-card"]');
     if (!card) return ["no card"];
-    // No element of the card has a scrollbar of its own (nor anything around it, up to the page).
+    // No element of the card has a scrollbar of its own (nor anything around it, up to the page); a dropdown list (a select, or the list box of a searchable list) scrolls by design.
     for (const el of [card, ...card.querySelectorAll<HTMLElement>("*")]) {
       const s = getComputedStyle(el);
       const scrollable = /(auto|scroll)/.test(s.overflowY) || /(auto|scroll)/.test(s.overflowX);
-      if (scrollable && el.tagName !== "TEXTAREA" && el.tagName !== "SELECT" && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1))
+      if (scrollable && el.tagName !== "TEXTAREA" && el.tagName !== "SELECT" && el.getAttribute("role") !== "listbox" && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1))
         problems.push(`${el.tagName.toLowerCase()}[data-testid=${el.dataset.testid ?? ""}] scrolls`);
     }
     for (let el = card.parentElement; el && el !== document.body; el = el.parentElement) {
@@ -167,4 +167,13 @@ async function fillOnce(page: Page, who: { username: string; lastName: string; p
     }
   }
   return changed;
+}
+
+/** A searchable country list (app/components/ui/SearchableSelect): type the name, then choose it. */
+export async function pickCountry(page: Page, testId: string, name: string) {
+  const box = page.getByTestId(testId);
+  await box.click();
+  await box.fill(name);
+  await page.getByTestId(`${testId}-options`).getByRole("option", { name, exact: true }).click();
+  await expect(box).toHaveValue(name);
 }

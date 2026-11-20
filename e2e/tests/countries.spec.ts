@@ -8,6 +8,7 @@
  * The student form is one continuous form: every field is filled, then the form is sent.
  */
 import { expect, test, type Page } from "@playwright/test";
+import { pickCountry } from "../support/signup-layout";
 import { withDb } from "../support/db";
 import { signIn } from "../support/session";
 
@@ -49,7 +50,7 @@ async function studentBasics(page: Page, username: string, grade: string, place:
   await page.locator('input[name="lastName"]').fill(`Country${RUN}`);
   await page.locator('input[name="gender"][value="FEMALE"]').check();
   await page.locator('input[name="dateOfBirth"]').fill("2011-03-10");
-  await page.getByTestId("home-country").selectOption("RW");
+  await pickCountry(page, "home-country", "Rwanda");
   await page.locator('input[name="guardianPhone"]').fill("0788123456");
   await page.locator('select[name="gradeLevel"]').selectOption(grade);
   await page.getByTestId("olympiad-interests").getByLabel("Mathematics").check();

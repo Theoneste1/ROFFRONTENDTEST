@@ -137,6 +137,12 @@ export const KNOWN_FEATURES = [
    */
   "registrationGender",
   /**
+   * Home location on every registration form and profile edit (owner, 2026-11-20): the home country is required; with
+   * Rwanda the home province, district and sector are required; with another country only the country
+   * (lib/accounts/home-location). Without it the forms keep their earlier home fields.
+   */
+  "homeLocationRules",
+  /**
    * Account states: ACTIVE, DEACTIVATED, SUSPENDED, ARCHIVED (`accountStatus` on users) and
    * `POST /admin/users/:id/status-changes` { toStatus, reason, confirm? }. Accounts are archived, never
    * deleted (`DELETE /admin/users/:id` is refused with 409 PERMANENT_DELETION_DISABLED). Without it: suspend,
