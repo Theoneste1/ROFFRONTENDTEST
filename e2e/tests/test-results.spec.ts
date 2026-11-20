@@ -239,7 +239,7 @@ test.describe.serial("publication, results, rankings, withdrawal (G6)", () => {
     await expect(detail).toContainText("Unlocking it (with a reason) withdraws it");
     await detail.getByTestId("action-unlock").click();
     const unlock = head.getByTestId("decision-unlock");
-    await expect(head.getByRole("dialog")).toContainText("Unlock and withdraw this published result?");
+    await expect(head.getByRole("dialog", { name: /Unlock and withdraw this published result/ })).toBeVisible();
     await unlock.getByTestId("decision-text").fill("Question 2 re-check requested");
     await unlock.getByTestId("decision-confirm").click();
     await expect(head.getByText(/Unlocked and withdrawn/)).toBeVisible();

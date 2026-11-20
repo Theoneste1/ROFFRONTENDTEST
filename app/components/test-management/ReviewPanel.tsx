@@ -97,6 +97,8 @@ function ReviewDialog({ testId, submissionId, onClose }: { testId: string; submi
   const done = async (d: ReviewDetail, message: string) => {
     qc.setQueryData(queryKeys.tests.reviewDetail(testId, submissionId), d);
     await qc.invalidateQueries({ queryKey: queryKeys.tests.all, predicate: (x) => x.queryKey.includes("marking") && !x.queryKey.includes("detail") });
+    // Phase 4: an approval or an unlock (G6 withdrawal) changes what Publishing, Results and Rankings show.
+    await qc.invalidateQueries({ queryKey: [...queryKeys.tests.all, "results", testId] });
     setNotice(message);
   };
   return (

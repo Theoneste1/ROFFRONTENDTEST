@@ -52,7 +52,9 @@ export function PublishingPanel({ testId }: { testId: string }) {
       ? `Nothing new to publish: publication ${r.publication.number} already holds every approved result.`
       : `Published ${r.published} ${r.published === 1 ? "result" : "results"} (publication ${r.publication.number}). The students and their teachers are told once.`);
     await invalidateResults(qc, testId);
-    await qc.invalidateQueries({ queryKey: queryKeys.tests.review(testId) });
+    // Every marking view of the test (review list, an open review's detail, the overview): the statuses moved to
+    // PUBLISHED. A stale detail would send an outdated expectedStatus (the server refuses it with 409 SUBMISSION_CHANGED).
+    await qc.invalidateQueries({ queryKey: queryKeys.tests.marking(testId) });
   };
   const publish = useMutation({
     // A new key per click: a retried request of the same click replays; the server also replays when nothing is new.
