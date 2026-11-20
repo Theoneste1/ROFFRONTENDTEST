@@ -9,7 +9,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { hashSync } from "bcryptjs";
 import { PASSWORD } from "../support/accounts";
 import { withDb } from "../support/db";
-import { signInWith } from "../support/session";
+import { signInWith, answerGenderStep } from "../support/session";
 
 const USERNAME = `e2e.nodob.${Date.now().toString(36)}`;
 
@@ -51,6 +51,9 @@ test("a student without a date of birth gives it at first sign-in, then reaches 
 
   await dob.fill(`${year - 14}-03-04`);
   await page.getByRole("button", { name: "Continue" }).click();
+  // Then the one-time gender question (genderStep): this account has none either.
+  await expect(page.getByTestId("gender-step")).toBeVisible({ timeout: 30_000 });
+  await answerGenderStep(page);
   await expect(page.getByTestId("sidebar-nav").first()).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("heading", { name: /One more step/ })).toHaveCount(0);
   // The dashboard's own requests (refused while the step was pending) now succeed.

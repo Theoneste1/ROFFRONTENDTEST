@@ -104,6 +104,8 @@ export const meApi = {
    * ("YYYY-MM-DD"); returns the profile. 400 VALIDATION_FAILED, 409 DATE_OF_BIRTH_ALREADY_SET.
    */
   setDateOfBirth: (dateOfBirth: string) => api<CurrentUser>("/me/date-of-birth", { method: "PUT", body: { dateOfBirth } }),
+  /** `PUT /me/gender` (capability `genderStep`): a user without a gender gives it once; returns the profile. 409 GENDER_ALREADY_SET. */
+  setGender: (gender: "FEMALE" | "MALE") => api<CurrentUser>("/me/gender", { method: "PUT", body: { gender } }),
   /** `PUT /me/avatar` (capability `profilePictures`): the new picture; returns the profile. Upload progress is tracked by the client. */
   uploadAvatar: (file: File) => {
     const form = new FormData();

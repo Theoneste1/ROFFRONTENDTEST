@@ -132,6 +132,10 @@ export interface CurrentUser {
    * invited or imported), who must give it (PUT /me/date-of-birth) before anything else. Absent on older backends.
    */
   dateOfBirthRequired?: boolean;
+  /** FEMALE or MALE (backends with registrationGender); null when not given yet. */
+  gender?: "FEMALE" | "MALE" | null;
+  /** Backends with `genderStep`: true for a student, teacher or coach without a gender, who gives it once (PUT /me/gender). */
+  genderRequired?: boolean;
 }
 
 /**
@@ -870,6 +874,8 @@ export interface AdminUser {
   homeProvince?: string | null;
   homeDistrict?: string | null;
   homeSector?: string | null;
+  /** FEMALE or MALE (registrationGender); null when not given. */
+  gender?: "FEMALE" | "MALE" | null;
 }
 
 /** Account states (capability accountStates). */
