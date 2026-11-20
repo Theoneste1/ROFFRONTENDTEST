@@ -103,7 +103,7 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
         <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={errors} label="Password" />
       )}
 
-      <Button type="submit" variant="brand" loading={mutation.isPending} className="w-full">
+      <Button type="submit" variant="brand" loading={mutation.isPending} className="w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12">
         Activate account
       </Button>
     </form>
@@ -148,7 +148,7 @@ function ResendActivation({ invalidLink = false }: { invalidLink?: boolean }) {
             onChange={(e) => setEmail(e.target.value)}
             error={emailError ? "Enter a valid e-mail address." : undefined}
           />
-          <Button type="submit" variant="brand" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full">
+          <Button type="submit" variant="brand" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12">
             Send a new activation link
           </Button>
         </form>

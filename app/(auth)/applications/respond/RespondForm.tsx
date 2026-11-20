@@ -82,7 +82,7 @@ export default function RespondForm() {
         </Alert>
       )}
       {send.isError && <Alert tone="error">{isApiError(send.error) && linkInvalid(send.error) ? GONE : errorMessage(send.error)}</Alert>}
-      <Button type="submit" variant="brand" loading={send.isPending} className="w-full">Send my answer</Button>
+      <Button type="submit" variant="brand" loading={send.isPending} className="w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12">Send my answer</Button>
     </form>
   );
 }

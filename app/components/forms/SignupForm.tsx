@@ -132,7 +132,7 @@ export default function SignupForm({
           type="submit"
           variant="brand"
           loading={submitting}
-          className="h-12 w-full rounded-xl text-[15px]"
+          className="h-12 w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12 rounded-xl text-[15px]"
           onClick={(e) => {
             if (ignoreRepeatedClick(e.detail)) e.preventDefault();
           }}

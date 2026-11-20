@@ -158,7 +158,7 @@ export default function LoginForm() {
         </div>
       </div>
 
-      <Button type="submit" variant="brand" loading={submitting} className="h-12 w-full rounded-xl text-[15px]">
+      <Button type="submit" variant="brand" loading={submitting} className="h-12 w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12 rounded-xl text-[15px]">
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
 
