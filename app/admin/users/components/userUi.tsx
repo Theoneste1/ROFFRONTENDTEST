@@ -13,6 +13,10 @@ import { useSession } from "@/lib/auth/session";
 import { hasFeature, isLegacyBackend } from "@/lib/api/capabilities";
 import { adminSchoolsApi, type DirectorySchoolRow } from "@/lib/api/school-directory";
 import { countryName, RWANDA } from "@/lib/schools/countries";
+import SearchableSelect from "@/app/components/ui/SearchableSelect";
+import { useCountryOptions } from "@/lib/queries/countries";
+import { HOME_ERRORS, chooseHomeCountry, homeFromProfile, homeInRwanda, homePlacePayload, homeLocationRulesSupported, validateHome, type HomeDraft } from "@/lib/accounts/home-location";
+import { GENDER_OPTIONS } from "@/lib/accounts/gender";
 import { byName, emptyPlace, placeComplete, schoolFacts, type Place } from "@/lib/schools/school-cascade";
 import { CascadeSelect, CountrySelect, PlaceSelects, SchoolFactsPanel } from "@/app/components/schools/SchoolCascade";
 import { schoolRefFromDirectoryRow } from "@/lib/admin/school-directory";
@@ -314,7 +318,7 @@ interface FormState {
   currentPassword: string;
 }
 
-const FIELDS = ["firstName", "lastName", "username", "email", "password", "role", "gradeLevel", "schoolId", "schoolName", "schoolLocation", "homeLocation", "currentPassword"] as const;
+const FIELDS = ["firstName", "lastName", "username", "email", "password", "role", "gradeLevel", "schoolId", "schoolName", "schoolLocation", "homeLocation", "currentPassword", "homeCountry", "homeProvince", "homeDistrict", "homeSector", "gender"] as const;
 
 export function UserForm({
   mode,
@@ -356,6 +360,16 @@ export function UserForm({
   const [stepUpAsked, setStepUpAsked] = useState(false);
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((s) => ({ ...s, [k]: v }));
   const isStudent = f.role === "STUDENT";
+  // Editing an account (homeLocationRules): its home location with the registration rules — Home country, then for
+  // Rwanda province → district → sector (lib/accounts/home-location) — instead of the free-text home location.
+  const homeRules = mode === "edit" && homeLocationRulesSupported(detection);
+  const countries = useCountryOptions().options;
+  const [home, setHome] = useState<HomeDraft>(() => homeFromProfile(initial ?? {}));
+  const initialHome = homeFromProfile(initial ?? {});
+  const homeChanged = home.country !== initialHome.country || JSON.stringify(home.place) !== JSON.stringify(initialHome.place);
+  // Correcting the account's gender (genderStep).
+  const genderEdit = mode === "edit" && hasFeature(detection, "genderStep");
+  const [gender, setGender] = useState<string>(initial?.gender ?? "");
   // New backends (schoolReferenceRequired): an invitation must name an existing school, and
   // an edit may remove the school (schoolId: null). Older backends keep the earlier behaviour.
   const schoolReference = hasFeature(detection, "schoolReferenceRequired");
@@ -378,7 +392,9 @@ export function UserForm({
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = "Enter a valid e-mail address.";
     if (mode === "create" && !PASSWORD_RULE.test(f.password)) e.password = PASSWORD_RULE.hint;
     if (isStudent && !f.gradeLevel) e.gradeLevel = "Students need a grade (it sets the division).";
-    if (f.homeLocation.trim() && !len(f.homeLocation, 2, 200)) e.homeLocation = "2–200 characters.";
+    if (!homeRules && f.homeLocation.trim() && !len(f.homeLocation, 2, 200)) e.homeLocation = "2–200 characters.";
+    // A changed home location follows the registration rules (an edit of other fields never requires it).
+    if (homeRules && homeChanged) Object.assign(e, validateHome(home));
     if (stepUp && !f.currentPassword) e.currentPassword = "Enter your own password to confirm this role change.";
     if (mode === "invite" && newSchoolByName && !f.school && (f.newSchoolName.trim() || f.newSchoolLocation.trim())) {
       if (!len(f.newSchoolName, 2, 200)) e.schoolName = "2–200 characters.";
@@ -417,7 +433,9 @@ export function UserForm({
     if (base.gradeLevel && base.gradeLevel !== initial.gradeLevel) changes.gradeLevel = base.gradeLevel;
     if (f.school && f.school.id !== initial.school?.id) changes.schoolId = f.school.id;
     if (!f.school && initial.school && schoolReference) changes.schoolId = null;
-    if (base.homeLocation && base.homeLocation !== (initial.homeLocation ?? "")) changes.homeLocation = base.homeLocation;
+    if (!homeRules && base.homeLocation && base.homeLocation !== (initial.homeLocation ?? "")) changes.homeLocation = base.homeLocation;
+    if (homeRules && homeChanged && home.country) Object.assign(changes, { homeCountry: home.country, ...homePlacePayload(home) });
+    if (genderEdit && (gender === "FEMALE" || gender === "MALE") && gender !== (initial.gender ?? "")) changes.gender = gender;
     if (changes.role && stepUp) changes.currentPassword = f.currentPassword;
     return changes;
   }
@@ -438,6 +456,8 @@ export function UserForm({
       await onSubmit(input);
     } catch (err) {
       const fe = fieldErrors(err, FIELDS);
+      const homeCoded = isApiError(err) && err.code ? HOME_ERRORS[err.code] : undefined;
+      if (homeCoded) fe[homeCoded.field] = homeCoded.message;
       if (isApiError(err) && err.code === "STEP_UP_REQUIRED") {
         fe.currentPassword = stepUp ? "That password isn't correct. Enter your own current password." : "Enter your own password to confirm this role change.";
         setStepUpAsked(true);
@@ -496,8 +516,52 @@ export function UserForm({
             error={errors.gradeLevel}
           />
         )}
-        <TextInput label="Home location" value={f.homeLocation} onChange={(v) => set("homeLocation", v)} error={errors.homeLocation} maxLength={200} placeholder="District or city" />
+        {!homeRules && (
+          <TextInput label="Home location" value={f.homeLocation} onChange={(v) => set("homeLocation", v)} error={errors.homeLocation} maxLength={200} placeholder="District or city" />
+        )}
+        {genderEdit && (
+          <SelectInput
+            label="Gender"
+            value={gender}
+            onChange={setGender}
+            options={[...(initial?.gender ? [] : [{ label: "Not given yet", value: "" }]), ...GENDER_OPTIONS.map((o) => ({ label: o.label, value: o.value }))]}
+            error={errors.gender}
+          />
+        )}
       </div>
+      {homeRules && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-testid="admin-home-location">
+          <SearchableSelect
+            label="Home country"
+            required={!!initialHome.country}
+            value={home.country}
+            onChange={(c) => {
+              setHome((h) => chooseHomeCountry(h, c));
+              setErrors((s) => ({ ...s, homeCountry: undefined, homeProvince: undefined, homeDistrict: undefined, homeSector: undefined }));
+            }}
+            options={countries}
+            placeholder="Type to search for a country"
+            error={errors.homeCountry}
+            testId="admin-home-country"
+          />
+          {homeInRwanda(home) &&
+            (["province", "district", "sector"] as const).map((level) => (
+              <PlaceSelects
+                key={level}
+                only={level}
+                variant="admin"
+                labelPrefix="Home "
+                testIdPrefix="admin-home"
+                value={home.place}
+                onChange={(place) => {
+                  setHome((h) => ({ ...h, place }));
+                  setErrors((s) => ({ ...s, homeProvince: undefined, homeDistrict: undefined, homeSector: undefined }));
+                }}
+                errors={{ province: errors.homeProvince, district: errors.homeDistrict, sector: errors.homeSector }}
+              />
+            ))}
+        </div>
+      )}
       {stepUp && (
         <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-2" data-testid="role-step-up">
           <p className="text-xs text-amber-800">

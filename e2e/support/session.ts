@@ -19,7 +19,7 @@ export async function signIn(page: Page, who: AccountKey) {
 }
 
 /** {@link signIn} with any credentials (e.g. an account created by the spec itself). */
-export async function signInWith(page: Page, username: string, password: string) {
+export async function signInWith(page: Page, username: string, password: string, opts: { answerGender?: boolean } = {}) {
   for (let attempt = 1; ; attempt++) {
     await page.goto("/login");
     // Opening any page first restores the session (POST /auth/refresh, 30 a minute per address). In a full run that
@@ -46,6 +46,24 @@ export async function signInWith(page: Page, username: string, password: string)
     break;
   }
   await expect(page).not.toHaveURL(/\/login(\?|$)/, { timeout: 30_000 });
+  // Accounts without a gender (every account the tests create, like those from before gender was asked at sign-up)
+  // are asked it once (genderStep): answer it, unless the spec checks the step itself. Waits for the portal or the step.
+  if (opts.answerGender !== false) await answerGenderStep(page);
+}
+
+/** If the portal shows the one-time gender step, answer it (Female) and wait for the portal. */
+export async function answerGenderStep(page: Page) {
+  const step = page.getByTestId("gender-step");
+  // The portal (its menu, or on a phone the button that opens it), or the date-of-birth step (asked first).
+  const portal = page.getByTestId("sidebar-nav").or(page.getByRole("button", { name: "Toggle Sidebar" })).or(page.locator('main input[name="dateOfBirth"]')).first();
+  const shown = await Promise.race([
+    step.waitFor({ timeout: 30_000 }).then(() => "step" as const, () => null),
+    portal.waitFor({ timeout: 30_000 }).then(() => "portal" as const, () => null),
+  ]);
+  if (shown !== "step") return;
+  await step.locator('input[name="gender"][value="FEMALE"]').check();
+  await step.getByTestId("gender-step-continue").click();
+  await expect(step).toHaveCount(0, { timeout: 30_000 });
 }
 
 /**

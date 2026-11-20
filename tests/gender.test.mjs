@@ -43,3 +43,12 @@ test("the field: two radio choices named gender, marked required, the error show
   const chosen = renderToStaticMarkup(createElement(GenderField, { value: "MALE", onChange: () => {} }));
   assert.match(chosen, /name="gender" checked="" value="MALE"/);
 });
+
+test("the gender step: students, teachers and coaches whose profile says genderRequired; never administrators or older backends", async () => {
+  const { needsGender } = await import("../lib/accounts/gender.ts");
+  for (const role of ["STUDENT", "TEACHER", "MENTOR"]) assert.equal(needsGender({ role, genderRequired: true }), true);
+  assert.equal(needsGender({ role: "ADMIN", genderRequired: true }), false);
+  assert.equal(needsGender({ role: "STUDENT", genderRequired: false }), false);
+  assert.equal(needsGender({ role: "STUDENT" }), false);   // older backend: no flag
+  assert.equal(needsGender(null), false);
+});

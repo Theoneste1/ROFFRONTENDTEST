@@ -17,6 +17,14 @@ export function genderSupported(detection: BackendDetection | null | undefined):
   return hasFeature(detection, "registrationGender");
 }
 
+/** The roles asked their gender once when it is missing (the backend's genderRequired; capability genderStep). */
+const GENDER_STEP_ROLES = ["STUDENT", "TEACHER", "MENTOR"];
+
+/** True while the signed-in student, teacher or coach still has to give their gender (older backends never ask). */
+export function needsGender(user: { role?: string | null; genderRequired?: boolean } | null | undefined): boolean {
+  return !!user && GENDER_STEP_ROLES.includes(user.role ?? "") && user.genderRequired === true;
+}
+
 /** The error to show, or undefined when a gender is chosen. */
 export function validateGender(value: string): string | undefined {
   return value === "FEMALE" || value === "MALE" ? undefined : "Choose your gender.";

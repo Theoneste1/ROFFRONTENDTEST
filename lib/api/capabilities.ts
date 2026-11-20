@@ -143,6 +143,11 @@ export const KNOWN_FEATURES = [
    */
   "homeLocationRules",
   /**
+   * Gender step (owner, 2026-11-20): `genderRequired` on the profile for a student, teacher or coach without a gender;
+   * the portal asks it once (PUT /me/gender). An administrator corrects it (PATCH /admin/users/:id `gender`).
+   */
+  "genderStep",
+  /**
    * Account states: ACTIVE, DEACTIVATED, SUSPENDED, ARCHIVED (`accountStatus` on users) and
    * `POST /admin/users/:id/status-changes` { toStatus, reason, confirm? }. Accounts are archived, never
    * deleted (`DELETE /admin/users/:id` is refused with 409 PERMANENT_DELETION_DISABLED). Without it: suspend,

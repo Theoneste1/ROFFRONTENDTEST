@@ -157,6 +157,13 @@ export type UpdateUserInput = Partial<Omit<CreateUserInput, "password" | "school
   currentPassword?: string;
   /** A Coach's subjects (capability coachOlympiadInterests; Coach accounts only, at least one). */
   olympiadInterests?: OlympiadSubject[];
+  /** homeLocationRules: the home country; with "RW" the province, district and sector (none otherwise). */
+  homeCountry?: string;
+  homeProvince?: string;
+  homeDistrict?: string;
+  homeSector?: string;
+  /** genderStep: correct the account's gender. */
+  gender?: "FEMALE" | "MALE";
 };
 
 /** Drop empty strings so optional fields are omitted, not sent as "". */
