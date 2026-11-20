@@ -150,6 +150,7 @@ test.describe("the registration forms: one continuous form that fits every windo
     await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
     await page.locator('input[name="firstName"]').fill("Aline");
     await page.locator('input[name="lastName"]').fill(`Turn${RUN}`);
+    await page.locator('input[name="gender"][value="FEMALE"]').check();
     await page.getByRole("button", { name: "Create my account" }).click();
     await expect(page.locator('input[name="dateOfBirth"]')).toHaveAttribute("aria-invalid", "true");
     await page.getByTestId("home-country").focus();

@@ -43,7 +43,8 @@ export function partOfField(parts: readonly SignupPart[], field: string): Signup
 export const STUDENT_PARTS: readonly SignupPart[] = [
   part("firstName"),
   part("lastName"),
-  part("dateOfBirth"),
+  part("gender", ["gender"], "row"),
+  part("dateOfBirth", ["dateOfBirth"], "row"),
   part("homeCountry"),
   part("phone"),
   part("guardianPhone"),
@@ -74,7 +75,8 @@ export const STUDENT_PARTS: readonly SignupPart[] = [
 export const TEACHER_PARTS: readonly SignupPart[] = [
   part("firstName"),
   part("lastName"),
-  part("email"),
+  part("gender", ["gender"], "row"),
+  part("email", ["email"], "row"),
   part("phone"),
   part("country", ["country"], "row"),
   part("position", ["position"], "row"),
@@ -100,6 +102,7 @@ export const TEACHER_PARTS: readonly SignupPart[] = [
 export const COACH_PARTS: readonly SignupPart[] = [
   part("firstName"),
   part("lastName"),
+  part("gender", ["gender"], "row"),
   part("country", ["country"], "row"),
   part("phone"),
   part("picture", ["picture"], "wide"),

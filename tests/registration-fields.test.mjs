@@ -37,13 +37,13 @@ test("Student: every error of its rules and of the server has a field; names fir
   const server = [...Object.values(SCHOOL_CLAIM_SERVER_FIELDS), ...Object.values(STUDENT_DETAILS_ERRORS).map((e) => e.field), ...STUDENT_DETAILS_SERVER_FIELDS];
   assert.ok(claim.length > 0 && details.length > 0);
   assertCovered(STUDENT_PARTS, [...form, ...claim, ...details, ...server, "picture"], "student");
-  assert.deepEqual(ids(STUDENT_PARTS).slice(0, 2), ["firstName", "lastName"]);
+  assert.deepEqual(ids(STUDENT_PARTS).slice(0, 3), ["firstName", "lastName", "gender"]);
   assert.deepEqual(ids(STUDENT_PARTS).slice(-4), ["username", "email", "password", "confirm"]);
   // A school abroad: its country and name, no Rwandan places.
   const abroad = visibleParts(STUDENT_PARTS, (p) => !["schoolProvince", "schoolDistrict", "schoolSector", "school", "schoolLocation"].includes(p));
   assertCovered(abroad, ["country", "schoolName"], "student abroad");
   // A backend without the personal details or the interests: the basic form, in the same order.
-  const legacy = visibleParts(STUDENT_PARTS, (p) => !["dateOfBirth", "homeCountry", "phone", "guardianPhone", "picture", "olympiadInterests", "schoolCountry", "schoolProvince", "schoolDistrict", "schoolSector", "school", "schoolNote", "homeProvince", "homeDistrict", "homeSector"].includes(p));
+  const legacy = visibleParts(STUDENT_PARTS, (p) => !["gender", "dateOfBirth", "homeCountry", "phone", "guardianPhone", "picture", "olympiadInterests", "schoolCountry", "schoolProvince", "schoolDistrict", "schoolSector", "school", "schoolNote", "homeProvince", "homeDistrict", "homeSector"].includes(p));
   assert.deepEqual(ids(legacy), ["firstName", "lastName", "gradeLevel", "schoolName", "schoolLocation", "homeLocation", "username", "email", "password", "confirm"]);
 });
 
@@ -56,13 +56,13 @@ test("Teacher: every error of its rules and of the server has a field", () => {
   assert.ok(own.includes("interests") && own.includes("proposedSchoolName") && own.includes("position"));
   const server = [...Object.values(TEACHER_ERROR_FIELDS), ...Object.values(TEACHER_SERVER_FIELDS)];
   assertCovered(TEACHER_PARTS, [...own, ...server, "picture", "password", "confirm"], "teacher");
-  assert.deepEqual(ids(TEACHER_PARTS).slice(0, 2), ["firstName", "lastName"]);
+  assert.deepEqual(ids(TEACHER_PARTS).slice(0, 3), ["firstName", "lastName", "gender"]);
   assert.deepEqual(ids(TEACHER_PARTS).slice(-3), ["username", "password", "confirm"]);
 });
 
 test("Coach: the details only with the coach application details; every error has a field", () => {
   // Without the coach application details: the name and the account only, as before.
-  assert.deepEqual(ids(coachParts(false)), ["firstName", "lastName", "username", "email", "password", "confirm"]);
+  assert.deepEqual(ids(coachParts(false)), ["firstName", "lastName", "gender", "username", "email", "password", "confirm"]);
   const own = [
     "firstName", "lastName", "username", "email", "password", "confirm",
     ...Object.keys(validateCoachDetails({ ...emptyCoachDetails(), country: "" })),

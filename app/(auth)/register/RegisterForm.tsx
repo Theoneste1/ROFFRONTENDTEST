@@ -11,6 +11,9 @@
  * abroad (SchoolClaimFields); every other backend — and an unknown one — gets the
  * legacy name + location fields, which both accept.
  *
+ * Gender (Female / Male; required) is asked for, and sent, only when the backend advertises `registrationGender`
+ * (lib/accounts/gender; older backends refuse the field).
+ *
  * Olympiad interests (Mathematics, Computing, Physics; at least one) are asked for, and sent, only
  * when the backend advertises `studentOlympiadInterests` (older backends refuse the field).
  *
@@ -52,6 +55,8 @@ import { usePublicForm } from "@/lib/queries/forms";
 import { formGate, noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-form";
 import ClosedFormNotice from "@/app/components/forms/ClosedFormNotice";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
+import GenderField from "@/app/components/account/GenderField";
+import { genderSupported, validateGender, type Gender } from "@/lib/accounts/gender";
 import { studentInterestsSupported, validateInterests, type OlympiadSubject } from "@/lib/accounts/olympiad-interests";
 import { registrationGate, type RegistrationSchoolMode } from "@/lib/accounts/registration-mode";
 import {
@@ -82,7 +87,7 @@ import {
 const GRADES: GradeLevel[] = ["S1", "S2", "S3", "S4", "S5", "S6"];
 const USERNAME = /^[a-z0-9._-]{3,30}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const FIELDS = ["firstName", "lastName", "username", "email", "password", "gradeLevel", "schoolName", "schoolLocation", "homeLocation", "olympiadInterests"] as const;
+const FIELDS = ["firstName", "lastName", "username", "email", "password", "gradeLevel", "schoolName", "schoolLocation", "homeLocation", "olympiadInterests", "gender"] as const;
 type F = (typeof FIELDS)[number] | "confirm";
 const CLAIM_SERVER_FIELDS = Object.keys(SCHOOL_CLAIM_SERVER_FIELDS);
 
@@ -114,6 +119,9 @@ export default function RegisterForm() {
   // Olympiad interests: asked for only when the backend accepts them (decided with the school mode).
   const [interestsOn, setInterestsOn] = useState(false);
   const [interests, setInterests] = useState<OlympiadSubject[]>([]);
+  // Gender: asked for (required) only when the backend accepts it (decided with the school mode).
+  const [genderOn, setGenderOn] = useState(false);
+  const [gender, setGender] = useState<Gender | "">("");
   // Personal details: asked for only when the backend accepts them (decided with the school mode).
   const [detailsOn, setDetailsOn] = useState(false);
   const [details, setDetails] = useState<StudentDetailsDraft>(emptyStudentDetails);
@@ -130,6 +138,7 @@ export default function RegisterForm() {
   if (schoolMode === null && gate.state === "ready") {
     setSchoolMode(gate.mode);
     setInterestsOn(studentInterestsSupported(caps.detection));
+    setGenderOn(genderSupported(caps.detection));
     setDetailsOn(studentDetailsSupported(caps.detection));
   }
   const directory = schoolMode === "directory";
@@ -148,6 +157,8 @@ export default function RegisterForm() {
         return detailsOn && pictureOn;
       case "olympiadInterests":
         return interestsOn;
+      case "gender":
+        return genderOn;
       case "schoolCountry":
       case "schoolNote":
         return directory;
@@ -174,6 +185,10 @@ export default function RegisterForm() {
     const e: Partial<Record<F, string>> = {};
     if (!v.firstName.trim()) e.firstName = "Enter your first name.";
     if (!v.lastName.trim()) e.lastName = "Enter your last name.";
+    if (genderOn) {
+      const g = validateGender(gender);
+      if (g) e.gender = g;
+    }
     if (!USERNAME.test(v.username)) e.username = "3–30 characters: lowercase letters, digits, “.”, “_” or “-”.";
     if (!EMAIL.test(v.email.trim())) e.email = "Enter a valid e-mail address.";
     if (!v.gradeLevel) e.gradeLevel = "Choose your grade.";
@@ -218,6 +233,7 @@ export default function RegisterForm() {
         ...(directory ? schoolClaimPayload(claim) : { schoolName: v.schoolName.trim(), schoolLocation: v.schoolLocation.trim() }),
         ...(detailsOn ? studentDetailsPayload(details) : { homeLocation: v.homeLocation.trim() }),
         ...(interestsOn && { olympiadInterests: interests }),
+        ...(genderOn && gender && { gender }),
       });
       if (pictureOn) setPictureResult(await uploadRegistrationAvatar(res.avatarUploadToken, picture));
       setDone(res);
@@ -372,6 +388,16 @@ export default function RegisterForm() {
   const parts: Record<string, ReactNode> = {
     firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
     lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
+    gender: genderOn && (
+      <GenderField
+        value={gender}
+        onChange={(g) => {
+          setGender(g);
+          setErrors((s) => ({ ...s, gender: undefined }));
+        }}
+        error={errors.gender}
+      />
+    ),
     dateOfBirth: detailsOn && (
       <TextField
         label="Date of birth"

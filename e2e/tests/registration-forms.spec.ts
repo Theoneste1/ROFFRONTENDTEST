@@ -68,6 +68,7 @@ async function studentForm(page: Page, username: string, withPicture: boolean) {
   await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
   await page.locator('input[name="firstName"]').fill("Aline");
   await page.locator('input[name="lastName"]').fill(`Signup${RUN}`);
+  await page.locator('input[name="gender"][value="FEMALE"]').check();
   await page.locator('input[name="dateOfBirth"]').fill("2011-06-15");
   await page.getByTestId("home-country").selectOption("RW");
   if (withPicture) await page.locator('input[name="avatar"]').setInputFiles({ name: "me.png", mimeType: "image/png", buffer: PNG });
@@ -116,6 +117,7 @@ test.describe("public sign-up forms", () => {
     await form.waitFor({ timeout: 60_000 });
     await form.locator('input[name="firstName"]').fill("Jean");
     await form.locator('input[name="lastName"]').fill(`Teacher${RUN}`);
+    await form.locator('input[name="gender"][value="FEMALE"]').check();
     await form.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await form.getByLabel("Country *", { exact: true }).selectOption("RW");
     await form.locator('input[name="phone"]').fill("0788654321");
@@ -150,6 +152,7 @@ test.describe("public sign-up forms", () => {
     await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
     await page.locator('input[name="firstName"]').fill("Claude");
     await page.locator('input[name="lastName"]').fill(`Coach${RUN}`);
+    await page.locator('input[name="gender"][value="FEMALE"]').check();
     await page.getByTestId("coach-country").selectOption("RW");
     await page.locator('input[name="phone"]').fill("0788111222");
     await page.locator('input[name="occupation"]').fill("Engineer");

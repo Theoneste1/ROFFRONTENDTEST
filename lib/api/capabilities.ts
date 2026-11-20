@@ -132,6 +132,11 @@ export const KNOWN_FEATURES = [
    */
   "registrationAvatar",
   /**
+   * Gender at sign-up (owner, 2026-11-20): the student, teacher and coach sign-ups require `gender` (FEMALE or MALE).
+   * Without it the forms neither ask for nor send it (older backends refuse the field).
+   */
+  "registrationGender",
+  /**
    * Account states: ACTIVE, DEACTIVATED, SUSPENDED, ARCHIVED (`accountStatus` on users) and
    * `POST /admin/users/:id/status-changes` { toStatus, reason, confirm? }. Accounts are archived, never
    * deleted (`DELETE /admin/users/:id` is refused with 409 PERMANENT_DELETION_DISABLED). Without it: suspend,

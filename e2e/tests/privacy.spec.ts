@@ -39,12 +39,12 @@ async function apiToken(request: APIRequestContext, username: string, password: 
  */
 async function applyAsCoach(request: APIRequestContext, data: Record<string, unknown>) {
   for (let i = 0; i < 3; i++) {
-    const r = await request.post("/api/v1/mentor-requests", { data });
+    const r = await request.post("/api/v1/mentor-requests", { data: { gender: "FEMALE", ...data } });
     if (r.status() !== 429) return r;
     test.info().setTimeout(test.info().timeout + 65_000);
     await new Promise((res) => setTimeout(res, 61_000));
   }
-  return request.post("/api/v1/mentor-requests", { data });
+  return request.post("/api/v1/mentor-requests", { data: { gender: "FEMALE", ...data } });
 }
 
 test.describe.serial("Coach applications: each attempt keeps its own questions and answers", () => {

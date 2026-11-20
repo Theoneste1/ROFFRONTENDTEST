@@ -32,6 +32,8 @@ import { errorMessage, isApiError } from "@/lib/api/errors";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
 import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
+import GenderField from "@/app/components/account/GenderField";
+import { genderSupported, validateGender, type Gender } from "@/lib/accounts/gender";
 import { applicationDetailsSupported, emptyTeacherExtra, teacherExtraPayload, validateTeacherExtra, type TeacherExtraDraft } from "@/lib/accounts/application-details";
 import { TeacherExtraFields } from "@/app/components/applications/ExtraFields";
 import { useSchoolLocations } from "@/lib/queries/school-directory";
@@ -176,6 +178,9 @@ function OpenForm() {
   const [extra, setExtra] = useState<TeacherExtraDraft>(emptyTeacherExtra);
   const [extraErrors, setExtraErrors] = useState<Partial<Record<keyof TeacherExtraDraft, string>>>({});
   const [errors, setErrors] = useState<Partial<Record<TeacherField, string>>>({});
+  // Gender (required) on a backend with registrationGender.
+  const genderOn = genderSupported(useBackendCapabilities().detection);
+  const [gender, setGender] = useState<Gender | "">("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [done, setDone] = useState<TeacherRegistrationResult | null>(null);
@@ -194,6 +199,7 @@ function OpenForm() {
   const PARTS = visibleParts(TEACHER_PARTS, (part) => {
     if (part === "position" || part === "yearsOfExperience") return extraOn;
     if (part === "picture") return pictureOn;
+    if (part === "gender") return genderOn;
     if (part === "proposedSchoolName") return missing;
     return true;
   });
@@ -203,6 +209,8 @@ function OpenForm() {
     ev.preventDefault();
     if (submitting) return;
     const e = validateTeacherRegistration(d);
+    const ge = genderOn ? validateGender(gender) : undefined;
+    if (ge) e.gender = ge;
     const xe = extraOn ? validateTeacherExtra(extra) : {};
     setErrors(e);
     setExtraErrors(xe);
@@ -213,7 +221,7 @@ function OpenForm() {
     }
     setSubmitting(true);
     try {
-      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d), ...(extraOn && teacherExtraPayload(extra)) });
+      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d), ...(extraOn && teacherExtraPayload(extra)), ...(genderOn && gender && { gender }) });
       if (pictureOn) setPictureResult(await uploadRegistrationAvatar(result.avatarUploadToken, picture));
       setDone(result);
     } catch (err) {
@@ -287,6 +295,16 @@ function OpenForm() {
   const parts: Record<string, ReactNode> = {
     firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={TEACHER_RULES.nameMax} value={d.firstName} onChange={(e) => set("firstName", e.target.value)} error={errors.firstName} />,
     lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={TEACHER_RULES.nameMax} value={d.lastName} onChange={(e) => set("lastName", e.target.value)} error={errors.lastName} />,
+    gender: genderOn && (
+      <GenderField
+        value={gender}
+        onChange={(g) => {
+          setGender(g);
+          setErrors((s) => ({ ...s, gender: undefined }));
+        }}
+        error={errors.gender}
+      />
+    ),
     email: <TextField label="E-mail" placeholder="e.g. aline.uwase@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={d.email} onChange={(e) => set("email", e.target.value)} error={errors.email} />,
     phone: <TextField label="Phone" placeholder="e.g. 0788 123 456" name="phone" type="tel" autoComplete="tel" required maxLength={30} value={d.phone} onChange={(e) => set("phone", e.target.value)} error={errors.phone} hint={PHONE_HINT} />,
     country: <PlaceSelect label="Country" value={d.country} onChange={(v) => set("country", v)} options={countries} placeholder="Choose your country" error={errors.country} />,

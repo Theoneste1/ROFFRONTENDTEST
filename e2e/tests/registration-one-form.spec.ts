@@ -75,6 +75,7 @@ test.describe("registration forms, one continuous form", () => {
     // Some answers: the next send puts focus on the first field still missing; what was typed stays.
     await page.locator('input[name="firstName"]').fill("Aline");
     await page.locator('input[name="lastName"]').fill(`OneForm${RUN}`);
+    await page.locator('input[name="gender"][value="FEMALE"]').check();
     await page.locator('input[name="dateOfBirth"]').fill("2011-06-15");
     await page.getByTestId("home-country").selectOption("RW");
     await page.locator('input[name="guardianPhone"]').fill("0788123456");
@@ -110,6 +111,7 @@ test.describe("registration forms, one continuous form", () => {
     await expectOneForm(page, "Apply as a teacher");
     await form.locator('input[name="firstName"]').fill("Jean");
     await form.locator('input[name="lastName"]').fill(`OneForm${RUN}`);
+    await form.locator('input[name="gender"][value="FEMALE"]').check();
     // Passes the form's own e-mail check; the server's stricter check refuses it.
     await form.locator('input[name="email"]').fill(`${username}@exa_mple.com`);
     await form.getByLabel("Country *", { exact: true }).selectOption("RW");
@@ -146,6 +148,7 @@ test.describe("registration forms, one continuous form", () => {
     await expectOneForm(page, "Apply as a coach");
     await page.locator('input[name="firstName"]').fill("Claude");
     await page.locator('input[name="lastName"]').fill(`OneForm${RUN}`);
+    await page.locator('input[name="gender"][value="FEMALE"]').check();
     await page.getByTestId("coach-country").selectOption("RW");
     await page.locator('input[name="phone"]').fill("0788111222");
     await page.locator('input[name="occupation"]').fill("Engineer");

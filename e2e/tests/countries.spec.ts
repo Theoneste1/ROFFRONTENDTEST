@@ -47,6 +47,7 @@ async function studentBasics(page: Page, username: string, grade: string, place:
   await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
   await page.locator('input[name="firstName"]').fill("Grace");
   await page.locator('input[name="lastName"]').fill(`Country${RUN}`);
+  await page.locator('input[name="gender"][value="FEMALE"]').check();
   await page.locator('input[name="dateOfBirth"]').fill("2011-03-10");
   await page.getByTestId("home-country").selectOption("RW");
   await page.locator('input[name="guardianPhone"]').fill("0788123456");
