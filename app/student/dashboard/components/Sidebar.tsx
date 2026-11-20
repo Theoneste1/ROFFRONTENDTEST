@@ -7,11 +7,13 @@ import {
   BookOpen,
   FileText,
   Library,
-  FileQuestion
+  FileQuestion,
+  Award
 } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
-import { STUDENT_TESTS } from "@/lib/auth/navigation";
+import { STUDENT_RESULTS, STUDENT_TESTS } from "@/lib/auth/navigation";
+import { resultsNavVisible } from "@/lib/test-management/results";
 import { answerNavVisible } from "@/lib/test-management/submissions";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
@@ -28,6 +30,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   // My tests: a backend with `testSubmissions` AND the known tests.submit (lib/test-management/submissions.ts).
   const { detection } = useBackendCapabilities();
   const showTests = answerNavVisible(detection, knownPermissions, "tests.submit");
+  // My results: a backend with `testResults` AND the known tests.viewOwnResults (lib/test-management/results.ts).
+  const showResults = resultsNavVisible(detection, knownPermissions, "tests.viewOwnResults");
 
   // Function to check if link is active
   const isActive = (path: string) => {
@@ -65,6 +69,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
               ],
             },
             ...(showTests ? [{ href: STUDENT_TESTS.href, label: STUDENT_TESTS.label, icon: FileQuestion, active: isActive(STUDENT_TESTS.href) }] : []),
+            ...(showResults ? [{ href: STUDENT_RESULTS.href, label: STUDENT_RESULTS.label, icon: Award, active: isActive(STUDENT_RESULTS.href) }] : []),
           ]}
         />
       </div>

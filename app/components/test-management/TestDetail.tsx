@@ -7,7 +7,10 @@
  * subject; authorise / revoke with a reason). Phase 3 (capability testMarking): Markers & distribution (tests.distribute:
  * even distribution, assign / reassign, progress per coach — with the authorisations), Review (tests.review: side by side,
  * approve, return, second marking, choose / adjust — Head Coaches only, G4 —, unlock) and History (status changes, the
- * mark-change log, decisions). Publish, unpublish and delete (drafts) in the header. Once students have
+ * mark-change log, decisions). Phase 4 (capability testResults): Publishing (tests.publishResults: preview, publish,
+ * the Administrators' override with a reason — tests.overridePublication; publications and withdrawals), Results
+ * (tests.viewResults: report, CSV exports, results with identity) and Rankings (tests.viewRankings). Publish, unpublish
+ * and delete (drafts) in the header. Once students have
  * submitted, the test keeps its essentials (the backend refuses: 409 TEST_LOCKED_BY_SUBMISSIONS / TEST_HAS_SUBMISSIONS).
  * Controls the user cannot use are hidden; the backend checks every request (a Head Coach of another subject gets 403).
  */
@@ -41,23 +44,26 @@ import DistributionPanel from "./DistributionPanel";
 import ReviewPanel from "./ReviewPanel";
 import HistoryPanel from "./HistoryPanel";
 import { TESTS_DISTRIBUTE, TESTS_REVIEW, markingTabVisible } from "@/lib/test-management/marking";
+import { TESTS_PUBLISH_RESULTS, TESTS_VIEW_RANKINGS, TESTS_VIEW_RESULTS, resultsTabVisible } from "@/lib/test-management/results";
+import { PublishingPanel, RankingsPanel, ResultsReportPanel } from "./ResultsPanels";
 
-type Tab = "details" | "questions" | "files" | "submissions" | "extensions" | "markers" | "review" | "history";
+type Tab = "details" | "questions" | "files" | "submissions" | "extensions" | "markers" | "review" | "history" | "publishing" | "results" | "rankings";
+const TABS: readonly Tab[] = ["details", "questions", "files", "submissions", "extensions", "markers", "review", "history", "publishing", "results", "rankings"];
 
-export default function TestDetail({ id, base }: { id: string; base: string }) {
+export default function TestDetail({ id, base, initialTab }: { id: string; base: string; initialTab?: string }) {
   return (
     <TestsGate title="Test">
-      <Detail id={id} base={base} />
+      <Detail id={id} base={base} initialTab={TABS.includes(initialTab as Tab) ? (initialTab as Tab) : undefined} />
     </TestsGate>
   );
 }
 
-function Detail({ id, base }: { id: string; base: string }) {
+function Detail({ id, base, initialTab }: { id: string; base: string; initialTab?: Tab }) {
   const { can, permissionsStatus } = useSession();
   const qc = useQueryClient();
   const router = useRouter();
   const test = useQuery({ queryKey: queryKeys.tests.detail(id), queryFn: () => testsApi.get(id) });
-  const [tab, setTab] = useState<Tab>("details");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "details");
   const [notice, setNotice] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"publish" | "unpublish" | "delete" | null>(null);
   const canManage = actionAllowed(TESTS_MANAGE, permissionsStatus, can);
@@ -67,6 +73,10 @@ function Detail({ id, base }: { id: string; base: string }) {
   const canExtensions = staffTabVisible(detection, actionAllowed(TESTS_EXTENSIONS, permissionsStatus, can));
   const canDistribute = markingTabVisible(detection, actionAllowed(TESTS_DISTRIBUTE, permissionsStatus, can));
   const canReview = markingTabVisible(detection, actionAllowed(TESTS_REVIEW, permissionsStatus, can));
+  // Phase 4 (capability testResults): Publishing, Results (report, exports), Rankings.
+  const canPublish = resultsTabVisible(detection, actionAllowed(TESTS_PUBLISH_RESULTS, permissionsStatus, can));
+  const canResults = resultsTabVisible(detection, actionAllowed(TESTS_VIEW_RESULTS, permissionsStatus, can));
+  const canRankings = resultsTabVisible(detection, actionAllowed(TESTS_VIEW_RANKINGS, permissionsStatus, can));
 
   /** Every change answers with the whole test: show it and refresh the lists. */
   const apply = async (t: Test, message: string) => {
@@ -94,6 +104,9 @@ function Detail({ id, base }: { id: string; base: string }) {
     ...(canExtensions ? [{ id: "extensions" as const, label: "Extensions" }] : []),
     ...(canMarkers || canDistribute ? [{ id: "markers" as const, label: canDistribute ? "Markers & distribution" : "Markers" }] : []),
     ...(canReview ? [{ id: "review" as const, label: "Review" }, { id: "history" as const, label: "History" }] : []),
+    ...(canPublish && t.status === "PUBLISHED" ? [{ id: "publishing" as const, label: "Publishing" }] : []),
+    ...(canResults && t.status === "PUBLISHED" ? [{ id: "results" as const, label: "Results" }] : []),
+    ...(canRankings && t.status === "PUBLISHED" ? [{ id: "rankings" as const, label: "Rankings" }] : []),
   ];
   const locked = (t.submissionCount ?? 0) > 0;
 
@@ -138,6 +151,9 @@ function Detail({ id, base }: { id: string; base: string }) {
         )}
         {tab === "review" && canReview && <ReviewPanel testId={t.id} />}
         {tab === "history" && canReview && <HistoryPanel testId={t.id} />}
+        {tab === "publishing" && canPublish && <PublishingPanel testId={t.id} />}
+        {tab === "results" && canResults && <ResultsReportPanel testId={t.id} />}
+        {tab === "rankings" && canRankings && <RankingsPanel testId={t.id} />}
       </Tabs>
 
       {confirm === "publish" && (

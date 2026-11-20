@@ -10,12 +10,14 @@ import {
     ClipboardCheck,
     Network,
     FileQuestion,
-    PenLine
+    PenLine,
+    BarChart3
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { MENTOR_MARKING, MENTOR_NAV, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { MENTOR_MARKING, MENTOR_NAV, MENTOR_TESTS, MENTOR_TEST_REPORTS, visibleNav } from "@/lib/auth/navigation";
+import { resultsNavVisible } from "@/lib/test-management/results";
 import { testsNavVisible } from "@/lib/test-management/rules";
 import { markingNavVisible } from "@/lib/test-management/marking";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -32,6 +34,7 @@ const ICONS: Record<string, LucideIcon> = {
     "/mentor/programme": Network,
     "/mentor/tests": FileQuestion,
     "/mentor/marking": PenLine,
+    "/mentor/test-reports": BarChart3,
 };
 
 /**
@@ -49,6 +52,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         ...visibleNav(MENTOR_NAV, knownPermissions),
         ...(testsNavVisible(detection, knownPermissions) ? [MENTOR_TESTS] : []),
         ...(markingNavVisible(detection, knownPermissions) ? [MENTOR_MARKING] : []),
+        // Test reports (Phase 4): Head Coaches (tests.viewResults) on a backend with `testResults`.
+        ...(resultsNavVisible(detection, knownPermissions, "tests.viewResults") ? [MENTOR_TEST_REPORTS] : []),
     ];
 
     // Function to check if link is active

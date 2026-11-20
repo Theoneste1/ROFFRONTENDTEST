@@ -54,7 +54,11 @@ export type Permission =
   | "tests.extensions" | "tests.viewSubmissions" | "tests.submit" | "tests.submitForStudents"
   // Test Management, Phase 3 (capability testMarking): distribution and review (Administrators, Head Coaches), choosing /
   // adjusting marks (the subject's Head Coaches only, G4), blind marking (Coaches: authorised subjects, assigned submissions).
-  | "tests.distribute" | "tests.review" | "tests.adjustMarks" | "tests.mark";
+  | "tests.distribute" | "tests.review" | "tests.adjustMarks" | "tests.mark"
+  // Test Management, Phase 4 (capability testResults): publication (the override: Administrators only), results with
+  // identity and reports, internal rankings (Administrators, Head Coaches), own results (Students), school results (Teachers).
+  | "tests.publishResults" | "tests.overridePublication" | "tests.viewResults" | "tests.viewRankings"
+  | "tests.viewOwnResults" | "tests.viewSchoolResults";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 

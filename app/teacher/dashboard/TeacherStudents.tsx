@@ -19,6 +19,7 @@ import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame } from "@/app/components/ui/PageFrame";
 import { Badge, Notice, SearchInput, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "@/app/admin/components/adminUi";
+import { TeacherTestsWidget } from "@/app/components/test-management/ResultViews";
 
 const GRADES: GradeLevel[] = ["S1", "S2", "S3", "S4", "S5", "S6"];
 const PAGE_SIZE = 20;
@@ -39,6 +40,8 @@ export default function TeacherStudents() {
 
   return (
     <PageFrame title="My students" description={tsa ? "Verified students of your schools, and students an administrator assigned to you." : "Students of the schools assigned to you by an administrator."}>
+      {/* Tests (Phase 4 dashboard: capability testResults, tests.submitForStudents) */}
+      <div className="mb-6"><TeacherTestsWidget /></div>
       {pending && (
         <div className="mb-4" data-testid="pending-students">
           <Notice tone="info">{pending}</Notice>

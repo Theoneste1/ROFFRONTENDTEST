@@ -106,6 +106,16 @@ export const TEACHER_TESTS: NavItem = { href: "/teacher/tests", label: "Tests", 
  */
 export const MENTOR_MARKING: NavItem = { href: "/mentor/marking", label: "Marking", permission: "tests.mark" };
 
+/**
+ * Test Management Phase 4 (capability `testResults`): students' own published results, teachers' school results, and
+ * the reporting overview for Administrators and Head Coaches. Separately gated (lib/test-management/results.ts →
+ * resultsNavVisible); never part of the frozen menus.
+ */
+export const STUDENT_RESULTS: NavItem = { href: "/student/results", label: "My results", permission: "tests.viewOwnResults" };
+export const TEACHER_RESULTS: NavItem = { href: "/teacher/results", label: "Results", permission: "tests.viewSchoolResults" };
+export const ADMIN_TEST_REPORTS: NavItem = { href: "/admin/test-reports", label: "Test reports", permission: "tests.viewResults" };
+export const MENTOR_TEST_REPORTS: NavItem = { href: "/mentor/test-reports", label: "Test reports", permission: "tests.viewResults" };
+
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
 
