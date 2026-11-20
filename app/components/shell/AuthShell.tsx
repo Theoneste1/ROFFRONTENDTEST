@@ -54,13 +54,13 @@ const HIGHLIGHTS = [
 function BrandMark({ size }: { size: "panel" | "bar" }) {
   const panel = size === "panel";
   return (
-    <Link href="/" className="inline-flex items-center gap-3 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="ROF LMS home page" data-testid="auth-brand-home">
-      <span className={`flex flex-shrink-0 items-center justify-center overflow-hidden bg-white ${panel ? "h-12 w-12 rounded-xl p-1" : "h-9 w-9 rounded-lg p-0.5"}`}>
-        <Image src="/logo.png" alt="" width={panel ? 44 : 32} height={panel ? 44 : 32} className="h-full w-full rounded-lg object-cover" priority />
+    <Link href="/" className="inline-flex items-center gap-4 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="ROF LMS home page" data-testid="auth-brand-home">
+      <span className={`flex flex-shrink-0 items-center justify-center overflow-hidden bg-white ${panel ? "h-20 w-20 rounded-2xl p-1.5 shadow-lg shadow-black/20" : "h-12 w-12 rounded-xl p-1"}`}>
+        <Image src="/logo.png" alt="" width={panel ? 160 : 96} height={panel ? 160 : 96} className="h-full w-full rounded-lg object-cover" priority />
       </span>
       <span className="leading-none">
-        <span className={`block font-extrabold tracking-tight text-white ${panel ? "text-2xl" : "text-lg"}`}>ROF LMS</span>
-        <span className={`block font-medium text-white/80 ${panel ? "mt-1 text-xs" : "mt-0.5 text-[11px]"}`}>Learn • Practise • Achieve</span>
+        <span className={`block font-extrabold tracking-tight text-white ${panel ? "text-3xl" : "text-xl"}`}>ROF LMS</span>
+        <span className={`block font-medium text-white/80 ${panel ? "mt-1.5 text-sm" : "mt-0.5 text-xs"}`}>Learn • Practise • Achieve</span>
       </span>
     </Link>
   );
