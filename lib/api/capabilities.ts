@@ -181,6 +181,14 @@ export const KNOWN_FEATURES = [
    * every version). Without it: no My tests / Tests menus for students and teachers, no Submissions / Extensions tabs.
    */
   "testSubmissions",
+  /**
+   * Test Management, Phase 3 (owner-approved plan 2026-11-19): distribution to authorised coaches and review on the test
+   * page — Markers & distribution (tests.distribute: even, manual, reassign; progress per coach), Review (tests.review:
+   * approve and lock, return with a comment, second marking, unlock; choosing / adjusting the mark: tests.adjustMarks,
+   * the subject's Head Coach only — G4), History (status changes, the mark-change log); the coach's blind marking queue
+   * `/mentor/marking` (tests.mark). Without it: none of these.
+   */
+  "testMarking",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

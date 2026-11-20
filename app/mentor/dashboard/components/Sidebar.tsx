@@ -9,13 +9,15 @@ import {
     FileText,
     ClipboardCheck,
     Network,
-    FileQuestion
+    FileQuestion,
+    PenLine
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { MENTOR_NAV, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { MENTOR_MARKING, MENTOR_NAV, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
 import { testsNavVisible } from "@/lib/test-management/rules";
+import { markingNavVisible } from "@/lib/test-management/marking";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 interface SidebarProps {
@@ -29,6 +31,7 @@ const ICONS: Record<string, LucideIcon> = {
     "/mentor/reviews": ClipboardCheck,
     "/mentor/programme": Network,
     "/mentor/tests": FileQuestion,
+    "/mentor/marking": PenLine,
 };
 
 /**
@@ -40,8 +43,13 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     const pathname = usePathname();
     const { knownPermissions } = useSession();
     const { detection } = useBackendCapabilities();
-    // Tests: Head Coaches (tests.view) on a backend with `testManagement` (lib/test-management/rules.ts).
-    const items = [...visibleNav(MENTOR_NAV, knownPermissions), ...(testsNavVisible(detection, knownPermissions) ? [MENTOR_TESTS] : [])];
+    // Tests: Head Coaches (tests.view) on a backend with `testManagement` (lib/test-management/rules.ts). Marking: coaches
+    // (tests.mark) on a backend with `testMarking` (lib/test-management/marking.ts).
+    const items = [
+        ...visibleNav(MENTOR_NAV, knownPermissions),
+        ...(testsNavVisible(detection, knownPermissions) ? [MENTOR_TESTS] : []),
+        ...(markingNavVisible(detection, knownPermissions) ? [MENTOR_MARKING] : []),
+    ];
 
     // Function to check if link is active
     const isActive = (path: string) => {

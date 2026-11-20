@@ -99,6 +99,13 @@ export const STUDENT_TESTS: NavItem = { href: "/student/tests", label: "My tests
  */
 export const TEACHER_TESTS: NavItem = { href: "/teacher/tests", label: "Tests", permission: "tests.submitForStudents" };
 
+/**
+ * Marking in the coach portal (Test Management Phase 3): the coach's blind marking queue. Separately gated: a backend
+ * advertising `testMarking` and the known tests.mark (lib/test-management/marking.ts → markingNavVisible); not part of
+ * MENTOR_NAV.
+ */
+export const MENTOR_MARKING: NavItem = { href: "/mentor/marking", label: "Marking", permission: "tests.mark" };
+
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
 
