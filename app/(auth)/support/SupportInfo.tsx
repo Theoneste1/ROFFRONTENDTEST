@@ -62,14 +62,14 @@ export default function SupportInfo() {
         <ul className="space-y-4" data-testid="support-contacts">
           {s.email && (
             <Row icon={<Mail className="h-4 w-4" />} label="E-mail">
-              <a href={`mailto:${s.email}`} className="font-medium text-[#2B2BB2] hover:underline">
+              <a href={`mailto:${s.email}`} className="font-medium text-brand hover:underline">
                 {s.email}
               </a>
             </Row>
           )}
           {s.phone && (
             <Row icon={<Phone className="h-4 w-4" />} label="Phone">
-              <a href={`tel:${s.phone.replace(/[^\d+]/g, "")}`} className="font-medium text-[#2B2BB2] hover:underline">
+              <a href={`tel:${s.phone.replace(/[^\d+]/g, "")}`} className="font-medium text-brand hover:underline">
                 {s.phone}
               </a>
             </Row>
@@ -81,7 +81,7 @@ export default function SupportInfo() {
           )}
           {helpUrl && (
             <Row icon={<ExternalLink className="h-4 w-4" />} label="Help centre">
-              <a href={helpUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-[#2B2BB2] hover:underline">
+              <a href={helpUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-brand hover:underline">
                 {helpUrl}
               </a>
             </Row>
@@ -94,7 +94,7 @@ export default function SupportInfo() {
             <>
               {" "}
               You can add them under{" "}
-              <Link href="/admin/settings" className="font-semibold text-[#2B2BB2] hover:underline">
+              <Link href="/admin/settings" className="font-semibold text-brand hover:underline">
                 platform settings
               </Link>{" "}
               (support e-mail, phone, hours, help link and message).

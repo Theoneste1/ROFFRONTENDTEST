@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Sign in (the approved reference design: app/components/auth/AuthCard → LoginCard draws the card and the navy panel).
+ * Sign in (the page around it, with the ROF brand panel, is app/components/shell/AuthShell).
  * The fields, rules, request, messages and redirects are those of the existing sign-in.
  */
 import Link from "next/link";
@@ -14,6 +14,7 @@ import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { Button, PasswordField, TextField } from "@/app/components/ui/form";
 import { accountRefusalMessage } from "@/lib/auth/login-refusals";
 import { LOGIN_NOTICE_TEXT, clearLoginNotice, peekLoginNotice } from "@/lib/auth/notice";
+import { AuthHeading } from "@/app/components/auth/AuthUi";
 
 export default function LoginForm() {
   const session = useSession();
@@ -74,13 +75,10 @@ export default function LoginForm() {
       method="post"
       onSubmit={onSubmit}
       noValidate
-      className="mx-auto w-full max-w-md space-y-5 [&_input]:h-12 [&_input]:rounded-xl [&_input]:text-base [&_label.block]:text-slate-800 sm:[&_input]:text-sm"
+      className="mx-auto w-full max-w-md space-y-5 sm:space-y-6 [&_input]:h-12 [&_input]:rounded-xl [&_input]:text-base [&_label.block]:mb-1.5 [&_label.block]:text-slate-800 sm:[&_input]:text-sm"
       data-testid="login-form"
     >
-      <div>
-        <h1 className="text-[28px] font-extrabold tracking-tight text-[#0b1f4d] sm:text-[32px]">Sign in</h1>
-        <p className="mt-1.5 text-[15px] text-slate-600">Enter your account details to continue.</p>
-      </div>
+      <AuthHeading title="Sign in" subtitle="Welcome back. Enter your account details to continue." />
 
       {notice && error == null && <Alert tone="success">{LOGIN_NOTICE_TEXT[notice]}</Alert>}
 
@@ -119,42 +117,44 @@ export default function LoginForm() {
         </Alert>
       )}
 
-      <TextField
-        label="Username or email"
-        name="username"
-        autoComplete="username"
-        autoFocus
-        required
-        minLength={3}
-        maxLength={254}
-        value={username}
-        onChange={(e) => {
-          setUsername(e.target.value);
-          setFieldErrors((s) => ({ ...s, username: undefined }));
-        }}
-        error={fieldErrors.username}
-        placeholder="Enter your username or email"
-      />
-
-      <div>
-        <PasswordField
-          label="Password"
-          name="password"
-          autoComplete="current-password"
+      <div className="space-y-5">
+        <TextField
+          label="Username or email"
+          name="username"
+          autoComplete="username"
+          autoFocus
           required
-          maxLength={100}
-          value={password}
+          minLength={3}
+          maxLength={254}
+          value={username}
           onChange={(e) => {
-            setPassword(e.target.value);
-            setFieldErrors((s) => ({ ...s, password: undefined }));
+            setUsername(e.target.value);
+            setFieldErrors((s) => ({ ...s, username: undefined }));
           }}
-          error={fieldErrors.password}
-          placeholder="Enter your password"
+          error={fieldErrors.username}
+          placeholder="Enter your username or email"
         />
-        <div className="mt-1 flex justify-end">
-          <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-sm font-semibold text-brand hover:underline" data-testid="login-forgot">
-            Forgot password?
-          </Link>
+
+        <div>
+          <PasswordField
+            label="Password"
+            name="password"
+            autoComplete="current-password"
+            required
+            maxLength={100}
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setFieldErrors((s) => ({ ...s, password: undefined }));
+            }}
+            error={fieldErrors.password}
+            placeholder="Enter your password"
+          />
+          <div className="-mb-2 flex justify-end">
+            <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-sm font-medium text-brand hover:underline" data-testid="login-forgot">
+              Forgot password?
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -162,19 +162,20 @@ export default function LoginForm() {
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
 
-      <p className="text-center text-sm text-slate-700">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="font-semibold text-brand hover:underline" data-testid="login-create-account">
-          Create account
-        </Link>
-      </p>
-
-      <p className="text-center text-xs text-slate-600">
-        Need help?{" "}
-        <Link href="/support" className="font-medium text-brand hover:underline">
-          Help and support
-        </Link>
-      </p>
+      <div className="space-y-2 border-t border-slate-200 pt-5 text-center">
+        <p className="text-sm text-slate-700">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="font-semibold text-brand hover:underline" data-testid="login-create-account">
+            Create account
+          </Link>
+        </p>
+        <p className="text-xs text-slate-600">
+          Need help?{" "}
+          <Link href="/support" className="font-medium text-brand hover:underline">
+            Help and support
+          </Link>
+        </p>
+      </div>
     </form>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * A long form shown one step at a time (Student, Teacher and Coach registration). The form keeps its own state, rules,
+ * A long form shown one step at a time (the administrators' test creation, app/components/test-management/TestCreate; the
+ * registration forms are one continuous form: app/components/forms/SignupForm). The form keeps its own state, rules,
  * request and error mapping; this only shows one step, the progress, Back / Next and the form's own submit button on the
  * last step. Rules: lib/forms/wizard.ts (unit-tested in tests/form-wizard.test.mjs).
  *
- * - The form is cut into parts (lib/forms/registration-steps.ts), grouped into steps per layout: "wide" (more than 640px)
+ * - The form is cut into parts (lib/forms/wizard.ts → buildSteps), grouped into steps per layout: "wide" (more than 640px)
  *   shows the fields in two columns, "narrow" (phones) in one column with more and smaller steps, so every step fits
  *   the window: no scrolling, neither the page nor the card. When the grouping changes (the window crosses 640px, e.g. a
  *   phone turned) the step holding the field the person was on is shown.
@@ -111,7 +112,7 @@ const CIRCLE = {
 } as const;
 const STATUS_TEXT = { complete: "completed", current: "current step", upcoming: "not started" } as const;
 
-/** The icon beside a step heading, by phase (lib/forms/registration-steps). */
+/** The icon beside a step heading, by phase id (a step without a known phase: ListChecks). */
 const PHASE_ICONS: Record<string, LucideIcon> = {
   about: UserRound,
   studies: GraduationCap,
@@ -155,7 +156,7 @@ export default function FormWizard({
   label = "Registration steps",
 }: {
   wizard: FormWizardState;
-  /** The steps of the shown layout (lib/forms/registration-steps.ts). */
+  /** The steps of the shown layout (lib/forms/wizard.ts → buildSteps). */
   steps: readonly WizardPartStep[];
   /** The content of each part, by part id. */
   parts: Readonly<Record<string, ReactNode>>;

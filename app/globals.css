@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
-/* The wide layout of the registration forms (app/components/forms/FormWizard; same query as WIDE_LAYOUT_QUERY in
-   lib/forms/wizard.ts): two columns above 640px, one column on phones. */
+/* The wide layout of the multi-step form (app/components/forms/FormWizard, the administrators' test creation; same query
+   as WIDE_LAYOUT_QUERY in lib/forms/wizard.ts): two columns above 640px, one column on phones. */
 @custom-variant wizard-wide (@media (width > 640px));
 
 :root {
@@ -9,11 +9,13 @@
   --foreground: #171717;
 }
 
-/* The blue of the sign-up and sign-in pages (the approved reference design): bg-brand, text-brand, ring-brand… */
+/* The colour of the ROF logo (#00428C) on the sign-in and sign-up pages: bg-brand, text-brand, ring-brand…
+   (dark: hover; deep: shading; light: tinted backgrounds). White on brand and brand on white are WCAG AA (9.6:1). */
 @theme {
-  --color-brand: #1453b8;
-  --color-brand-dark: #0f428f;
-  --color-brand-deep: #0b3d91;
+  --color-brand: #00428c;
+  --color-brand-dark: #003470;
+  --color-brand-deep: #002a5c;
+  --color-brand-light: #e6eef7;
 }
 
 @theme inline {

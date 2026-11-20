@@ -10,10 +10,10 @@
  * administrators create Teacher accounts, so the page says so and links to the
  * contact form either way.
  *
- * Steps (app/components/forms/FormWizard, lib/forms/registration-steps → coachSteps): About you, Your background, Your
- * experience (with the coach application details), Your account on wider windows (two columns); more and smaller steps on
- * phones. Each fits the window. Next checks the shown step with the form's rules; a refused field goes back to its step. The teacher
- * page (`?as=teacher`) is its own component, so switching between Coach and Teacher always starts the coach form afresh.
+ * One continuous form (app/components/forms/SignupForm, lib/forms/registration-fields → coachParts): the fields in order,
+ * two per row on wider windows, one column on phones, then "Apply as a coach". A failed check or a refused field: focus
+ * goes to the first highlighted field. The teacher page (`?as=teacher`) is its own component, so switching between
+ * Coach and Teacher always starts the coach form afresh.
  */
 import { useState, type FormEvent, type ReactNode } from "react";
 import { useCountryOptions } from "@/lib/queries/countries";
@@ -42,9 +42,9 @@ import {
 } from "@/lib/accounts/coach-application";
 import { CascadeSelect } from "@/app/components/schools/SchoolCascade";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
-import FormWizard, { useFormWizard, useWizardLayout, WIZARD_FORM_CLASS } from "@/app/components/forms/FormWizard";
-import { errorKeys, firstStepWithError, replaceStepErrors } from "@/lib/forms/wizard";
-import { coachSteps } from "@/lib/forms/registration-steps";
+import SignupForm, { SIGNUP_FORM_CLASS, useSignupFocus } from "@/app/components/forms/SignupForm";
+import { errorKeys } from "@/lib/forms/wizard";
+import { coachParts } from "@/lib/forms/registration-fields";
 
 const USERNAME = /^[a-z0-9._-]{3,30}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -72,7 +72,7 @@ function TeacherJoin() {
           <p className="text-sm text-slate-700">
             Teachers apply for an account with their school and contact details. An administrator reviews every application and links the account to your school.
           </p>
-          <Link href="/register/teacher" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]" data-testid="apply-teacher-register">
+          <Link href="/register/teacher" className="inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand-dark" data-testid="apply-teacher-register">
             Apply as a teacher
           </Link>
         </>
@@ -93,15 +93,15 @@ function TeacherJoin() {
       )}
       {teacherSelfRegistration ? (
         <p className="text-center text-sm text-slate-600">
-          Questions? <Link href="/?subject=teacher#contact" className="font-medium text-[#2B2BB2] hover:underline">Contact us</Link>
+          Questions? <Link href="/?subject=teacher#contact" className="font-medium text-brand hover:underline">Contact us</Link>
         </p>
       ) : (
-        <Link href="/?subject=teacher#contact" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
+        <Link href="/?subject=teacher#contact" className="inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand-dark">
           Contact us
         </Link>
       )}
       <p className="text-center text-sm text-slate-600">
-        Want to mentor ROF students? <Link href="/apply" className="font-medium text-[#2B2BB2] hover:underline">Apply as a coach</Link>
+        Want to mentor ROF students? <Link href="/apply" className="font-medium text-brand hover:underline">Apply as a coach</Link>
       </p>
     </div>
   );
@@ -140,13 +140,13 @@ function CoachApplication() {
   const [pictureError, setPictureError] = useState<string | null>(null);
   const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
   const set = (k: keyof typeof v) => (val: string) => setV((s) => ({ ...s, [k]: val }));
-  // The steps of the shown layout, with the parts this backend asks for.
-  const stepModels = coachSteps(useWizardLayout(), detailsOn, (part) => {
+  // The fields this backend asks for, in order.
+  const PARTS = coachParts(detailsOn, (part) => {
     if (part === "picture") return pictureOn;
     if (["phone", "affiliation", "expertise", "relevantExperience", "yearsOfExperience"].includes(part)) return extraOn;
     return true;
   });
-  const wizard = useFormWizard(stepModels);
+  const focus = useSignupFocus();
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
@@ -161,23 +161,12 @@ function CoachApplication() {
     if (p.confirm) e.confirm = p.confirm;
     const de = detailsOn ? validateCoachDetails(details) : {};
     const xe = extraOn ? validateCoachExtra(extra) : {};
-    const pe = { picture: pictureError };
-    if (!wizard.isLast) {
-      // Next (or Enter in a field): the same rules, for the fields of the shown step only.
-      const step = stepModels[wizard.index];
-      setErrors((s) => replaceStepErrors(step, s, e));
-      setDetailErrors((s) => replaceStepErrors(step, s, de));
-      setExtraErrors((s) => replaceStepErrors(step, s, xe));
-      if (firstStepWithError([step], errorKeys(e, de, xe, pe)) === 0) wizard.showErrors();
-      else wizard.next();
-      return;
-    }
     setErrors(e);
     setDetailErrors(de);
     setExtraErrors(xe);
     setError(null);
     if (Object.keys(e).length || Object.keys(de).length || Object.keys(xe).length || pictureError) {
-      wizard.showErrors(firstStepWithError(stepModels, errorKeys(e, de, xe, pe)));
+      focus.showErrors();
       return;
     }
     setSubmitting(true);
@@ -199,10 +188,9 @@ function CoachApplication() {
       setErrors(fe);
       const sde = detailsOn ? fieldErrors(err, DETAIL_FIELDS) : {};
       if (detailsOn) setDetailErrors(sde);
-      // A refused field: back to its step. Other refusals stay on this step with their message above the steps.
-      const at = firstStepWithError(stepModels, errorKeys(fe, sde));
-      if (at !== -1) wizard.showErrors(at);
-      else wizard.showMessage();
+      // A refused field: focus on it. Other refusals: their message above the fields.
+      if (errorKeys(fe, sde).length) focus.showErrors();
+      else focus.showMessage();
     } finally {
       setSubmitting(false);
     }
@@ -219,7 +207,7 @@ function CoachApplication() {
         {pictureOutcomeText(pictureResult) && (
           <p className="text-sm text-slate-700" data-testid="picture-outcome">{pictureOutcomeText(pictureResult)}</p>
         )}
-        <Link href="/" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
+        <Link href="/" className="inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand-dark">
           Back to the homepage
         </Link>
       </div>
@@ -244,7 +232,7 @@ function CoachApplication() {
     );
   const passwordProps = { password, confirm, onPassword: setPassword, onConfirm: setConfirm, errors: { password: errors.password, confirm: errors.confirm }, label: "Password" };
 
-  // The fields, part by part (lib/forms/registration-steps → COACH_PARTS): the steps show them in two columns or one.
+  // The fields, part by part (lib/forms/registration-fields → COACH_PARTS), in two columns or one.
   const parts: Record<string, ReactNode> = {
     firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
     lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
@@ -306,32 +294,30 @@ function CoachApplication() {
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className={WIZARD_FORM_CLASS}>
-      <FormWizard
-        wizard={wizard}
-        steps={stepModels}
-        parts={parts}
+    <form onSubmit={onSubmit} noValidate className={SIGNUP_FORM_CLASS}>
+      <SignupForm
+        focus={focus}
+        parts={PARTS}
+        content={parts}
         submitLabel={`Apply as a ${role.toLowerCase()}`}
         submittingLabel="Sending your application…"
         submitting={submitting}
         header={
           <>
-            <JoinSwitch active="coach" compact />
-            <AuthHeading title={`Apply as a ${role.toLowerCase()}`} compact />
+            <JoinSwitch active="coach" />
+            <AuthHeading
+              title={`Apply as a ${role.toLowerCase()}`}
+              subtitle={
+                <>
+                  Coaches mentor ROF students. An administrator reviews every application. A school teacher?{" "}
+                  <Link href={teacherHref} className="font-medium text-brand hover:underline">
+                    Join as a teacher
+                  </Link>{" "}
+                  instead.
+                </>
+              }
+            />
           </>
-        }
-        intro={
-          <p className="text-sm leading-snug text-slate-600 wizard-wide:text-[15px]">
-            <span className="hidden wizard-wide:inline">Coaches mentor ROF students. </span>An administrator reviews every application.{" "}
-            {/* On phones the switch above (Teacher) is the same link. */}
-            <span className="hidden wizard-wide:inline">
-              A school teacher?{" "}
-              <Link href={teacherHref} className="font-medium text-brand hover:underline">
-                Join as a teacher
-              </Link>{" "}
-              instead.
-            </span>
-          </p>
         }
         notices={
           <>

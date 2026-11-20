@@ -5,12 +5,11 @@
  *  - a student whose school is abroad registers with the country chosen from the list and a typed school name (as today);
  *  - a Rwandan student still registers exactly as before (Province → District → Sector → School, S1–S6).
  * Each result is checked in the database. Synthetic data only; names are unique per run.
- * The student form shows one step at a time: each step is filled, then "Next" (e2e/support/wizard).
+ * The student form is one continuous form: every field is filled, then the form is sent.
  */
 import { expect, test, type Page } from "@playwright/test";
 import { withDb } from "../support/db";
 import { signIn } from "../support/session";
-import { nextStep } from "../support/wizard";
 
 const RUN = Date.now().toString(36);
 const PASSWORD = "Sign-Up-Pass-2026!";
@@ -39,9 +38,9 @@ async function submitAndExpect(page: Page) {
 }
 
 /**
- * The parts of the student form that are the same wherever the school is: "About you", the grade and the Olympiad
- * interest, the test's own school steps (`place`: "School location", `school`: "Your school"), "Where you live" and
- * "Your account".
+ * The parts of the student form that are the same wherever the school is: the name and birth details, the grade and the Olympiad
+ * interest, the test's own school fields (`place`: the school's country and place, `school`: the school), where they live and
+ * their account.
  */
 async function studentBasics(page: Page, username: string, grade: string, place: () => Promise<void>, school: () => Promise<void>) {
   await page.goto("/register");
@@ -50,22 +49,16 @@ async function studentBasics(page: Page, username: string, grade: string, place:
   await page.locator('input[name="lastName"]').fill(`Country${RUN}`);
   await page.locator('input[name="dateOfBirth"]').fill("2011-03-10");
   await page.getByTestId("home-country").selectOption("RW");
-  await nextStep(page, "Phone and picture");
   await page.locator('input[name="guardianPhone"]').fill("0788123456");
-  await nextStep(page, "Your studies");
   await page.locator('select[name="gradeLevel"]').selectOption(grade);
   await page.getByTestId("olympiad-interests").getByLabel("Mathematics").check();
-  await nextStep(page, "School location");
   await place();
-  await nextStep(page, "Your school");
   await school();
-  await nextStep(page, "Where you live");
   await selectWhenReady(page, "home-province", "Kigali City");
   await selectWhenReady(page, "home-district", "Gasabo");
   const sector = page.getByTestId("home-sector");
   await expect(sector).toBeEnabled();
   await sector.selectOption({ index: 1 });
-  await nextStep(page, "Your account");
   await page.locator('input[name="username"]').fill(username);
   await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
   await page.locator('input[name="new-password"]').fill(PASSWORD);

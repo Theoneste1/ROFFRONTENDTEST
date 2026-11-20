@@ -2,12 +2,11 @@
  * The public sign-up forms in the browser (REG-02, REG-05, REG-06, REG-08, UX-01): a student registers with and without
  * the optional profile picture, a teacher and a coach apply, and a closed form shows its closed message instead of the
  * form. Each account is checked in the database afterwards. Synthetic data only; usernames are unique per run.
- * The forms show one step at a time: each step is filled, then "Next" (e2e/support/wizard).
+ * The forms are one continuous form: every field is filled, then the form is sent.
  */
 import { expect, request, test, type Page } from "@playwright/test";
 import { withDb } from "../support/db";
 import { passwordOf } from "../support/accounts";
-import { nextStep } from "../support/wizard";
 
 const RUN = Date.now().toString(36);
 const PASSWORD = "Sign-Up-Pass-2026!";
@@ -71,26 +70,20 @@ async function studentForm(page: Page, username: string, withPicture: boolean) {
   await page.locator('input[name="lastName"]').fill(`Signup${RUN}`);
   await page.locator('input[name="dateOfBirth"]').fill("2011-06-15");
   await page.getByTestId("home-country").selectOption("RW");
-  await nextStep(page, "Phone and picture");
   if (withPicture) await page.locator('input[name="avatar"]').setInputFiles({ name: "me.png", mimeType: "image/png", buffer: PNG });
   await page.locator('input[name="guardianPhone"]').fill("0788123456");
-  await nextStep(page, "Your studies");
   await page.locator('select[name="gradeLevel"]').selectOption("S2");
   await page.getByTestId("olympiad-interests").getByLabel("Mathematics").check();
-  await nextStep(page, "School location");
   await page.getByTestId("cascade-country").selectOption("RW");
   await selectWhenReady(page, "cascade-province", SCHOOL.province);
   await selectWhenReady(page, "cascade-district", SCHOOL.district);
   await selectWhenReady(page, "cascade-sector", SCHOOL.sector);
-  await nextStep(page, "Your school");
   await selectWhenReady(page, "cascade-school", SCHOOL.name);
-  await nextStep(page, "Where you live");
   await selectWhenReady(page, "home-province", "Kigali City");
   await selectWhenReady(page, "home-district", "Gasabo");
   const sector = page.getByTestId("home-sector");
   await expect(sector).toBeEnabled();
   await sector.selectOption({ index: 1 });
-  await nextStep(page, "Your account");
   await page.locator('input[name="username"]').fill(username);
   await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
   await fillPassword(page);
@@ -126,26 +119,20 @@ test.describe("public sign-up forms", () => {
     await form.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await form.getByLabel("Country *", { exact: true }).selectOption("RW");
     await form.locator('input[name="phone"]').fill("0788654321");
-    await nextStep(page, "Your teaching");
     await form.locator('input[name="position"]').fill("Mathematics teacher");
     await form.getByLabel("Mathematics").check();
-    await nextStep(page, "Profile picture");   // the optional picture: its own screen of "Teaching"
-    await nextStep(page, "School location");
     const schoolCountry = page.getByTestId("teacher-school-country");
     if (await schoolCountry.isEnabled()) await schoolCountry.selectOption("RW");   // Rwanda only: preselected and fixed
     else await expect(schoolCountry).toHaveValue("RW");
     await selectWhenReady(page, "cascade-province", SCHOOL.province);
     await selectWhenReady(page, "cascade-district", SCHOOL.district);
     await selectWhenReady(page, "cascade-sector", SCHOOL.sector);
-    await nextStep(page, "Your school");
     await selectWhenReady(page, "cascade-school", SCHOOL.name);
-    await nextStep(page, "Home location");
     const homeDistrict = form.getByLabel("Home district *");
     await homeDistrict.selectOption({ label: "Gasabo" });   // the home province follows from the district
     const homeSector = form.getByLabel("Home sector *");
     await expect(homeSector).toBeEnabled();
     await homeSector.selectOption({ index: 1 });
-    await nextStep(page, "Your account");
     await form.locator('input[name="username"]').fill(username);
     await fillPassword(page);
     await submitAndExpect(page, "Apply as a teacher", "teacher-register-done");
@@ -165,15 +152,11 @@ test.describe("public sign-up forms", () => {
     await page.locator('input[name="lastName"]').fill(`Coach${RUN}`);
     await page.getByTestId("coach-country").selectOption("RW");
     await page.locator('input[name="phone"]').fill("0788111222");
-    await nextStep(page, "Profile picture");   // the optional picture: its own screen of "About you"
-    await nextStep(page, "Your background");
     await page.locator('input[name="occupation"]').fill("Engineer");
     await page.getByTestId("coach-education").selectOption("BACHELOR");
     await page.getByTestId("olympiad-interests").getByLabel("Physics").check();
-    await nextStep(page, "Your experience");
     await page.locator('textarea[name="expertise"]').fill("Mechanics and olympiad problem solving.");
     await page.locator('textarea[name="relevantExperience"]').fill("Three years coaching national olympiad teams.");
-    await nextStep(page, "Your account");
     await page.locator('input[name="username"]').fill(username);
     await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await fillPassword(page);

@@ -37,7 +37,7 @@ export default function RespondForm() {
       <div className="space-y-4" data-testid="answer-sent">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Thank you, {v.firstName}</h1>
         <p className="text-sm text-slate-600">Your answer was sent. An administrator will continue reviewing your {role} application and will e-mail you the decision.</p>
-        <Link href="/" className="text-sm font-semibold text-indigo-600 hover:underline">Back to the home page</Link>
+        <Link href="/" className="text-sm font-semibold text-brand hover:underline">Back to the home page</Link>
       </div>
     );
   }
@@ -82,7 +82,7 @@ export default function RespondForm() {
         </Alert>
       )}
       {send.isError && <Alert tone="error">{isApiError(send.error) && linkInvalid(send.error) ? GONE : errorMessage(send.error)}</Alert>}
-      <Button type="submit" loading={send.isPending} className="w-full">Send my answer</Button>
+      <Button type="submit" variant="brand" loading={send.isPending} className="w-full">Send my answer</Button>
     </form>
   );
 }

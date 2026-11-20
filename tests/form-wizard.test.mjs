@@ -1,8 +1,7 @@
-// The multi-step registration forms: the wizard rules (lib/forms/wizard.ts), the steps of the Student, Teacher and Coach
-// forms in both layouts (lib/forms/registration-steps.ts — every error their own rules or the server can produce opens
-// exactly one step of each layout; a change of layout keeps the person on the field they were on), and the wizard
+// The multi-step form (used by the administrators' test creation): the wizard rules (lib/forms/wizard.ts) and the wizard
 // component itself rendered with react-dom/server (app/components/forms/FormWizard.tsx): progress, aria-current, the live
-// region, the hidden steps and the Back / Next / submit buttons.
+// region, the hidden steps and the Back / Next / submit buttons. The registration forms are one continuous form:
+// tests/registration-fields.test.mjs.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createElement } from "react";
@@ -30,13 +29,6 @@ import {
   stepsSignature,
   wizardReducer,
 } from "../lib/forms/wizard.ts";
-import { COACH_PARTS, STUDENT_PARTS, TEACHER_PARTS, coachSteps, studentSteps, teacherSteps } from "../lib/forms/registration-steps.ts";
-import { SCHOOL_CLAIM_SERVER_FIELDS, validateSchoolClaim } from "../lib/accounts/school-claim.ts";
-import { STUDENT_DETAILS_ERRORS, STUDENT_DETAILS_SERVER_FIELDS, emptyStudentDetails, validateStudentDetails } from "../lib/accounts/student-details.ts";
-import { TEACHER_ERROR_FIELDS, TEACHER_SERVER_FIELDS, emptyTeacherDraft, validateTeacherRegistration } from "../lib/accounts/teacher-registration.ts";
-import { emptyCoachExtra, emptyTeacherExtra, validateCoachExtra, validateTeacherExtra } from "../lib/accounts/application-details.ts";
-import { emptyCoachDetails, validateCoachDetails } from "../lib/accounts/coach-application.ts";
-import { emptyDraft } from "../app/components/account/SchoolClaimFields.tsx";
 import FormWizard from "../app/components/forms/FormWizard.tsx";
 
 const STEPS = [
@@ -107,23 +99,7 @@ test("a double click on Next never lands on the submit button: only the second c
   assert.equal(ignoreRepeatedClick(2), true);
 });
 
-// ─── The three forms' steps ─────────────────────────────────────────────────────────────────────────────────────────
-
-/** Every key belongs to exactly one step, and the steps share no key. */
-function assertCovered(steps, keys, what) {
-  const all = steps.flatMap((s) => s.fields);
-  assert.equal(new Set(all).size, all.length, `${what}: a key on two steps`);
-  for (const k of keys) assert.notEqual(stepOfField(steps, k), -1, `${what}: "${k}" is on no step`);
-}
-
-/** Each layout shows every part of the form once, in the form's order (so a new grouping never moves a part). */
-function assertParts(steps, parts, what) {
-  const ids = steps.flatMap((s) => s.parts.map((p) => p.id));
-  assert.deepEqual(ids, parts.map((p) => p.id), `${what}: every part once, in the form's order`);
-}
-
-const LAYOUTS = ["wide", "narrow"];
-const idOf = (steps, field) => steps[stepOfField(steps, field)].id;
+// ─── Steps and phases ──────────────────────────────────────────────────────────────────────────────────────────────
 
 test("buildSteps: a step keeps the parts the form shows, with their keys; a step left without any is dropped", () => {
   const parts = [{ id: "a", fields: ["a"] }, { id: "b", fields: ["b1", "b2"], wide: true }, { id: "c", fields: [] }, { id: "d", fields: ["d"] }];
@@ -153,118 +129,6 @@ test("remapStep: a new grouping shows the step holding the part the person was o
   assert.equal(stepsSignature(wide), stepsSignature(buildSteps(parts, [{ id: "1", title: "1", parts: ["a", "b", "c"] }, { id: "2", title: "2", parts: ["d", "e"] }])));
 });
 
-test("Student: the steps of both layouts in order, and every error of its rules and of the server opens a step", () => {
-  assert.deepEqual(studentSteps("wide").map((s) => s.title), ["About you", "Phone and picture", "Your studies", "School location", "Your school", "Where you live", "Your account"]);
-  assert.deepEqual(studentSteps("narrow").map((s) => s.title), [
-    "About you", "Birth and country", "Phone numbers", "Profile picture", "Your studies", "School location", "School district and sector", "Your school", "Where you live",
-    "Your account", "Your password",
-  ]);
-  // RegisterForm's own validate() (FIELDS + confirm), the school claim in every mode, the personal details, the picture.
-  const form = ["firstName", "lastName", "username", "email", "password", "confirm", "gradeLevel", "schoolName", "schoolLocation", "homeLocation", "olympiadInterests"];
-  const claim = ["directory", "notListed", "abroad"].flatMap((m) => Object.keys(validateSchoolClaim(emptyDraft(m))));
-  const details = [
-    ...Object.keys(validateStudentDetails({ ...emptyStudentDetails(), homeCountry: "" })),
-    ...Object.keys(validateStudentDetails({ ...emptyStudentDetails(), homeCountry: "KE" })),
-  ];
-  const server = [...Object.values(SCHOOL_CLAIM_SERVER_FIELDS), ...Object.values(STUDENT_DETAILS_ERRORS).map((e) => e.field), ...STUDENT_DETAILS_SERVER_FIELDS];
-  assert.ok(claim.length > 0 && details.length > 0);
-  for (const layout of LAYOUTS) {
-    const steps = studentSteps(layout);
-    assertCovered(steps, [...form, ...claim, ...details, ...server, "picture"], `student ${layout}`);
-    assertParts(steps, STUDENT_PARTS, `student ${layout}`);
-    // Where each group lives.
-    assert.equal(idOf(steps, "dateOfBirth"), layout === "wide" ? "about" : "birth");
-    assert.equal(idOf(steps, "guardianPhone"), layout === "wide" ? "contact" : "phones");
-    assert.equal(idOf(steps, "olympiadInterests"), "studies");
-    assert.equal(idOf(steps, "province"), "school-place");
-    assert.equal(idOf(steps, "school"), "school");
-    assert.equal(idOf(steps, "schoolName"), "school");
-    assert.equal(idOf(steps, "homeSector"), "home");
-    assert.equal(idOf(steps, "confirm"), "account");
-  }
-  // The school mode decides which school parts are shown (a school abroad: country and name), each key still on one step.
-  const abroad = (p) => !["schoolProvince", "schoolDistrict", "schoolSector", "school", "schoolLocation"].includes(p);
-  for (const layout of LAYOUTS) {
-    const steps = studentSteps(layout, abroad);
-    assertCovered(steps, ["country", "schoolName"], `student ${layout} abroad`);
-    assert.equal(steps.some((s) => s.id === "school-area"), false, "no empty step");
-  }
-  // A backend without the personal details or the interests: those steps are not shown.
-  const legacy = studentSteps("narrow", (p) => !["dateOfBirth", "homeCountry", "phone", "guardianPhone", "picture", "olympiadInterests", "schoolCountry", "schoolProvince", "schoolDistrict", "schoolSector", "school", "schoolNote", "homeProvince", "homeDistrict", "homeSector"].includes(p));
-  assert.deepEqual(legacy.map((s) => s.id), ["about", "studies", "school", "home", "login", "account"]);
-});
-
-test("Teacher: the steps of both layouts in order, and every error of its rules and of the server opens a step", () => {
-  assert.deepEqual(teacherSteps("wide").map((s) => s.title), ["About you", "Your teaching", "Profile picture", "School location", "Your school", "Home location", "Your account"]);
-  assert.deepEqual(teacherSteps("narrow").map((s) => s.title), [
-    "About you", "Contact details", "Country", "Your teaching", "Olympiad interests", "Profile picture", "School location", "School district and sector", "Your school",
-    "School name", "Home location", "Your username", "Your password",
-  ]);
-  const own = [
-    ...Object.keys(validateTeacherRegistration(emptyTeacherDraft())),
-    ...Object.keys(validateTeacherRegistration({ ...emptyTeacherDraft(), schoolMode: "missing" })),
-    ...Object.keys(validateTeacherExtra(emptyTeacherExtra())),
-  ];
-  assert.ok(own.includes("interests") && own.includes("proposedSchoolName") && own.includes("position"));
-  const server = [...Object.values(TEACHER_ERROR_FIELDS), ...Object.values(TEACHER_SERVER_FIELDS)];
-  for (const layout of LAYOUTS) {
-    const steps = teacherSteps(layout);
-    assertCovered(steps, [...own, ...server, "picture", "password", "confirm"], `teacher ${layout}`);
-    assertParts(steps, TEACHER_PARTS, `teacher ${layout}`);
-    assert.equal(idOf(steps, "position"), "teaching");
-    assert.equal(idOf(steps, "interests"), layout === "wide" ? "teaching" : "interests");
-    assert.equal(idOf(steps, "schoolProvince"), "school-place");
-    assert.equal(idOf(steps, "proposedSchoolName"), layout === "wide" ? "school" : "school-name");
-    assert.equal(idOf(steps, "homeDistrict"), "home");
-    assert.equal(idOf(steps, "confirm"), "account");
-    // The explanations the sections had stay under the step headings.
-    assert.match(steps.find((s) => s.id === "school").description, /official list of Rwandan schools/);
-    assert.match(steps.find((s) => s.id === "home").description, /separate from your school/);
-  }
-});
-
-test("Coach: About you, the details (only with the application details) and the account in both layouts; every error opens a step", () => {
-  assert.deepEqual(coachSteps("wide", true).map((s) => s.title), ["About you", "Profile picture", "Your background", "Your experience", "Your account"]);
-  assert.deepEqual(coachSteps("narrow", true).map((s) => s.title), [
-    "About you", "Country and phone", "Profile picture", "Your background", "Affiliation", "Olympiad subjects", "Your expertise", "Your experience", "Your account", "Your password",
-  ]);
-  // Without the coach application details: the name and the account only, as before.
-  assert.deepEqual(coachSteps("wide", false).map((s) => s.title), ["About you", "Your account"]);
-  assert.deepEqual(coachSteps("narrow", false).map((s) => s.title), ["About you", "Your account", "Your password"]);
-  assert.deepEqual(coachSteps("wide", false).flatMap((s) => s.fields), ["firstName", "lastName", "username", "email", "password", "confirm"]);
-  const own = [
-    "firstName", "lastName", "username", "email", "password", "confirm",
-    ...Object.keys(validateCoachDetails({ ...emptyCoachDetails(), country: "" })),
-    ...Object.keys(validateCoachExtra({ ...emptyCoachExtra(), affiliation: "x" })),
-    "picture",
-  ];
-  for (const layout of LAYOUTS) {
-    const steps = coachSteps(layout, true);
-    assertCovered(steps, own, `coach ${layout}`);
-    assertParts(steps, COACH_PARTS, `coach ${layout}`);
-    assert.equal(idOf(steps, "olympiadInterests"), layout === "wide" ? "background" : "interests");
-    assert.equal(idOf(steps, "country"), layout === "wide" ? "about" : "contact");
-    assert.equal(idOf(steps, "relevantExperience"), "experience");
-  }
-});
-
-test("a form's two layouts hold the same parts: crossing 640px always finds the field the person was on", () => {
-  for (const [what, wide, narrow] of [
-    ["student", studentSteps("wide"), studentSteps("narrow")],
-    ["teacher", teacherSteps("wide"), teacherSteps("narrow")],
-    ["coach", coachSteps("wide", true), coachSteps("narrow", true)],
-  ]) {
-    for (const [i, step] of wide.entries())
-      for (const p of step.parts) {
-        const n = remapStep(wide, narrow, i, p.id);
-        assert.ok(narrow[n].parts.some((q) => q.id === p.id), `${what}: ${p.id} wide → narrow`);
-        assert.equal(remapStep(narrow, wide, n, p.id), i, `${what}: ${p.id} narrow → wide`);
-      }
-    // Narrow steps are the wide steps cut smaller: each lies inside one wide step.
-    for (const step of narrow) assert.equal(new Set(step.parts.map((p) => wide.findIndex((w) => w.parts.some((q) => q.id === p.id)))).size, 1, `${what}: ${step.id} inside one wide step`);
-  }
-});
-
 // ─── Phases ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 test("phases: consecutive steps of a phase form one phase; where a step is inside its phase", () => {
@@ -290,30 +154,6 @@ test("phases: consecutive steps of a phase form one phase; where a step is insid
   assert.deepEqual([0, 1, 2, 3, 4, 5].map((i) => screenLabel(phases, i)), ["1 of 2", "2 of 2", null, "1 of 3", "2 of 3", "3 of 3"]);
   // A step without a phase is a phase of its own (the steps of a form that has none: one circle per step).
   assert.deepEqual(phasesOf(STEPS).map((p) => p.title), ["About you", "Your studies", "Your account"]);
-});
-
-test("the forms' phases: 3 or 4 named phases, the same in both layouts, each part in the same phase in both", () => {
-  const titles = (steps) => phasesOf(steps).map((p) => p.title);
-  for (const [what, wide, narrow, expected] of [
-    ["student", studentSteps("wide"), studentSteps("narrow"), ["About you", "Studies & school", "Home", "Account"]],
-    ["teacher", teacherSteps("wide"), teacherSteps("narrow"), ["About you", "Teaching", "School & home", "Account"]],
-    ["coach", coachSteps("wide", true), coachSteps("narrow", true), ["About you", "Background", "Account"]],
-  ]) {
-    assert.deepEqual(titles(wide), expected, `${what} wide`);
-    assert.deepEqual(titles(narrow), expected, `${what} narrow`);
-    for (const steps of [wide, narrow]) {
-      assert.ok(steps.every((s) => s.phase), `${what}: every step has a phase`);
-      // A phase is never split by another one (each phase's steps are in a row).
-      assert.equal(phasesOf(steps).length, new Set(steps.map((s) => s.phase.id)).size, `${what}: phases in a row`);
-    }
-    const phaseOfPart = (steps) => Object.fromEntries(steps.flatMap((s) => s.parts.map((p) => [p.id, s.phase.id])));
-    assert.deepEqual(phaseOfPart(narrow), phaseOfPart(wide), `${what}: a part keeps its phase across 640px`);
-  }
-  // Phones: more screens per phase.
-  assert.deepEqual(phasesOf(studentSteps("narrow")).map((p) => p.count), [4, 4, 1, 2]);
-  assert.deepEqual(phasesOf(studentSteps("wide")).map((p) => p.count), [2, 3, 1, 1]);
-  // Without the coach application details: About you and Account.
-  assert.deepEqual(titles(coachSteps("wide", false)), ["About you", "Account"]);
 });
 
 // ─── The component ──────────────────────────────────────────────────────────────────────────────────────────────────

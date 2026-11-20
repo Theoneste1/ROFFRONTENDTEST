@@ -15,14 +15,14 @@
  * read-only, never sent), or "My school is not listed" (name + sector, reviewed by an
  * Administrator). Home location: district → sector, separate from the school.
  *
- * Steps (app/components/forms/FormWizard, lib/forms/registration-steps → teacherSteps): About you, Your teaching, School
- * location, Your school, Home location, Your account on wider windows (two columns); more and smaller steps on phones.
- * Each fits the window. Next checks the shown step with the rules of validateTeacherRegistration; a refused field goes back to its step.
+ * One continuous form (app/components/forms/SignupForm, lib/forms/registration-fields → TEACHER_PARTS): the fields in
+ * order, two per row on wider windows, one column on phones, then "Apply as a teacher". The rules are those of
+ * validateTeacherRegistration; a failed check or a refused field: focus goes to the first highlighted field.
  */
 import { useState, type FormEvent, type ReactNode } from "react";
-import FormWizard, { useFormWizard, useWizardLayout, WIZARD_FORM_CLASS } from "@/app/components/forms/FormWizard";
-import { errorKeys, firstStepWithError, replaceStepErrors } from "@/lib/forms/wizard";
-import { teacherSteps } from "@/lib/forms/registration-steps";
+import SignupForm, { SIGNUP_FORM_CLASS, useSignupFocus } from "@/app/components/forms/SignupForm";
+import { errorKeys } from "@/lib/forms/wizard";
+import { TEACHER_PARTS, visibleParts } from "@/lib/forms/registration-fields";
 import { useCountryOptions } from "@/lib/queries/countries";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -71,7 +71,7 @@ import { CascadeSelect, PlaceSelects, SectorSchoolSelect } from "@/app/component
 import { countryName, RWANDA } from "@/lib/schools/countries";
 import type { Place } from "@/lib/schools/school-cascade";
 
-const primaryLink = "inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]";
+const primaryLink = "inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand-dark";
 
 const SUBTITLE = "Apply for a teacher account. An administrator reviews every application before the account is created.";
 
@@ -190,35 +190,25 @@ function OpenForm() {
   const set = <K extends keyof TeacherDraft>(k: K, v: TeacherDraft[K]) => setD((s) => ({ ...s, [k]: v }));
   const update = (fn: (s: TeacherDraft) => TeacherDraft) => setD(fn);
   const missing = d.schoolMode === "missing";
-  // The steps of the shown layout, with the parts this backend and these answers ask for.
-  const STEPS = teacherSteps(useWizardLayout(), (part) => {
+  // The fields this backend and these answers ask for, in order.
+  const PARTS = visibleParts(TEACHER_PARTS, (part) => {
     if (part === "position" || part === "yearsOfExperience") return extraOn;
     if (part === "picture") return pictureOn;
     if (part === "proposedSchoolName") return missing;
     return true;
   });
-  const wizard = useFormWizard(STEPS);
+  const focus = useSignupFocus();
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
     if (submitting) return;
     const e = validateTeacherRegistration(d);
     const xe = extraOn ? validateTeacherExtra(extra) : {};
-    const pe = { picture: pictureError };
-    if (!wizard.isLast) {
-      // Next (or Enter in a field): the same rules, for the fields of the shown step only.
-      const step = STEPS[wizard.index];
-      setErrors((s) => replaceStepErrors(step, s, e));
-      setExtraErrors((s) => replaceStepErrors(step, s, xe));
-      if (firstStepWithError([step], errorKeys(e, xe, pe)) === 0) wizard.showErrors();
-      else wizard.next();
-      return;
-    }
     setErrors(e);
     setExtraErrors(xe);
     setError(null);
     if (Object.keys(e).length || Object.keys(xe).length || pictureError) {
-      wizard.showErrors(firstStepWithError(STEPS, errorKeys(e, xe, pe)));
+      focus.showErrors();
       return;
     }
     setSubmitting(true);
@@ -232,10 +222,9 @@ function OpenForm() {
       const field = isApiError(err) ? TEACHER_ERROR_FIELDS[err.code] : undefined;
       if (field && isApiError(err)) server[field] = TEACHER_REGISTER_ERRORS[err.code];
       setErrors(server);
-      // A refused field: back to its step. Other refusals stay on this step with their message above the steps.
-      const at = firstStepWithError(STEPS, errorKeys(server));
-      if (at !== -1) wizard.showErrors(at);
-      else wizard.showMessage();
+      // A refused field: focus on it. Other refusals: their message above the fields.
+      if (errorKeys(server).length) focus.showErrors();
+      else focus.showMessage();
     } finally {
       setSubmitting(false);
     }
@@ -273,6 +262,7 @@ function OpenForm() {
   const schoolPlace = (only: "province" | "district" | "sector") => (
     <PlaceSelects
       only={only}
+      labelPrefix="School "
       value={{ province: d.schoolProvince, district: d.schoolDistrict, sector: d.schoolSector }}
       onChange={(p) => update((s) => schoolPlaceChanged(s, p))}
       errors={{ province: errors.schoolProvince, district: errors.schoolDistrict, sector: errors.schoolSector }}
@@ -293,7 +283,7 @@ function OpenForm() {
     );
   const passwordProps = { password: d.password, confirm: d.confirm, onPassword: (v: string) => set("password", v), onConfirm: (v: string) => set("confirm", v), errors: { password: errors.password, confirm: errors.confirm }, label: "Password" };
 
-  // The fields, part by part (lib/forms/registration-steps → TEACHER_PARTS): the steps show them in two columns or one.
+  // The fields, part by part (lib/forms/registration-fields → TEACHER_PARTS), in two columns or one.
   const parts: Record<string, ReactNode> = {
     firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={TEACHER_RULES.nameMax} value={d.firstName} onChange={(e) => set("firstName", e.target.value)} error={errors.firstName} />,
     lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={TEACHER_RULES.nameMax} value={d.lastName} onChange={(e) => set("lastName", e.target.value)} error={errors.lastName} />,
@@ -317,7 +307,7 @@ function OpenForm() {
                 checked={d.interests.includes(s.value)}
                 onChange={() => set("interests", toggleInterest(d.interests, s.value))}
                 aria-invalid={errors.interests ? true : undefined}
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-slate-300 accent-brand focus:ring-brand"
               />
               {s.label}
             </label>
@@ -352,7 +342,7 @@ function OpenForm() {
         onChange={() => undefined}
         options={[{ value: RWANDA, label: countryName(RWANDA) }]}
         disabled
-        hint="Teacher applications are for schools in Rwanda."
+        hint="Teacher applications are for schools in Rwanda, from the official list of Rwandan schools."
         testId="teacher-school-country"
       />
     ),
@@ -416,26 +406,19 @@ function OpenForm() {
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className={WIZARD_FORM_CLASS} data-testid="teacher-register-form">
-      <FormWizard
-        wizard={wizard}
-        steps={STEPS}
-        parts={parts}
+    <form onSubmit={onSubmit} noValidate className={SIGNUP_FORM_CLASS} data-testid="teacher-register-form">
+      <SignupForm
+        focus={focus}
+        parts={PARTS}
+        content={parts}
         submitLabel="Apply as a teacher"
         submittingLabel="Sending your application…"
         submitting={submitting}
         header={
           <>
-            <JoinSwitch active="teacher" compact />
-            <AuthHeading title="Apply as a teacher" compact />
+            <JoinSwitch active="teacher" />
+            <AuthHeading title="Apply as a teacher" subtitle={SUBTITLE} />
           </>
-        }
-        intro={
-          <p className="text-sm leading-snug text-slate-600 wizard-wide:text-[15px]">
-            {/* Phones: the short version (the steps must fit the window). */}
-            <span className="hidden wizard-wide:inline">{SUBTITLE}</span>
-            <span className="wizard-wide:hidden">An administrator reviews every application.</span>
-          </p>
         }
         notices={
           <>

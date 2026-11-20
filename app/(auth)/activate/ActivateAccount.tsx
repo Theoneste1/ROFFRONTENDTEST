@@ -71,7 +71,7 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
           Welcome, {info.firstName}! Your account is ready. Sign in with the username <strong>{mutation.data.username}</strong>.
         </Alert>
         <Link href="/login" className="block">
-          <span className="w-full inline-flex justify-center px-6 py-3 text-sm font-semibold rounded-lg bg-[#2B2BB2] hover:bg-[#232c94] text-white shadow-md">
+          <span className="w-full inline-flex justify-center px-6 py-3 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-dark text-white shadow-md">
             Sign in
           </span>
         </Link>
@@ -103,7 +103,7 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
         <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={errors} label="Password" />
       )}
 
-      <Button type="submit" loading={mutation.isPending} className="w-full">
+      <Button type="submit" variant="brand" loading={mutation.isPending} className="w-full">
         Activate account
       </Button>
     </form>
@@ -148,13 +148,13 @@ function ResendActivation({ invalidLink = false }: { invalidLink?: boolean }) {
             onChange={(e) => setEmail(e.target.value)}
             error={emailError ? "Enter a valid e-mail address." : undefined}
           />
-          <Button type="submit" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full">
+          <Button type="submit" variant="brand" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full">
             Send a new activation link
           </Button>
         </form>
       )}
 
-      <Link href="/login" className="block text-center text-sm font-medium text-[#2B2BB2] hover:underline">
+      <Link href="/login" className="block text-center text-sm font-medium text-brand hover:underline">
         Back to sign in
       </Link>
     </div>

@@ -1,5 +1,5 @@
 /**
- * The sign-in page in the approved reference design (app/(auth)/login, app/components/auth/AuthCard → LoginCard): one
+ * The sign-in page in the approved reference design (app/(auth)/login, app/components/shell/AuthShell): one
  * card that fits the window at 1366×768 and 375×667 (the navy panel on large screens, a slim bar on phones), the
  * existing fields and messages (empty fields, wrong credentials for an unknown and for a real account, the backend's
  * rate limit), "Forgot password?" and "Create account" going to their pages, and real sign-ins (username and e-mail)

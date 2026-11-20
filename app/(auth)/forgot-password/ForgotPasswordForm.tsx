@@ -55,7 +55,7 @@ export default function ForgotPasswordForm() {
             onChange={(e) => setEmail(e.target.value)}
             error={emailError ? "Enter a valid e-mail address." : undefined}
           />
-          <Button type="submit" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full">
+          <Button type="submit" variant="brand" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full">
             Send reset link
           </Button>
         </form>
