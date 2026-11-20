@@ -1,6 +1,6 @@
+import Link from "next/link";
 import Image from "@/app/components/ui/Image";
 import type { ReactNode } from "react";
-import { SITE } from "@/lib/site/content";
 
 /**
  * The centred brand card used by pages outside the portals: sign-in and
@@ -12,9 +12,9 @@ export default function PublicCard({ children }: { children: ReactNode }) {
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           {/* Brand block, same as the portal navbars */}
-          <a
-            href={SITE.website}
-            aria-label="Rwanda Olympiad Foundation website"
+          <Link
+            href="/"
+            aria-label="ROF LMS home page"
             data-testid="rof-logo-link"
             className="flex w-fit mx-auto items-center justify-center gap-3 mb-8 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
@@ -30,7 +30,7 @@ export default function PublicCard({ children }: { children: ReactNode }) {
                 <div>Foundation</div>
               </div>
             </div>
-          </a>
+          </Link>
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8">{children}</div>
 
