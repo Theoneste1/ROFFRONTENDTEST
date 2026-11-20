@@ -275,6 +275,7 @@ test.describe.serial("the complete test workflow, from creation to republication
   test("6. unlocking the published result withdraws it; re-approved and republished, it is back", async ({ browser }) => {
     test.setTimeout(180_000);
     await head.getByTestId("tab-review").click();
+    await head.getByTestId("review-panel").getByRole("button", { name: "Published" }).click();
     await head.getByTestId(`review-${stA}`).getByRole("button", { name: /^Review / }).click();
     const detail = head.getByTestId("review-detail");
     await detail.getByTestId("action-unlock").click();
