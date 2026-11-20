@@ -2,9 +2,11 @@
 
 /**
  * One test (`/admin/tests/:id`, `/mentor/tests/:id`): Details (edit), Questions (add / edit / reorder / remove with the sum
- * against the maximum), Files (paper and marking guide: private, neutral names) and Markers (coaches authorised for the
- * subject; authorise / revoke with a reason). Publish, unpublish and delete (drafts) in the header. Controls the user
- * cannot use are hidden; the backend checks every request (a Head Coach of another subject gets 403).
+ * against the maximum), Files (paper and marking guide: private, neutral names), Submissions (Phase 2 tracking and every
+ * version; tests.viewSubmissions), Extensions (Phase 2; tests.extensions) and Markers (coaches authorised for the
+ * subject; authorise / revoke with a reason). Publish, unpublish and delete (drafts) in the header. Once students have
+ * submitted, the test keeps its essentials (the backend refuses: 409 TEST_LOCKED_BY_SUBMISSIONS / TEST_HAS_SUBMISSIONS).
+ * Controls the user cannot use are hidden; the backend checks every request (a Head Coach of another subject gets 403).
  */
 import { useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
@@ -15,6 +17,8 @@ import { testsApi, type TestDetail as Test, type TestFileKind, type TestQuestion
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { useSession } from "@/lib/auth/session";
 import { actionAllowed } from "@/lib/auth/navigation";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { TESTS_EXTENSIONS, TESTS_VIEW_SUBMISSIONS, staffTabVisible } from "@/lib/test-management/submissions";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime, formatFileSize, hasAcceptedExtension, personName } from "@/lib/format";
 import {
@@ -28,8 +32,10 @@ import { PageFrame } from "@/app/components/ui/PageFrame";
 import { ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, btnSecondary } from "@/app/admin/components/adminUi";
 import { DetailsFields, StatusBadge, TestsGate, inputBad, inputCls, inputOk, labelCls } from "./shared";
 import MarkersPanel from "./MarkersPanel";
+import SubmissionsPanel from "./SubmissionsPanel";
+import ExtensionsPanel from "./ExtensionsPanel";
 
-type Tab = "details" | "questions" | "files" | "markers";
+type Tab = "details" | "questions" | "files" | "submissions" | "extensions" | "markers";
 
 export default function TestDetail({ id, base }: { id: string; base: string }) {
   return (
@@ -49,6 +55,9 @@ function Detail({ id, base }: { id: string; base: string }) {
   const [confirm, setConfirm] = useState<"publish" | "unpublish" | "delete" | null>(null);
   const canManage = actionAllowed(TESTS_MANAGE, permissionsStatus, can);
   const canMarkers = actionAllowed(TESTS_MANAGE_MARKERS, permissionsStatus, can);
+  const { detection } = useBackendCapabilities();
+  const canSubmissions = staffTabVisible(detection, actionAllowed(TESTS_VIEW_SUBMISSIONS, permissionsStatus, can));
+  const canExtensions = staffTabVisible(detection, actionAllowed(TESTS_EXTENSIONS, permissionsStatus, can));
 
   /** Every change answers with the whole test: show it and refresh the lists. */
   const apply = async (t: Test, message: string) => {
@@ -72,8 +81,11 @@ function Detail({ id, base }: { id: string; base: string }) {
     { id: "details", label: "Details" },
     { id: "questions", label: `Questions (${t.questionCount})` },
     { id: "files", label: "Files" },
+    ...(canSubmissions ? [{ id: "submissions" as const, label: t.submissionCount ? `Submissions (${t.submissionCount})` : "Submissions" }] : []),
+    ...(canExtensions ? [{ id: "extensions" as const, label: "Extensions" }] : []),
     ...(canMarkers ? [{ id: "markers" as const, label: "Markers" }] : []),
   ];
+  const locked = (t.submissionCount ?? 0) > 0;
 
   return (
     <PageFrame
@@ -86,7 +98,7 @@ function Detail({ id, base }: { id: string; base: string }) {
               <button type="button" className={btnPrimary} onClick={() => setConfirm("publish")} data-testid="publish-test">Publish</button>
               <button type="button" className={btnDanger} onClick={() => setConfirm("delete")} data-testid="delete-test">Delete</button>
             </>
-          ) : (
+          ) : locked ? null : (
             <button type="button" className={btnSecondary} onClick={() => setConfirm("unpublish")} data-testid="unpublish-test">Unpublish</button>
           )}
         </>
@@ -96,17 +108,25 @@ function Detail({ id, base }: { id: string; base: string }) {
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> All tests
       </Link>
       {notice && <Notice tone="success" onClose={() => setNotice(null)}>{notice}</Notice>}
+      {locked && (
+        <Notice tone="info">
+          Students have submitted ({t.submissionCount}): the subject, division, answer format, opening time, deadline, marks, questions and paper are
+          locked, and the test can no longer be unpublished or deleted. Give later deadlines with extensions. The title, question wording and marking guide can still change.
+        </Notice>
+      )}
       <Tabs tabs={tabs} value={tab} onChange={setTab}>
         {tab === "details" && <DetailsTab test={t} canManage={canManage} onSaved={(x) => apply(x, "The details were saved.")} />}
         {tab === "questions" && <QuestionsTab test={t} canManage={canManage} onChanged={apply} />}
         {tab === "files" && <FilesTab test={t} canManage={canManage} onChanged={apply} />}
+        {tab === "submissions" && canSubmissions && <SubmissionsPanel testId={t.id} />}
+        {tab === "extensions" && canExtensions && <ExtensionsPanel test={t} />}
         {tab === "markers" && canMarkers && <MarkersPanel subject={t.subject} />}
       </Tabs>
 
       {confirm === "publish" && (
         <ConfirmDialog
           title="Publish this test?"
-          body={<>Students will see it once their part of Test Management is released. {t.questionCount > 0 && sumText(t.maxMarks, t.questionCount ? [t.questionMarksTotal] : [])}</>}
+          body={<>Students of its division will see it in My tests, and their teachers can submit for them, from the time it opens. {t.questionCount > 0 && sumText(t.maxMarks, t.questionCount ? [t.questionMarksTotal] : [])}</>}
           confirmLabel="Publish"
           onConfirm={async () => {
             try {

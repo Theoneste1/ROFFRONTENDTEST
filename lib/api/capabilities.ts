@@ -173,6 +173,14 @@ export const KNOWN_FEATURES = [
    * Without it: no Tests screens.
    */
   "testManagement",
+  /**
+   * Test Management, Phase 2 (owner-approved plan 2026-11-19): deadlines from the server's database time (extensions
+   * included); students' `/me/tests` (tests.submit: their tests, the paper, page-by-page uploads, submit / replace with
+   * every version kept); teachers' `/teacher/tests` (tests.submitForStudents: verified students of their own schools);
+   * `/admin/tests/:id/extensions` (tests.extensions) and `/admin/tests/:id/submissions` (tests.viewSubmissions: tracking,
+   * every version). Without it: no My tests / Tests menus for students and teachers, no Submissions / Extensions tabs.
+   */
+  "testSubmissions",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 
