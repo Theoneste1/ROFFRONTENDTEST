@@ -152,9 +152,10 @@ export default function TeacherRegisterForm() {
         <ClosedFormNotice notice={closedForm} />
       ) : (
         <>
-          <Alert tone="info">Teacher registration is not available right now.</Alert>
+          <Alert tone="info">Teacher registration isn&apos;t open on ROF LMS yet.</Alert>
           <p className="text-sm text-slate-700">
-            If you teach at a school and would like to connect your students with the Rwanda Olympiad Foundation, send us a message and we will get in touch.
+            If you teach at a school, send us a message with your name and your school. We&apos;ll let you know as soon as teachers can apply, and
+            help you connect your students with the Rwanda Olympiad Foundation in the meantime.
           </p>
         </>
       )}

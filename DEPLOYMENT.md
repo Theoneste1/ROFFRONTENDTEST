@@ -28,7 +28,14 @@ You need:
    | Publish directory | `.next` |
    | Node.js | 22 (`NODE_VERSION`); Next.js 16 needs 20.9 or newer |
 
-3. The backend address is already in `netlify.toml` (`[build.environment]`): `API_PROXY_TARGET` and `NEXT_PUBLIC_API_UPLOAD_ORIGIN` = `https://rofbackendtest.onrender.com`, plus the `/api/*` proxy rule. **Nothing needs to be set in the Netlify dashboard.** To use another backend, change all three in `netlify.toml` and redeploy (they are read at build time). The build stops with a clear error if `API_PROXY_TARGET` points to `localhost`.
+3. **Set this site's backend in the Netlify dashboard** (Site configuration → Environment variables), then deploy. The values are public addresses, not secrets, read at build time (after a change, redeploy):
+
+   | Variable | Production site | Staging site |
+   |---|---|---|
+   | `API_PROXY_TARGET` | `https://rofbackendtest.onrender.com` | `https://rof-backend-staging.onrender.com` |
+   | `NEXT_PUBLIC_API_UPLOAD_ORIGIN` | the same address | the same address |
+
+   The backend address is deliberately **not** in `netlify.toml`: the production and staging sites build the same repository and each must reach its own backend (2026-11-20: with the address in the file, the staging site used the production backend). The build first runs `scripts/netlify-redirects.mjs`, which writes the `/api/*` proxy rule (`public/_redirects`) from `API_PROXY_TARGET`, and **stops with a clear error** if a variable is missing, not https, local, or the two name different backends. Check after a deploy: `https://<site>/api/v1` must list the features of that site's backend (staging and production differ).
 
 4. Deploy. Note the site address, for example `https://roflms.netlify.app`, or your custom domain.
 
@@ -58,7 +65,7 @@ The frontend's address must be known to the backend. Set these in the **backend'
 
 ## 5. Known limits on Netlify
 
-- **Large uploads and downloads.** Netlify's proxy limits request bodies (about 8 MB) and time (about 26 s); its serverless functions have stricter limits still. That is why API calls use the CDN proxy rule (not the Next.js function) and uploads go straight to the backend. If you change the backend address, update `API_PROXY_TARGET`, `NEXT_PUBLIC_API_UPLOAD_ORIGIN` **and** the `[[redirects]]` target together.
+- **Large uploads and downloads.** Netlify's proxy limits request bodies (about 8 MB) and time (about 26 s); its serverless functions have stricter limits still. That is why API calls use the CDN proxy rule (not the Next.js function) and uploads go straight to the backend. If you change the backend address, change `API_PROXY_TARGET` and `NEXT_PUBLIC_API_UPLOAD_ORIGIN` together in the site's environment variables and redeploy (the proxy rule follows `API_PROXY_TARGET`).
 - **Shared rate limits behind the proxy.** The backend limits requests per client address (all API calls; sign-in and session refresh more tightly). Calls made through the `/api` proxy arrive from Netlify's outgoing addresses, not the visitor's, so many visitors share the same limits: a class signing in together can get "Too many requests" (429) answers. Measured on 2026-11-12: direct requests were counted per visitor, proxied requests per Netlify address. Keep `TRUST_PROXY` at `1` (§3) and do not raise the limits as a workaround. The fix is separate backend work, not part of this frontend: the backend must first verify that a request really came through this site's Netlify proxy (Netlify's signed proxy requests) before it trusts the visitor address Netlify reports, and it must limit signed-in traffic per user and session rather than per address. It must be verified on a non-production (staging) environment before it is turned on in production. A custom API domain (e.g. `api.<your-domain>`, called directly by the browser) would remove the proxy from API calls altogether.
 - **Render free plan wakes slowly.** After about 15 idle minutes the backend sleeps and the next request takes about a minute — longer than Netlify's proxy waits. The first request after a quiet period can therefore fail with a 502/504; a reload a minute later works. An uptime monitor pinging `/health` every 5–10 minutes, or Render's paid plan, avoids this.
 - **Next.js 16 support.** Netlify's Next.js runtime is Netlify's own integration, not a Next.js-verified adapter (see the Next.js deployment docs). If a build fails because of the runtime, check Netlify's Next.js documentation for the supported versions.

@@ -2,10 +2,10 @@
 
 /** The portal top bar (menu toggle, ROF logo linking to the ROF website, notification bell, profile menu), shared by the portals. */
 
+import Link from "next/link";
 import type { Ref } from "react";
 import { Menu } from "lucide-react";
 import ProfileMenu from "@/app/components/shell/ProfileMenu";
-import { SITE } from "@/lib/site/content";
 import NotificationBell from "@/app/components/notifications/NotificationBell";
 import Image from "@/app/components/ui/Image";
 
@@ -36,10 +36,10 @@ export default function PortalNavbar({ onMenuClick, menuButtonRef, menuExpanded,
           <Menu className="h-6 w-6 text-gray-700 cursor-pointer" />
         </button>
 
-        {/* Logo + Text: opens the ROF website (rwandaolympiadfoundation.org) */}
-        <a
-          href={SITE.website}
-          aria-label="Rwanda Olympiad Foundation website"
+        {/* Logo + Text: opens the ROF LMS home page (owner, 2026-11-20: never the foundation's website) */}
+        <Link
+          href="/"
+          aria-label="ROF LMS home page"
           data-testid="rof-logo-link"
           className="flex items-center gap-2 md:gap-4 min-w-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         >
@@ -65,7 +65,7 @@ export default function PortalNavbar({ onMenuClick, menuButtonRef, menuExpanded,
               <div>Foundation</div>
             </div>
           </div>
-        </a>
+        </Link>
       </div>
 
       {/* RIGHT SIDE */}
