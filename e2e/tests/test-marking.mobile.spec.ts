@@ -67,7 +67,11 @@ test("coach on a phone: Marking from the drawer, a code only, marks saved as a d
   const drawer = page.getByRole("dialog", { name: "Main menu" });
   await expect(drawer).toBeVisible();
   const link = drawer.locator('a[href="/mentor/marking"]');
-  if (!(await link.isVisible())) await drawer.getByTestId("sidebar-more-toggle").click();
+  // The drawer's links are listed once it is open (checking the link earlier races the opening); a long menu keeps
+  // some under "More", which exists only then.
+  await expect(drawer.locator("a[href]").first()).toBeVisible();
+  const more = drawer.getByTestId("sidebar-more-toggle");
+  if (!(await link.isVisible()) && (await more.count()) > 0) await more.click();
   await link.click();
   await page.waitForURL(/\/mentor\/marking$/);
   const card = page.getByTestId(`queue-card-${code}`);
