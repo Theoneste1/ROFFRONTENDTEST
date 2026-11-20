@@ -44,9 +44,8 @@ export const STUDENT_PARTS: readonly SignupPart[] = [
   part("firstName"),
   part("lastName"),
   part("gender", ["gender"], "row"),
-  part("dateOfBirth", ["dateOfBirth"], "row"),
-  part("homeCountry"),
-  part("phone"),
+  part("dateOfBirth"),
+  part("phone", ["phone"], "row"),
   part("guardianPhone"),
   part("picture", ["picture"], "wide"),
   part("gradeLevel", ["gradeLevel"], "row"),
@@ -59,8 +58,10 @@ export const STUDENT_PARTS: readonly SignupPart[] = [
   part("schoolName"),
   part("schoolLocation"),
   part("schoolNote", [], "wide"),
-  part("homeProvince", ["homeProvince"], "row"),
-  part("homeDistrict"),
+  // Home location (lib/accounts/home-location): Home country, then (Rwanda only) province → district → sector.
+  part("homeCountry", ["homeCountry"], "row"),
+  part("homeProvince"),
+  part("homeDistrict", ["homeDistrict"], "row"),
   part("homeSector"),
   part("homeLocation", ["homeLocation"], "wide"),
   part("username", ["username"], "row"),
@@ -76,9 +77,8 @@ export const TEACHER_PARTS: readonly SignupPart[] = [
   part("firstName"),
   part("lastName"),
   part("gender", ["gender"], "row"),
-  part("email", ["email"], "row"),
   part("phone"),
-  part("country", ["country"], "row"),
+  part("email", ["email"], "row"),
   part("position", ["position"], "row"),
   part("yearsOfExperience"),
   part("interests", ["interests"], "wide"),
@@ -89,6 +89,9 @@ export const TEACHER_PARTS: readonly SignupPart[] = [
   part("schoolSector"),
   part("school", ["school"], "wide"),
   part("proposedSchoolName", ["proposedSchoolName"], "wide"),
+  // Home location (lib/accounts/home-location): Home country (`country`), then (Rwanda only) province → district → sector.
+  part("country", ["country"], "row"),
+  part("homeProvince", ["homeProvince"]),
   part("homeDistrict", ["homeDistrict"], "row"),
   part("homeSector"),
   part("username", ["username"], "row"),
@@ -103,7 +106,6 @@ export const COACH_PARTS: readonly SignupPart[] = [
   part("firstName"),
   part("lastName"),
   part("gender", ["gender"], "row"),
-  part("country", ["country"], "row"),
   part("phone"),
   part("picture", ["picture"], "wide"),
   part("occupation", ["occupation"], "row"),
@@ -113,6 +115,11 @@ export const COACH_PARTS: readonly SignupPart[] = [
   part("olympiadInterests", ["olympiadInterests"], "wide"),
   part("expertise", ["expertise"], "wide"),
   part("relevantExperience", ["relevantExperience"], "wide"),
+  // Home location (lib/accounts/home-location): Home country (`country`), then (Rwanda only) province → district → sector.
+  part("country", ["country"], "row"),
+  part("homeProvince", ["homeProvince"]),
+  part("homeDistrict", ["homeDistrict"], "row"),
+  part("homeSector"),
   part("username", ["username"], "row"),
   part("email"),
   part("password"),
@@ -122,6 +129,7 @@ export const COACH_PARTS: readonly SignupPart[] = [
 /** The parts shown only on a backend with `coachApplicationDetails` (as before: the details, the extra details and the picture). */
 export const COACH_DETAIL_PARTS: ReadonlySet<string> = new Set([
   "country", "occupation", "educationLevel", "olympiadInterests", "phone", "affiliation", "expertise", "relevantExperience", "yearsOfExperience", "picture",
+  "homeProvince", "homeDistrict", "homeSector",
 ]);
 
 /** The coach's parts: without `detailsOn` (no `coachApplicationDetails`) only the name and the account, as before. */

@@ -56,6 +56,18 @@ import { formGate, noticeFromRefusal, noticeFromView } from "@/lib/forms/closed-
 import ClosedFormNotice from "@/app/components/forms/ClosedFormNotice";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
 import GenderField from "@/app/components/account/GenderField";
+import SearchableSelect from "@/app/components/ui/SearchableSelect";
+import {
+  chooseHomeCountry,
+  emptyHome,
+  followSchoolCountry,
+  homeInRwanda as homeIsRwanda,
+  homeLocationRulesSupported,
+  homePlacePayload,
+  schoolCountryOfClaim,
+  validateHome,
+  type HomeDraft,
+} from "@/lib/accounts/home-location";
 import { genderSupported, validateGender, type Gender } from "@/lib/accounts/gender";
 import { studentInterestsSupported, validateInterests, type OlympiadSubject } from "@/lib/accounts/olympiad-interests";
 import { registrationGate, type RegistrationSchoolMode } from "@/lib/accounts/registration-mode";
@@ -65,6 +77,8 @@ import {
   setHomeCountry,
   studentDetailsPayload,
   studentDetailsSupported,
+  studentPersonalPayload,
+  validateStudentPersonal,
   STUDENT_DETAILS_ERRORS,
   STUDENT_DETAILS_SERVER_FIELDS,
   validateStudentDetails,
@@ -125,6 +139,10 @@ export default function RegisterForm() {
   // Personal details: asked for only when the backend accepts them (decided with the school mode).
   const [detailsOn, setDetailsOn] = useState(false);
   const [details, setDetails] = useState<StudentDetailsDraft>(emptyStudentDetails);
+  // Home location (homeLocationRules): Home country (searchable; defaults to the school's country until the student
+  // chooses one) → Rwanda only: province → district → sector (lib/accounts/home-location).
+  const [rulesOn, setRulesOn] = useState(false);
+  const [home, setHome] = useState<HomeDraft>(() => emptyHome(RWANDA));
   const [detailErrors, setDetailErrors] = useState<Partial<Record<StudentDetailsField, string>>>({});
   // Every country (capability countries: the reference list; otherwise the built-in list, as before).
   const countryList = useCountryOptions();
@@ -140,11 +158,12 @@ export default function RegisterForm() {
     setInterestsOn(studentInterestsSupported(caps.detection));
     setGenderOn(genderSupported(caps.detection));
     setDetailsOn(studentDetailsSupported(caps.detection));
+    setRulesOn(studentDetailsSupported(caps.detection) && homeLocationRulesSupported(caps.detection));
   }
   const directory = schoolMode === "directory";
   const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
   const [claimErrors, setClaimErrors] = useState<Partial<Record<SchoolClaimField, string>>>({});
-  const homeInRwanda = details.homeCountry === RWANDA;
+  const homeInRwanda = rulesOn ? homeIsRwanda(home) : details.homeCountry === RWANDA;
   // The fields this backend and these answers ask for, in order.
   const PARTS = visibleParts(STUDENT_PARTS, (part) => {
     switch (part) {
@@ -175,6 +194,9 @@ export default function RegisterForm() {
       case "homeDistrict":
       case "homeSector":
         return detailsOn && homeInRwanda;
+      case "homeLocation":
+        // homeLocationRules: another country needs only the country (no free-text home location).
+        return !(detailsOn && rulesOn);
       default:
         return true;
     }
@@ -212,7 +234,7 @@ export default function RegisterForm() {
     if (submitting || schoolMode === null) return;
     const e = validate();
     const ce = directory ? validateSchoolClaim(claim) : {};
-    const de = detailsOn ? validateStudentDetails(details) : {};
+    const de = !detailsOn ? {} : rulesOn ? { ...validateStudentPersonal(details), ...validateHome(home) } : validateStudentDetails(details);
     setErrors(e);
     setClaimErrors(ce);
     setDetailErrors(de);
@@ -231,7 +253,11 @@ export default function RegisterForm() {
         password,
         gradeLevel: v.gradeLevel as GradeLevel,
         ...(directory ? schoolClaimPayload(claim) : { schoolName: v.schoolName.trim(), schoolLocation: v.schoolLocation.trim() }),
-        ...(detailsOn ? studentDetailsPayload(details) : { homeLocation: v.homeLocation.trim() }),
+        ...(!detailsOn
+          ? { homeLocation: v.homeLocation.trim() }
+          : rulesOn
+            ? { ...studentPersonalPayload(details), homeCountry: home.country, ...homePlacePayload(home) }
+            : studentDetailsPayload(details)),
         ...(interestsOn && { olympiadInterests: interests }),
         ...(genderOn && gender && { gender }),
       });
@@ -362,6 +388,8 @@ export default function RegisterForm() {
       onChange={(d) => {
         setClaim(d);
         setClaimErrors({});
+        // The home country follows the school's country until the student chooses one (never overwritten).
+        if (rulesOn) setHome((h) => followSchoolCountry(h, schoolCountryOfClaim(d)));
       }}
       errors={claimErrors}
       countryOptions={countryList.supported ? countries : undefined}
@@ -374,9 +402,10 @@ export default function RegisterForm() {
       only={only}
       labelPrefix="Home "
       testIdPrefix="home"
-      value={details.home}
-      onChange={(home) => {
-        setDetails({ ...details, home });
+      value={rulesOn ? home.place : details.home}
+      onChange={(place) => {
+        if (rulesOn) setHome((h) => ({ ...h, place }));
+        else setDetails({ ...details, home: place });
         setDetailErrors((s) => ({ ...s, homeProvince: undefined, homeDistrict: undefined, homeSector: undefined }));
       }}
       errors={{ province: detailErrors.homeProvince, district: detailErrors.homeDistrict, sector: detailErrors.homeSector }}
@@ -412,7 +441,21 @@ export default function RegisterForm() {
         error={detailErrors.dateOfBirth}
       />
     ),
-    homeCountry: detailsOn && (
+    homeCountry: detailsOn && rulesOn ? (
+      <SearchableSelect
+        label="Home country"
+        value={home.country}
+        onChange={(c) => {
+          setHome((h) => chooseHomeCountry(h, c));
+          setDetailErrors((s) => ({ ...s, homeCountry: undefined, homeProvince: undefined, homeDistrict: undefined, homeSector: undefined }));
+        }}
+        options={countries}
+        placeholder="Type to search for your country"
+        error={detailErrors.homeCountry}
+        hint="Where you live. It starts as your school's country; change it if you live elsewhere."
+        testId="home-country"
+      />
+    ) : detailsOn && (
       <CascadeSelect
         label="Country where you live"
         value={details.homeCountry}

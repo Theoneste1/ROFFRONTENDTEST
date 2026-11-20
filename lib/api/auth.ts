@@ -175,7 +175,12 @@ export interface MentorApplicationInput {
   /** Only on a backend with `registrationGender` (lib/accounts/gender), where it is required. */
   gender?: "FEMALE" | "MALE";
   // Only on a backend with `coachApplicationDetails` (lib/accounts/coach-application.ts):
+  /** The applicant's home country (required with homeLocationRules). */
   country?: string;
+  /** homeLocationRules: the home place, only for a home in Rwanda (all three). */
+  homeProvince?: string;
+  homeDistrict?: string;
+  homeSector?: string;
   occupation?: string;
   educationLevel?: string;
   olympiadInterests?: OlympiadSubject[];

@@ -10,6 +10,7 @@
  */
 import { expect, test, type Page } from "@playwright/test";
 import { hashSync } from "bcryptjs";
+import { pickCountry } from "../support/signup-layout";
 import { withDb } from "../support/db";
 import { PASSWORD } from "../support/accounts";
 import { signIn, signInWith } from "../support/session";
@@ -52,7 +53,7 @@ test.describe("coach subjects", () => {
     await page.locator('input[name="firstName"]').fill("Sara");
     await page.locator('input[name="lastName"]').fill(`Subjects${RUN}`);
     await page.locator('input[name="gender"][value="FEMALE"]').check();
-    await page.getByTestId("coach-country").selectOption("RW");
+    await pickCountry(page, "coach-country", "Kenya");
     await page.locator('input[name="phone"]').fill("0788333444");
     const subjects = page.getByTestId("olympiad-interests");
     await expect(subjects.getByText(QUESTION)).toBeVisible();

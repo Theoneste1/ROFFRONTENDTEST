@@ -588,6 +588,11 @@ export interface UpdateMeInput {
   firstName?: string;
   lastName?: string;
   homeLocation?: string;
+  /** homeLocationRules: the home country; with "RW" the province, district and sector are required (none otherwise). */
+  homeCountry?: string;
+  homeProvince?: string;
+  homeDistrict?: string;
+  homeSector?: string;
   /** Only on a backend with `studentOlympiadInterests`; at least one. */
   olympiadInterests?: OlympiadSubject[];
 }

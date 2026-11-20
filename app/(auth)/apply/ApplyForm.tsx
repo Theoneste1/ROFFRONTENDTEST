@@ -40,7 +40,11 @@ import {
   type CoachDetailsField,
   COACH_SUBJECTS_LABEL,
 } from "@/lib/accounts/coach-application";
-import { CascadeSelect } from "@/app/components/schools/SchoolCascade";
+import { CascadeSelect, PlaceSelects } from "@/app/components/schools/SchoolCascade";
+import SearchableSelect from "@/app/components/ui/SearchableSelect";
+import { HOME_ERRORS, homeLocationRulesSupported, homePlacePayload, validateHome, type HomeField } from "@/lib/accounts/home-location";
+import { emptyPlace, type Place } from "@/lib/schools/school-cascade";
+import { RWANDA } from "@/lib/schools/countries";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
 import SignupForm, { SIGNUP_FORM_CLASS, useSignupFocus } from "@/app/components/forms/SignupForm";
 import { errorKeys } from "@/lib/forms/wizard";
@@ -123,6 +127,13 @@ function CoachApplication() {
   const [extraErrors, setExtraErrors] = useState<Partial<Record<keyof CoachExtraDraft, string>>>({});
   const [details, setDetails] = useState<CoachDetailsDraft>(emptyCoachDetails);
   const [detailErrors, setDetailErrors] = useState<Partial<Record<CoachDetailsField, string>>>({});
+  // Home location (homeLocationRules): Home country (searchable; the coach form has no school to default from) →
+  // Rwanda only: province → district → sector (lib/accounts/home-location). Changing the country clears the place.
+  const homeRules = detailsOn && homeLocationRulesSupported(detection);
+  const [homePlace, setHomePlace] = useState<Place>(emptyPlace);
+  const [homeErrors, setHomeErrors] = useState<Partial<Record<HomeField, string>>>({});
+  const homeInRwanda = details.country === RWANDA;
+  const home = { country: details.country, place: homePlace, countryChosen: true };
   // Every country (capability countries: the reference list; otherwise the built-in list, as before).
   const countries = useCountryOptions().options;
   const setDetail = <K extends keyof CoachDetailsDraft>(k: K, val: CoachDetailsDraft[K], field: CoachDetailsField) => {
@@ -149,6 +160,7 @@ function CoachApplication() {
   const PARTS = coachParts(detailsOn, (part) => {
     if (part === "picture") return pictureOn;
     if (part === "gender") return genderOn;
+    if (part === "homeProvince" || part === "homeDistrict" || part === "homeSector") return homeRules && homeInRwanda;
     if (["phone", "affiliation", "expertise", "relevantExperience", "yearsOfExperience"].includes(part)) return extraOn;
     return true;
   });
@@ -169,11 +181,15 @@ function CoachApplication() {
     if (p.confirm) e.confirm = p.confirm;
     const de = detailsOn ? validateCoachDetails(details) : {};
     const xe = extraOn ? validateCoachExtra(extra) : {};
+    // The home place (Rwanda only); the country itself is checked with the details.
+    const he: Partial<Record<HomeField, string>> = homeRules ? validateHome(home) : {};
+    delete he.homeCountry;
+    setHomeErrors(he);
     setErrors(e);
     setDetailErrors(de);
     setExtraErrors(xe);
     setError(null);
-    if (Object.keys(e).length || Object.keys(de).length || Object.keys(xe).length || pictureError) {
+    if (Object.keys(e).length || Object.keys(de).length || Object.keys(xe).length || Object.keys(he).length || pictureError) {
       focus.showErrors();
       return;
     }
@@ -187,6 +203,7 @@ function CoachApplication() {
         password,
         ...(genderOn && gender && { gender }),
         ...(detailsOn && coachDetailsPayload(details)),
+        ...(homeRules && homePlacePayload(home)),
         ...(extraOn && coachExtraPayload(extra)),
       });
       if (pictureOn) setPictureResult(await uploadRegistrationAvatar(applied.avatarUploadToken, picture));
@@ -195,10 +212,17 @@ function CoachApplication() {
       setError(err);
       const fe = fieldErrors(err, FIELDS);
       setErrors(fe);
-      const sde = detailsOn ? fieldErrors(err, DETAIL_FIELDS) : {};
+      const sde: Partial<Record<CoachDetailsField, string>> = detailsOn ? fieldErrors(err, DETAIL_FIELDS) : {};
+      const she: Partial<Record<HomeField, string>> = homeRules ? fieldErrors(err, ["homeProvince", "homeDistrict", "homeSector"] as const) : {};
+      const coded = isApiError(err) && err.code ? HOME_ERRORS[err.code] : undefined;
+      if (homeRules && coded) {
+        if (coded.field === "homeCountry") sde.country = coded.message;
+        else she[coded.field] = coded.message;
+      }
       if (detailsOn) setDetailErrors(sde);
+      setHomeErrors(she);
       // A refused field: focus on it. Other refusals: their message above the fields.
-      if (errorKeys(fe, sde).length) focus.showErrors();
+      if (errorKeys(fe, sde, she).length) focus.showErrors();
       else focus.showMessage();
     } finally {
       setSubmitting(false);
@@ -255,9 +279,40 @@ function CoachApplication() {
         error={errors.gender}
       />
     ),
-    country: detailsOn && (
+    country: homeRules ? (
+      <SearchableSelect
+        label="Home country"
+        value={details.country}
+        onChange={(c) => {
+          if (c !== details.country) setHomePlace(emptyPlace());
+          setDetail("country", c, "country");
+          setHomeErrors({});
+        }}
+        options={countries}
+        placeholder="Type to search for your country"
+        error={detailErrors.country}
+        hint="Where you live."
+        testId="coach-country"
+      />
+    ) : detailsOn && (
       <CascadeSelect label="Country" value={details.country} onChange={(c) => setDetail("country", c, "country")} options={countries} placeholder="Choose your country" error={detailErrors.country} testId="coach-country" />
     ),
+    ...Object.fromEntries((["province", "district", "sector"] as const).map((level) => [
+      `home${level[0].toUpperCase()}${level.slice(1)}`,
+      homeRules && homeInRwanda && (
+        <PlaceSelects
+          only={level}
+          labelPrefix="Home "
+          testIdPrefix="home"
+          value={homePlace}
+          onChange={(p) => {
+            setHomePlace(p);
+            setHomeErrors({});
+          }}
+          errors={{ province: homeErrors.homeProvince, district: homeErrors.homeDistrict, sector: homeErrors.homeSector }}
+        />
+      ),
+    ])),
     occupation: (
       <TextField
         label="Current or most recent occupation"
