@@ -46,7 +46,9 @@ export type Permission =
   | "users.bulkManage" | "users.export"
   | "forms.view" | "forms.manageAvailability" | "forms.editMessages"
   // Countries (owner decision 2026-11-19): Administrators and Super Admins.
-  | "reference.manage";
+  | "reference.manage"
+  // Test Management (capability testManagement, 2026-11-19): Administrators (every subject), Head Coaches (their subjects).
+  | "tests.view" | "tests.manage" | "tests.manageMarkers";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
@@ -794,7 +796,7 @@ export interface ReportsOverview {
 export type AuditCategory =
   | "USERS" | "ENROLLMENT" | "MENTOR_ASSIGNMENTS" | "ASSIGNMENTS" | "SUBMISSIONS" | "DISTRIBUTION"
   | "REVIEWS" | "RESULTS" | "MODERATION" | "SETTINGS" | "ACADEMIC_YEARS" | "COURSES" | "SECURITY"
-  | "DATA_EXPORTS" | "STUDY_GROUPS" | "OTHER";
+  | "DATA_EXPORTS" | "STUDY_GROUPS" | "TESTS" | "OTHER";
 
 /** `GET /admin/audit-logs` items (append-only). */
 export interface AuditLogEntry {

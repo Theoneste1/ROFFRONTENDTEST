@@ -37,5 +37,6 @@ export const AUDIT_CATEGORY_LABEL: Record<AuditCategory, string> = {
   SECURITY: "Security",
   DATA_EXPORTS: "Data exports",
   STUDY_GROUPS: "Study groups",
+  TESTS: "Tests",
   OTHER: "Other",
 };

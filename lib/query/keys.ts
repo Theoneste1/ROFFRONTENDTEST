@@ -134,6 +134,15 @@ export const queryKeys = {
     peopleSearch: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "people", filters] as const,
     studentCandidates: (programmeId: string, q: string) => [...queryKeys.programmes.all, "candidates", programmeId, q] as const,
   },
+  /** Test Management (lib/api/tests.ts): tests, their detail, subjects and marker authorisations. */
+  tests: {
+    all: ["tests"] as const,
+    subjects: () => [...queryKeys.tests.all, "subjects"] as const,
+    list: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.tests.all, "detail", id] as const,
+    markers: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "markers", filters] as const,
+    candidates: (subjectId: string, q: string) => [...queryKeys.tests.all, "candidates", subjectId, q] as const,
+  },
   /** Backend-wide information (`GET /api/v1`), the same for every user. */
   backend: {
     all: ["backend"] as const,

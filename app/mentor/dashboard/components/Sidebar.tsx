@@ -8,12 +8,15 @@ import {
     BookOpen,
     FileText,
     ClipboardCheck,
-    Network
+    Network,
+    FileQuestion
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { MENTOR_NAV, visibleNav } from "@/lib/auth/navigation";
+import { MENTOR_NAV, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { testsNavVisible } from "@/lib/test-management/rules";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 interface SidebarProps {
     isOpen: boolean;
@@ -25,6 +28,7 @@ const ICONS: Record<string, LucideIcon> = {
     "/mentor/assignments": FileText,
     "/mentor/reviews": ClipboardCheck,
     "/mentor/programme": Network,
+    "/mentor/tests": FileQuestion,
 };
 
 /**
@@ -35,6 +39,9 @@ const ICONS: Record<string, LucideIcon> = {
 export default function Sidebar({ isOpen }: SidebarProps) {
     const pathname = usePathname();
     const { knownPermissions } = useSession();
+    const { detection } = useBackendCapabilities();
+    // Tests: Head Coaches (tests.view) on a backend with `testManagement` (lib/test-management/rules.ts).
+    const items = [...visibleNav(MENTOR_NAV, knownPermissions), ...(testsNavVisible(detection, knownPermissions) ? [MENTOR_TESTS] : [])];
 
     // Function to check if link is active
     const isActive = (path: string) => {
@@ -59,7 +66,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                 <SidebarNav
                     isOpen={isOpen}
                     label="Coach portal"
-                    items={visibleNav(MENTOR_NAV, knownPermissions).map((item) => ({ href: item.href, label: item.label, icon: ICONS[item.href] ?? LayoutGrid, active: isActive(item.href) }))}
+                    items={items.map((item) => ({ href: item.href, label: item.label, icon: ICONS[item.href] ?? LayoutGrid, active: isActive(item.href) }))}
                 />
             </div>
 
