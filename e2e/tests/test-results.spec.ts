@@ -312,7 +312,7 @@ test.describe.serial("publication, results, rankings, withdrawal (G6)", () => {
     await expect(head.getByTestId("sidebar-nav").first().locator('a[href="/mentor/test-reports"]')).toHaveCount(1);
     await head.goto("/mentor/test-reports");
     await head.getByLabel("Search tests").fill(title);
-    await head.getByTestId(`report-${testId}`).getByRole("link", { name: title }).click();
+    await head.getByTestId(`report-${testId}`).getByRole("link", { name: title, exact: true }).click();
     await head.waitForURL(new RegExp(`/mentor/tests/${testId}\\?tab=results$`));
     await expect(head.getByTestId("results-panel")).toBeVisible({ timeout: 30_000 });
   });

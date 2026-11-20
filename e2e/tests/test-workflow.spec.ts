@@ -213,6 +213,7 @@ test.describe.serial("the complete test workflow, from creation to republication
     await dialog.getByTestId("coach-select").selectOption(otherCoach === coach1 ? ids.c1 : ids.c2);
     await dialog.getByTestId("coach-confirm").click();
     await expect(detail.getByTestId("submission-status")).toHaveText("Awaiting second marking");
+    await expect(dialog).toHaveCount(0);
     await head.getByRole("button", { name: "Close" }).click();
     // The second marker never sees the first marks or comments, nor who the student is.
     await markAs(browser, otherCoach, codeA, "5", "13", [...identity, "16 / 20"]);
