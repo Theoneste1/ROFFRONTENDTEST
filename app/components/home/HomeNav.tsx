@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { portalHome } from "@/lib/auth/roles";
-import { SITE } from "@/lib/site/content";
 
 const LINKS = [
   { href: "#impact", label: "Our community" },
@@ -43,13 +42,13 @@ export default function HomeNav() {
   return (
     <header className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${solid ? "bg-brand-950/95 shadow-lg backdrop-blur" : "bg-transparent"}`}>
       <nav className="mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Main">
-        <a href={SITE.website} aria-label="Rwanda Olympiad Foundation website" data-testid="rof-logo-link" className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+        <Link href="/" aria-label="ROF LMS home page" data-testid="rof-logo-link" className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
           <Image src="/logo.png" alt="" width={44} height={44} className="h-10 w-10 md:h-11 md:w-11 rounded-full" priority />
           <span className="leading-tight text-white">
             <span className="block text-lg font-extrabold tracking-tight">ROF LMS</span>
             <span className="hidden sm:block text-[11px] font-medium uppercase tracking-[0.18em] text-blue-100/80">Rwanda Olympiad Foundation</span>
           </span>
-        </a>
+        </Link>
 
         <ul className="hidden lg:flex items-center gap-8 text-sm font-medium text-blue-50">
           {LINKS.map((l) => (
