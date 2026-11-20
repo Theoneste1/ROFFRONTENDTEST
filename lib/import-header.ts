@@ -40,11 +40,11 @@ export function importTemplate(format: ImportFormat): string {
     return (
       `${header}\r\n` +
       // An official 6-digit code (first digit = province), or leave it empty and give the school's id.
-      "Aline,Uwase,aline@example.org,STUDENT,S2,110101,,Kigali,\r\n" +
+      "Theoneste,Nsanza,theoneste@example.org,STUDENT,S2,110101,,Kigali,\r\n" +
       "Eric,Mugabo,eric@example.org,MENTOR,,,,,\r\n"
     );
   }
-  return `${header}\r\n` + "Aline,Uwase,aline@example.org,STUDENT,S2,Example School,Kigali,Kigali,\r\n" + "Eric,Mugabo,eric@example.org,MENTOR,,,,,\r\n";
+  return `${header}\r\n` + "Theoneste,Nsanza,theoneste@example.org,STUDENT,S2,Example School,Kigali,Kigali,\r\n" + "Eric,Mugabo,eric@example.org,MENTOR,,,,,\r\n";
 }
 
 /** How a student's school is given in this format (one sentence for the dialog). */

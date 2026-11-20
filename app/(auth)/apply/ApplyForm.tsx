@@ -267,8 +267,8 @@ function CoachApplication() {
 
   // The fields, part by part (lib/forms/registration-fields → COACH_PARTS), in two columns or one.
   const parts: Record<string, ReactNode> = {
-    firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
-    lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
+    firstName: <TextField label="First name" placeholder="e.g. Theoneste" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
+    lastName: <TextField label="Last name" placeholder="e.g. Nsanza" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
     gender: genderOn && (
       <GenderField
         value={gender}
@@ -361,8 +361,8 @@ function CoachApplication() {
         }}
       />
     ),
-    username: <TextField label="Username" placeholder="e.g. aline.uwase" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
-    email: <TextField label="E-mail" placeholder="e.g. aline.uwase@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />,
+    username: <TextField label="Username" placeholder="e.g. theoneste.nsanza" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    email: <TextField label="E-mail" placeholder="e.g. theoneste.nsanza@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />,
     password: <NewPasswordFields only="password" {...passwordProps} />,
     confirm: <NewPasswordFields only="confirm" {...passwordProps} />,
   };

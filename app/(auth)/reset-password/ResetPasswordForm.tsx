@@ -69,7 +69,7 @@ export default function ResetPasswordForm() {
       </div>
       {mutation.isError && !server.newPassword && <Alert tone="error">{errorMessage(mutation.error)}</Alert>}
       <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={errors} />
-      <Button type="submit" variant="brand" loading={mutation.isPending} className="w-full">
+      <Button type="submit" variant="brand" loading={mutation.isPending} className="w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12">
         Reset password
       </Button>
     </form>

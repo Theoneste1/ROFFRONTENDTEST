@@ -415,8 +415,8 @@ export default function RegisterForm() {
 
   // The fields, part by part (lib/forms/registration-fields → STUDENT_PARTS), in two columns or one.
   const parts: Record<string, ReactNode> = {
-    firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
-    lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
+    firstName: <TextField label="First name" placeholder="e.g. Theoneste" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
+    lastName: <TextField label="Last name" placeholder="e.g. Nsanza" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
     gender: genderOn && (
       <GenderField
         value={gender}
@@ -576,8 +576,8 @@ export default function RegisterForm() {
     ) : (
       <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
     ),
-    username: <TextField label="Username" placeholder="e.g. aline.uwase" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
-    email: <TextField label="E-mail" placeholder="e.g. aline.uwase@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} />,
+    username: <TextField label="Username" placeholder="e.g. theoneste.nsanza" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    email: <TextField label="E-mail" placeholder="e.g. theoneste.nsanza@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} />,
     password: <NewPasswordFields only="password" {...passwordProps} />,
     confirm: <NewPasswordFields only="confirm" {...passwordProps} />,
   };
