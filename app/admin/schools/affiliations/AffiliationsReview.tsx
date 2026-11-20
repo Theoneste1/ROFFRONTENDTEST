@@ -25,6 +25,8 @@ import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
 import { SchoolPicker } from "../../users/components/userUi";
+import { useRecordBulk } from "../../components/bulk/RecordBulk";
+import { bulkFilterFrom } from "@/lib/admin/bulk-records";
 
 const STATUSES: { label: string; value: AffiliationStatus }[] = [
   { label: "Waiting", value: "PENDING" },
@@ -58,6 +60,14 @@ export default function AffiliationsReview() {
   const [matching, setMatching] = useState<SchoolAffiliation | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.accounts.all });
+  // Bulk actions (capability bulkOperationsGeneric): verify or reject many claims; others are skipped by the server.
+  const bulk = useRecordBulk("SCHOOL_AFFILIATION", {
+    pageIds: list.data?.data.map((c) => c.id) ?? [],
+    filter: bulkFilterFrom(filters),
+    total: list.data?.meta.total,
+    onStarted: () => void refresh(),
+  });
+  const cols = bulk.enabled ? 5 : 4;
 
   if (!enabled) {
     return (
@@ -102,12 +112,14 @@ export default function AffiliationsReview() {
           }}
         />
       </div>
+      {bulk.toolbar}
       {list.isError ? (
         <ErrorState error={list.error} title="Couldn't load the school claims" onRetry={() => list.refetch()} />
       ) : (
         <TableCard footer={list.data && <Pagination page={page} totalPages={list.data.meta.totalPages} total={list.data.meta.total} onPage={setPage} disabled={list.isFetching} />}>
           <thead className="bg-gray-50/60 border-b border-gray-100">
             <tr>
+              {bulk.enabled && <th className={`${th} w-8`}>{bulk.headerCheckbox}</th>}
               <th className={th}>Student</th>
               <th className={th}>School claimed</th>
               <th className={th}>Sent</th>
@@ -116,12 +128,13 @@ export default function AffiliationsReview() {
           </thead>
           <tbody className="divide-y divide-gray-50" data-testid="affiliations">
             {list.isPending ? (
-              <TableMessage colSpan={4}>Loading…</TableMessage>
+              <TableMessage colSpan={cols}>Loading…</TableMessage>
             ) : rows.length === 0 ? (
-              <TableMessage colSpan={4}>No {STATUSES.find((s) => s.value === status)!.label.toLowerCase()} claims.</TableMessage>
+              <TableMessage colSpan={cols}>No {STATUSES.find((s) => s.value === status)!.label.toLowerCase()} claims.</TableMessage>
             ) : (
               rows.map((c) => (
                 <tr key={c.id}>
+                  {bulk.enabled && <td className={td}>{bulk.rowCheckbox(c.id, `${c.student.firstName} ${c.student.lastName}`)}</td>}
                   <td className={td}>
                     <p className="font-semibold text-gray-800">
                       {c.student.firstName} {c.student.lastName}
@@ -212,6 +225,7 @@ export default function AffiliationsReview() {
           }}
         />
       )}
+      {bulk.dialog}
     </AdminPage>
   );
 }

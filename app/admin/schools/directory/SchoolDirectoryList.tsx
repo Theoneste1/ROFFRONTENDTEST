@@ -34,6 +34,8 @@ import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, Badge, Notice, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
 import SchoolActiveDialog from "./SchoolActiveDialog";
 import SchoolFormDialog from "./SchoolFormDialog";
+import { useRecordBulk } from "../../components/bulk/RecordBulk";
+import { bulkFilterFrom } from "@/lib/admin/bulk-records";
 
 type Dialog = { kind: "create" } | { kind: "edit"; school: DirectorySchoolRecord } | { kind: "active"; school: DirectorySchoolRecord } | null;
 
@@ -106,6 +108,14 @@ export default function SchoolDirectoryList() {
   const districts = provinces.find((p) => p.province === state.province)?.districts ?? [];
   const sectors = districts.find((d) => d.district === state.district)?.sectors ?? [];
   const refresh = () => invalidateAfterSchoolChange(qc);
+  // Bulk actions (capability bulkOperationsGeneric): tick schools, or act on every school matching the filters.
+  const bulk = useRecordBulk("SCHOOL", {
+    pageIds: schools.data?.data.map((s) => s.id) ?? [],
+    filter: bulkFilterFrom(filters),
+    total: schools.data?.meta.total,
+    onStarted: () => void refresh(),
+  });
+  const cols = bulk.enabled ? 10 : 9;
 
   return (
     <AdminPage
@@ -229,6 +239,7 @@ export default function SchoolDirectoryList() {
         </p>
       )}
 
+      {bulk.toolbar}
       {schools.isError ? (
         <ErrorState error={schools.error} title="Couldn't load schools" onRetry={() => schools.refetch()} />
       ) : (
@@ -251,6 +262,7 @@ export default function SchoolDirectoryList() {
         >
           <thead>
             <tr className="border-b border-gray-100" data-testid="schools-table-head">
+              {bulk.enabled && <th className={`${th} w-8`} data-testid="bulk-select-col">{bulk.headerCheckbox}</th>}
               <th className={th}>School code</th>
               {sortHeader("name", "School name")}
               <th className={th}>Country</th>
@@ -266,9 +278,9 @@ export default function SchoolDirectoryList() {
           </thead>
           <tbody className={`divide-y divide-gray-100/80 ${schools.isFetching && schools.data ? "opacity-60" : ""}`}>
             {schools.isPending ? (
-              <TableMessage colSpan={9}>Loading schools…</TableMessage>
+              <TableMessage colSpan={cols}>Loading schools…</TableMessage>
             ) : schools.data.data.length === 0 ? (
-              <TableMessage colSpan={9}>{isFiltered(state) ? "No schools match the filters." : "No schools yet."}</TableMessage>
+              <TableMessage colSpan={cols}>{isFiltered(state) ? "No schools match the filters." : "No schools yet."}</TableMessage>
             ) : (
               schools.data.data.map((s) => (
                 <tr
@@ -280,6 +292,11 @@ export default function SchoolDirectoryList() {
                   onClick={(e) => rowClick(e, s.id)}
                   onKeyDown={(e) => rowKey(e, s.id)}
                 >
+                  {bulk.enabled && (
+                    <td className={td} onClick={(e) => e.stopPropagation()}>
+                      {bulk.rowCheckbox(s.id, s.name)}
+                    </td>
+                  )}
                   <td className={`${td} text-gray-700 font-mono whitespace-nowrap`} data-testid="school-code">
                     {orDash(s.code)}
                   </td>
@@ -357,6 +374,7 @@ export default function SchoolDirectoryList() {
           }}
         />
       ) : null}
+      {bulk.dialog}
     </AdminPage>
   );
 }

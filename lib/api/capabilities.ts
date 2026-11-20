@@ -167,6 +167,13 @@ export const KNOWN_FEATURES = [
    */
   "bulkUserOperations",
   /**
+   * Bulk actions on any record type (2026-11-20): `/admin/bulk/*` — GET /admin/bulk/actions lists the record types and
+   * actions the administrator may run (schools, school claims, teacher and coach applications, accounts); preview,
+   * confirm (bound to exactly the previewed records), progress, per-record results and cancel. Without it: the
+   * accounts' own bulk actions only.
+   */
+  "bulkOperationsGeneric",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */

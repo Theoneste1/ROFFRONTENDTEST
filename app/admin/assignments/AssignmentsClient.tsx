@@ -10,6 +10,8 @@ import { formatDate, personName } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AssignmentBadge, CsvButton, FilterPills, SearchInput, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { useRecordBulk } from "../components/bulk/RecordBulk";
+import { bulkFilterFrom } from "@/lib/admin/bulk-records";
 
 const TABS: { label: string; value: "" | AssignmentStatus }[] = [
   { label: "All", value: "" },
@@ -52,6 +54,14 @@ export default function AssignmentsClient() {
 
   const filters: AdminAssignmentFilters = { status: status || undefined, courseId: courseId || undefined, divisionId: divisionId || undefined, q: q || undefined, page, limit: PAGE_SIZE };
   const assignments = useAdminAssignments(filters);
+  // Bulk actions (capability bulkOperationsGeneric, record type ASSIGNMENT): publish, close or archive many at once.
+  const bulk = useRecordBulk("ASSIGNMENT", {
+    pageIds: assignments.data?.data.map((a) => a.id) ?? [],
+    filter: bulkFilterFrom(filters),
+    total: assignments.data?.meta.total,
+    onStarted: () => void assignments.refetch(),
+  });
+  const cols = bulk.enabled ? 9 : 8;
   const report = useAssignmentReport({ status: filters.status, courseId: filters.courseId, divisionId: filters.divisionId });
   const pending = useAdminAssignments({ status: "PENDING_APPROVAL", limit: 1 });
   const courses = useCourses();
@@ -95,6 +105,7 @@ export default function AssignmentsClient() {
         />
       </div>
 
+      {bulk.toolbar}
       {assignments.isError ? (
         <ErrorState error={assignments.error} title="Couldn't load assignments" onRetry={() => assignments.refetch()} />
       ) : (
@@ -109,6 +120,7 @@ export default function AssignmentsClient() {
         >
           <thead>
             <tr className="border-b border-gray-100">
+              {bulk.enabled && <th className={`${th} w-8`}>{bulk.headerCheckbox}</th>}
               <th className={th}>Assignment</th>
               <th className={th}>Course</th>
               <th className={th}>Division</th>
@@ -123,14 +135,15 @@ export default function AssignmentsClient() {
           </thead>
           <tbody className={`divide-y divide-gray-100/80 ${assignments.isFetching && assignments.data ? "opacity-60" : ""}`}>
             {assignments.isPending ? (
-              <TableMessage colSpan={8}>Loading assignments…</TableMessage>
+              <TableMessage colSpan={cols}>Loading assignments…</TableMessage>
             ) : assignments.data.data.length === 0 ? (
-              <TableMessage colSpan={8}>{status === "PENDING_APPROVAL" ? "No assignments are waiting for approval." : "No assignments found matching your criteria."}</TableMessage>
+              <TableMessage colSpan={cols}>{status === "PENDING_APPROVAL" ? "No assignments are waiting for approval." : "No assignments found matching your criteria."}</TableMessage>
             ) : (
               assignments.data.data.map((a) => {
                 const r = byId.get(a.id);
                 return (
                   <tr key={a.id} className="hover:bg-gray-50/60 transition-colors text-xs">
+                    {bulk.enabled && <td className={td}>{bulk.rowCheckbox(a.id, a.title)}</td>}
                     <td className={`${td} font-bold text-gray-800`}>
                       <Link href={`/admin/assignments/${a.id}`} className="hover:text-indigo-700">
                         {a.title}
@@ -159,6 +172,7 @@ export default function AssignmentsClient() {
           </tbody>
         </TableCard>
       )}
+      {bulk.dialog}
     </>
   );
 }

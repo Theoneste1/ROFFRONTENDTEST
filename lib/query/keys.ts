@@ -56,6 +56,14 @@ export const queryKeys = {
   forms: {
     public: (key: string) => ["forms", "public", key] as const,
   },
+  /** Bulk actions on any record type (lib/api/bulk.ts). */
+  bulk: {
+    all: ["bulk"] as const,
+    actions: () => [...queryKeys.bulk.all, "actions"] as const,
+    list: (filters: object) => [...queryKeys.bulk.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.bulk.all, "detail", id] as const,
+    items: (id: string, filters: object) => [...queryKeys.bulk.all, "items", id, filters] as const,
+  },
   /** Bulk user operations (lib/api/bulk-users.ts). */
   bulkUsers: {
     all: ["bulk-users"] as const,

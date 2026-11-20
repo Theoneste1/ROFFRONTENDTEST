@@ -72,7 +72,10 @@ test.describe.serial("Schools table", () => {
 
   test("columns in the agreed order; values, \"—\" and \"No primary teacher\"", async () => {
     await search();
-    const headers = (await page.getByTestId("schools-table-head").locator("th").allInnerTexts()).map((t) => t.trim()).slice(0, 8);
+    // Bulk actions (bulkOperationsGeneric) add a selection column first; the agreed columns follow in their order.
+    const head = page.getByTestId("schools-table-head");
+    if (await head.getByTestId("bulk-select-col").count()) await expect(head.locator("th").first()).toHaveAttribute("data-testid", "bulk-select-col");
+    const headers = (await head.locator('th:not([data-testid="bulk-select-col"])').allInnerTexts()).map((t) => t.trim()).slice(0, 8);
     expect(headers.map((h) => h.toUpperCase())).toEqual(
       ["School code", "School name", "Country", "District", "Sector", "Number of students", "Primary teacher", "Status"].map((h) => h.toUpperCase()),
     );
@@ -162,6 +165,9 @@ test.describe.serial("Schools table", () => {
     const box = await scroller.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
     expect(box.scroll).toBeGreaterThan(box.client);
     await scroller.evaluate((el) => el.scrollTo({ left: el.scrollWidth }));
+    // The page scrolls down to the table (the bulk toolbar may push it below the fold); only vertically, so the
+    // sideways position checked next is the table's own.
+    await scroller.evaluate((el) => window.scrollBy(0, el.getBoundingClientRect().top - 80));
     await expect(rows().first().getByRole("link", { name: /^View / })).toBeInViewport();
     const pageWidth = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, win: window.innerWidth }));
     expect(pageWidth.doc).toBeLessThanOrEqual(pageWidth.win);
