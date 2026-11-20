@@ -2,9 +2,17 @@
 
 /**
  * One test (`/admin/tests/:id`, `/mentor/tests/:id`): Details (edit), Questions (add / edit / reorder / remove with the sum
- * against the maximum), Files (paper and marking guide: private, neutral names) and Markers (coaches authorised for the
- * subject; authorise / revoke with a reason). Publish, unpublish and delete (drafts) in the header. Controls the user
- * cannot use are hidden; the backend checks every request (a Head Coach of another subject gets 403).
+ * against the maximum), Files (paper and marking guide: private, neutral names), Submissions (Phase 2 tracking and every
+ * version; tests.viewSubmissions), Extensions (Phase 2; tests.extensions) and Markers (coaches authorised for the
+ * subject; authorise / revoke with a reason). Phase 3 (capability testMarking): Markers & distribution (tests.distribute:
+ * even distribution, assign / reassign, progress per coach — with the authorisations), Review (tests.review: side by side,
+ * approve, return, second marking, choose / adjust — Head Coaches only, G4 —, unlock) and History (status changes, the
+ * mark-change log, decisions). Phase 4 (capability testResults): Publishing (tests.publishResults: preview, publish,
+ * the Administrators' override with a reason — tests.overridePublication; publications and withdrawals), Results
+ * (tests.viewResults: report, CSV exports, results with identity) and Rankings (tests.viewRankings). Publish, unpublish
+ * and delete (drafts) in the header. Once students have
+ * submitted, the test keeps its essentials (the backend refuses: 409 TEST_LOCKED_BY_SUBMISSIONS / TEST_HAS_SUBMISSIONS).
+ * Controls the user cannot use are hidden; the backend checks every request (a Head Coach of another subject gets 403).
  */
 import { useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
@@ -15,6 +23,8 @@ import { testsApi, type TestDetail as Test, type TestFileKind, type TestQuestion
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { useSession } from "@/lib/auth/session";
 import { actionAllowed } from "@/lib/auth/navigation";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { TESTS_EXTENSIONS, TESTS_VIEW_SUBMISSIONS, staffTabVisible } from "@/lib/test-management/submissions";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime, formatFileSize, hasAcceptedExtension, personName } from "@/lib/format";
 import {
@@ -28,27 +38,45 @@ import { PageFrame } from "@/app/components/ui/PageFrame";
 import { ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, btnSecondary } from "@/app/admin/components/adminUi";
 import { DetailsFields, StatusBadge, TestsGate, inputBad, inputCls, inputOk, labelCls } from "./shared";
 import MarkersPanel from "./MarkersPanel";
+import SubmissionsPanel from "./SubmissionsPanel";
+import ExtensionsPanel from "./ExtensionsPanel";
+import DistributionPanel from "./DistributionPanel";
+import ReviewPanel from "./ReviewPanel";
+import HistoryPanel from "./HistoryPanel";
+import { TESTS_DISTRIBUTE, TESTS_REVIEW, markingTabVisible } from "@/lib/test-management/marking";
+import { TESTS_PUBLISH_RESULTS, TESTS_VIEW_RANKINGS, TESTS_VIEW_RESULTS, resultsTabVisible } from "@/lib/test-management/results";
+import { PublishingPanel, RankingsPanel, ResultsReportPanel } from "./ResultsPanels";
 
-type Tab = "details" | "questions" | "files" | "markers";
+type Tab = "details" | "questions" | "files" | "submissions" | "extensions" | "markers" | "review" | "history" | "publishing" | "results" | "rankings";
+const TABS: readonly Tab[] = ["details", "questions", "files", "submissions", "extensions", "markers", "review", "history", "publishing", "results", "rankings"];
 
-export default function TestDetail({ id, base }: { id: string; base: string }) {
+export default function TestDetail({ id, base, initialTab }: { id: string; base: string; initialTab?: string }) {
   return (
     <TestsGate title="Test">
-      <Detail id={id} base={base} />
+      <Detail id={id} base={base} initialTab={TABS.includes(initialTab as Tab) ? (initialTab as Tab) : undefined} />
     </TestsGate>
   );
 }
 
-function Detail({ id, base }: { id: string; base: string }) {
+function Detail({ id, base, initialTab }: { id: string; base: string; initialTab?: Tab }) {
   const { can, permissionsStatus } = useSession();
   const qc = useQueryClient();
   const router = useRouter();
   const test = useQuery({ queryKey: queryKeys.tests.detail(id), queryFn: () => testsApi.get(id) });
-  const [tab, setTab] = useState<Tab>("details");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "details");
   const [notice, setNotice] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"publish" | "unpublish" | "delete" | null>(null);
   const canManage = actionAllowed(TESTS_MANAGE, permissionsStatus, can);
   const canMarkers = actionAllowed(TESTS_MANAGE_MARKERS, permissionsStatus, can);
+  const { detection } = useBackendCapabilities();
+  const canSubmissions = staffTabVisible(detection, actionAllowed(TESTS_VIEW_SUBMISSIONS, permissionsStatus, can));
+  const canExtensions = staffTabVisible(detection, actionAllowed(TESTS_EXTENSIONS, permissionsStatus, can));
+  const canDistribute = markingTabVisible(detection, actionAllowed(TESTS_DISTRIBUTE, permissionsStatus, can));
+  const canReview = markingTabVisible(detection, actionAllowed(TESTS_REVIEW, permissionsStatus, can));
+  // Phase 4 (capability testResults): Publishing, Results (report, exports), Rankings.
+  const canPublish = resultsTabVisible(detection, actionAllowed(TESTS_PUBLISH_RESULTS, permissionsStatus, can));
+  const canResults = resultsTabVisible(detection, actionAllowed(TESTS_VIEW_RESULTS, permissionsStatus, can));
+  const canRankings = resultsTabVisible(detection, actionAllowed(TESTS_VIEW_RANKINGS, permissionsStatus, can));
 
   /** Every change answers with the whole test: show it and refresh the lists. */
   const apply = async (t: Test, message: string) => {
@@ -72,8 +100,15 @@ function Detail({ id, base }: { id: string; base: string }) {
     { id: "details", label: "Details" },
     { id: "questions", label: `Questions (${t.questionCount})` },
     { id: "files", label: "Files" },
-    ...(canMarkers ? [{ id: "markers" as const, label: "Markers" }] : []),
+    ...(canSubmissions ? [{ id: "submissions" as const, label: t.submissionCount ? `Submissions (${t.submissionCount})` : "Submissions" }] : []),
+    ...(canExtensions ? [{ id: "extensions" as const, label: "Extensions" }] : []),
+    ...(canMarkers || canDistribute ? [{ id: "markers" as const, label: canDistribute ? "Markers & distribution" : "Markers" }] : []),
+    ...(canReview ? [{ id: "review" as const, label: "Review" }, { id: "history" as const, label: "History" }] : []),
+    ...(canPublish && t.status === "PUBLISHED" ? [{ id: "publishing" as const, label: "Publishing" }] : []),
+    ...(canResults && t.status === "PUBLISHED" ? [{ id: "results" as const, label: "Results" }] : []),
+    ...(canRankings && t.status === "PUBLISHED" ? [{ id: "rankings" as const, label: "Rankings" }] : []),
   ];
+  const locked = (t.submissionCount ?? 0) > 0;
 
   return (
     <PageFrame
@@ -86,7 +121,7 @@ function Detail({ id, base }: { id: string; base: string }) {
               <button type="button" className={btnPrimary} onClick={() => setConfirm("publish")} data-testid="publish-test">Publish</button>
               <button type="button" className={btnDanger} onClick={() => setConfirm("delete")} data-testid="delete-test">Delete</button>
             </>
-          ) : (
+          ) : locked ? null : (
             <button type="button" className={btnSecondary} onClick={() => setConfirm("unpublish")} data-testid="unpublish-test">Unpublish</button>
           )}
         </>
@@ -96,17 +131,35 @@ function Detail({ id, base }: { id: string; base: string }) {
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> All tests
       </Link>
       {notice && <Notice tone="success" onClose={() => setNotice(null)}>{notice}</Notice>}
+      {locked && (
+        <Notice tone="info">
+          Students have submitted ({t.submissionCount}): the subject, division, answer format, opening time, deadline, marks, questions and paper are
+          locked, and the test can no longer be unpublished or deleted. Give later deadlines with extensions. The title, question wording and marking guide can still change.
+        </Notice>
+      )}
       <Tabs tabs={tabs} value={tab} onChange={setTab}>
         {tab === "details" && <DetailsTab test={t} canManage={canManage} onSaved={(x) => apply(x, "The details were saved.")} />}
         {tab === "questions" && <QuestionsTab test={t} canManage={canManage} onChanged={apply} />}
         {tab === "files" && <FilesTab test={t} canManage={canManage} onChanged={apply} />}
-        {tab === "markers" && canMarkers && <MarkersPanel subject={t.subject} />}
+        {tab === "submissions" && canSubmissions && <SubmissionsPanel testId={t.id} />}
+        {tab === "extensions" && canExtensions && <ExtensionsPanel test={t} />}
+        {tab === "markers" && (
+          <div className="space-y-10">
+            {canDistribute && t.status === "PUBLISHED" && <DistributionPanel testId={t.id} />}
+            {canMarkers && <MarkersPanel subject={t.subject} />}
+          </div>
+        )}
+        {tab === "review" && canReview && <ReviewPanel testId={t.id} />}
+        {tab === "history" && canReview && <HistoryPanel testId={t.id} />}
+        {tab === "publishing" && canPublish && <PublishingPanel testId={t.id} />}
+        {tab === "results" && canResults && <ResultsReportPanel testId={t.id} />}
+        {tab === "rankings" && canRankings && <RankingsPanel testId={t.id} />}
       </Tabs>
 
       {confirm === "publish" && (
         <ConfirmDialog
           title="Publish this test?"
-          body={<>Students will see it once their part of Test Management is released. {t.questionCount > 0 && sumText(t.maxMarks, t.questionCount ? [t.questionMarksTotal] : [])}</>}
+          body={<>Students of its division will see it in My tests, and their teachers can submit for them, from the time it opens. {t.questionCount > 0 && sumText(t.maxMarks, t.questionCount ? [t.questionMarksTotal] : [])}</>}
           confirmLabel="Publish"
           onConfirm={async () => {
             try {

@@ -18,6 +18,7 @@ import { StatusBadge, courseStyle } from "../components/studentUi";
 import DeadlineCalendar from "./components/DeadlineCalendar";
 import { NotificationLink } from "@/app/components/notifications/notificationUi";
 import { useNow } from "@/lib/hooks/useNow";
+import { StudentTestsWidget } from "@/app/components/test-management/ResultViews";
 
 export default function StudentDashboard() {
   const { user } = useSession();
@@ -59,6 +60,7 @@ export default function StudentDashboard() {
           </div>
         </div>
 
+        <StudentTestsWidget />
         <ActiveCourses />
         <CurrentAssignments />
       </div>

@@ -173,6 +173,30 @@ export const KNOWN_FEATURES = [
    * Without it: no Tests screens.
    */
   "testManagement",
+  /**
+   * Test Management, Phase 2 (owner-approved plan 2026-11-19): deadlines from the server's database time (extensions
+   * included); students' `/me/tests` (tests.submit: their tests, the paper, page-by-page uploads, submit / replace with
+   * every version kept); teachers' `/teacher/tests` (tests.submitForStudents: verified students of their own schools);
+   * `/admin/tests/:id/extensions` (tests.extensions) and `/admin/tests/:id/submissions` (tests.viewSubmissions: tracking,
+   * every version). Without it: no My tests / Tests menus for students and teachers, no Submissions / Extensions tabs.
+   */
+  "testSubmissions",
+  /**
+   * Test Management, Phase 3 (owner-approved plan 2026-11-19): distribution to authorised coaches and review on the test
+   * page — Markers & distribution (tests.distribute: even, manual, reassign; progress per coach), Review (tests.review:
+   * approve and lock, return with a comment, second marking, unlock; choosing / adjusting the mark: tests.adjustMarks,
+   * the subject's Head Coach only — G4), History (status changes, the mark-change log); the coach's blind marking queue
+   * `/mentor/marking` (tests.mark). Without it: none of these.
+   */
+  "testMarking",
+  /**
+   * Test Management, Phase 4 (owner-approved plan 2026-11-19): publication of the approved results (tests.publishResults;
+   * the Administrators' override with a mandatory reason: tests.overridePublication), results with identity, the report and
+   * CSV exports (tests.viewResults), internal rankings (tests.viewRankings), the reporting overview, students' own results
+   * (tests.viewOwnResults), teachers' school results (tests.viewSchoolResults) and the role dashboards' test widgets.
+   * Without it: none of these.
+   */
+  "testResults",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

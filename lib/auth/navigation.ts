@@ -86,6 +86,37 @@ export const ADMIN_TESTS: NavItem = { href: "/admin/tests", label: "Tests", perm
  */
 export const MENTOR_TESTS: NavItem = { href: "/mentor/tests", label: "Tests", permission: "tests.view" };
 
+/**
+ * My tests in the student portal (Test Management Phase 2): the student's tests, deadlines and answers. Separately gated:
+ * a backend advertising `testSubmissions` and the known tests.submit (lib/test-management/submissions.ts →
+ * answerNavVisible). The student menu is written in its sidebar; this item is added after it.
+ */
+export const STUDENT_TESTS: NavItem = { href: "/student/tests", label: "My tests", permission: "tests.submit" };
+
+/**
+ * Tests in the teacher portal (G2: every teacher of the school submits for its verified students). Same gate with
+ * tests.submitForStudents; not part of TEACHER_NAV.
+ */
+export const TEACHER_TESTS: NavItem = { href: "/teacher/tests", label: "Tests", permission: "tests.submitForStudents" };
+
+/**
+ * Marking in the coach portal (Test Management Phase 3): the coach's blind marking queue. Separately gated: a backend
+ * advertising `testMarking` and the known tests.mark (lib/test-management/marking.ts → markingNavVisible); not part of
+ * MENTOR_NAV.
+ */
+export const MENTOR_MARKING: NavItem = { href: "/mentor/marking", label: "Marking", permission: "tests.mark" };
+
+/**
+ * Test Management Phase 4 (capability `testResults`): students' own published results and teachers' school results
+ * (menu items, gated by lib/test-management/results.ts → resultsNavVisible; never part of the frozen menus). The
+ * reporting overview for Administrators and Head Coaches is not a menu item (the Administrators' menu is full): it is
+ * linked from the Tests page and the dashboard's Tests widget, with the same gate.
+ */
+export const STUDENT_RESULTS: NavItem = { href: "/student/results", label: "My results", permission: "tests.viewOwnResults" };
+export const TEACHER_RESULTS: NavItem = { href: "/teacher/results", label: "Results", permission: "tests.viewSchoolResults" };
+export const ADMIN_TEST_REPORTS: NavItem = { href: "/admin/test-reports", label: "Test reports", permission: "tests.viewResults" };
+export const MENTOR_TEST_REPORTS: NavItem = { href: "/mentor/test-reports", label: "Test reports", permission: "tests.viewResults" };
+
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
 
