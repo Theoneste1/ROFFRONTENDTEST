@@ -31,7 +31,7 @@ test("testResults is a known feature; a backend without it shows nothing of Phas
     ["tests.publishResults", "tests.overridePublication", "tests.viewResults", "tests.viewRankings", "tests.viewOwnResults", "tests.viewSchoolResults"]);
 });
 
-test("menus: My results (students), Results (teachers), Test reports (Administrators, Head Coaches) — never in the frozen menus", () => {
+test("menus: My results (students), Results (teachers); Test reports (Administrators, Head Coaches: linked from Tests and the dashboard) — never in the frozen menus", () => {
   assert.deepEqual([STUDENT_RESULTS.href, STUDENT_RESULTS.permission], ["/student/results", TESTS_VIEW_OWN_RESULTS]);
   assert.deepEqual([TEACHER_RESULTS.href, TEACHER_RESULTS.permission], ["/teacher/results", TESTS_VIEW_SCHOOL_RESULTS]);
   assert.deepEqual([ADMIN_TEST_REPORTS.href, ADMIN_TEST_REPORTS.permission], ["/admin/test-reports", TESTS_VIEW_RESULTS]);

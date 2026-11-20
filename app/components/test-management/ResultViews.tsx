@@ -314,10 +314,12 @@ const small = "text-sm text-slate-800";
 /** Administrators and Head Coaches (spec 12.1 / 12.3). `portal`: where the test pages are. */
 export function StaffTestsWidget({ portal }: { portal: "admin" | "mentor" }) {
   const show = useWidget("tests.view");
+  const { can } = useSession();
   const d = useQuery({ queryKey: queryKeys.tests.dashboard("staff"), queryFn: testResultsApi.dashboard, enabled: show });
   if (!show) return null;
   return (
     <Widget title="Tests" testId="tests-widget-staff" link={{ href: `/${portal}/tests`, label: "All tests" }}>
+      {can(TESTS_VIEW_RESULTS) && <Link href={`/${portal}/test-reports`} className="mb-3 inline-block text-sm font-medium text-indigo-700 hover:underline" data-testid="widget-test-reports">Test reports</Link>}
       {d.isPending ? <LoadingBlock /> : d.isError ? <ErrorState error={d.error} title="Couldn't load the tests overview" onRetry={() => d.refetch()} /> : (
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">

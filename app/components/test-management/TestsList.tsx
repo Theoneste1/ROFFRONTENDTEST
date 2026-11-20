@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { BarChart3, Plus } from "lucide-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { testsApi, type TestDivision, type TestFilters, type TestStatus } from "@/lib/api/tests";
 import { useSession } from "@/lib/auth/session";
@@ -14,10 +14,12 @@ import { actionAllowed } from "@/lib/auth/navigation";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime } from "@/lib/format";
 import { DIVISION_LABEL, DIVISION_OPTIONS, TESTS_MANAGE } from "@/lib/test-management/rules";
+import { TESTS_VIEW_RESULTS, resultsTabVisible } from "@/lib/test-management/results";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame, FilterPills } from "@/app/components/ui/PageFrame";
-import { SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, td, th } from "@/app/admin/components/adminUi";
+import { SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, td, th } from "@/app/admin/components/adminUi";
 import { StatusBadge, TestsGate, useTestSubjects } from "./shared";
 
 const STATUS_PILLS: { label: string; value: "" | TestStatus }[] = [
@@ -45,16 +47,29 @@ function List({ base, headCoach }: { base: string; headCoach?: boolean }) {
   const filters: TestFilters = { subjectId: subjectId || undefined, division: division || undefined, status: status || undefined, q: q || undefined, page, limit: 20 };
   const list = useQuery({ queryKey: queryKeys.tests.list({ ...filters }), queryFn: () => testsApi.list(filters), placeholderData: keepPreviousData });
   const canManage = actionAllowed(TESTS_MANAGE, permissionsStatus, can);
+  const { detection } = useBackendCapabilities();
+  const showReports = resultsTabVisible(detection, permissionsStatus === "ready" && can(TESTS_VIEW_RESULTS));
   const reset = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPage(1); };
 
   return (
     <PageFrame
       title="Tests"
       description={headCoach ? "Tests of the subjects you head: details, questions, the paper, the marking guide and markers." : "Tests of every subject: details, questions, the paper, the marking guide and markers."}
-      actions={canManage && (
-        <Link href={`${base}/new`} className={btnPrimary} data-testid="new-test">
-          <Plus className="h-4 w-4" aria-hidden="true" /> New test
-        </Link>
+      actions={(canManage || showReports) && (
+        <>
+          {/* Phase 4: the reporting overview (capability testResults, tests.viewResults). Reached from here and from the
+              dashboard widget rather than the menu, which is already full for Administrators. */}
+          {showReports && (
+            <Link href={`${base.replace(/\/tests$/, "")}/test-reports`} className={btnSecondary} data-testid="test-reports-link">
+              <BarChart3 className="h-4 w-4" aria-hidden="true" /> Test reports
+            </Link>
+          )}
+          {canManage && (
+            <Link href={`${base}/new`} className={btnPrimary} data-testid="new-test">
+              <Plus className="h-4 w-4" aria-hidden="true" /> New test
+            </Link>
+          )}
+        </>
       )}
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">

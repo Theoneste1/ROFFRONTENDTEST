@@ -302,15 +302,16 @@ test.describe.serial("publication, results, rankings, withdrawal (G6)", () => {
   });
 
   test("Test reports: the Administrator's and the Head Coach's overview link to the test", async () => {
-    // The menu offers the page (directly or under "More"); then open it.
-    await admin.goto("/admin/dashboard");
-    await expect(admin.getByTestId("sidebar-nav").first().locator('a[href="/admin/test-reports"]')).toHaveCount(1);
-    await admin.goto("/admin/test-reports");
+    // Linked from the Tests page (and the dashboard widget).
+    await navigateViaSidebar(admin, "/admin/tests");
+    await admin.getByTestId("test-reports-link").click();
+    await admin.waitForURL(/\/admin\/test-reports$/);
     await admin.getByLabel("Search tests").fill(title);
     await expect(admin.getByTestId(`report-${testId}`)).toContainText("3", { timeout: 30_000 });
     await noSeriousA11y(admin);
-    await expect(head.getByTestId("sidebar-nav").first().locator('a[href="/mentor/test-reports"]')).toHaveCount(1);
-    await head.goto("/mentor/test-reports");
+    await head.goto("/mentor/dashboard");
+    await head.getByTestId("widget-test-reports").click();
+    await head.waitForURL(/\/mentor\/test-reports$/);
     await head.getByLabel("Search tests").fill(title);
     await head.getByTestId(`report-${testId}`).getByRole("link", { name: title, exact: true }).click();
     await head.waitForURL(new RegExp(`/mentor/tests/${testId}\\?tab=results$`));
