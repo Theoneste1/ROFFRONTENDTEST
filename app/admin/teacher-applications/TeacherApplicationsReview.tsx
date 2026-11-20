@@ -47,6 +47,8 @@ import Pagination from "@/app/components/ui/Pagination";
 import { PlaceSelects, SectorSchoolSelect } from "@/app/components/schools/SchoolCascade";
 import type { Place } from "@/lib/schools/school-cascade";
 import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../components/adminUi";
+import { useRecordBulk } from "../components/bulk/RecordBulk";
+import { bulkFilterFrom } from "@/lib/admin/bulk-records";
 import { AskForInformation, InfoRequestHistory } from "@/app/components/applications/InfoRequests";
 import { SchoolPicker } from "../users/components/userUi";
 import ApplicationPictureReview from "@/app/components/applications/ApplicationPictureReview";
@@ -81,6 +83,14 @@ export default function TeacherApplicationsReview() {
   const [rejecting, setRejecting] = useState<TeacherApplication | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.teacherApplications.all });
+  // Bulk actions (capability bulkOperationsGeneric): reject many applications (approval stays one by one).
+  const bulk = useRecordBulk("TEACHER_APPLICATION", {
+    pageIds: list.data?.data.map((a) => a.id) ?? [],
+    filter: bulkFilterFrom(filters),
+    total: list.data?.meta.total,
+    onStarted: () => void refresh(),
+  });
+  const cols = bulk.enabled ? 6 : 5;
   const onError = (e: unknown) => {
     if (isApiError(e) && REFRESH_AFTER.includes(e.code)) void refresh();
     return explain(e);
@@ -130,12 +140,14 @@ export default function TeacherApplicationsReview() {
           }}
         />
       </div>
+      {bulk.toolbar}
       {list.isError ? (
         <ErrorState error={list.error} title="Couldn't load the teacher applications" onRetry={() => list.refetch()} />
       ) : (
         <TableCard footer={list.data && <Pagination page={page} totalPages={list.data.meta.totalPages} total={list.data.meta.total} onPage={setPage} disabled={list.isFetching} />}>
           <thead className="bg-gray-50/60 border-b border-gray-100">
             <tr>
+              {bulk.enabled && <th className={`${th} w-8`}>{bulk.headerCheckbox}</th>}
               <th className={th}>Applicant</th>
               <th className={th}>School</th>
               <th className={th}>Subjects</th>
@@ -145,12 +157,13 @@ export default function TeacherApplicationsReview() {
           </thead>
           <tbody className="divide-y divide-gray-50" data-testid="teacher-applications">
             {list.isPending ? (
-              <TableMessage colSpan={5}>Loading…</TableMessage>
+              <TableMessage colSpan={cols}>Loading…</TableMessage>
             ) : rows.length === 0 ? (
-              <TableMessage colSpan={5}>No {TEACHER_APPLICATION_STATUSES.find((s) => s.value === status)!.label.toLowerCase()} applications.</TableMessage>
+              <TableMessage colSpan={cols}>No {TEACHER_APPLICATION_STATUSES.find((s) => s.value === status)!.label.toLowerCase()} applications.</TableMessage>
             ) : (
               rows.map((a) => (
                 <tr key={a.id}>
+                  {bulk.enabled && <td className={td}>{bulk.rowCheckbox(a.id, fullName(a))}</td>}
                   <td className={td}>
                     <p className="font-semibold text-gray-800">{fullName(a)}</p>
                     <p className="text-xs text-gray-500">
@@ -244,6 +257,7 @@ export default function TeacherApplicationsReview() {
           }}
         />
       )}
+      {bulk.dialog}
     </AdminPage>
   );
 }

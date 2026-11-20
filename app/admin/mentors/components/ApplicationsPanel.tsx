@@ -14,6 +14,8 @@ import { pictureReviewShown, withPictureDecision } from "@/lib/accounts/applicat
 import ApplicationPictureReview from "@/app/components/applications/ApplicationPictureReview";
 import Pagination from "@/app/components/ui/Pagination";
 import { Badge, ConfirmDialog, FilterPills, Notice, TableCard, TableMessage, td, th } from "../../components/adminUi";
+import { useRecordBulk } from "../../components/bulk/RecordBulk";
+import { bulkFilterFrom } from "@/lib/admin/bulk-records";
 
 const STATUS: Record<MentorRequestStatus, { label: string; badge: string }> = {
   PENDING: { label: "Pending", badge: "bg-amber-50 text-amber-700" },
@@ -51,7 +53,17 @@ export default function ApplicationsPanel() {
   const [page, setPage] = useState(1);
   const [decide, setDecide] = useState<{ request: MentorRequest; decision: "approve" | "reject" } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const requests = useMentorRequests({ status: status || undefined, page, limit: 20 });
+  const listFilters = { status: status || undefined, page, limit: 20 };
+  const requests = useMentorRequests(listFilters);
+  // Bulk actions (capability bulkOperationsGeneric): approve or reject many applications. Bulk approval never keeps a
+  // picture (approve one by one to keep one).
+  const bulk = useRecordBulk("COACH_APPLICATION", {
+    pageIds: requests.data?.data.map((r) => r.id) ?? [],
+    filter: bulkFilterFrom(listFilters),
+    total: requests.data?.meta.total,
+    onStarted: () => void requests.refetch(),
+  });
+  const cols = bulk.enabled ? 6 : 5;
   const decision = useDecideMentorRequest();
   const { detection } = useBackendCapabilities();
   // Owner policy: the applicant's picture is kept only when the Administrator saw it and ticked the box (unticked by default).
@@ -83,6 +95,7 @@ export default function ApplicationsPanel() {
           ]}
         />
       </div>
+      {bulk.toolbar}
       {requests.isError ? (
         <ErrorState error={requests.error} title="Couldn't load applications" onRetry={() => requests.refetch()} />
       ) : (
@@ -97,6 +110,7 @@ export default function ApplicationsPanel() {
         >
           <thead>
             <tr className="border-b border-gray-100">
+              {bulk.enabled && <th className={`${th} w-8`}>{bulk.headerCheckbox}</th>}
               <th className={th}>Applicant</th>
               <th className={th}>Email</th>
               <th className={th}>Applied</th>
@@ -106,12 +120,13 @@ export default function ApplicationsPanel() {
           </thead>
           <tbody className="divide-y divide-gray-100/80">
             {requests.isPending ? (
-              <TableMessage colSpan={5}>Loading applications…</TableMessage>
+              <TableMessage colSpan={cols}>Loading applications…</TableMessage>
             ) : requests.data.data.length === 0 ? (
-              <TableMessage colSpan={5}>{status === "PENDING" ? "No applications are waiting for a decision." : "No applications."}</TableMessage>
+              <TableMessage colSpan={cols}>{status === "PENDING" ? "No applications are waiting for a decision." : "No applications."}</TableMessage>
             ) : (
               requests.data.data.map((r) => (
                 <tr key={r.id} className="text-xs hover:bg-gray-50/60">
+                  {bulk.enabled && <td className={td}>{bulk.rowCheckbox(r.id, `${r.firstName} ${r.lastName}`)}</td>}
                   <td className={`${td} font-semibold text-gray-800 whitespace-nowrap`}>
                     {r.firstName} {r.lastName}
                     <span className="block text-[11px] font-normal text-gray-500">@{r.username}</span>
@@ -192,6 +207,7 @@ export default function ApplicationsPanel() {
           )}
         </ConfirmDialog>
       )}
+      {bulk.dialog}
     </>
   );
 }
