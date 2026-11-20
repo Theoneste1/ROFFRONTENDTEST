@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 
 export function Spinner({ className = "h-5 w-5" }: { className?: string }) {
-  return <Loader2 className={`animate-spin text-[#2B2BB2] ${className}`} aria-hidden="true" />;
+  return <Loader2 className={`animate-spin text-brand ${className}`} aria-hidden="true" />;
 }
 
 /** Centred spinner for a whole screen (session check, route guard). */
@@ -51,7 +51,7 @@ export function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-2 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#2B2BB2] border border-[#2B2BB2]/30 rounded-lg hover:bg-[#2B2BB2]/5 transition-colors"
+          className="mt-2 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand border border-brand/30 rounded-lg hover:bg-brand/5 transition-colors"
         >
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
           Try again

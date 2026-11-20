@@ -13,7 +13,7 @@ export default function SubmissionsTable({ assignmentId, maximumMarks, rows }: {
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
       <div className="overflow-x-auto relative">
         <div className="min-w-[680px]">
-          <div className="bg-[#DCE3F2] px-6 py-3.5 grid grid-cols-12 text-sm font-semibold text-slate-700 border-b border-slate-200">
+          <div className="bg-brand-100 px-6 py-3.5 grid grid-cols-12 text-sm font-semibold text-slate-700 border-b border-slate-200">
             <div className="col-span-4">Student</div>
             <div className="col-span-3">Status</div>
             <div className="col-span-1">Score</div>
@@ -54,7 +54,7 @@ export default function SubmissionsTable({ assignmentId, maximumMarks, rows }: {
                       href={`/mentor/assignments/${assignmentId}/assignmentReview/${s.id}`}
                       className={
                         open
-                          ? "px-5 py-1.5 bg-[#2B2BB2] text-white hover:bg-indigo-800 rounded-xl font-medium text-xs transition"
+                          ? "px-5 py-1.5 bg-brand text-white hover:bg-indigo-800 rounded-xl font-medium text-xs transition"
                           : "px-4 py-1.5 border border-blue-500 text-blue-600 hover:bg-blue-50 rounded-xl font-medium text-xs transition"
                       }
                     >

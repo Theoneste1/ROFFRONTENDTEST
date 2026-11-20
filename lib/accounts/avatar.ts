@@ -63,11 +63,11 @@ export function displayName(p: AvatarPerson | null | undefined): string {
 
 /** ROF navy and amber tones for the generated avatar (text colour readable on each, WCAG AA). */
 export const AVATAR_TONES = [
-  "bg-[#001E4E] text-amber-300",
-  "bg-[#00428c] text-white",
-  "bg-amber-400 text-[#001E4E]",
-  "bg-[#2B2BB2] text-white",
-  "bg-amber-200 text-[#001E4E]",
+  "bg-brand-950 text-amber-300",
+  "bg-brand text-white",
+  "bg-amber-400 text-brand-950",
+  "bg-brand text-white",
+  "bg-amber-200 text-brand-950",
 ] as const;
 
 /** A stable tone for the account (by id, else username, else name). */

@@ -103,13 +103,13 @@ export default function Contact() {
           : `Your message was not sent. ${errorMessage(sendError)}`;
 
   const input = (bad?: string) =>
-    `w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 ${bad ? "border-red-400 focus:ring-red-200" : "border-slate-300 focus:border-[#00428c] focus:ring-blue-200"}`;
+    `w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 ${bad ? "border-red-400 focus:ring-red-200" : "border-slate-300 focus:border-brand focus:ring-blue-200"}`;
 
   return (
     <section id="contact" className="bg-gradient-to-br from-blue-50 via-white to-amber-50/60 py-20 sm:py-28" aria-labelledby="contact-title">
       <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-5 lg:px-8">
         <Reveal className="lg:col-span-2">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#00428c]">Contact us</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand">Contact us</p>
           <h2 id="contact-title" className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Let&apos;s talk</h2>
           <p className="mt-4 text-lg text-slate-600">
             Questions about the platform, Olympiad programmes or getting your school involved? Write to the {SITE.organisation}.
@@ -118,28 +118,28 @@ export default function Contact() {
           <ul className="mt-8 space-y-5" aria-label="Contact details">
             {to && (
               <li className="flex items-start gap-4">
-                <span className="rounded-xl bg-[#001E4E] p-3 text-white"><Mail className="h-5 w-5" aria-hidden="true" /></span>
-                <span><span className="block text-sm font-semibold text-slate-600">E-mail</span><a href={`mailto:${to}`} className="font-semibold text-[#00428c] hover:underline">{to}</a></span>
+                <span className="rounded-xl bg-brand-950 p-3 text-white"><Mail className="h-5 w-5" aria-hidden="true" /></span>
+                <span><span className="block text-sm font-semibold text-slate-600">E-mail</span><a href={`mailto:${to}`} className="font-semibold text-brand hover:underline">{to}</a></span>
               </li>
             )}
             {info?.phone && (
               <li className="flex items-start gap-4">
-                <span className="rounded-xl bg-[#001E4E] p-3 text-white"><Phone className="h-5 w-5" aria-hidden="true" /></span>
-                <span><span className="block text-sm font-semibold text-slate-600">Phone</span><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="font-semibold text-[#00428c] hover:underline">{info.phone}</a></span>
+                <span className="rounded-xl bg-brand-950 p-3 text-white"><Phone className="h-5 w-5" aria-hidden="true" /></span>
+                <span><span className="block text-sm font-semibold text-slate-600">Phone</span><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="font-semibold text-brand hover:underline">{info.phone}</a></span>
               </li>
             )}
             {info?.hours && (
               <li className="flex items-start gap-4">
-                <span className="rounded-xl bg-[#001E4E] p-3 text-white"><Clock className="h-5 w-5" aria-hidden="true" /></span>
+                <span className="rounded-xl bg-brand-950 p-3 text-white"><Clock className="h-5 w-5" aria-hidden="true" /></span>
                 <span><span className="block text-sm font-semibold text-slate-600">Hours</span><span className="font-semibold text-slate-800">{info.hours}</span></span>
               </li>
             )}
             {(website || helpUrl) && (
               <li className="flex items-start gap-4">
-                <span className="rounded-xl bg-[#001E4E] p-3 text-white"><Globe className="h-5 w-5" aria-hidden="true" /></span>
+                <span className="rounded-xl bg-brand-950 p-3 text-white"><Globe className="h-5 w-5" aria-hidden="true" /></span>
                 <span>
                   <span className="block text-sm font-semibold text-slate-600">Website</span>
-                  <a href={(website ?? helpUrl)!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#00428c] hover:underline">
+                  <a href={(website ?? helpUrl)!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-brand hover:underline">
                     {(website ?? helpUrl)!.replace(/^https?:\/\//, "").replace(/\/$/, "")} <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                   </a>
                 </span>
@@ -148,7 +148,7 @@ export default function Contact() {
           </ul>
           {support.isSuccess && !to && !info?.phone && (
             <p className="mt-6 rounded-xl bg-white/80 p-4 text-sm text-slate-600 ring-1 ring-slate-200" data-testid="contact-not-configured">
-              Contact details haven&apos;t been published yet. Visit the <a href="/support" className="font-semibold text-[#00428c] hover:underline">Help and support</a> page for updates.
+              Contact details haven&apos;t been published yet. Visit the <a href="/support" className="font-semibold text-brand hover:underline">Help and support</a> page for updates.
             </p>
           )}
           <div className="mt-8">
@@ -214,7 +214,7 @@ export default function Contact() {
               <button
                 type="submit"
                 disabled={send.isPending}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#001E4E] px-8 py-3.5 font-bold text-white transition hover:bg-[#00428c] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-950 px-8 py-3.5 font-bold text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send className="h-4 w-4" aria-hidden="true" /> {send.isPending ? "Sending…" : "Send Message"}
               </button>

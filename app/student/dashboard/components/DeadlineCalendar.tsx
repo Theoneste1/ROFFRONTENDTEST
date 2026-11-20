@@ -100,7 +100,7 @@ export default function DeadlineCalendar({ assignments, cursor: controlled, onCu
               title={mark ? `Due: ${mark.titles.join(", ")}` : undefined}
               className={
                 isToday
-                  ? "bg-[#03045e] text-white rounded-xl w-7 h-7 flex items-center justify-center mx-auto text-xs font-bold shadow-md relative"
+                  ? "bg-brand-900 text-white rounded-xl w-7 h-7 flex items-center justify-center mx-auto text-xs font-bold shadow-md relative"
                   : `relative ${inMonth ? "" : "text-slate-600"}`
               }
             >

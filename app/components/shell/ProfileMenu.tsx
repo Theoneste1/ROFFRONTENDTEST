@@ -101,7 +101,7 @@ export default function ProfileMenu() {
   }
 
   const itemCls =
-    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 outline-none transition-colors hover:bg-indigo-50 hover:text-[#001E4E] focus-visible:bg-indigo-50 focus-visible:text-[#001E4E] focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:opacity-60";
+    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 outline-none transition-colors hover:bg-indigo-50 hover:text-brand-950 focus-visible:bg-indigo-50 focus-visible:text-brand-950 focus-visible:ring-2 focus-visible:ring-indigo-400 disabled:opacity-60";
 
   return (
     <div ref={rootRef} className="relative" data-testid="profile-menu">
@@ -135,7 +135,7 @@ export default function ProfileMenu() {
           className="absolute right-0 top-full z-40 mt-3 w-72 max-w-[calc(100vw-1.5rem)] origin-top-right rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-indigo-950/10"
           data-testid="profile-menu-list"
         >
-          <div className="flex items-center gap-3 rounded-xl bg-gradient-to-br from-[#001E4E] to-[#00428c] px-3 py-3 text-white" role="none">
+          <div className="flex items-center gap-3 rounded-xl bg-gradient-to-br from-brand-950 to-brand px-3 py-3 text-white" role="none">
             <AvatarBadge user={user} size="lg" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{displayName(user)}</p>
@@ -148,7 +148,7 @@ export default function ProfileMenu() {
               const isLogout = item.key === "logout";
               return item.href ? (
                 <Link key={item.key} href={item.href} role="menuitem" tabIndex={-1} className={itemCls} onClick={() => close(false)} data-menu-item={item.key}>
-                  <Icon className="h-4 w-4 flex-shrink-0 text-[#00428c]" aria-hidden="true" />
+                  <Icon className="h-4 w-4 flex-shrink-0 text-brand" aria-hidden="true" />
                   {item.label}
                 </Link>
               ) : (

@@ -38,7 +38,7 @@ export default function Hero() {
   const quote = index % HERO_QUOTES.length;
 
   return (
-    <section id="top" className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-[#001E4E]" aria-label="Welcome">
+    <section id="top" className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-brand-950" aria-label="Welcome">
       {/* Photographs */}
       <div className="absolute inset-0 -z-10" aria-hidden={false}>
         {HERO_SLIDES.map((s, i) => (
@@ -68,8 +68,8 @@ export default function Hero() {
             aria-label={HERO_VIDEO.label}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#001E4E]/95 via-[#001E4E]/75 to-[#00428c]/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#001E4E] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-950/95 via-brand-950/75 to-brand/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-950 via-transparent to-transparent" />
       </div>
 
       <div className="mx-auto w-full max-w-7xl px-4 pb-24 pt-28 sm:px-6 lg:px-8">
@@ -90,11 +90,11 @@ export default function Hero() {
           </figure>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-7 py-3.5 font-bold text-[#001E4E] shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:bg-amber-300">
+            <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-7 py-3.5 font-bold text-brand-950 shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:bg-amber-300">
               <GraduationCap className="h-5 w-5" /> Join as a Student
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <Link href="/?subject=teacher#contact" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 font-bold text-[#001E4E] transition hover:-translate-y-0.5 hover:bg-blue-50">
+            <Link href="/?subject=teacher#contact" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 font-bold text-brand-950 transition hover:-translate-y-0.5 hover:bg-blue-50">
               <Users className="h-5 w-5" /> Join as a Teacher
             </Link>
             <Link href="/login?next=%2Fstudent%2Fcourses" className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-semibold text-white ring-1 ring-white/50 transition hover:bg-white/10">

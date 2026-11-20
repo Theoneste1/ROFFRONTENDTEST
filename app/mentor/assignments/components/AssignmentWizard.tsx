@@ -239,7 +239,7 @@ export default function AssignmentWizard({
                 <button
                   type="button"
                   onClick={() => router.push(`/mentor/assignments/create?new=${Date.now()}`)}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#2A35AF] text-white text-sm font-medium hover:bg-[#232c94] transition-colors shadow-md"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-brand text-white text-sm font-medium hover:bg-brand-dark transition-colors shadow-md"
                 >
                   Create another Assignment
                 </button>

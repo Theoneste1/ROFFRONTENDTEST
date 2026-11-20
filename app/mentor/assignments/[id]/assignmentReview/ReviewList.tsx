@@ -115,7 +115,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
             {editable && (
               <Link
                 href={`/mentor/assignments/${a.id}/edit`}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-[#2B2BB2] text-white font-medium text-sm rounded-xl hover:bg-indigo-800 transition w-full md:w-auto"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-brand text-white font-medium text-sm rounded-xl hover:bg-indigo-800 transition w-full md:w-auto"
               >
                 <Edit className="w-4 h-4" />
                 Edit Assignment

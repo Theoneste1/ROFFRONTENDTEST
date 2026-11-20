@@ -48,7 +48,7 @@ export default function AccountSettingsPage() {
             </div>
           </dl>
           <p className="mt-4 text-xs text-gray-600">
-            Your name and picture are on <Link href={portalPath(user.role, "profile")} className="font-semibold text-[#2B2BB2] hover:underline">My Profile</Link>.
+            Your name and picture are on <Link href={portalPath(user.role, "profile")} className="font-semibold text-brand hover:underline">My Profile</Link>.
           </p>
         </Section>
         <PasswordForm />

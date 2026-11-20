@@ -23,8 +23,8 @@ export const metadata: Metadata = {
  */
 export default function HomePage() {
   return (
-    <div className={`home-page ${jakarta.className} bg-[#001E4E] text-slate-900 antialiased`}>
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-amber-400 focus:px-4 focus:py-2 focus:font-bold focus:text-[#001E4E]">
+    <div className={`home-page ${jakarta.className} bg-brand-950 text-slate-900 antialiased`}>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-amber-400 focus:px-4 focus:py-2 focus:font-bold focus:text-brand-950">
         Skip to content
       </a>
       <HomeNav />
