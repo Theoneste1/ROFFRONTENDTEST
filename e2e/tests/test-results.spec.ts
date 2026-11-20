@@ -303,7 +303,7 @@ test.describe.serial("publication, results, rankings, withdrawal (G6)", () => {
 
   test("Test reports: the Administrator's and the Head Coach's overview link to the test", async () => {
     // Linked from the Tests page (and the dashboard widget).
-    await navigateViaSidebar(admin, "/admin/tests");
+    await admin.goto("/admin/tests");
     await admin.getByTestId("test-reports-link").click();
     await admin.waitForURL(/\/admin\/test-reports$/);
     await admin.getByLabel("Search tests").fill(title);
