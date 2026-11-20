@@ -94,7 +94,7 @@ export default function AvatarEditor({ user }: { user: CurrentUser }) {
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <label
               htmlFor="avatar-file"
-              className={`inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#2B2BB2] px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#232c94] focus-within:ring-2 focus-within:ring-indigo-400 ${busy ? "pointer-events-none opacity-60" : ""}`}
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-dark focus-within:ring-2 focus-within:ring-indigo-400 ${busy ? "pointer-events-none opacity-60" : ""}`}
               data-testid="avatar-upload"
             >
               <Camera className="h-4 w-4" aria-hidden="true" />

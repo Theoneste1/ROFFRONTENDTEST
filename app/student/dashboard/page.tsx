@@ -34,7 +34,7 @@ export default function StudentDashboard() {
       {/* LEFT COLUMN */}
       <div className="lg:col-span-2 space-y-8 min-w-0">
         {/* Welcome Banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-[#030959] p-8 text-white shadow-sm flex flex-col justify-between min-h-[220px]">
+        <div className="relative overflow-hidden rounded-3xl bg-brand-900 p-8 text-white shadow-sm flex flex-col justify-between min-h-[220px]">
           <div className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none opacity-20">
             <div className="w-48 h-48 border-2 border-white/40 rounded-3xl rotate-12 flex items-center justify-center bg-white/10 backdrop-blur-sm">
               <Calculator className="w-20 h-20 text-white" />
@@ -233,12 +233,12 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
           )
         ) : rank.data.rank === null ? (
           <>
-            <h2 className="text-2xl font-black text-[#03045e] mt-2">{rankLabel(null)}</h2>
+            <h2 className="text-2xl font-black text-brand-900 mt-2">{rankLabel(null)}</h2>
             <p className="mt-4 text-xs font-medium text-slate-600">{formatNumber(rank.data.points)} points so far.</p>
           </>
         ) : (
           <>
-            <h2 className="text-5xl font-black text-[#03045e] mt-2">
+            <h2 className="text-5xl font-black text-brand-900 mt-2">
               {rankLabel(rank.data.rank)}
               <span className="text-base font-bold text-slate-500 ml-2">of {formatNumber(rank.data.outOf)}</span>
             </h2>
@@ -247,7 +247,7 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
                 <>You&apos;re at the top of your division. Keep it up!</>
               ) : above.data ? (
                 <>
-                  <span className="font-bold text-[#03045e]">{formatNumber(Math.max(above.data.points - rank.data.points, 0) + 1)} points</span>{" "}
+                  <span className="font-bold text-brand-900">{formatNumber(Math.max(above.data.points - rank.data.points, 0) + 1)} points</span>{" "}
                   to pass #{above.data.rank}.
                 </>
               ) : (
@@ -259,7 +259,7 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
       </div>
       <Link
         href="/student/leaderboard"
-        className="w-full mt-6 rounded-2xl bg-[#03045e] py-3 text-xs font-semibold text-white transition-colors hover:bg-[#0b1784] text-center"
+        className="w-full mt-6 rounded-2xl bg-brand-900 py-3 text-xs font-semibold text-white transition-colors hover:bg-brand-800 text-center"
       >
         Full Leaderboard
       </Link>

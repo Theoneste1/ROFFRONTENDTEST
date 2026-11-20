@@ -281,7 +281,7 @@ function Form({
             <button
               type="submit"
               disabled={save.isPending}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#2B2E9D] hover:bg-[#232580] text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-60"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-dark hover:bg-brand-800 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-60"
             >
               {save.isPending && <Spinner className="h-4 w-4 !text-white" />}
               {isEdit ? "Save changes" : "Upload"}

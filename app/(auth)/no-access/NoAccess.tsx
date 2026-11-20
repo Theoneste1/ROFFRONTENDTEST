@@ -35,7 +35,7 @@ export default function NoAccess() {
     return (
       <div className="space-y-5 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">You are signed out</h1>
-        <Link href="/login" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
+        <Link href="/login" className="inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand-dark">
           Sign in
         </Link>
       </div>
@@ -56,6 +56,7 @@ export default function NoAccess() {
       <div className="flex flex-col gap-3">
         <Button
           type="button"
+          variant="brand"
           className="w-full"
           loading={signingOut}
           onClick={async () => {
@@ -66,7 +67,7 @@ export default function NoAccess() {
         >
           {signingOut ? "Signing out…" : "Sign out"}
         </Button>
-        <Link href="/support" className="text-center text-sm font-medium text-[#2B2BB2] hover:underline">
+        <Link href="/support" className="text-center text-sm font-medium text-brand hover:underline">
           Help and support
         </Link>
       </div>

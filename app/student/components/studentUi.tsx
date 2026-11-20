@@ -28,7 +28,7 @@ export const COURSE_STYLE: Record<CourseCode, { symbol: string; chip: string; bu
   ALGEBRA: {
     symbol: "∑",
     chip: "bg-blue-50 text-blue-600",
-    button: "bg-[#03045e] hover:bg-[#0b1784]",
+    button: "bg-brand-900 hover:bg-brand-800",
     banner: "from-blue-300 via-blue-400 to-indigo-300",
   },
   NUMBER_THEORY: {

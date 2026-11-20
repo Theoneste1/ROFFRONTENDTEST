@@ -17,7 +17,7 @@ export default function WhyJoin() {
     <section id="why-join" className="bg-gradient-to-b from-slate-50 to-blue-50/60 py-20 sm:py-28" aria-labelledby="why-title">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#00428c]">Why join</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand">Why join</p>
           <h2 id="why-title" className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Why join the ROF LMS community?</h2>
           <p className="mt-4 text-lg text-slate-600">One platform for everyone who believes young people can solve hard problems.</p>
         </Reveal>
@@ -34,18 +34,18 @@ export default function WhyJoin() {
                 <ul className="space-y-3">
                   {a.points.map((p) => (
                     <li key={p} className="flex gap-3 text-slate-700">
-                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#00428c]" aria-hidden="true" />
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden="true" />
                       <span>{p}</span>
                     </li>
                   ))}
                 </ul>
                 <div className="mt-auto pt-8">
                   {a.cta.href.startsWith("#") ? (
-                    <a href={a.cta.href} className="inline-flex items-center gap-2 rounded-full bg-[#001E4E] px-6 py-3 font-semibold text-white transition hover:bg-[#00428c]">
+                    <a href={a.cta.href} className="inline-flex items-center gap-2 rounded-full bg-brand-950 px-6 py-3 font-semibold text-white transition hover:bg-brand">
                       {a.cta.label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </a>
                   ) : (
-                    <Link href={a.cta.href} className="inline-flex items-center gap-2 rounded-full bg-[#001E4E] px-6 py-3 font-semibold text-white transition hover:bg-[#00428c]">
+                    <Link href={a.cta.href} className="inline-flex items-center gap-2 rounded-full bg-brand-950 px-6 py-3 font-semibold text-white transition hover:bg-brand">
                       {a.cta.label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   )}

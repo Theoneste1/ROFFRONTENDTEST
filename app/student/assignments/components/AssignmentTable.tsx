@@ -13,7 +13,7 @@ export default function AssignmentTable({ assignments, now }: { assignments: Stu
       <div className="overflow-x-auto relative">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-[#DCE3F6] text-gray-700 text-sm font-bold">
+            <tr className="bg-brand-100 text-gray-700 text-sm font-bold">
               <th className="py-4 px-6">Assignment Name</th>
               <th className="py-4 px-6">Course</th>
               <th className="py-4 px-6">Deadline</th>

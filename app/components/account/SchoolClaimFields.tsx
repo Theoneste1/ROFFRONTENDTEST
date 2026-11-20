@@ -45,6 +45,7 @@ export default function SchoolClaimFields({
   hideLegend = false,
   countryOptions,
   only,
+  labelPrefix = "",
 }: {
   value: SchoolClaimDraft;
   onChange: (d: SchoolClaimDraft) => void;
@@ -55,6 +56,8 @@ export default function SchoolClaimFields({
   countryOptions?: { value: string; label: string }[];
   /** Only this piece, without the fieldset (nothing when the piece does not apply, e.g. a province for a school abroad). */
   only?: SchoolClaimPiece;
+  /** Before the labels of the country, province, district and sector (e.g. "School ": "School country", "School province"). */
+  labelPrefix?: string;
 }) {
   const country = value.mode === "abroad" ? value.country : RWANDA;
   const place = placeOf(value);
@@ -62,11 +65,11 @@ export default function SchoolClaimFields({
     const abroad = value.mode === "abroad";
     switch (only) {
       case "country":
-        return <CountrySelect options={countryOptions} value={country} onChange={(c) => onChange(c === RWANDA ? emptyDraft("directory") : { mode: "abroad", country: c, name: "" })} error={errors.country} />;
+        return <CountrySelect label={labelPrefix ? `${labelPrefix}country` : undefined} options={countryOptions} value={country} onChange={(c) => onChange(c === RWANDA ? emptyDraft("directory") : { mode: "abroad", country: c, name: "" })} error={errors.country} />;
       case "province":
       case "district":
       case "sector":
-        return abroad ? null : <PlaceSelects only={only} value={place} onChange={(p) => onChange({ mode: "directory", ...p, school: null })} errors={{ province: errors.province, district: errors.district, sector: errors.sector }} />;
+        return abroad ? null : <PlaceSelects only={only} labelPrefix={labelPrefix} value={place} onChange={(p) => onChange({ mode: "directory", ...p, school: null })} errors={{ province: errors.province, district: errors.district, sector: errors.sector }} />;
       case "school":
         return !abroad && placeComplete(place) ? <SchoolSelect place={place} value={value} onChange={onChange} errors={errors} /> : null;
       case "name":

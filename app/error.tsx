@@ -24,7 +24,7 @@ export default function ErrorPage({ error, retry }: { error: unknown; retry: () 
         <button
           type="button"
           onClick={() => retry()}
-          className="inline-flex w-full items-center justify-center rounded-lg border border-[#2B2BB2] px-6 py-3 text-sm font-semibold text-[#2B2BB2] hover:bg-indigo-50"
+          className="inline-flex w-full items-center justify-center rounded-lg border border-brand px-6 py-3 text-sm font-semibold text-brand hover:bg-indigo-50"
         >
           Try again
         </button>

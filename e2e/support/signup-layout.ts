@@ -1,21 +1,19 @@
 /**
- * The registration forms fit the window (app/components/forms/FormWizard, app/components/shell/AuthShell): helpers that
- * measure the shown step (no page scroll, no scrollbar in the card, every field and the buttons inside the window, nothing
- * overlapping) and fill the shown step with valid answers, whatever the grouping of the layout.
+ * The registration forms are one continuous form (app/components/forms/SignupForm, app/components/shell/AuthShell): helpers
+ * that measure the form (nothing sideways, no scrollbar in the card, every field, label, message and button inside the
+ * window's width, nothing overlapping) and fill every field with valid answers.
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 
 /** A school of the seeded directory with a full location (the cascades need province, district and sector). */
 export const LAYOUT_SCHOOL = { name: "ACEJ KARAMA", province: "Southern Province", district: "Muhanga", sector: "Muhanga" };
 
-/** What is wrong with the shown step's layout (an empty list: it fits). */
+/** What is wrong with the form's layout (an empty list: it fits). */
 export async function layoutProblems(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const problems: string[] = [];
     const vw = window.innerWidth;
-    const vh = window.innerHeight;
     const doc = document.scrollingElement as HTMLElement;
-    if (doc.scrollHeight > doc.clientHeight) problems.push(`the page scrolls (${doc.scrollHeight} > ${doc.clientHeight})`);
     if (doc.scrollWidth > doc.clientWidth) problems.push(`the page scrolls sideways (${doc.scrollWidth} > ${doc.clientWidth})`);
     const card = document.querySelector<HTMLElement>('[data-testid="auth-card"]');
     if (!card) return ["no card"];
@@ -35,18 +33,21 @@ export async function layoutProblems(page: Page): Promise<string[]> {
       return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
     };
     const describe = (el: Element) => `${el.tagName.toLowerCase()}${(el as HTMLElement).dataset.testid ? `[${(el as HTMLElement).dataset.testid}]` : ""}${el.getAttribute("name") ? `[name=${el.getAttribute("name")}]` : ""} "${(el.textContent ?? "").trim().slice(0, 30)}"`;
-    // Every field, label, hint, error and button of the shown step (and the progress and the buttons) is inside the window.
+    // Every field, label, hint, error and button (and the heading, the switch and the messages) is inside the window's width
+    // (the page scrolls up and down as one: the form is long).
     const items = [
-      ...card.querySelectorAll('[data-testid="wizard-fields"] [data-shown] :is(label, legend, input, select, textarea, p, button, dl)'),
-      ...card.querySelectorAll('[data-testid="wizard-actions"] :is(button, p, a)'),
-      ...card.querySelectorAll('[data-testid="wizard-progress-bar"], [data-testid="wizard-step"] h2:not([hidden] *)'),
-      ...card.querySelectorAll('[data-testid="wizard-body"] [role="alert"]'),
+      ...card.querySelectorAll('[data-testid="signup-fields"] :is(label, legend, input:not([type=file]), select, textarea, p, button, dl)'),
+      ...card.querySelectorAll('[data-testid="signup-actions"] :is(button, p, a)'),
+      ...card.querySelectorAll('[data-testid="signup-top"] :is(h1, nav a, [role="alert"])'),
     ].filter(visible);
+    if (!items.length) problems.push("no fields");
+    const top = (document.scrollingElement as HTMLElement).scrollTop;
     for (const el of items) {
       const r = el.getBoundingClientRect();
-      if (r.top < -0.5 || r.left < -0.5 || r.bottom > vh + 0.5 || r.right > vw + 0.5) problems.push(`${describe(el)} is outside the window (${Math.round(r.top)}–${Math.round(r.bottom)} of ${vh})`);
+      if (r.left < -0.5 || r.right > vw + 0.5) problems.push(`${describe(el)} is outside the window (${Math.round(r.left)}–${Math.round(r.right)} of ${vw})`);
+      if (r.top + top < -0.5) problems.push(`${describe(el)} is above the page`);
     }
-    // Nothing overlaps: labels, hints, errors and controls of the shown step and the buttons (an element and what it
+    // Nothing overlaps: labels, hints, errors and controls and the button (an element and what it
     // contains are not compared, nor a check box with its own label).
     const leaves = items.filter((el) => !items.some((o) => o !== el && el.contains(o) && !(el.tagName === "LABEL")));
     for (let i = 0; i < leaves.length; i++)
@@ -67,25 +68,11 @@ export async function layoutProblems(page: Page): Promise<string[]> {
   });
 }
 
-/** The buttons of the wide layout are not stretched: narrower than the card's row and at least 120px wide. */
-export async function buttonProblems(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const row = document.querySelector('[data-testid="wizard-actions"]');
-    if (!row) return ["no button row"];
-    const width = row.getBoundingClientRect().width;
-    return [...row.querySelectorAll<HTMLElement>("button")]
-      .map((b) => ({ name: (b.textContent ?? "").trim(), w: b.getBoundingClientRect().width }))
-      .filter((b) => b.w < 119.5 || b.w >= width / 2)
-      .map((b) => `"${b.name}" is ${Math.round(b.w)}px wide (row ${Math.round(width)}px)`);
-  });
-}
-
-/** The shown step's number and count ("Step 2 of 5"). */
-export async function stepOf(page: Page): Promise<{ step: number; count: number; title: string }> {
-  const text = (await page.getByTestId("wizard-progress").textContent()) ?? "";
-  const m = /Step (\d+) of (\d+)\s*·\s*(.*)$/.exec(text.trim());
-  if (!m) throw new Error(`no progress in "${text}"`);
-  return { step: Number(m[1]), count: Number(m[2]), title: m[3].trim() };
+/** The top of two fields' boxes (two fields side by side share their row). */
+export async function rowOf(page: Page, a: string, b: string): Promise<{ a: number; b: number; aLeft: number; bLeft: number }> {
+  const box = async (sel: string) => (await page.locator(sel).first().boundingBox())!;
+  const [ra, rb] = [await box(a), await box(b)];
+  return { a: Math.round(ra.y), b: Math.round(rb.y), aLeft: Math.round(ra.x), bLeft: Math.round(rb.x) };
 }
 
 async function choose(select: Locator, label: string | RegExp) {
@@ -95,9 +82,18 @@ async function choose(select: Locator, label: string | RegExp) {
   await select.selectOption((await option.getAttribute("value"))!);
 }
 
-/** Valid answers for the fields of the shown step (only those still empty; the optional picture is left out). */
-export async function fillShownStep(page: Page, who: { username: string; lastName: string; password: string }) {
-  const step = page.locator('[data-testid="wizard-fields"] > [data-shown]');
+/**
+ * Valid answers for every field of the form (only those still empty; the optional picture is left out). A dropdown of a
+ * cascade appears or is enabled once the one before it is chosen: the fields are gone through until nothing changes.
+ */
+export async function fillForm(page: Page, who: { username: string; lastName: string; password: string }) {
+  for (let pass = 0; pass < 4; pass++) if (!(await fillOnce(page, who))) return;
+}
+
+/** One pass over the fields; true when something was filled. */
+async function fillOnce(page: Page, who: { username: string; lastName: string; password: string }): Promise<boolean> {
+  let changed = false;
+  const step = page.locator('[data-testid="signup-fields"]');
   const TEXT: Record<string, string> = {
     firstName: "Aline",
     lastName: who.lastName,
@@ -140,8 +136,10 @@ export async function fillShownStep(page: Page, who: { username: string; lastNam
     const testId = (await c.getAttribute("data-testid")) ?? "";
     if (type === "file" || testId === "teacher-school-country" || !(await c.isVisible())) continue;
     if (tag === "SELECT") {
-      // A dropdown of a cascade is enabled once the one before it is chosen (choose waits for it).
       if (await c.inputValue()) continue;
+      // A dropdown of a cascade is enabled once the one before it (earlier in the form) is chosen.
+      if (!(await expect(c).toBeEnabled({ timeout: 5_000 }).then(() => true, () => false))) continue;
+      changed = true;
       const label = await c.evaluate((el) => (el as HTMLSelectElement).labels?.[0]?.textContent ?? "");
       if (testId in SELECT) await choose(c, SELECT[testId]);
       else if (name === "gradeLevel") await c.selectOption("S2");
@@ -153,9 +151,14 @@ export async function fillShownStep(page: Page, who: { username: string; lastNam
         await c.selectOption({ index: 1 });
       }
     } else if (type === "checkbox") {
-      if ((await step.locator(`input[type=checkbox][name="${name}"]:checked`).count()) === 0) await c.check();
+      if ((await step.locator(`input[type=checkbox][name="${name}"]:checked`).count()) === 0) {
+        await c.check();
+        changed = true;
+      }
     } else if (name in TEXT && !(await c.isDisabled()) && !(await c.inputValue())) {
       await c.fill(TEXT[name]);
+      changed = true;
     }
   }
+  return changed;
 }

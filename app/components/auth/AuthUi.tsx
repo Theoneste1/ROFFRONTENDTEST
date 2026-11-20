@@ -11,13 +11,13 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
  * the page heading and the Student / Teacher / Coach switch of the registration pages.
  */
 
-/** Title and short explanation at the top of every auth page (`compact`: the registration steps, which fit the window). */
-export function AuthHeading({ title, subtitle, eyebrow, compact = false }: { title: ReactNode; subtitle?: ReactNode; eyebrow?: string; compact?: boolean }) {
+/** Title and short explanation at the top of every auth page (sign in, the registration forms, account pages). */
+export function AuthHeading({ title, subtitle, eyebrow }: { title: ReactNode; subtitle?: ReactNode; eyebrow?: string }) {
   return (
     <div>
-      {eyebrow && <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#2B2BB2]">{eyebrow}</p>}
-      <h1 className={`tracking-tight text-slate-900 ${compact ? "text-[22px] font-extrabold leading-tight wizard-wide:text-[28px]" : "text-2xl font-bold sm:text-3xl"}`}>{title}</h1>
-      {subtitle && <p className={`text-slate-600 ${compact ? "mt-1 text-sm leading-snug wizard-wide:text-[15px]" : "mt-2 text-sm leading-relaxed"}`}>{subtitle}</p>}
+      {eyebrow && <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-brand">{eyebrow}</p>}
+      <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[30px]">{title}</h1>
+      {subtitle && <p className="mt-2 text-[15px] leading-relaxed text-slate-600">{subtitle}</p>}
     </div>
   );
 }
@@ -40,17 +40,13 @@ function useJoinRoles() {
 }
 
 /**
- * Which kind of account to create: each is its own page and workflow; this only links between them (`compact`: the small
- * segmented control beside the heading of the registration forms).
+ * Which kind of account to create: each is its own page and workflow; this only links between them (a segmented control
+ * above the heading of the registration pages).
  */
-export function JoinSwitch({ active, compact = false }: { active: JoinRole; compact?: boolean }) {
+export function JoinSwitch({ active }: { active: JoinRole }) {
   const roles = useJoinRoles();
   return (
-    <nav
-      aria-label="Choose your account type"
-      className={compact ? "grid grid-cols-3 gap-0.5 rounded-xl bg-slate-100 p-1 ring-1 ring-slate-200 wizard-wide:inline-grid" : "grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1"}
-      data-testid="join-switch"
-    >
+    <nav aria-label="Choose your account type" className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 ring-1 ring-inset ring-slate-200/80" data-testid="join-switch">
       {roles.map(({ role, label, href, icon: Icon }) => {
         const on = role === active;
         return (
@@ -58,9 +54,9 @@ export function JoinSwitch({ active, compact = false }: { active: JoinRole; comp
             key={role}
             href={href}
             aria-current={on ? "page" : undefined}
-            className={`flex items-center justify-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 ${
-              compact ? "min-h-11 rounded-lg px-3 text-sm font-semibold focus-visible:ring-brand wizard-wide:min-h-9 wizard-wide:text-[13px]" : "rounded-xl px-2 py-2.5 text-sm font-semibold focus-visible:ring-indigo-500"
-            } ${on ? `bg-white shadow-sm ring-1 ring-slate-200 ${compact ? "text-brand" : "text-[#2B2BB2]"}` : "text-slate-600 hover:text-slate-800"}`}
+            className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+              on ? "bg-white text-brand shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white/60 hover:text-slate-900"
+            }`}
           >
             <Icon className="h-4 w-4" aria-hidden="true" />
             {label}
@@ -68,23 +64,6 @@ export function JoinSwitch({ active, compact = false }: { active: JoinRole; comp
         );
       })}
     </nav>
-  );
-}
-
-/** A titled group of fields in a long form (e.g. "About you", "Your school"). */
-export function FormSection({ title, step, children }: { title: string; step?: number; children: ReactNode }) {
-  return (
-    <section className="space-y-4 border-t border-slate-100 pt-5 first:border-t-0 first:pt-0">
-      <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">
-        {step != null && (
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-[#2B2BB2]" aria-hidden="true">
-            {step}
-          </span>
-        )}
-        {title}
-      </h2>
-      {children}
-    </section>
   );
 }
 

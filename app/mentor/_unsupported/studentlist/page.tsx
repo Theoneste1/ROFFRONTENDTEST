@@ -324,7 +324,7 @@ export default function StudentListFilter() {
         <div className="mt-6 flex justify-end">
           <Link
             href="/mentor/courses/studentlist/message"
-            className="rounded-lg bg-[#2221B2] px-6 py-2.5 text-sm font-medium text-white shadow hover:bg-blue-900 transition"
+            className="rounded-lg bg-brand px-6 py-2.5 text-sm font-medium text-white shadow hover:bg-blue-900 transition"
           >
             Message Students ({mockStudents.length})
           </Link>

@@ -100,7 +100,7 @@ export default function PortalShell({
             id={SIDEBAR_ID}
             // Exactly the visible height: the sidebar shows what fits and puts the rest under "More" (SidebarNav), so it
             // never scrolls; not clipped, so the "More" panel can open beside it.
-            className="sticky top-20 z-20 h-[calc(100dvh-5rem)] flex-shrink-0 self-start overflow-visible bg-[#001E4E] [&>aside]:h-full"
+            className="sticky top-20 z-20 h-[calc(100dvh-5rem)] flex-shrink-0 self-start overflow-visible bg-brand-950 [&>aside]:h-full"
             data-testid="portal-sidebar"
           >
             {renderSidebar(railOpen)}
@@ -120,7 +120,7 @@ export default function PortalShell({
               aria-label="Main menu"
               inert={!drawerOpen}
               // Opening shows the drawer at once (so focus can move in); closing hides it after the slide.
-              className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto bg-[#001E4E] shadow-2xl duration-300 ease-in-out [&>aside]:h-auto [&>aside]:min-h-full [&>aside]:w-full ${
+              className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto bg-brand-950 shadow-2xl duration-300 ease-in-out [&>aside]:h-auto [&>aside]:min-h-full [&>aside]:w-full ${
                 drawerOpen ? "translate-x-0 visible transition-transform" : "-translate-x-full invisible transition-[transform,visibility]"
               }`}
             >

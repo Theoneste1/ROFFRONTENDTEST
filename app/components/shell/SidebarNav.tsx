@@ -41,7 +41,7 @@ export interface SidebarItem {
 }
 
 const ITEM = "flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all";
-const ACTIVE = "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50";
+const ACTIVE = "bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md shadow-indigo-950/50";
 const IDLE = "hover:bg-white/5 text-slate-400 hover:text-white";
 
 // useLayoutEffect warns during server rendering; the measurement only matters in the browser.
@@ -198,7 +198,7 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
                 ? // Drawer: expands inline below the button (the drawer scrolls if needed).
                   `flex flex-col gap-1 overflow-hidden rounded-xl bg-white/[0.03] transition-all duration-200 ease-out ${moreOpen ? "max-h-[2000px] opacity-100 p-1" : "max-h-0 opacity-0 p-0 invisible"}`
                 : // Rail: a panel beside the sidebar, so the sidebar never has to scroll.
-                  `absolute bottom-0 left-full ml-3 z-50 w-60 overflow-y-auto overscroll-contain rounded-xl bg-[#001E4E] border border-blue-900/60 shadow-2xl p-2 flex flex-col gap-1 transition-all duration-200 ease-out ${
+                  `absolute bottom-0 left-full ml-3 z-50 w-60 overflow-y-auto overscroll-contain rounded-xl bg-brand-950 border border-blue-900/60 shadow-2xl p-2 flex flex-col gap-1 transition-all duration-200 ease-out ${
                     moreOpen ? "opacity-100 translate-x-0 visible" : "opacity-0 -translate-x-2 invisible pointer-events-none"
                   }`
             }

@@ -106,9 +106,9 @@ export default function ResultPanel({ assignment: a, onAsk }: { assignment: Stud
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#EEF4FF] border border-[#D0E1FF] rounded-xl px-4 py-3">
-        <p className="text-sm text-[#1E40AF]">Questions about your result? Ask in this assignment&apos;s discussion.</p>
-        <button type="button" onClick={onAsk} className="inline-flex items-center gap-2 text-xs font-semibold text-white bg-[#2B36C8] hover:bg-blue-800 px-4 py-2 rounded-lg">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3">
+        <p className="text-sm text-brand-dark">Questions about your result? Ask in this assignment&apos;s discussion.</p>
+        <button type="button" onClick={onAsk} className="inline-flex items-center gap-2 text-xs font-semibold text-white bg-brand hover:bg-blue-800 px-4 py-2 rounded-lg">
           <MessageSquare className="w-4 h-4" /> Open discussion
         </button>
       </div>

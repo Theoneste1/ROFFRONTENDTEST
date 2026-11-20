@@ -25,7 +25,7 @@ const RESOURCES = [
 export default function HomeFooter() {
   const info = useSupportInfo().data;
   return (
-    <footer className="bg-[#000f2b] text-blue-100" aria-labelledby="footer-title">
+    <footer className="bg-brand-950 text-blue-100" aria-labelledby="footer-title">
       <h2 id="footer-title" className="sr-only">Footer</h2>
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>

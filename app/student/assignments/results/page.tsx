@@ -124,7 +124,7 @@ export default function ResultsPage() {
             <div className={`overflow-x-auto ${query.isFetching ? "opacity-70" : ""}`}>
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#D9E1F2] text-gray-700 text-xs font-semibold uppercase tracking-wider">
+                  <tr className="bg-brand-100 text-gray-700 text-xs font-semibold uppercase tracking-wider">
                     <th className="py-3.5 px-6 font-semibold w-5/12">Assignment Name</th>
                     <th className="py-3.5 px-6 font-semibold w-3/12">Due</th>
                     <th className="py-3.5 px-6 font-semibold w-2/12">Score</th>

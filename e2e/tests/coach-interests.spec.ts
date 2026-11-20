@@ -13,7 +13,6 @@ import { hashSync } from "bcryptjs";
 import { withDb } from "../support/db";
 import { PASSWORD } from "../support/accounts";
 import { signIn, signInWith } from "../support/session";
-import { nextStep, progress } from "../support/wizard";
 
 const RUN = Date.now().toString(36);
 const QUESTION = "Which subjects are you interested in coaching?";
@@ -54,24 +53,21 @@ test.describe("coach subjects", () => {
     await page.locator('input[name="lastName"]').fill(`Subjects${RUN}`);
     await page.getByTestId("coach-country").selectOption("RW");
     await page.locator('input[name="phone"]').fill("0788333444");
-    await nextStep(page, "Profile picture");   // the optional picture: its own screen of "About you"
-    await nextStep(page, "Your background");
     const subjects = page.getByTestId("olympiad-interests");
     await expect(subjects.getByText(QUESTION)).toBeVisible();
     await expect(subjects.locator("legend .text-red-500")).toHaveText("*");
     await page.locator('input[name="occupation"]').fill("Physics lecturer");
     await page.getByTestId("coach-education").selectOption("MASTER");
-    // No subject: Next is refused on this step with the message.
-    await page.getByRole("button", { name: "Next", exact: true }).click();
+    // No subject: sending is refused with the message on the subjects; nothing is sent.
+    await page.getByRole("button", { name: "Apply as a coach" }).click();
     await expect(page.getByText(REQUIRED)).toBeVisible();
-    await expect(progress(page)).toContainText("Step 3 of 5");
+    await expect(subjects.getByLabel("Mathematics")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByTestId("apply-done")).toHaveCount(0);
     await subjects.getByLabel("Mathematics").check();
     await subjects.getByLabel("Computing").check();
     await expect(page.getByText(REQUIRED)).toHaveCount(0);
-    await nextStep(page, "Your experience");
     await page.locator('textarea[name="expertise"]').fill("Olympiad mathematics and computing.");
     await page.locator('textarea[name="relevantExperience"]').fill("Four years of olympiad training camps.");
-    await nextStep(page, "Your account");
     await page.locator('input[name="username"]').fill(username);
     await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await page.locator('input[name="new-password"]').fill(PASSWORD);

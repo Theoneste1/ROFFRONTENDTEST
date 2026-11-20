@@ -23,7 +23,8 @@ hour and is refused (429), as designed.
 | `role-journeys`, `sidebar`, `sidebar.mobile` | every portal, navigation, refusal of other portals |
 | `date-of-birth-step`, `privacy`, `teacher-student-access` | first-sign-in date of birth, picture privacy, teacher access |
 | `registration-forms` | student sign-up with and without the optional picture, teacher and coach applications, closed form (REG-02/05/06/08, UX-01) |
-| `registration-wizard` | the registration forms one step at a time: progress and ARIA, Next checks the shown step, Back keeps everything, Enter, focus, a refused field back to its step, the Student / Teacher / Coach switch, the card fitting 1366×768 and 375×667 windows (inner scroll) |
+| `registration-one-form` | the registration forms as one continuous form: no steps, progress, headings, Next or Back; every message on its field and focus on the first; a refused field gets the server's message and the focus; a refusal naming no field shown in view; the Student / Teacher / Coach switch; no scrollbar in the card at 1366×768 and 375×667 |
+| `signup-layout` | the registration forms fit 1366×768 to 360×640 windows (nothing sideways, nothing overlapping, two per row on wide windows), empty, with errors, filled and with a school not listed; sent from two sizes; crossing 640px; the picture's drop zone |
 | `coach-interests` | coaches' subjects (owner decision 2026-11-19): required in the coach application, edited by the coach on My Profile and by an Administrator on the account page, shown on the Admin Users list ("Not set" when none) |
 | `application-review` | Administrator asks for information, rejects with a reason, approves (REG-10) |
 | `admin-users` | bulk suspend with preview and reason, account history, CSV export, e-mail preferences (ACC-09/11, REG-12, NOT-03) |

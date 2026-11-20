@@ -140,7 +140,7 @@ function StudentsBoard() {
       )}
 
       {/* Your status */}
-      <div className="bg-[#0b1329] text-white rounded-2xl p-4 md:px-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-brand-950 text-white rounded-2xl p-4 md:px-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
         {me.isError ? (
           <p className="text-sm text-slate-400">Couldn&apos;t load your rank.</p>
         ) : (

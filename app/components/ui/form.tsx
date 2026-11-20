@@ -122,7 +122,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({ loading, variant = "primary", disabled, children, className = "", ...props }: ButtonProps) {
   const hydrated = useHydrated();
   const styles = {
-    primary: "bg-[#2B2BB2] hover:bg-[#232c94] text-white shadow-md hover:shadow-lg",
+    primary: "bg-brand hover:bg-brand-dark text-white shadow-md hover:shadow-lg",
     secondary: "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50",
     brand: "bg-brand hover:bg-brand-dark text-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
     outline: "bg-white border border-slate-400 text-slate-800 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",

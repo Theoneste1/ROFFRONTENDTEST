@@ -81,7 +81,7 @@ export default function DeepLinkRedirect() {
             It may point to something that was removed, that isn&apos;t published yet, or that your account can&apos;t open.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <Link href={portalHome(role)} className="px-5 py-2.5 rounded-lg bg-[#2B2BB2] text-white text-sm font-semibold hover:bg-[#232c94]">
+            <Link href={portalHome(role)} className="px-5 py-2.5 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-brand-dark">
               {hasPortal(role) ? "Go to my dashboard" : "Continue"}
             </Link>
             {hasPortal(role) && (

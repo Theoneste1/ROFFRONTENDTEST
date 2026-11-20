@@ -24,10 +24,9 @@
  * retry, and lets the student continue with the legacy fields. Once a form is
  * chosen it is kept, so a later re-check can't swap fields while someone types.
  *
- * Steps (app/components/forms/FormWizard, lib/forms/registration-steps → studentSteps): About you, Phone and picture,
- * Your studies, School location, Your school, Where you live, Your account on wider windows (two columns); more and
- * smaller steps on phones. Each fits the window. Next checks the shown step with the rules below; the last step sends the form; a refused field goes back to its
- * step.
+ * One continuous form (app/components/forms/SignupForm, lib/forms/registration-fields → STUDENT_PARTS): the fields in
+ * order, two per row on wider windows where they pair naturally, one column on phones, then "Create my account". A
+ * failed check or a refused field: focus goes to the first highlighted field.
  *
  * Closed registration (capability formAvailability): the page shows the administrator's closed message, opening time,
  * instructions and contact (GET /forms/STUDENT_REGISTRATION) instead of the form, and a refused submission shows the
@@ -36,9 +35,9 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { AuthHeading, JoinSwitch, SignInInstead } from "@/app/components/auth/AuthUi";
-import FormWizard, { useFormWizard, useWizardLayout, WIZARD_FORM_CLASS } from "@/app/components/forms/FormWizard";
-import { errorKeys, firstStepWithError, replaceStepErrors } from "@/lib/forms/wizard";
-import { studentSteps } from "@/lib/forms/registration-steps";
+import SignupForm, { SIGNUP_FORM_CLASS, useSignupFocus } from "@/app/components/forms/SignupForm";
+import { errorKeys } from "@/lib/forms/wizard";
+import { STUDENT_PARTS, visibleParts } from "@/lib/forms/registration-fields";
 import { publicApi, type RegisterStudentResult } from "@/lib/api/auth";
 import type { GradeLevel } from "@/lib/api/types";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
@@ -137,8 +136,8 @@ export default function RegisterForm() {
   const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
   const [claimErrors, setClaimErrors] = useState<Partial<Record<SchoolClaimField, string>>>({});
   const homeInRwanda = details.homeCountry === RWANDA;
-  // The steps of the shown layout, with the parts this backend and these answers ask for.
-  const STEPS = studentSteps(useWizardLayout(), (part) => {
+  // The fields this backend and these answers ask for, in order.
+  const PARTS = visibleParts(STUDENT_PARTS, (part) => {
     switch (part) {
       case "dateOfBirth":
       case "homeCountry":
@@ -169,7 +168,7 @@ export default function RegisterForm() {
         return true;
     }
   });
-  const wizard = useFormWizard(STEPS);
+  const focus = useSignupFocus();
 
   function validate() {
     const e: Partial<Record<F, string>> = {};
@@ -199,23 +198,12 @@ export default function RegisterForm() {
     const e = validate();
     const ce = directory ? validateSchoolClaim(claim) : {};
     const de = detailsOn ? validateStudentDetails(details) : {};
-    const pe = { picture: pictureError };
-    if (!wizard.isLast) {
-      // Next (or Enter in a field): the same rules, for the fields of the shown step only.
-      const step = STEPS[wizard.index];
-      setErrors((s) => replaceStepErrors(step, s, e));
-      setClaimErrors((s) => replaceStepErrors(step, s, ce));
-      setDetailErrors((s) => replaceStepErrors(step, s, de));
-      if (firstStepWithError([step], errorKeys(e, ce, de, pe)) === 0) wizard.showErrors();
-      else wizard.next();
-      return;
-    }
     setErrors(e);
     setClaimErrors(ce);
     setDetailErrors(de);
     setError(null);
     if (Object.keys(e).length || Object.keys(ce).length || Object.keys(de).length || pictureError) {
-      wizard.showErrors(firstStepWithError(STEPS, errorKeys(e, ce, de, pe)));
+      focus.showErrors();
       return;
     }
     setSubmitting(true);
@@ -251,10 +239,9 @@ export default function RegisterForm() {
         sce = Object.fromEntries(Object.entries(server).map(([k, m]) => [SCHOOL_CLAIM_SERVER_FIELDS[k], m]));
         setClaimErrors(sce);
       }
-      // A refused field: back to its step. Other refusals stay on this step with their message above the steps.
-      const at = firstStepWithError(STEPS, errorKeys(fe, sde, sce));
-      if (at !== -1) wizard.showErrors(at);
-      else wizard.showMessage();
+      // A refused field: focus on it. Other refusals: their message above the fields.
+      if (errorKeys(fe, sde, sce).length) focus.showErrors();
+      else focus.showMessage();
     } finally {
       setSubmitting(false);
     }
@@ -274,7 +261,7 @@ export default function RegisterForm() {
         {pictureOutcomeText(pictureResult) && (
           <p className="text-sm text-slate-700" data-testid="picture-outcome">{pictureOutcomeText(pictureResult)}</p>
         )}
-        <Link href="/login" className="inline-flex w-full items-center justify-center rounded-lg bg-[#2B2BB2] px-6 py-3 text-sm font-semibold text-white hover:bg-[#232c94]">
+        <Link href="/login" className="inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand-dark">
           Go to sign in
         </Link>
       </div>
@@ -290,7 +277,7 @@ export default function RegisterForm() {
           <div className="space-y-4" data-testid="register-detection-failed">
             <Alert tone="error">We couldn&apos;t reach the ROF LMS server to prepare the registration form.</Alert>
             <p className="text-sm text-slate-600">Check your connection and try again. The server can take up to a minute to wake up.</p>
-            <Button type="button" className="w-full" onClick={caps.retry} disabled={gate.retrying} data-testid="register-retry">
+            <Button type="button" variant="brand" className="w-full" onClick={caps.retry} disabled={gate.retrying} data-testid="register-retry">
               {gate.retrying ? "Trying again…" : "Try again"}
             </Button>
             <Button type="button" variant="secondary" className="w-full" onClick={() => setSchoolMode("legacy")}>
@@ -320,7 +307,7 @@ export default function RegisterForm() {
           <div className="space-y-4" data-testid="register-form-check-failed">
             <Alert tone="error">We couldn&apos;t check whether student registration is open.</Alert>
             <p className="text-sm text-slate-600">Check your connection and try again. The server can take up to a minute to wake up.</p>
-            <Button type="button" className="w-full" onClick={() => void studentForm.refetch()} disabled={studentForm.isFetching} data-testid="register-form-retry">
+            <Button type="button" variant="brand" className="w-full" onClick={() => void studentForm.refetch()} disabled={studentForm.isFetching} data-testid="register-form-retry">
               {studentForm.isFetching ? "Trying again…" : "Try again"}
             </Button>
           </div>
@@ -362,6 +349,7 @@ export default function RegisterForm() {
       }}
       errors={claimErrors}
       countryOptions={countryList.supported ? countries : undefined}
+      labelPrefix="School "
     />
   );
   // Province → District → Sector of the official list; each step clears the ones after it.
@@ -380,7 +368,7 @@ export default function RegisterForm() {
   );
   const passwordProps = { password, confirm, onPassword: setPassword, onConfirm: setConfirm, errors: { password: errors.password, confirm: errors.confirm }, label: "Password" };
 
-  // The fields, part by part (lib/forms/registration-steps → STUDENT_PARTS): the steps show them in two columns or one.
+  // The fields, part by part (lib/forms/registration-fields → STUDENT_PARTS), in two columns or one.
   const parts: Record<string, ReactNode> = {
     firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={100} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
     lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={100} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
@@ -460,7 +448,7 @@ export default function RegisterForm() {
           onChange={(e) => set("gradeLevel")(e.target.value)}
           aria-invalid={errors.gradeLevel ? true : undefined}
           aria-describedby={errors.gradeLevel ? "gradeLevel-error" : "gradeLevel-hint"}
-          className={`w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 ${errors.gradeLevel ? "border-red-400 focus:ring-red-500/20" : "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500"}`}
+          className={`w-full px-4 py-3 bg-white border rounded-lg text-slate-800 text-sm focus:outline-none focus:ring-2 ${errors.gradeLevel ? "border-red-400 focus:ring-red-500/20" : "border-slate-300 focus:ring-brand/20 focus:border-brand"}`}
         >
           <option value="">Choose your grade</option>
           {GRADES.map((g) => (
@@ -526,27 +514,19 @@ export default function RegisterForm() {
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className={WIZARD_FORM_CLASS}>
-      <FormWizard
-        wizard={wizard}
-        steps={STEPS}
-        parts={parts}
+    <form onSubmit={onSubmit} noValidate className={SIGNUP_FORM_CLASS}>
+      <SignupForm
+        focus={focus}
+        parts={PARTS}
+        content={parts}
         submitLabel="Create my account"
         submittingLabel="Creating your account…"
         submitting={submitting}
         header={
           <>
-            <JoinSwitch active="student" compact />
-            <AuthHeading title="Create your account" compact />
+            <JoinSwitch active="student" />
+            <AuthHeading title="Join as a student" subtitle="Create your free ROF account and start preparing for the Olympiads." />
           </>
-        }
-        intro={
-          <p className="text-sm leading-snug text-slate-600 wizard-wide:text-[15px]">
-            Complete the form below to get started.{" "}
-            <span className="hidden text-sm wizard-wide:inline">
-              Fields marked <span className="text-red-600">*</span> are required.
-            </span>
-          </p>
         }
         notices={
           <>

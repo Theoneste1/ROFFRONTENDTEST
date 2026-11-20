@@ -44,7 +44,7 @@ export default function MessageSentSuccess() {
             <span className="font-semibold text-slate-900">{recipientLabel}</span>
 
             <span className="font-medium text-slate-600">Subject:</span>
-            <span className="font-semibold text-[#1D3B8A]">{subject}</span>
+            <span className="font-semibold text-brand-dark">{subject}</span>
 
             <span className="font-medium text-slate-600">Sent:</span>
             <span className="text-slate-700">{sentDate}</span>
@@ -62,7 +62,7 @@ export default function MessageSentSuccess() {
           </button>
           <Link
             href="/mentor/courses"
-            className="w-1/2 rounded-xl bg-[#2D2DAA] px-5 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#24248E] active:scale-[0.98] text-center"
+            className="w-1/2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-brand-dark active:scale-[0.98] text-center"
           >
             Back to analytics
           </Link>

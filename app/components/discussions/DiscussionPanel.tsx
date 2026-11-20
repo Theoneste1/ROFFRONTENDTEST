@@ -56,7 +56,7 @@ export default function DiscussionPanel({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-3 bg-[#EEF4FF] border border-[#D0E1FF] text-[#2563EB] px-4 py-3 rounded-xl text-sm font-medium shadow-sm">
+      <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 text-brand-600 px-4 py-3 rounded-xl text-sm font-medium shadow-sm">
         <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
           <Info className="w-3.5 h-3.5" />
         </div>
@@ -83,7 +83,7 @@ export default function DiscussionPanel({
                 }}
                 className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                   selected?.id === t.id && !creating
-                    ? "bg-[#1E1B4B] text-white border-[#1E1B4B]"
+                    ? "bg-brand-950 text-white border-brand-950"
                     : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
                 }`}
               >
@@ -177,7 +177,7 @@ function NewThreadForm({
         <button
           type="submit"
           disabled={!valid || create.isPending}
-          className="inline-flex items-center gap-2 bg-[#2B36C8] hover:bg-blue-800 text-white font-medium text-xs px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 bg-brand hover:bg-blue-800 text-white font-medium text-xs px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50"
         >
           {create.isPending && <Spinner className="h-3.5 w-3.5 !text-white" />}
           Post topic
@@ -267,7 +267,7 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
           <button
             type="submit"
             disabled={!draft.trim() || actions.add.isPending}
-            className="inline-flex items-center gap-2 bg-[#2B36C8] hover:bg-blue-800 text-white font-medium text-xs px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 bg-brand hover:bg-blue-800 text-white font-medium text-xs px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50"
           >
             {actions.add.isPending && <Spinner className="h-3.5 w-3.5 !text-white" />}
             Post
@@ -369,7 +369,7 @@ function CommentCard({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-gray-900 text-sm">{deleted ? "Deleted" : personName(comment.author)}</span>
               {!deleted && comment.author!.role !== "STUDENT" && (
-                <span className="bg-[#EFF6FF] text-[#3B82F6] text-[11px] font-semibold px-2 py-0.5 rounded-md">{roleLabel(comment.author!.role)}</span>
+                <span className="bg-brand-50 text-brand-500 text-[11px] font-semibold px-2 py-0.5 rounded-md">{roleLabel(comment.author!.role)}</span>
               )}
               {mine && <span className="bg-indigo-900 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">You</span>}
             </div>
@@ -407,7 +407,7 @@ function CommentCard({
             <button type="button" onClick={() => setEditing(false)} className="px-4 py-1.5 text-xs text-gray-600">
               Cancel
             </button>
-            <button type="submit" disabled={actions.edit.isPending || !editText.trim()} className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2B36C8] rounded-lg disabled:opacity-50">
+            <button type="submit" disabled={actions.edit.isPending || !editText.trim()} className="px-4 py-1.5 text-xs font-semibold text-white bg-brand rounded-lg disabled:opacity-50">
               Save
             </button>
           </div>
@@ -488,7 +488,7 @@ function CommentCard({
             className="flex-1 min-w-0 bg-[#F8FAFC] border border-gray-200 rounded-full py-2 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
             aria-label="Write a reply"
           />
-          <button type="submit" disabled={!reply.trim() || actions.add.isPending} className="px-4 py-2 text-xs font-semibold text-white bg-[#2B36C8] rounded-xl disabled:opacity-50">
+          <button type="submit" disabled={!reply.trim() || actions.add.isPending} className="px-4 py-2 text-xs font-semibold text-white bg-brand rounded-xl disabled:opacity-50">
             Reply
           </button>
         </form>

@@ -41,7 +41,7 @@ export default function ResetPasswordForm() {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Password changed</h1>
         <Alert tone="success">Your password has been reset. For your security, you have been signed out on every device.</Alert>
         <Link href="/login" className="block">
-          <span className="w-full inline-flex justify-center px-6 py-3 text-sm font-semibold rounded-lg bg-[#2B2BB2] hover:bg-[#232c94] text-white shadow-md">
+          <span className="w-full inline-flex justify-center px-6 py-3 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-dark text-white shadow-md">
             Sign in
           </span>
         </Link>
@@ -54,7 +54,7 @@ export default function ResetPasswordForm() {
       <div className="space-y-5">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Link not valid</h1>
         <Alert tone="error">This reset link is invalid or has expired. Links are valid for 30 minutes, and only the newest link works.</Alert>
-        <Link href="/forgot-password" className="text-sm font-semibold text-[#2B2BB2] hover:underline">
+        <Link href="/forgot-password" className="text-sm font-semibold text-brand hover:underline">
           Request a new link
         </Link>
       </div>
@@ -69,7 +69,7 @@ export default function ResetPasswordForm() {
       </div>
       {mutation.isError && !server.newPassword && <Alert tone="error">{errorMessage(mutation.error)}</Alert>}
       <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={errors} />
-      <Button type="submit" loading={mutation.isPending} className="w-full">
+      <Button type="submit" variant="brand" loading={mutation.isPending} className="w-full">
         Reset password
       </Button>
     </form>

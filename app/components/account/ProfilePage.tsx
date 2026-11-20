@@ -113,7 +113,7 @@ export default function ProfilePage() {
           {user.role === "STUDENT" && <SchoolAffiliationCard />}
           {user.role === "TEACHER" && <TeacherSchoolsCard />}
           <Section title="Settings" icon={<Settings className="w-5 h-5" />} description="Your password, signed-in devices and notification e-mails.">
-            <Link href={portalPath(user.role, "account")} className="inline-flex items-center gap-2 text-sm font-semibold text-[#2B2BB2] hover:underline" data-testid="profile-settings-link">
+            <Link href={portalPath(user.role, "account")} className="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline" data-testid="profile-settings-link">
               Open Settings <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Section>
