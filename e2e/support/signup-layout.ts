@@ -150,6 +150,12 @@ async function fillOnce(page: Page, who: { username: string; lastName: string; p
         await expect(c.locator("option").nth(1)).toBeAttached({ timeout: 30_000 });
         await c.selectOption({ index: 1 });
       }
+    } else if (type === "radio") {
+      // Gender (required): Female, once per group.
+      if ((await step.locator(`input[type=radio][name="${name}"]:checked`).count()) === 0) {
+        await step.locator(`input[type=radio][name="${name}"]`).first().check();
+        changed = true;
+      }
     } else if (type === "checkbox") {
       if ((await step.locator(`input[type=checkbox][name="${name}"]:checked`).count()) === 0) {
         await c.check();

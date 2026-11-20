@@ -51,6 +51,7 @@ test.describe("coach subjects", () => {
     await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
     await page.locator('input[name="firstName"]').fill("Sara");
     await page.locator('input[name="lastName"]').fill(`Subjects${RUN}`);
+    await page.locator('input[name="gender"][value="FEMALE"]').check();
     await page.getByTestId("coach-country").selectOption("RW");
     await page.locator('input[name="phone"]').fill("0788333444");
     const subjects = page.getByTestId("olympiad-interests");

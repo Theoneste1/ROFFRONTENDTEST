@@ -30,6 +30,8 @@ export interface TeacherRegistrationAvailability {
  * The school's code, sector or name are never sent for a listed school (the backend reads them).
  */
 export interface TeacherRegistrationBase {
+  /** Only on a backend with `registrationGender` (lib/accounts/gender), where it is required. */
+  gender?: "FEMALE" | "MALE";
   firstName: string;
   lastName: string;
   username: string;

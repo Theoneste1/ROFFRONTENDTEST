@@ -205,6 +205,7 @@ export function setHomeDistrict(d: TeacherDraft, district: string): TeacherDraft
 export type TeacherField =
   | "firstName"
   | "lastName"
+  | "gender"
   | "username"
   | "email"
   | "country"
@@ -316,6 +317,7 @@ export const TEACHER_ERROR_FIELDS: Readonly<Record<string, TeacherField>> = {
 export const TEACHER_SERVER_FIELDS: Readonly<Record<string, TeacherField>> = {
   firstName: "firstName",
   lastName: "lastName",
+  gender: "gender",
   username: "username",
   email: "email",
   confirmPassword: "confirm",

@@ -139,6 +139,8 @@ export interface RegisterStudentInput {
   country?: string;
   /** Student's home district or city (2–200 characters); not sent when the Rwandan home place is. */
   homeLocation?: string;
+  /** Only on a backend with `registrationGender` (lib/accounts/gender), where it is required. */
+  gender?: "FEMALE" | "MALE";
   /** Olympiad interests (only on a backend with `studentOlympiadInterests`; the form requires one). */
   olympiadInterests?: OlympiadSubject[];
   // Only on a backend with `studentRegistrationDetails` (lib/accounts/student-details.ts):
@@ -170,6 +172,8 @@ export interface MentorApplicationInput {
   username: string;
   email: string;
   password: string;
+  /** Only on a backend with `registrationGender` (lib/accounts/gender), where it is required. */
+  gender?: "FEMALE" | "MALE";
   // Only on a backend with `coachApplicationDetails` (lib/accounts/coach-application.ts):
   country?: string;
   occupation?: string;

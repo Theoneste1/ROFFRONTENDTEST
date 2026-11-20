@@ -45,10 +45,12 @@ import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsFi
 import SignupForm, { SIGNUP_FORM_CLASS, useSignupFocus } from "@/app/components/forms/SignupForm";
 import { errorKeys } from "@/lib/forms/wizard";
 import { coachParts } from "@/lib/forms/registration-fields";
+import GenderField from "@/app/components/account/GenderField";
+import { genderSupported, validateGender, type Gender } from "@/lib/accounts/gender";
 
 const USERNAME = /^[a-z0-9._-]{3,30}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const FIELDS = ["firstName", "lastName", "username", "email", "password"] as const;
+const FIELDS = ["firstName", "lastName", "username", "email", "password", "gender"] as const;
 type F = (typeof FIELDS)[number] | "confirm";
 const DETAIL_FIELDS = ["country", "occupation", "educationLevel", "olympiadInterests"] as const;
 
@@ -134,6 +136,9 @@ function CoachApplication() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [done, setDone] = useState(false);
+  // Gender (required) on a backend with registrationGender.
+  const genderOn = genderSupported(detection);
+  const [gender, setGender] = useState<Gender | "">("");
   // Optional profile picture (REG-02): never required; uploaded with the registration's one-time token.
   const pictureOn = registrationAvatarSupported(useBackendCapabilities().detection);
   const [picture, setPicture] = useState<File | null>(null);
@@ -143,6 +148,7 @@ function CoachApplication() {
   // The fields this backend asks for, in order.
   const PARTS = coachParts(detailsOn, (part) => {
     if (part === "picture") return pictureOn;
+    if (part === "gender") return genderOn;
     if (["phone", "affiliation", "expertise", "relevantExperience", "yearsOfExperience"].includes(part)) return extraOn;
     return true;
   });
@@ -154,6 +160,8 @@ function CoachApplication() {
     const e: Partial<Record<F, string>> = {};
     if (v.firstName.trim().length < 2) e.firstName = "Enter your first name (at least 2 characters).";
     if (v.lastName.trim().length < 2) e.lastName = "Enter your last name (at least 2 characters).";
+    const ge = genderOn ? validateGender(gender) : undefined;
+    if (ge) e.gender = ge;
     if (!USERNAME.test(v.username)) e.username = "3–30 characters: lowercase letters, digits, “.”, “_” or “-”.";
     if (!EMAIL.test(v.email.trim())) e.email = "Enter a valid e-mail address.";
     const p = validateNewPassword(password, confirm);
@@ -177,6 +185,7 @@ function CoachApplication() {
         username: v.username,
         email: v.email.trim(),
         password,
+        ...(genderOn && gender && { gender }),
         ...(detailsOn && coachDetailsPayload(details)),
         ...(extraOn && coachExtraPayload(extra)),
       });
@@ -236,6 +245,16 @@ function CoachApplication() {
   const parts: Record<string, ReactNode> = {
     firstName: <TextField label="First name" placeholder="e.g. Aline" name="firstName" autoComplete="given-name" required maxLength={50} value={v.firstName} onChange={(e) => set("firstName")(e.target.value)} error={errors.firstName} />,
     lastName: <TextField label="Last name" placeholder="e.g. Uwase" name="lastName" autoComplete="family-name" required maxLength={50} value={v.lastName} onChange={(e) => set("lastName")(e.target.value)} error={errors.lastName} />,
+    gender: genderOn && (
+      <GenderField
+        value={gender}
+        onChange={(g) => {
+          setGender(g);
+          setErrors((s) => ({ ...s, gender: undefined }));
+        }}
+        error={errors.gender}
+      />
+    ),
     country: detailsOn && (
       <CascadeSelect label="Country" value={details.country} onChange={(c) => setDetail("country", c, "country")} options={countries} placeholder="Choose your country" error={detailErrors.country} testId="coach-country" />
     ),
