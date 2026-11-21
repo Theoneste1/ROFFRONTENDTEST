@@ -30,6 +30,8 @@ import { teacherRegistrationApi, type TeacherRegistrationResult } from "@/lib/ap
 import { hasFeature } from "@/lib/api/capabilities";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
+import { otherInterestSupported } from "@/lib/accounts/olympiad-interests";
 import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
 import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
 import GenderField from "@/app/components/account/GenderField";
@@ -41,7 +43,6 @@ import { TeacherExtraFields } from "@/app/components/applications/ExtraFields";
 import { useSchoolLocations } from "@/lib/queries/school-directory";
 import { queryKeys } from "@/lib/query/keys";
 import {
-  OLYMPIAD_SUBJECTS,
   PHONE_HINT,
   TEACHER_ERROR_FIELDS,
   TEACHER_REGISTER_ERRORS,
@@ -59,7 +60,6 @@ import {
   setSchoolSector,
   teacherRegistrationGate,
   teacherPage,
-  toggleInterest,
   validateTeacherRegistration,
   type TeacherDraft,
   type TeacherField,
@@ -194,6 +194,8 @@ function OpenForm() {
   const [done, setDone] = useState<TeacherRegistrationResult | null>(null);
   // Optional profile picture (REG-02): never required; uploaded with the registration's one-time token.
   const pictureOn = registrationAvatarSupported(useBackendCapabilities().detection);
+  // "Other" Olympiad interest (olympiadInterestOther).
+  const otherOn = otherInterestSupported(useBackendCapabilities().detection);
   const [picture, setPicture] = useState<File | null>(null);
   const [pictureError, setPictureError] = useState<string | null>(null);
   const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
@@ -350,36 +352,15 @@ function OpenForm() {
     position: extraField("position"),
     yearsOfExperience: extraField("yearsOfExperience"),
     interests: (
-      <div>
-        <p className="mb-1 text-sm font-semibold text-slate-700">
-          Olympiad interests <span className="text-red-500">*</span>
-        </p>
-        <div className="flex flex-wrap gap-4" role="group" aria-label="Olympiad interests" aria-describedby={errors.interests ? "interests-error" : "interests-hint"}>
-          {OLYMPIAD_SUBJECTS.map((s) => (
-            <label key={s.value} className="inline-flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                name="olympiadInterests"
-                value={s.value}
-                checked={d.interests.includes(s.value)}
-                onChange={() => set("interests", toggleInterest(d.interests, s.value))}
-                aria-invalid={errors.interests ? true : undefined}
-                className="h-4 w-4 rounded border-slate-300 accent-brand focus:ring-brand"
-              />
-              {s.label}
-            </label>
-          ))}
-        </div>
-        {errors.interests ? (
-          <p id="interests-error" className="mt-1 text-xs text-red-600">
-            {errors.interests}
-          </p>
-        ) : (
-          <p id="interests-hint" className="mt-1 text-xs text-slate-600">
-            The Olympiad subjects you would like to support. Choose at least one.
-          </p>
-        )}
-      </div>
+      <OlympiadInterestsField
+        idPrefix="interests"
+        value={d.interests}
+        onChange={(next) => set("interests", next)}
+        error={errors.interests}
+        hint="The Olympiad subjects you would like to support. Choose at least one."
+        other={d.interestOther}
+        onOtherChange={otherOn ? (next) => set("interestOther", next) : undefined}
+      />
     ),
     picture: pictureOn && (
       <OptionalAvatarField

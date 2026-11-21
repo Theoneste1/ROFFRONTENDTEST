@@ -42,6 +42,8 @@ export interface TeacherRegistrationBase {
   country: string;
   phone: string;
   olympiadInterests: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   schoolProvince: string;
   schoolDistrict: string;
   /** Home place: with homeLocationRules only for a home in Rwanda (all three); older backends require district and sector. */
@@ -86,6 +88,8 @@ export interface TeacherApplication {
   phone: string;
   country: string;
   olympiadInterests: string[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   status: TeacherApplicationStatus;
   school: TeacherApplicationSchool | null;
   proposedSchoolName: string | null;

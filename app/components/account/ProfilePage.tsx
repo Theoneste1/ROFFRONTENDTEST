@@ -24,15 +24,18 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { ArrowRight, Settings, Trophy, UserRound } from "lucide-react";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import {
-  interestsText,
+  INTERESTS_REQUIRED,
+  interestsWithOtherText,
   normaliseInterests,
+  otherInterestField,
+  otherInterestSupported,
   sameInterests,
   studentInterestsSupported,
-  validateInterests,
+  validateInterestsWithOther,
   type OlympiadSubject,
 } from "@/lib/accounts/olympiad-interests";
 import OlympiadInterestsField from "./OlympiadInterestsField";
-import { COACH_SUBJECTS_LABEL, coachInterestsSupported, coachSubjectsText, validateCoachSubjects } from "@/lib/accounts/coach-application";
+import { COACH_SUBJECTS_LABEL, COACH_SUBJECTS_NOT_SET, COACH_SUBJECTS_REQUIRED, coachInterestsSupported } from "@/lib/accounts/coach-application";
 import { useSession } from "@/lib/auth/session";
 import { portalPath, roleLabel } from "@/lib/auth/roles";
 import Link from "next/link";
@@ -81,14 +84,14 @@ export default function ProfilePage() {
             <dl className="mt-6 w-full grid grid-cols-1 gap-4 text-left">
               <Detail label="Username">{user.username}</Detail>
               <Detail label="E-mail">{user.email}</Detail>
-              {coachSubjectsOn && <Detail label="Coaching subjects">{coachSubjectsText(user.olympiadInterests)}</Detail>}
+              {coachSubjectsOn && <Detail label="Coaching subjects">{interestsWithOtherText(user.olympiadInterests, user.olympiadInterestOther) || COACH_SUBJECTS_NOT_SET}</Detail>}
               {user.role === "STUDENT" && (
                 <>
                   <Detail label="Division">{user.division?.name}</Detail>
                   <Detail label="Grade">{user.gradeLevel}</Detail>
                   <Detail label="School">{user.school ? `${user.school.name}${user.school.location ? `, ${user.school.location}` : ""}` : null}</Detail>
                   <Detail label="Points">{`${formatNumber(user.points)} · ${formatNumber(user.problemsSolved)} problems solved`}</Detail>
-                  {interestsOn && <Detail label="Olympiad interests">{interestsText(user.olympiadInterests) || "None chosen yet"}</Detail>}
+                  {interestsOn && <Detail label="Olympiad interests">{interestsWithOtherText(user.olympiadInterests, user.olympiadInterestOther) || "None chosen yet"}</Detail>}
                   {detailsOn && (
                     <>
                       <Detail label="Date of birth">{user.dateOfBirth ? formatDate(user.dateOfBirth.slice(0, 10)) : null}</Detail>
@@ -236,7 +239,7 @@ const INTEREST_TEXTS = {
     hint: "Choose at least one.",
     saved: "Your Olympiad interests were saved.",
     save: "Save interests",
-    validate: validateInterests,
+    required: INTERESTS_REQUIRED,
   },
   coach: {
     title: "Coaching subjects",
@@ -245,7 +248,7 @@ const INTEREST_TEXTS = {
     hint: "Choose one or more.",
     saved: "Your coaching subjects were saved.",
     save: "Save subjects",
-    validate: validateCoachSubjects,
+    required: COACH_SUBJECTS_REQUIRED,
   },
 } as const;
 
@@ -253,21 +256,26 @@ function InterestsCard({ user, coach = false }: { user: CurrentUser; coach?: boo
   const t = INTEREST_TEXTS[coach ? "coach" : "student"];
   const update = useUpdateMe();
   const [interests, setInterests] = useState<OlympiadSubject[]>(() => normaliseInterests(user.olympiadInterests));
+  // "Other" Olympiad (olympiadInterestOther): null while not ticked; the stored one is ticked with its name.
+  const otherOn = otherInterestSupported(useBackendCapabilities().detection);
+  const [other, setOther] = useState<string | null>(() => user.olympiadInterestOther ?? null);
   const [error, setError] = useState<string | undefined>();
   const [saved, setSaved] = useState(false);
-  const serverError = fieldErrors(update.error, ["olympiadInterests"]).olympiadInterests;
-  const unchanged = sameInterests(interests, user.olympiadInterests);
+  const serverErrors = fieldErrors(update.error, ["olympiadInterests", "olympiadInterestOther"]);
+  const serverError = serverErrors.olympiadInterests ?? serverErrors.olympiadInterestOther;
+  const unchanged = sameInterests(interests, user.olympiadInterests) && (other ?? "").trim() === (user.olympiadInterestOther ?? "");
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSaved(false);
-    const err = t.validate(interests);
+    const err = validateInterestsWithOther(interests, other, t.required);
     setError(err);
     if (err || unchanged || update.isPending) return;
-    update.mutate({ olympiadInterests: interests }, {
+    update.mutate({ olympiadInterests: interests, ...otherInterestField(other, user.olympiadInterestOther) }, {
       onSuccess: (me) => {
         setSaved(true);
         setInterests(normaliseInterests(me.olympiadInterests));
+        setOther(me.olympiadInterestOther ?? null);
       },
     });
   }
@@ -288,6 +296,12 @@ function InterestsCard({ user, coach = false }: { user: CurrentUser; coach?: boo
           idPrefix="profile-interests"
           {...(t.label && { label: t.label })}
           hint={t.hint}
+          other={other}
+          onOtherChange={otherOn ? (next) => {
+            setOther(next);
+            setError(undefined);
+            setSaved(false);
+          } : undefined}
         />
         <div className="flex justify-end">
           <Button type="submit" loading={update.isPending} disabled={unchanged}>

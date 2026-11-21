@@ -174,6 +174,11 @@ export const KNOWN_FEATURES = [
    */
   "bulkOperationsGeneric",
   /**
+   * "Other" Olympiad interest (owner, 2026-11-21): `olympiadInterestOther` (2–100 characters) beside `olympiadInterests`
+   * on the sign-ups, PATCH /me and the Administrator's coach edit; "Other" alone counts. Without it: the three subjects only.
+   */
+  "olympiadInterestOther",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */

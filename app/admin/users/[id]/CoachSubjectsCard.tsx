@@ -12,32 +12,41 @@ import { Trophy } from "lucide-react";
 import { usersApi } from "@/lib/api/admin";
 import { errorMessage, fieldErrors } from "@/lib/api/errors";
 import { queryKeys } from "@/lib/query/keys";
-import { COACH_SUBJECTS_LABEL, coachSubjectsText, validateCoachSubjects } from "@/lib/accounts/coach-application";
-import { normaliseInterests, sameInterests, type OlympiadSubject } from "@/lib/accounts/olympiad-interests";
+import { COACH_SUBJECTS_LABEL, COACH_SUBJECTS_REQUIRED, coachSubjectsText } from "@/lib/accounts/coach-application";
+import {
+  normaliseInterests, otherInterestField, otherInterestSupported, sameInterests, validateInterestsWithOther, type OlympiadSubject,
+} from "@/lib/accounts/olympiad-interests";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
 import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Card, Modal, btnPrimary, btnSecondary } from "../../components/adminUi";
 
-function EditSubjects({ userId, current, onDone, onClose }: { userId: string; current: readonly string[]; onDone: () => void; onClose: () => void }) {
+function EditSubjects({ userId, current, currentOther, onDone, onClose }: {
+  userId: string; current: readonly string[]; currentOther: string | null; onDone: () => void; onClose: () => void;
+}) {
   const qc = useQueryClient();
   const [subjects, setSubjects] = useState<OlympiadSubject[]>(() => normaliseInterests(current));
+  // "Other" Olympiad (olympiadInterestOther): null while not ticked.
+  const otherOn = otherInterestSupported(useBackendCapabilities().detection);
+  const [other, setOther] = useState<string | null>(currentOther);
   const [error, setError] = useState<string | undefined>();
   const save = useMutation({
-    mutationFn: (olympiadInterests: OlympiadSubject[]) => usersApi.update(userId, { olympiadInterests }),
+    mutationFn: (olympiadInterests: OlympiadSubject[]) => usersApi.update(userId, { olympiadInterests, ...otherInterestField(other, currentOther) }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.admin.user(userId) });
       void qc.invalidateQueries({ queryKey: queryKeys.admin.usersAll });
     },
   });
-  const serverField = fieldErrors(save.error, ["olympiadInterests"]).olympiadInterests;
+  const serverFields = fieldErrors(save.error, ["olympiadInterests", "olympiadInterestOther"]);
+  const serverField = serverFields.olympiadInterests ?? serverFields.olympiadInterestOther;
   const busy = save.isPending;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const problem = validateCoachSubjects(subjects);
+    const problem = validateInterestsWithOther(subjects, other, COACH_SUBJECTS_REQUIRED);
     setError(problem);
     if (problem || busy) return;
-    if (sameInterests(subjects, current)) return onClose();
+    if (sameInterests(subjects, current) && (other ?? "").trim() === (currentOther ?? "")) return onClose();
     try {
       await save.mutateAsync(subjects);
       onDone();
@@ -59,6 +68,11 @@ function EditSubjects({ userId, current, onDone, onClose }: { userId: string; cu
           label={COACH_SUBJECTS_LABEL}
           hint="Choose one or more. Information only: this gives no course, marking or other access."
           idPrefix="admin-coach-subjects"
+          other={other}
+          onOtherChange={otherOn ? (next) => {
+            setOther(next);
+            setError(undefined);
+          } : undefined}
         />
         {save.isError && !serverField && <Alert tone="error">{errorMessage(save.error)}</Alert>}
         <div className="flex justify-end gap-3">
@@ -75,7 +89,9 @@ function EditSubjects({ userId, current, onDone, onClose }: { userId: string; cu
   );
 }
 
-export default function CoachSubjectsCard({ userId, subjects, canEdit }: { userId: string; subjects: readonly string[] | null | undefined; canEdit: boolean }) {
+export default function CoachSubjectsCard({ userId, subjects, other = null, canEdit }: {
+  userId: string; subjects: readonly string[] | null | undefined; other?: string | null; canEdit: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
   return (
@@ -102,7 +118,7 @@ export default function CoachSubjectsCard({ userId, subjects, canEdit }: { userI
           </div>
         )}
         <p className="text-sm text-gray-800" data-testid="coach-subjects">
-          {coachSubjectsText(subjects)}
+          {coachSubjectsText(subjects, other)}
         </p>
         <p className="mt-1 text-xs text-gray-600">The subjects this coach is interested in coaching. They give no course, marking or other access.</p>
       </Card>
@@ -110,6 +126,7 @@ export default function CoachSubjectsCard({ userId, subjects, canEdit }: { userI
         <EditSubjects
           userId={userId}
           current={subjects ?? []}
+          currentOther={other}
           onClose={() => setOpen(false)}
           onDone={() => {
             setOpen(false);
