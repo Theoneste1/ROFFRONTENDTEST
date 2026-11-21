@@ -132,7 +132,7 @@ test.describe("the registration forms: one continuous form that fits every windo
           const row = await withDb(async (c) => (await c.query(
             `SELECT status::text AS status, occupation, "educationLevel"::text AS education, country, expertise, "relevantExperience", "olympiadInterests"::text AS interests, "avatarFileId" IS NULL AS no_picture
                FROM "MentorRequest" WHERE username = $1`, [username])).rows[0]);
-          expect(row).toMatchObject({ status: "PENDING", occupation: "Engineer", education: "BACHELOR", country: "RW", expertise: "Combinatorics", relevantExperience: "Three years coaching olympiad teams.", no_picture: true });
+          expect(row).toMatchObject({ status: "PENDING", occupation: "Engineer", education: "BACHELOR", country: "RW", expertise: "Algebra", relevantExperience: "Took part in a national Olympiad", no_picture: true });
           expect(row.interests).toContain("MATHEMATICS");
         } else {
           const row = await withDb(async (c) => (await c.query(

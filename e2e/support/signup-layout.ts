@@ -104,10 +104,7 @@ async function fillOnce(page: Page, who: { username: string; lastName: string; p
     username: who.username,
     "new-password": who.password,
     "confirm-password": who.password,
-    occupation: "Engineer",
     affiliation: "University of Rwanda",
-    expertise: "Combinatorics",
-    relevantExperience: "Three years coaching olympiad teams.",
     homeLocation: "Nairobi",
     schoolName: "Lycée de Kigali",
     schoolLocation: "Nyarugenge",
@@ -143,6 +140,7 @@ async function fillOnce(page: Page, who: { username: string; lastName: string; p
       else if (name === "gradeLevel") await c.selectOption("S2");
       else if (name === "position") await c.selectOption("Mathematics teacher");
       else if (name === "yearsOfExperience") await c.selectOption("3");
+      else if (name === "occupation") await c.selectOption("Engineer");
       else if (/^Country/.test(label)) await choose(c, "Rwanda");
       else if (/^Home district/.test(label)) await choose(c, "Gasabo");
       else {
@@ -157,6 +155,8 @@ async function fillOnce(page: Page, who: { username: string; lastName: string; p
         changed = true;
       }
     } else if (type === "checkbox") {
+      // "Other" boxes (Olympiad interest, expertise, experience) stay unticked: their text box would be required.
+      if (name.endsWith("OtherOn")) continue;
       if ((await step.locator(`input[type=checkbox][name="${name}"]:checked`).count()) === 0) {
         await c.check();
         changed = true;

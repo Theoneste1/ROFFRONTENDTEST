@@ -17,6 +17,7 @@ import { hasFeature, type BackendDetection } from "../api/capabilities";
 import type { OlympiadSubject, TeacherRegistrationInput } from "../api/teacher-registration";
 import { normalisePhone, PHONE_HINT } from "./phone";
 import { RWANDA as DEFAULT_COUNTRY } from "../schools/countries";
+import { otherInterestField, validateInterestsWithOther } from "./olympiad-interests";
 
 // ─── Subjects ───────────────────────────────────────────────────────────────
 
@@ -141,6 +142,8 @@ export interface TeacherDraft {
   country: string;
   phone: string;
   interests: OlympiadSubject[];
+  /** "Other" Olympiad: null while not ticked (always on backends without olympiadInterestOther). */
+  interestOther: string | null;
   schoolProvince: string;
   schoolDistrict: string;
   schoolMode: SchoolChoiceMode;
@@ -165,6 +168,7 @@ export const emptyTeacherDraft = (): TeacherDraft => ({
   country: DEFAULT_COUNTRY,
   phone: "",
   interests: [],
+  interestOther: null,
   schoolProvince: "",
   schoolDistrict: "",
   schoolMode: "listed",
@@ -263,7 +267,8 @@ export function validateTeacherRegistration(d: TeacherDraft, homeRules = false):
   if (!TEACHER_RULES.countryPattern.test(d.country.trim().toUpperCase())) e.country = homeRules ? "Choose your home country." : "Choose your country.";
   if (!d.phone.trim()) e.phone = "Enter your phone number.";
   else if (!normalisePhone(d.phone)) e.phone = `Enter a valid phone number. ${PHONE_HINT}`;
-  if (d.interests.length === 0) e.interests = "Choose at least one Olympiad subject.";
+  const interestsProblem = validateInterestsWithOther(d.interests, d.interestOther, "Choose at least one Olympiad subject.");
+  if (interestsProblem) e.interests = interestsProblem;
   if (!d.schoolProvince) e.schoolProvince = "Choose your school's province.";
   if (!d.schoolDistrict) e.schoolDistrict = "Choose your school's district.";
   if (!d.schoolSector) e.schoolSector = "Choose your school's sector.";
@@ -302,6 +307,7 @@ export function buildTeacherPayload(d: TeacherDraft, homeRules = false): Teacher
     country,
     phone: normalisePhone(d.phone) ?? d.phone.trim(),
     olympiadInterests: OLYMPIAD_SUBJECTS.map((s) => s.value).filter((v) => d.interests.includes(v)),
+    ...otherInterestField(d.interestOther),
     schoolProvince: d.schoolProvince,
     schoolDistrict: d.schoolDistrict,
     ...home,

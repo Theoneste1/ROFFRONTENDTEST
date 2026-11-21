@@ -164,18 +164,31 @@ test.describe("public sign-up forms", () => {
     await expect(page.getByTestId("home-sector")).toBeEnabled();
     await page.getByTestId("home-sector").selectOption({ index: 1 });
     await page.locator('input[name="phone"]').fill("0788111222");
-    await page.locator('input[name="occupation"]').fill("Engineer");
+    await page.locator('select[name="occupation"]').selectOption("Engineer");
     await page.getByTestId("coach-education").selectOption("BACHELOR");
     await page.getByTestId("olympiad-interests").getByLabel("Physics").check();
-    await page.locator('textarea[name="expertise"]').fill("Mechanics and olympiad problem solving.");
-    await page.locator('textarea[name="relevantExperience"]').fill("Three years coaching national olympiad teams.");
+    // "Other" Olympiad (olympiadInterestOther): ticked, it asks which one.
+    await page.getByTestId("olympiad-interest-other-toggle").check();
+    await page.locator('input[name="olympiadInterestOther"]').fill("Chemistry");
+    // Tick lists with "Other" (sent as readable text).
+    const expertise = page.getByTestId("expertise-choices");
+    await expertise.getByLabel("Mechanics", { exact: true }).check();
+    await expertise.getByLabel("Optics and waves").check();
+    await expertise.locator('input[name="expertiseOtherOn"]').check();
+    await expertise.locator('input[name="expertiseOther"]').fill("Olympiad problem solving");
+    await page.getByTestId("relevantExperience-choices").getByLabel("Coached or trained Olympiad students").check();
     await page.locator('select[name="yearsOfExperience"]').selectOption("3");
     await page.locator('input[name="username"]').fill(username);
     await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await fillPassword(page);
     await submitAndExpect(page, "Apply as a coach", "apply-done");
-    const row = await withDb(async (c) => (await c.query(`SELECT status::text AS status, "yearsOfExperience" AS years FROM "MentorRequest" WHERE username = $1`, [username])).rows[0]);
-    expect(row).toEqual({ status: "PENDING", years: 3 });
+    const row = await withDb(async (c) => (await c.query(
+      `SELECT status::text AS status, "yearsOfExperience" AS years, occupation, expertise, "relevantExperience" AS experience,
+              "olympiadInterests"::text AS interests, "olympiadInterestOther" AS other FROM "MentorRequest" WHERE username = $1`, [username])).rows[0]);
+    expect(row).toEqual({
+      status: "PENDING", years: 3, occupation: "Engineer", expertise: "Mechanics; Optics and waves; Other: Olympiad problem solving",
+      experience: "Coached or trained Olympiad students", interests: "{PHYSICS}", other: "Chemistry",
+    });
   });
 
   test("a closed form shows the closed message instead of the form (and opens again)", async ({ page }) => {

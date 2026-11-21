@@ -261,7 +261,7 @@ export default function UsersTableClient() {
                   <td className={`${td} text-gray-600 font-medium`}>
                     {roleLabel(u.role)}
                     {u.teacherSchoolRole && <TeacherRoleBadge role={u.teacherSchoolRole} className="ml-2" />}
-                    <CoachSubjectsNote role={u.role} subjects={u.olympiadInterests} />
+                    <CoachSubjectsNote role={u.role} subjects={u.olympiadInterests} other={u.olympiadInterestOther} />
                   </td>
                   <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>
                     {u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}

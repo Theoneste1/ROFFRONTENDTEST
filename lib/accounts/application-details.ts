@@ -93,8 +93,10 @@ export function validateCoachExtra(d: CoachExtraDraft): Partial<Record<keyof Coa
   const e: Partial<Record<keyof CoachExtraDraft, string>> = {};
   if (d.phone.replace(/[^\d]/g, "").length < 9) e.phone = "Enter your phone number (Rwanda: 07XXXXXXXX; elsewhere: +country number).";
   if (d.affiliation.trim() && !within(d.affiliation, LIMITS.affiliation)) e.affiliation = "2–200 characters.";
-  if (!within(d.expertise, LIMITS.expertise)) e.expertise = "Describe your areas of expertise (2–1000 characters).";
-  if (!within(d.relevantExperience, LIMITS.relevantExperience)) e.relevantExperience = "Describe your relevant experience (2–2000 characters).";
+  if (!d.expertise.trim()) e.expertise = "Tick at least one area of expertise (or tick Other and name it).";
+  else if (!within(d.expertise, LIMITS.expertise)) e.expertise = "Too long: at most 1000 characters in all.";
+  if (!d.relevantExperience.trim()) e.relevantExperience = "Tick at least one kind of experience (or tick Other and describe it).";
+  else if (!within(d.relevantExperience, LIMITS.relevantExperience)) e.relevantExperience = "Too long: at most 2000 characters in all.";
   const y = yearsError(d.yearsOfExperience);
   if (y) e.yearsOfExperience = y;
   return e;

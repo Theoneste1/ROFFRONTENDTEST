@@ -118,6 +118,8 @@ export interface CurrentUser {
   createdAt: string;
   /** Students' Olympiad interests (backends with `studentOlympiadInterests`; absent on older ones). */
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   // Students, backends with `studentRegistrationDetails` (absent or null otherwise):
   /** An ISO instant ("2012-05-01T00:00:00.000Z"): use the first 10 characters (a date, never shifted by a time zone). */
   dateOfBirth?: string | null;
@@ -599,6 +601,8 @@ export interface UpdateMeInput {
   homeSector?: string;
   /** Only on a backend with `studentOlympiadInterests`; at least one. */
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
 }
 
 // ─── Mentor ─────────────────────────────────────────────────────────────────
@@ -856,6 +860,8 @@ export interface AdminUser {
   updatedAt?: string;
   /** Students' Olympiad interests (backends with studentOlympiadInterests). */
   olympiadInterests?: string[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   /** The account state (backends with accountStates); isActive is true exactly when it is ACTIVE. */
   accountStatus?: AccountState;
   /**
@@ -972,6 +978,8 @@ export interface MentorRequest {
   occupation?: string | null;
   educationLevel?: string | null;
   olympiadInterests?: string[] | null;
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   /** Backends with `applicationDetails`. */
   phone?: string | null;
   affiliation?: string | null;

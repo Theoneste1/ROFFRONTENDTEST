@@ -58,6 +58,8 @@ test.describe("coach subjects", () => {
     const subjects = page.getByTestId("olympiad-interests");
     await expect(subjects.getByText(QUESTION)).toBeVisible();
     await expect(subjects.locator("legend .text-red-500")).toHaveText("*");
+    // Occupation: not listed, so "Other (type it)".
+    await page.locator('select[name="occupation"]').selectOption("__other__");
     await page.locator('input[name="occupation"]').fill("Physics lecturer");
     await page.getByTestId("coach-education").selectOption("MASTER");
     // No subject: sending is refused with the message on the subjects; nothing is sent.
@@ -68,8 +70,9 @@ test.describe("coach subjects", () => {
     await subjects.getByLabel("Mathematics").check();
     await subjects.getByLabel("Computing").check();
     await expect(page.getByText(REQUIRED)).toHaveCount(0);
-    await page.locator('textarea[name="expertise"]').fill("Olympiad mathematics and computing.");
-    await page.locator('textarea[name="relevantExperience"]').fill("Four years of olympiad training camps.");
+    await page.getByTestId("expertise-choices").getByLabel("Algebra").check();
+    await page.getByTestId("expertise-choices").getByLabel("Algorithms").check();
+    await page.getByTestId("relevantExperience-choices").getByLabel("Coached or trained Olympiad students").check();
     await page.locator('input[name="username"]').fill(username);
     await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await page.locator('input[name="new-password"]').fill(PASSWORD);
