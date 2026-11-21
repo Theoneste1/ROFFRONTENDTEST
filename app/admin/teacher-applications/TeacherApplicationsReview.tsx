@@ -27,7 +27,6 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { countryLabel } from "@/lib/accounts/school-claim";
-import { subjectLabel } from "@/lib/accounts/teacher-registration";
 import {
   APPROVAL_NOTE_MAX,
   REFRESH_AFTER,
@@ -54,6 +53,7 @@ import { SchoolPicker } from "../users/components/userUi";
 import ApplicationPictureReview from "@/app/components/applications/ApplicationPictureReview";
 import { pictureReviewShown, withPictureDecision } from "@/lib/accounts/application-picture";
 import type { SchoolRef } from "@/lib/api/types";
+import { interestsWithOtherText } from "@/lib/accounts/olympiad-interests";
 
 /** The backend's error with a message for its code (shown by the dialogs). */
 function explain(e: unknown): unknown {
@@ -173,7 +173,7 @@ export default function TeacherApplicationsReview() {
                   <td className={`${td} text-gray-700`}>
                     <SchoolCell app={a} />
                   </td>
-                  <td className={`${td} text-xs text-gray-600`}>{a.olympiadInterests.map(subjectLabel).join(", ")}</td>
+                  <td className={`${td} text-xs text-gray-600`}>{interestsWithOtherText(a.olympiadInterests, a.olympiadInterestOther)}</td>
                   <td className={`${td} text-xs text-gray-600`}>
                     {a.status === "PENDING" ? (
                       formatDate(a.createdAt)
@@ -364,7 +364,7 @@ function DetailDialog({
           <Row label="E-mail">{a.email}</Row>
           <Row label="Phone">{a.phone}</Row>
           <Row label="Country">{countryLabel(a.country)}</Row>
-          <Row label="Olympiad interests">{a.olympiadInterests.map(subjectLabel).join(", ") || "—"}</Row>
+          <Row label="Olympiad interests">{interestsWithOtherText(a.olympiadInterests, a.olympiadInterestOther) || "—"}</Row>
           {a.position !== undefined && <Row label="Position">{a.position || "—"}</Row>}
           {a.yearsOfExperience !== undefined && <Row label="Years of experience">{a.yearsOfExperience ?? "—"}</Row>}
           {missing && (

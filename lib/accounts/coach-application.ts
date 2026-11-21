@@ -11,7 +11,7 @@
  */
 import { hasFeature, type BackendDetection } from "../api/capabilities";
 import { countryName, isCountryCode, RWANDA } from "../schools/countries";
-import { interestsText, type OlympiadSubject } from "./olympiad-interests";
+import { interestsWithOtherText, otherInterestField, validateInterestsWithOther, type OlympiadSubject } from "./olympiad-interests";
 
 export const EDUCATION_LEVELS = [
   { value: "SECONDARY", label: "Secondary school" },
@@ -32,11 +32,13 @@ export interface CoachDetailsDraft {
   occupation: string;
   educationLevel: EducationLevel | "";
   interests: OlympiadSubject[];
+  /** "Other" Olympiad: null while not ticked (always on backends without olympiadInterestOther). */
+  interestOther: string | null;
 }
 
 export type CoachDetailsField = "country" | "occupation" | "educationLevel" | "olympiadInterests";
 
-export const emptyCoachDetails = (): CoachDetailsDraft => ({ country: RWANDA, occupation: "", educationLevel: "", interests: [] });
+export const emptyCoachDetails = (): CoachDetailsDraft => ({ country: RWANDA, occupation: "", educationLevel: "", interests: [], interestOther: null });
 
 export function coachDetailsSupported(detection: BackendDetection | null | undefined): boolean {
   return hasFeature(detection, "coachApplicationDetails");
@@ -76,33 +78,33 @@ export function validateCoachSubjects(interests: readonly OlympiadSubject[]): st
 }
 
 /** "Mathematics, Physics", or "Not set" for a coach without subjects. */
-export function coachSubjectsText(values: readonly string[] | null | undefined): string {
-  return interestsText(values) || COACH_SUBJECTS_NOT_SET;
+export function coachSubjectsText(values: readonly string[] | null | undefined, other?: string | null): string {
+  return interestsWithOtherText(values, other) || COACH_SUBJECTS_NOT_SET;
 }
 
 export function validateCoachDetails(d: CoachDetailsDraft): Partial<Record<CoachDetailsField, string>> {
   const e: Partial<Record<CoachDetailsField, string>> = {};
   if (!isCountryCode(d.country)) e.country = "Choose your country.";
   const n = d.occupation.trim().length;
-  if (n < COACH_RULES.occupationMin || n > COACH_RULES.occupationMax) e.occupation = "Enter your current or most recent occupation (2–200 characters).";
+  if (n < COACH_RULES.occupationMin || n > COACH_RULES.occupationMax) e.occupation = n === 0 ? "Choose your current or most recent occupation (or choose Other and type it)." : "Type your occupation (2–200 characters).";
   if (!EDUCATION_LEVELS.some((l) => l.value === d.educationLevel)) e.educationLevel = "Choose your highest level of education.";
-  const i = validateCoachSubjects(d.interests);
+  const i = validateInterestsWithOther(d.interests, d.interestOther, COACH_SUBJECTS_REQUIRED);
   if (i) e.olympiadInterests = i;
   return e;
 }
 
 /** The request fields for a valid draft (call validateCoachDetails first). */
 export function coachDetailsPayload(d: CoachDetailsDraft) {
-  return { country: d.country, occupation: d.occupation.trim(), educationLevel: d.educationLevel as EducationLevel, olympiadInterests: [...d.interests] };
+  return { country: d.country, occupation: d.occupation.trim(), educationLevel: d.educationLevel as EducationLevel, olympiadInterests: [...d.interests], ...otherInterestField(d.interestOther) };
 }
 
 /** One line for the administrators' list: "Kenya · Engineer · Bachelor's degree · Mathematics, Physics" ("" when none). */
-export function coachDetailsText(r: { country?: string | null; occupation?: string | null; educationLevel?: string | null; olympiadInterests?: readonly string[] | null }): string {
+export function coachDetailsText(r: { country?: string | null; occupation?: string | null; educationLevel?: string | null; olympiadInterests?: readonly string[] | null; olympiadInterestOther?: string | null }): string {
   return [
     r.country ? countryName(r.country) : "",
     r.occupation ?? "",
     r.educationLevel ? educationLabel(r.educationLevel) : "",
-    r.olympiadInterests?.length ? interestsText(r.olympiadInterests) : "",
+    interestsWithOtherText(r.olympiadInterests, r.olympiadInterestOther),
   ]
     .filter(Boolean)
     .join(" · ");

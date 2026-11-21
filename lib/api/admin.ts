@@ -157,6 +157,8 @@ export type UpdateUserInput = Partial<Omit<CreateUserInput, "password" | "school
   currentPassword?: string;
   /** A Coach's subjects (capability coachOlympiadInterests; Coach accounts only, at least one). */
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   /** homeLocationRules: the home country; with "RW" the province, district and sector (none otherwise). */
   homeCountry?: string;
   homeProvince?: string;

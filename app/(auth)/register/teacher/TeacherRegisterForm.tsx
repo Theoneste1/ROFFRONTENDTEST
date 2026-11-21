@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Teacher self-registration (`POST /auth/register/teacher`), the owner-approved design: an
- * application that an Administrator reviews. No account, school assignment or school record
- * exists until approval.
+ * Teacher self-registration (`POST /auth/register/teacher`). A listed school (owner 2026-11-21): the TEACHER account is
+ * created at once, linked to the school by its code — the teacher is signed in and taken to the teacher dashboard
+ * (unless the e-mail must be confirmed first: then "check your e-mail"). A school that is not listed yet: an application
+ * an Administrator reviews; no account, school assignment or school record exists until approval.
  *
  * Gate (lib/accounts/teacher-registration → teacherRegistrationGate): wait for GET /api/v1; the
  * backend must advertise `teacherSelfRegistration` and GET /auth/register/teacher/availability
@@ -20,6 +21,9 @@
  * validateTeacherRegistration; a failed check or a refused field: focus goes to the first highlighted field.
  */
 import { useState, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth/session";
+import { postLoginPath } from "@/lib/auth/roles";
 import SignupForm, { SIGNUP_FORM_CLASS, useSignupFocus } from "@/app/components/forms/SignupForm";
 import { errorKeys } from "@/lib/forms/wizard";
 import { TEACHER_PARTS, visibleParts } from "@/lib/forms/registration-fields";
@@ -30,6 +34,8 @@ import { teacherRegistrationApi, type TeacherRegistrationResult } from "@/lib/ap
 import { hasFeature } from "@/lib/api/capabilities";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
+import { otherInterestSupported } from "@/lib/accounts/olympiad-interests";
 import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
 import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
 import GenderField from "@/app/components/account/GenderField";
@@ -41,7 +47,6 @@ import { TeacherExtraFields } from "@/app/components/applications/ExtraFields";
 import { useSchoolLocations } from "@/lib/queries/school-directory";
 import { queryKeys } from "@/lib/query/keys";
 import {
-  OLYMPIAD_SUBJECTS,
   PHONE_HINT,
   TEACHER_ERROR_FIELDS,
   TEACHER_REGISTER_ERRORS,
@@ -59,7 +64,6 @@ import {
   setSchoolSector,
   teacherRegistrationGate,
   teacherPage,
-  toggleInterest,
   validateTeacherRegistration,
   type TeacherDraft,
   type TeacherField,
@@ -194,6 +198,8 @@ function OpenForm() {
   const [done, setDone] = useState<TeacherRegistrationResult | null>(null);
   // Optional profile picture (REG-02): never required; uploaded with the registration's one-time token.
   const pictureOn = registrationAvatarSupported(useBackendCapabilities().detection);
+  // "Other" Olympiad interest (olympiadInterestOther).
+  const otherOn = otherInterestSupported(useBackendCapabilities().detection);
   const [picture, setPicture] = useState<File | null>(null);
   const [pictureError, setPictureError] = useState<string | null>(null);
   const [pictureResult, setPictureResult] = useState<{ outcome: PictureOutcome; message?: string } | null>(null);
@@ -214,6 +220,10 @@ function OpenForm() {
     return true;
   });
   const focus = useSignupFocus();
+  const session = useSession();
+  const router = useRouter();
+  // The account was created but signing in right away failed (shown on the done view with a link to sign in).
+  const [signInFailed, setSignInFailed] = useState(false);
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
@@ -233,6 +243,16 @@ function OpenForm() {
     try {
       const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d, homeRules), ...(extraOn && teacherExtraPayload(extra)), ...(genderOn && gender && { gender }) });
       if (pictureOn) setPictureResult(await uploadRegistrationAvatar(result.avatarUploadToken, picture));
+      // A listed school: the account exists — sign in and open the teacher dashboard (no Administrator involved).
+      if (result.accountCreated && !result.emailVerificationRequired) {
+        try {
+          const user = await session.login(result.username ?? d.username.trim().toLowerCase(), d.password);
+          router.replace(postLoginPath(user.role, null));
+          return;
+        } catch {
+          setSignInFailed(true);
+        }
+      }
       setDone(result);
     } catch (err) {
       setError(err);
@@ -246,6 +266,28 @@ function OpenForm() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (done?.accountCreated) {
+    return (
+      <div className="space-y-5" data-testid="teacher-register-done">
+        <AuthHeading title="Your teacher account is ready" />
+        <Alert tone="success">Welcome to ROF LMS. Your account is linked to your school.</Alert>
+        <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
+          {done.school && <li>School: <strong>{done.school.name}</strong>{done.school.code ? ` (code ${done.school.code})` : ""}.</li>}
+          <li>You will see the students who registered with your school, and you can submit their tests.</li>
+          {done.emailVerificationRequired
+            ? <li data-testid="teacher-register-verify">We sent you an e-mail: confirm your address, then sign in with the username and password you chose.</li>
+            : signInFailed && <li>Sign in with the username and password you chose.</li>}
+        </ul>
+        {pictureOutcomeText(pictureResult) && (
+          <p className="text-sm text-slate-700" data-testid="picture-outcome">{pictureOutcomeText(pictureResult)}</p>
+        )}
+        <Link href="/login" className={primaryLink} data-testid="teacher-register-sign-in">
+          Sign in
+        </Link>
+      </div>
+    );
   }
 
   if (done) {
@@ -350,36 +392,15 @@ function OpenForm() {
     position: extraField("position"),
     yearsOfExperience: extraField("yearsOfExperience"),
     interests: (
-      <div>
-        <p className="mb-1 text-sm font-semibold text-slate-700">
-          Olympiad interests <span className="text-red-500">*</span>
-        </p>
-        <div className="flex flex-wrap gap-4" role="group" aria-label="Olympiad interests" aria-describedby={errors.interests ? "interests-error" : "interests-hint"}>
-          {OLYMPIAD_SUBJECTS.map((s) => (
-            <label key={s.value} className="inline-flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                name="olympiadInterests"
-                value={s.value}
-                checked={d.interests.includes(s.value)}
-                onChange={() => set("interests", toggleInterest(d.interests, s.value))}
-                aria-invalid={errors.interests ? true : undefined}
-                className="h-4 w-4 rounded border-slate-300 accent-brand focus:ring-brand"
-              />
-              {s.label}
-            </label>
-          ))}
-        </div>
-        {errors.interests ? (
-          <p id="interests-error" className="mt-1 text-xs text-red-600">
-            {errors.interests}
-          </p>
-        ) : (
-          <p id="interests-hint" className="mt-1 text-xs text-slate-600">
-            The Olympiad subjects you would like to support. Choose at least one.
-          </p>
-        )}
-      </div>
+      <OlympiadInterestsField
+        idPrefix="interests"
+        value={d.interests}
+        onChange={(next) => set("interests", next)}
+        error={errors.interests}
+        hint="The Olympiad subjects you would like to support. Choose at least one."
+        other={d.interestOther}
+        onOtherChange={otherOn ? (next) => set("interestOther", next) : undefined}
+      />
     ),
     picture: pictureOn && (
       <OptionalAvatarField

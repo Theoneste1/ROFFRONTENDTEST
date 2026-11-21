@@ -111,7 +111,7 @@ test.describe("public sign-up forms", () => {
     expect(hasPicture).toBe(true);
   });
 
-  test("a teacher applies; the application waits for an administrator", async ({ page }) => {
+  test("a teacher of a listed school registers: the account at once, signed in, on the teacher dashboard (owner 2026-11-21)", async ({ page }) => {
     const username = `signup.teacher.${RUN}`;
     await page.goto("/register/teacher");
     const form = page.getByTestId("teacher-register-form");
@@ -122,7 +122,10 @@ test.describe("public sign-up forms", () => {
     await form.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await pickCountry(page, "home-country", "Rwanda");
     await form.locator('input[name="phone"]').fill("0788654321");
-    await form.locator('input[name="position"]').fill("Mathematics teacher");
+    // Position: a dropdown; "Other" shows a text box for a position that is not listed. Years: a dropdown (optional).
+    await form.locator('select[name="position"]').selectOption("__other__");
+    await form.locator('input[name="position"]').fill("Olympiad club coordinator");
+    await form.locator('select[name="yearsOfExperience"]').selectOption("5");
     await form.getByLabel("Mathematics").check();
     const schoolCountry = page.getByTestId("teacher-school-country");
     if (await schoolCountry.isEnabled()) await schoolCountry.selectOption("RW");   // Rwanda only: preselected and fixed
@@ -138,13 +141,17 @@ test.describe("public sign-up forms", () => {
     await homeSector.selectOption({ index: 1 });
     await form.locator('input[name="username"]').fill(username);
     await fillPassword(page);
-    await submitAndExpect(page, "Apply as a teacher", "teacher-register-done");
-    // The application holds the details; no account exists until an Administrator approves it.
+    await page.getByRole("button", { name: "Apply as a teacher" }).click();
+    // No Administrator: signed in and taken to the teacher portal.
+    await page.waitForURL(/\/teacher(\/|$)/, { timeout: 60_000 });
     const row = await withDb(async (c) => ({
-      status: (await c.query(`SELECT status::text AS status FROM "TeacherApplication" WHERE username = $1`, [username])).rows[0]?.status,
-      accounts: Number((await c.query(`SELECT count(*) FROM "User" WHERE username = $1`, [username])).rows[0].count),
+      ...(await c.query(`SELECT status::text AS status, position, "yearsOfExperience" AS years FROM "TeacherApplication" WHERE username = $1`, [username])).rows[0],
+      account: (await c.query(
+        `SELECT u.role::text AS role, u."accountStatus"::text AS state, s.name AS school
+           FROM "User" u JOIN "TeacherSchoolAssignment" a ON a."teacherId" = u.id AND a."isActive" JOIN "School" s ON s.id = a."schoolId"
+          WHERE u.username = $1`, [username])).rows,
     }));
-    expect(row).toEqual({ status: "PENDING", accounts: 0 });
+    expect(row).toEqual({ status: "APPROVED", position: "Olympiad club coordinator", years: 5, account: [{ role: "TEACHER", state: "ACTIVE", school: SCHOOL.name }] });
   });
 
   test("a coach applies; the request waits for an administrator", async ({ page }) => {
@@ -161,17 +168,31 @@ test.describe("public sign-up forms", () => {
     await expect(page.getByTestId("home-sector")).toBeEnabled();
     await page.getByTestId("home-sector").selectOption({ index: 1 });
     await page.locator('input[name="phone"]').fill("0788111222");
-    await page.locator('input[name="occupation"]').fill("Engineer");
+    await page.locator('select[name="occupation"]').selectOption("Engineer");
     await page.getByTestId("coach-education").selectOption("BACHELOR");
     await page.getByTestId("olympiad-interests").getByLabel("Physics").check();
-    await page.locator('textarea[name="expertise"]').fill("Mechanics and olympiad problem solving.");
-    await page.locator('textarea[name="relevantExperience"]').fill("Three years coaching national olympiad teams.");
+    // "Other" Olympiad (olympiadInterestOther): ticked, it asks which one.
+    await page.getByTestId("olympiad-interest-other-toggle").check();
+    await page.locator('input[name="olympiadInterestOther"]').fill("Chemistry");
+    // Tick lists with "Other" (sent as readable text).
+    const expertise = page.getByTestId("expertise-choices");
+    await expertise.getByLabel("Mechanics", { exact: true }).check();
+    await expertise.getByLabel("Optics and waves").check();
+    await expertise.locator('input[name="expertiseOtherOn"]').check();
+    await expertise.locator('input[name="expertiseOther"]').fill("Olympiad problem solving");
+    await page.getByTestId("relevantExperience-choices").getByLabel("Coached or trained Olympiad students").check();
+    await page.locator('select[name="yearsOfExperience"]').selectOption("3");
     await page.locator('input[name="username"]').fill(username);
     await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await fillPassword(page);
     await submitAndExpect(page, "Apply as a coach", "apply-done");
-    const status = await withDb(async (c) => (await c.query(`SELECT status::text AS status FROM "MentorRequest" WHERE username = $1`, [username])).rows[0]?.status);
-    expect(status).toBe("PENDING");
+    const row = await withDb(async (c) => (await c.query(
+      `SELECT status::text AS status, "yearsOfExperience" AS years, occupation, expertise, "relevantExperience" AS experience,
+              "olympiadInterests"::text AS interests, "olympiadInterestOther" AS other FROM "MentorRequest" WHERE username = $1`, [username])).rows[0]);
+    expect(row).toEqual({
+      status: "PENDING", years: 3, occupation: "Engineer", expertise: "Mechanics; Optics and waves; Other: Olympiad problem solving",
+      experience: "Coached or trained Olympiad students", interests: "{PHYSICS}", other: "Chemistry",
+    });
   });
 
   test("a closed form shows the closed message instead of the form (and opens again)", async ({ page }) => {

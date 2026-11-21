@@ -12,14 +12,16 @@
  */
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, Lock } from "lucide-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { myTestsApi, teacherTestsApi, type AnswerWindow, type TrackingState } from "@/lib/api/test-submissions";
+import { myTestsApi, teacherTestsApi, type AnswerWindow, type OlympiadSubjectCode, type TestLevel, type TrackingState } from "@/lib/api/test-submissions";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { subjectLabel } from "@/lib/accounts/olympiad-interests";
 import { isApiError } from "@/lib/api/errors";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime, personName } from "@/lib/format";
 import { ANSWER_FORMAT_LABEL, DIVISION_LABEL } from "@/lib/test-management/rules";
-import { SUBMISSION_STATUS_LABEL, SUBMITTER_LABEL, TESTS_SUBMIT, TESTS_SUBMIT_FOR_STUDENTS, TRACKING_BADGE } from "@/lib/test-management/submissions";
+import { SUBMISSION_STATUS_LABEL, SUBMITTER_LABEL, TESTS_SUBMIT, TESTS_SUBMIT_FOR_STUDENTS, TRACKING_BADGE, answerActionLabel, submissionLockSupported } from "@/lib/test-management/submissions";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
@@ -41,7 +43,30 @@ export function MyTests() {
   );
 }
 
+/** Levels and subjects the teacher filters by (testSubmissionLock). ROF has two levels: Junior (S1–S3), Senior (S4–S6). */
+const LEVELS: { label: string; value: "" | TestLevel }[] = [
+  { label: "All", value: "" },
+  { label: "Junior (S1–S3)", value: "JUNIOR" },
+  { label: "Senior (S4–S6)", value: "SENIOR" },
+];
+const SUBJECTS: { label: string; value: "" | OlympiadSubjectCode }[] = [
+  { label: "All", value: "" },
+  { label: "Mathematics", value: "MATHEMATICS" },
+  { label: "Physics", value: "PHYSICS" },
+  { label: "Computing", value: "COMPUTING" },
+];
+
+/** A small "Locked" mark: submitted, and only an Administrator can allow another version. */
+export function LockedMark() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-800" title="Submitted and locked: only an administrator can allow it to be submitted again" data-testid="locked-badge">
+      <Lock className="h-3 w-3" aria-hidden="true" /> Locked
+    </span>
+  );
+}
+
 function Mine() {
+  const lockAware = submissionLockSupported(useBackendCapabilities().detection);
   const [win, setWin] = useState<"" | AnswerWindow>("");
   const [page, setPage] = useState(1);
   const filters = { window: win || undefined, page, limit: 20 };
@@ -65,10 +90,11 @@ function Mine() {
                   <p className="mt-1 text-xs text-slate-700">{t.subject.name} · {DIVISION_LABEL[t.division]} · {ANSWER_FORMAT_LABEL[t.answerFormat]} · {t.maxMarks} marks</p>
                   <p className="mt-2 text-sm text-slate-900">{t.window === "UPCOMING" ? <>Opens {formatDateTime(t.opensAt)}</> : <>Deadline <span className="font-semibold">{formatDateTime(t.deadline)}</span></>}</p>
                   <p className="mt-1 flex items-center justify-between text-xs">
-                    <span className={t.submission ? "font-semibold text-emerald-800" : "text-slate-700"}>
+                    <span className={`inline-flex items-center gap-2 ${t.submission ? "font-semibold text-emerald-800" : "text-slate-700"}`}>
                       {t.submission ? `${SUBMISSION_STATUS_LABEL[t.submission.status]} · ${t.submission.versionCount} ${t.submission.versionCount === 1 ? "version" : "versions"}` : "Not submitted"}
+                      {t.submission?.locked && <LockedMark />}
                     </span>
-                    <span className="inline-flex items-center gap-1 font-semibold text-indigo-800">{t.canSubmit ? (t.submission ? "Replace" : "Answer") : "Open"} <ChevronRight className="h-4 w-4" aria-hidden="true" /></span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-indigo-800">{t.canSubmit ? (t.submission ? (lockAware ? "Submit again" : "Replace") : "Answer") : "Open"} <ChevronRight className="h-4 w-4" aria-hidden="true" /></span>
                   </p>
                 </Link>
               </li>
@@ -145,10 +171,16 @@ export function TeacherTestStudents({ testId }: { testId: string }) {
 }
 
 function StudentsOfTest({ testId }: { testId: string }) {
+  const lockAware = submissionLockSupported(useBackendCapabilities().detection);
   const [status, setStatus] = useState<"" | TrackingState>("");
+  const [level, setLevel] = useState<"" | TestLevel>("");
+  const [subject, setSubject] = useState<"" | OlympiadSubjectCode>("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
-  const filters = { status: status || undefined, q: q || undefined, page, limit: 20 };
+  const filters = {
+    status: status || undefined, q: q || undefined, page, limit: 20,
+    ...(lockAware && { division: level || undefined, subject: subject || undefined }),
+  };
   const list = useQuery({ queryKey: queryKeys.tests.teacherStudents(testId, filters), queryFn: () => teacherTestsApi.students(testId, filters), placeholderData: keepPreviousData });
   const back = (
     <Link href="/teacher/tests" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:underline">
@@ -160,7 +192,9 @@ function StudentsOfTest({ testId }: { testId: string }) {
   }
   const c = list.data?.counts;
   return (
-    <PageFrame title="Students for this test" description="Verified students of your schools in the test's division. Open a student to submit or replace their answer.">
+    <PageFrame title="Students for this test" description={lockAware
+      ? "The students who registered with your school code, in the test's level. Open a student to submit their answer; once submitted it is locked."
+      : "Verified students of your schools in the test's division. Open a student to submit or replace their answer."}>
       {back}
       {c && (
         <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="teacher-counts">
@@ -172,6 +206,8 @@ function StudentsOfTest({ testId }: { testId: string }) {
       )}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <FilterPills label="State" options={STATES} value={status} onChange={(v) => { setStatus(v); setPage(1); }} />
+        {lockAware && <FilterPills label="Level" options={LEVELS} value={level} onChange={(v) => { setLevel(v); setPage(1); }} />}
+        {lockAware && <FilterPills label="Subject" options={SUBJECTS} value={subject} onChange={(v) => { setSubject(v); setPage(1); }} />}
         <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search students" label="Search students" />
       </div>
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load the students" onRetry={() => list.refetch()} /> : (
@@ -180,31 +216,43 @@ function StudentsOfTest({ testId }: { testId: string }) {
             <thead>
               <tr className="border-b border-gray-100">
                 <th className={th}>Student</th>
+                {lockAware && <th className={th}>Level · subjects</th>}
                 <th className={th}>Deadline</th>
                 <th className={th}>State</th>
                 <th className={th}><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/80" data-testid="teacher-students">
-              {list.data.data.length === 0 ? <TableMessage colSpan={4}>No student here.</TableMessage> : list.data.data.map((r) => {
+              {list.data.data.length === 0 ? <TableMessage colSpan={lockAware ? 5 : 4}>No student here.</TableMessage> : list.data.data.map((r) => {
                 const b = TRACKING_BADGE[r.state];
+                const action = answerActionLabel(r.canSubmit, r.submission !== null, lockAware);
+                const subjects = [...(r.student.olympiadInterests ?? []).map(subjectLabel), ...(r.student.olympiadInterestOther ? [r.student.olympiadInterestOther] : [])];
                 return (
                   <tr key={r.student.id} className="text-xs" data-testid={`student-row-${r.student.username}`}>
                     <td className={td}>
                       <span className="font-semibold text-gray-900">{personName(r.student)}</span> <span className="text-gray-600">@{r.student.username}</span>
                       <span className="block text-gray-700">{r.student.gradeLevel ?? "—"}{r.student.school && ` · ${r.student.school.name}`}</span>
                     </td>
+                    {lockAware && (
+                      <td className={`${td} text-gray-800`} data-testid="student-level-subjects">
+                        <span className="font-semibold">{r.student.division ? DIVISION_LABEL[r.student.division] : "—"}</span>
+                        <span className="block text-gray-700">{subjects.length ? subjects.join(", ") : "—"}</span>
+                      </td>
+                    )}
                     <td className={`${td} text-gray-800`}>{formatDateTime(r.deadline)}</td>
                     <td className={td}>
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${b.className}`}>{b.label}</span>
+                      <span className="inline-flex flex-wrap items-center gap-1">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${b.className}`}>{b.label}</span>
+                        {r.submission?.locked && <LockedMark />}
+                      </span>
                       {r.submission && (
                         <span className="block text-gray-700">{r.submission.versionCount} {r.submission.versionCount === 1 ? "version" : "versions"} · last by {r.submission.lastSubmitterRole ? SUBMITTER_LABEL[r.submission.lastSubmitterRole].toLowerCase() : "—"}</span>
                       )}
                     </td>
                     <td className={`${td} whitespace-nowrap`}>
                       <Link href={`/teacher/tests/${testId}/students/${r.student.id}`} className="font-semibold text-indigo-700 hover:underline"
-                        aria-label={`${r.canSubmit ? (r.submission ? "Replace" : "Submit") : "View"} for ${personName(r.student)}`}>
-                        {r.canSubmit ? (r.submission ? "Replace" : "Submit") : "View"}
+                        aria-label={`${action} for ${personName(r.student)}`}>
+                        {action}
                       </Link>
                     </td>
                   </tr>

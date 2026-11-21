@@ -13,6 +13,10 @@ import {
   latestAnswer,
   openInfoRequest,
   parseYears,
+  OTHER_POSITION,
+  TEACHER_POSITIONS,
+  YEARS_OPTIONS,
+  positionChoice,
   questionProblem,
   teacherExtraPayload,
   validateCoachExtra,
@@ -44,6 +48,24 @@ test("Teacher: position required, years optional; payload trims and omits empty 
   assert.ok(validateTeacherExtra({ position: "Head", yearsOfExperience: "99" }).yearsOfExperience);
   assert.deepEqual(teacherExtraPayload({ position: "  Head of sciences ", yearsOfExperience: "" }), { position: "Head of sciences" });
   assert.deepEqual(teacherExtraPayload({ position: "Teacher", yearsOfExperience: "12" }), { position: "Teacher", yearsOfExperience: 12 });
+});
+
+test("dropdowns: years 0–60 (every value the server accepts); usual positions, else Other", () => {
+  assert.equal(YEARS_OPTIONS.length, 61);
+  assert.deepEqual(YEARS_OPTIONS[0], { value: "0", label: "Less than 1 year" });
+  assert.deepEqual(YEARS_OPTIONS[1], { value: "1", label: "1 year" });
+  assert.deepEqual(YEARS_OPTIONS[5], { value: "5", label: "5 years" });
+  assert.deepEqual(YEARS_OPTIONS[60], { value: "60", label: "60 years or more" });
+  for (const o of YEARS_OPTIONS) assert.equal(parseYears(o.value), Number(o.value));
+  assert.ok(TEACHER_POSITIONS.includes("Mathematics teacher"));
+  for (const p of TEACHER_POSITIONS) assert.deepEqual(validateTeacherExtra({ position: p, yearsOfExperience: "" }), {}, p);
+  assert.equal(positionChoice(""), "");
+  assert.equal(positionChoice("Director of studies"), "Director of studies");
+  assert.equal(positionChoice(" Director of studies "), "Director of studies");
+  assert.equal(positionChoice("Olympiad club coordinator"), OTHER_POSITION);
+  assert.equal(positionChoice("", true), OTHER_POSITION, "Other chosen, nothing typed yet");
+  assert.match(validateTeacherExtra({ position: "", yearsOfExperience: "" }).position, /Choose your position/);
+  assert.match(validateTeacherExtra({ position: "x", yearsOfExperience: "" }).position, /2–100 characters/);
 });
 
 test("Coach: phone, expertise, experience required; affiliation and years optional", () => {

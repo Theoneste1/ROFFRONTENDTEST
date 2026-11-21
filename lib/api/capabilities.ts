@@ -174,6 +174,20 @@ export const KNOWN_FEATURES = [
    */
   "bulkOperationsGeneric",
   /**
+   * "Other" Olympiad interest (owner, 2026-11-21): `olympiadInterestOther` (2–100 characters) beside `olympiadInterests`
+   * on the sign-ups, PATCH /me and the Administrator's coach edit; "Other" alone counts. Without it: the three subjects only.
+   */
+  "olympiadInterestOther",
+  /**
+   * Teacher self-service and locked test submissions (owner, 2026-11-21): a listed school's teacher gets the account at
+   * once and sees the students who registered with the school code (pending claims included); a submitted test answer is
+   * locked for the student and every teacher (409 SUBMISSION_LOCKED) until an Administrator authorizes one more version
+   * (POST/DELETE /admin/tests/:id/submissions/:sid/resubmission, with a reason, history kept); an Administrator revokes /
+   * restores a teacher's test submission (GET/PUT /admin/teachers/:id/test-submission); the teacher's test student list
+   * filters by level (division) and subject. Without it: replacing an answer as before, no filters.
+   */
+  "testSubmissionLock",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */

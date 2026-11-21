@@ -117,7 +117,7 @@ test.describe("registration forms, one continuous form", () => {
     await form.locator('input[name="email"]').fill(`${username}@exa_mple.com`);
     await pickCountry(page, "home-country", "Rwanda");
     await form.locator('input[name="phone"]').fill("0788654321");
-    await form.locator('input[name="position"]').fill("Mathematics teacher");
+    await form.locator('select[name="position"]').selectOption("Mathematics teacher");
     await form.getByLabel("Mathematics").check();
     await selectWhenReady(page, "cascade-province", SCHOOL.province);
     await selectWhenReady(page, "cascade-district", SCHOOL.district);
@@ -143,7 +143,7 @@ test.describe("registration forms, one continuous form", () => {
     expect(applications).toBe(0);
   });
 
-  test("coach: Enter keeps new lines in a text area; a refusal naming no field shows its message in view", async ({ page }) => {
+  test("coach: the tick lists keep their choices; a refusal naming no field shows its message in view", async ({ page }) => {
     test.setTimeout(150_000);
     await page.goto("/apply");
     await page.locator('input[name="firstName"]').waitFor({ timeout: 60_000 });
@@ -153,17 +153,18 @@ test.describe("registration forms, one continuous form", () => {
     await page.locator('input[name="gender"][value="FEMALE"]').check();
     await pickCountry(page, "coach-country", "Kenya");
     await page.locator('input[name="phone"]').fill("0788111222");
-    await page.locator('input[name="occupation"]').fill("Engineer");
+    await page.locator('select[name="occupation"]').selectOption("Engineer");
     await page.getByTestId("coach-education").selectOption("BACHELOR");
     await page.getByTestId("olympiad-interests").getByLabel("Physics").check();
-    const expertise = page.locator('textarea[name="expertise"]');
-    await expertise.fill("Mechanics");
-    await expertise.press("End");
-    await expertise.press("Enter");
-    await expertise.pressSequentially("Olympiad problem solving");
-    await expect(expertise).toHaveValue("Mechanics\nOlympiad problem solving");
+    // Areas of expertise and relevant experience: tick lists (the text areas they replace are gone); Enter in the "Other"
+    // box sends nothing on its own.
+    const expertise = page.getByTestId("expertise-choices");
+    await expertise.getByLabel("Mechanics", { exact: true }).check();
+    await expertise.locator('input[name="expertiseOtherOn"]').check();
+    const other = expertise.locator('input[name="expertiseOther"]');
+    await other.fill("Olympiad problem solving");
     await expect(page.getByTestId("apply-done")).toHaveCount(0);
-    await page.locator('textarea[name="relevantExperience"]').fill("Three years coaching national olympiad teams.");
+    await page.getByTestId("relevantExperience-choices").getByLabel("Coached or trained Olympiad students").check();
     // "admin" is taken: the backend refuses the application without naming a field.
     await page.locator('input[name="username"]').fill("admin");
     await page.locator('input[name="email"]').fill(`one.coach.${RUN}@e2e.local`);
@@ -174,7 +175,9 @@ test.describe("registration forms, one continuous form", () => {
     await expect(taken).toBeVisible();
     await expect(taken).toBeInViewport();
     await expect(page.getByTestId("apply-done")).toHaveCount(0);
-    await expect(page.locator('input[name="occupation"]')).toHaveValue("Engineer");
+    await expect(page.locator('select[name="occupation"]')).toHaveValue("Engineer");
+    await expect(expertise.getByLabel("Mechanics", { exact: true })).toBeChecked();
+    await expect(other).toHaveValue("Olympiad problem solving");
   });
 
   test("the Student / Teacher / Coach switch shows each form afresh, with nothing carried over", async ({ page }) => {

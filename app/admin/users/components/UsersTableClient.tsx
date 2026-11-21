@@ -261,7 +261,10 @@ export default function UsersTableClient() {
                   <td className={`${td} text-gray-600 font-medium`}>
                     {roleLabel(u.role)}
                     {u.teacherSchoolRole && <TeacherRoleBadge role={u.teacherSchoolRole} className="ml-2" />}
-                    <CoachSubjectsNote role={u.role} subjects={u.olympiadInterests} />
+                    {u.role === "TEACHER" && u.testSubmissionAllowed === false && (
+                      <span className="ml-2 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-900" title="An administrator turned off this teacher's test submission for students" data-testid="test-submission-off">Test submission off</span>
+                    )}
+                    <CoachSubjectsNote role={u.role} subjects={u.olympiadInterests} other={u.olympiadInterestOther} />
                   </td>
                   <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>
                     {u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}

@@ -16,7 +16,9 @@ import { AdminPage, Card, ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, b
 import { AccountStatusBadge, UserForm } from "../components/userUi";
 import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
-import { interestsText } from "@/lib/accounts/olympiad-interests";
+import TeacherTestSubmissionCard from "./TeacherTestSubmissionCard";
+import { submissionLockSupported } from "@/lib/test-management/submissions";
+import { interestsWithOtherText } from "@/lib/accounts/olympiad-interests";
 import PermissionOverridesCard from "./PermissionOverridesCard";
 import StatusHistoryCard from "./StatusHistoryCard";
 import { statusHistoryVisible } from "@/lib/accounts/status-history";
@@ -111,7 +113,7 @@ export default function UserDetail({ userId }: { userId: string }) {
               <>
                 <Row label="Division">{u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}</Row>
                 <Row label="Points">{formatNumber(u.points)} · {formatNumber(u.problemsSolved)} problems solved</Row>
-                {u.olympiadInterests !== undefined && <Row label="Olympiad interests">{interestsText(u.olympiadInterests) || "None chosen"}</Row>}
+                {u.olympiadInterests !== undefined && <Row label="Olympiad interests">{interestsWithOtherText(u.olympiadInterests, u.olympiadInterestOther) || "None chosen"}</Row>}
               </>
             )}
             <Row label="School">{u.school ? `${u.school.name} · ${u.school.location}` : "—"}</Row>
@@ -258,11 +260,13 @@ export default function UserDetail({ userId }: { userId: string }) {
         </Card>
 
         {/* A Coach's subjects (capability coachOlympiadInterests): shown, and edited by administrators (users.manage and users.manageCoaches, as the backend checks; canEditCoachSubjects). */}
-        {u.role === "MENTOR" && coachInterestsSupported(detection) && <CoachSubjectsCard userId={u.id} subjects={u.olympiadInterests} canEdit={canEditCoachSubjects({ role: me?.role, can, overrides: permissionOverrides })} />}
+        {u.role === "MENTOR" && coachInterestsSupported(detection) && <CoachSubjectsCard userId={u.id} subjects={u.olympiadInterests} other={u.olympiadInterestOther ?? null} canEdit={canEditCoachSubjects({ role: me?.role, can, overrides: permissionOverrides })} />}
         {/* Students' date of birth: correction with a reason, and its history (capability dateOfBirthCorrection). */}
         {canCorrectDateOfBirth(detection, u.role, can("users.manage")) && <DateOfBirthCard userId={u.id} dateOfBirth={u.dateOfBirth} />}
         {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
+        {/* A teacher's test submission for students: one switch, the account untouched (testSubmissionLock). */}
+        {u.role === "TEACHER" && can("users.manageTeachers") && submissionLockSupported(detection) && !isMe && <TeacherTestSubmissionCard teacherId={u.id} />}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
         {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}
         {/* Super Administrators: effective permissions (permissions.view) and overrides (permissions.manageOverrides). */}
