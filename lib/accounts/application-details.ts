@@ -33,7 +33,37 @@ export function parseYears(v: string): number | undefined {
   return n <= 60 ? n : Number.NaN;
 }
 
-const yearsError = (v: string) => (Number.isNaN(parseYears(v)) ? "Enter a whole number of years from 0 to 60." : undefined);
+const yearsError = (v: string) => (Number.isNaN(parseYears(v)) ? "Choose your years of experience." : undefined);
+
+/** Years of experience as a dropdown: every whole number the server accepts (0–60); "" = not given (optional). */
+export const YEARS_OPTIONS: ReadonlyArray<{ value: string; label: string }> = Array.from({ length: 61 }, (_, n) => ({
+  value: String(n),
+  label: n === 0 ? "Less than 1 year" : n === 1 ? "1 year" : n === 60 ? "60 years or more" : `${n} years`,
+}));
+
+/**
+ * Teacher positions offered in the dropdown (owner, 2026-11-21). The chosen label is stored as the position (the server
+ * keeps free text, 2–100 characters); "Other" lets the applicant type a position that is not listed.
+ */
+export const TEACHER_POSITIONS: readonly string[] = [
+  "Mathematics teacher",
+  "Physics teacher",
+  "Computer science / ICT teacher",
+  "Teacher of another subject",
+  "Head of department",
+  "Director of studies",
+  "Deputy head teacher",
+  "Head teacher",
+];
+export const OTHER_POSITION = "__other__";
+
+/** The dropdown choice for a stored position: a listed one, "" when empty, else Other (the text box keeps it). */
+export function positionChoice(position: string, otherChosen = false): string {
+  const t = position.trim();
+  if (otherChosen) return OTHER_POSITION;
+  if (!t) return "";
+  return TEACHER_POSITIONS.includes(t) ? t : OTHER_POSITION;
+}
 
 // ─── Teacher ───────────────────────────────────────────────────────────────
 
@@ -42,7 +72,8 @@ export const emptyTeacherExtra = (): TeacherExtraDraft => ({ position: "", years
 
 export function validateTeacherExtra(d: TeacherExtraDraft): Partial<Record<keyof TeacherExtraDraft, string>> {
   const e: Partial<Record<keyof TeacherExtraDraft, string>> = {};
-  if (!within(d.position, LIMITS.position)) e.position = "Enter your position or teaching role (2–100 characters).";
+  if (!d.position.trim()) e.position = "Choose your position or teaching role (or choose Other and type it).";
+  else if (!within(d.position, LIMITS.position)) e.position = "Type your position or teaching role (2–100 characters).";
   const y = yearsError(d.yearsOfExperience);
   if (y) e.yearsOfExperience = y;
   return e;

@@ -104,9 +104,7 @@ async function fillOnce(page: Page, who: { username: string; lastName: string; p
     username: who.username,
     "new-password": who.password,
     "confirm-password": who.password,
-    position: "Mathematics teacher",
     occupation: "Engineer",
-    yearsOfExperience: "3",
     affiliation: "University of Rwanda",
     expertise: "Combinatorics",
     relevantExperience: "Three years coaching olympiad teams.",
@@ -143,6 +141,8 @@ async function fillOnce(page: Page, who: { username: string; lastName: string; p
       const label = await c.evaluate((el) => (el as HTMLSelectElement).labels?.[0]?.textContent ?? "");
       if (testId in SELECT) await choose(c, SELECT[testId]);
       else if (name === "gradeLevel") await c.selectOption("S2");
+      else if (name === "position") await c.selectOption("Mathematics teacher");
+      else if (name === "yearsOfExperience") await c.selectOption("3");
       else if (/^Country/.test(label)) await choose(c, "Rwanda");
       else if (/^Home district/.test(label)) await choose(c, "Gasabo");
       else {

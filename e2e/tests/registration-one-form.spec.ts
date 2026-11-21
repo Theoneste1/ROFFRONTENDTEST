@@ -117,7 +117,7 @@ test.describe("registration forms, one continuous form", () => {
     await form.locator('input[name="email"]').fill(`${username}@exa_mple.com`);
     await pickCountry(page, "home-country", "Rwanda");
     await form.locator('input[name="phone"]').fill("0788654321");
-    await form.locator('input[name="position"]').fill("Mathematics teacher");
+    await form.locator('select[name="position"]').selectOption("Mathematics teacher");
     await form.getByLabel("Mathematics").check();
     await selectWhenReady(page, "cascade-province", SCHOOL.province);
     await selectWhenReady(page, "cascade-district", SCHOOL.district);
