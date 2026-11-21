@@ -116,7 +116,7 @@ export default function AssignmentsContent() {
       </div>
 
       {pageOnly && (
-        <p className="text-xs text-gray-500 mb-3" data-testid="page-only-filter">The status filter and sort apply to this page of results.</p>
+        <p className="text-xs text-gray-600 mb-3" data-testid="page-only-filter">The status filter and sort apply to this page of results.</p>
       )}
       {query.isPending ? (
         <LoadingBlock label="Loading assignments…" />

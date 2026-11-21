@@ -54,7 +54,8 @@ const SIDEBARS = [
 /** Literal links in a component's source: href="/…" and settingsHref="/…". */
 function literalHrefs(file) {
   const src = readFileSync(join(ROOT, file), "utf8");
-  return [...src.matchAll(/(?:href|settingsHref)=["'](\/[^"']*)["']/gi)].map((m) => m[1]);
+  // JSX attributes (href="…") and the sidebar item objects passed to SidebarNav (href: "…").
+  return [...src.matchAll(/(?:href|settingsHref)(?:=|:\s*)["'](\/[^"']*)["']/gi)].map((m) => m[1]);
 }
 
 test("the route scan sees the app's pages (sanity)", () => {
@@ -77,7 +78,7 @@ test("every link written in the portal sidebars has a page", () => {
   }
   // The student menu is written in its sidebar: make sure the scan found its items.
   const student = literalHrefs(SIDEBARS[0]);
-  for (const href of ["/student/dashboard", "/student/leaderboard", "/student/courses", "/student/resources", "/student/assignments", "/student/assignments/results", "/student/profile"]) {
+  for (const href of ["/student/dashboard", "/student/leaderboard", "/student/courses", "/student/resources", "/student/assignments", "/student/assignments/results", "/student/account"]) {
     assert.ok(student.includes(href), `student sidebar scan missed ${href}`);
   }
 });

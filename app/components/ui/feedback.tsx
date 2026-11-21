@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 
 export function Spinner({ className = "h-5 w-5" }: { className?: string }) {
-  return <Loader2 className={`animate-spin text-[#2B2BB2] ${className}`} aria-hidden="true" />;
+  return <Loader2 className={`animate-spin text-brand ${className}`} aria-hidden="true" />;
 }
 
 /** Centred spinner for a whole screen (session check, route guard). */
@@ -25,7 +25,7 @@ export function LoadingBlock({ label = "Loading…" }: { label?: string }) {
   return (
     <div className="w-full py-16 flex flex-col items-center justify-center gap-3" role="status">
       <Spinner className="h-7 w-7" />
-      <span className="text-sm text-slate-500">{label}</span>
+      <span className="text-sm text-slate-600">{label}</span>
     </div>
   );
 }
@@ -46,12 +46,12 @@ export function ErrorState({
       <AlertCircle className="h-8 w-8 text-red-500" aria-hidden="true" />
       <h2 className="text-base font-semibold text-slate-900">{title}</h2>
       <p className="text-sm text-slate-600 max-w-md">{errorMessage(error)}</p>
-      {requestId && <p className="text-xs text-slate-400 font-mono">Reference: {requestId}</p>}
+      {requestId && <p className="text-xs text-slate-500 font-mono">Reference: {requestId}</p>}
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="mt-2 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#2B2BB2] border border-[#2B2BB2]/30 rounded-lg hover:bg-[#2B2BB2]/5 transition-colors"
+          className="mt-2 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand border border-brand/30 rounded-lg hover:bg-brand/5 transition-colors"
         >
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
           Try again
@@ -64,9 +64,9 @@ export function ErrorState({
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return (
     <div className="w-full py-14 flex flex-col items-center text-center gap-2">
-      <Inbox className="h-9 w-9 text-slate-400" aria-hidden="true" />
+      <Inbox className="h-9 w-9 text-slate-500" aria-hidden="true" />
       <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
-      {description && <p className="text-sm text-slate-500 max-w-sm">{description}</p>}
+      {description && <p className="text-sm text-slate-600 max-w-sm">{description}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   );

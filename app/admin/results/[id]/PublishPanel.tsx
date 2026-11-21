@@ -21,11 +21,11 @@ export default function PublishPanel({ assignmentId }: { assignmentId: string })
       <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-sm font-bold text-gray-900">Publication</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-600 mt-0.5">
             {count > 0 ? `${count} approved result${count === 1 ? " is" : "s are"} ready to publish. Students are notified and their points update.` : "No approved results are waiting to be published."}
           </p>
           {releases.data && releases.data.length > 0 && (
-            <ul className="mt-2 space-y-0.5 text-[11px] text-gray-400">
+            <ul className="mt-2 space-y-0.5 text-[11px] text-gray-500">
               {releases.data.slice(0, 5).map((r) => (
                 <li key={r.id}>
                   {formatDateTime(r.publishedAt)} · {r.resultCount} result{r.resultCount === 1 ? "" : "s"} · by @{r.publishedBy?.username ?? "—"}

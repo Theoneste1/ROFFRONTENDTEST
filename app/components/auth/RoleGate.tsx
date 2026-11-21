@@ -6,6 +6,10 @@ import { useSession } from "@/lib/auth/session";
 import { portalHome, sharesPortal } from "@/lib/auth/roles";
 import type { Role } from "@/lib/api/types";
 import { ErrorState, FullPageLoader } from "@/app/components/ui/feedback";
+import { needsDateOfBirth } from "@/lib/accounts/date-of-birth-step";
+import DateOfBirthStep from "./DateOfBirthStep";
+import GenderStep from "./GenderStep";
+import { needsGender } from "@/lib/accounts/gender";
 
 /**
  * Renders a portal only for the roles that use it (`role` names the portal:
@@ -16,6 +20,9 @@ import { ErrorState, FullPageLoader } from "@/app/components/ui/feedback";
  * - Signed in with a role of another portal → that role's own portal
  * - An unknown role → the "no access configured" page, which is not gated, so
  *   this never loops.
+ *
+ * - A student without a date of birth (created by an Administrator, invited or imported) → the date-of-birth step
+ *   instead of the portal, until they give it (owner decision 9.3; the API refuses everything else meanwhile).
  *
  * This is navigation, not security: the API refuses anything the role may not do.
  */
@@ -47,6 +54,10 @@ export default function RoleGate({ role, children }: { role: Role; children: Rea
   if (!allowed) {
     return <FullPageLoader label={session.status === "unauthenticated" ? "Redirecting to sign in…" : "Loading…"} />;
   }
+
+  if (needsDateOfBirth(session.user)) return <DateOfBirthStep firstName={session.user!.firstName} />;
+  // Accounts from before gender was asked at sign-up give it once (capability genderStep).
+  if (needsGender(session.user)) return <GenderStep firstName={session.user!.firstName} />;
 
   return <>{children}</>;
 }

@@ -40,9 +40,9 @@ export default function HomeNav() {
   const solid = scrolled || open;
 
   return (
-    <header className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${solid ? "bg-[#001E4E]/95 shadow-lg backdrop-blur" : "bg-transparent"}`}>
+    <header className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${solid ? "bg-brand-950/95 shadow-lg backdrop-blur" : "bg-transparent"}`}>
       <nav className="mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Main">
-        <Link href="/" className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+        <Link href="/" aria-label="ROF LMS home page" data-testid="rof-logo-link" className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
           <Image src="/logo.png" alt="" width={44} height={44} className="h-10 w-10 md:h-11 md:w-11 rounded-full" priority />
           <span className="leading-tight text-white">
             <span className="block text-lg font-extrabold tracking-tight">ROF LMS</span>
@@ -62,7 +62,7 @@ export default function HomeNav() {
 
         <div className="hidden lg:flex items-center gap-3">
           {signedIn ? (
-            <Link href={portalHome(session.role!)} className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-[#001E4E] hover:bg-amber-300 transition-colors">
+            <Link href={portalHome(session.role!)} className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-brand-950 hover:bg-amber-300 transition-colors">
               My dashboard
             </Link>
           ) : (
@@ -70,7 +70,7 @@ export default function HomeNav() {
               <Link href="/login" className="rounded-full px-5 py-2.5 text-sm font-semibold text-white ring-1 ring-white/40 hover:bg-white/10 transition-colors">
                 Log in
               </Link>
-              <a href="#join" className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-[#001E4E] hover:bg-amber-300 transition-colors">
+              <a href="#join" className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-brand-950 hover:bg-amber-300 transition-colors">
                 Join the community
               </a>
             </>
@@ -90,7 +90,7 @@ export default function HomeNav() {
       </nav>
 
       {open && (
-        <div id="home-mobile-menu" className="lg:hidden border-t border-white/10 bg-[#001E4E] px-4 pb-6 pt-2">
+        <div id="home-mobile-menu" className="lg:hidden border-t border-white/10 bg-brand-950 px-4 pb-6 pt-2">
           <ul className="space-y-1">
             {LINKS.map((l) => (
               <li key={l.href}>
@@ -102,7 +102,7 @@ export default function HomeNav() {
           </ul>
           <div className="mt-4 grid gap-3">
             {signedIn ? (
-              <Link href={portalHome(session.role!)} className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-[#001E4E]">
+              <Link href={portalHome(session.role!)} className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-brand-950">
                 My dashboard
               </Link>
             ) : (
@@ -110,7 +110,7 @@ export default function HomeNav() {
                 <Link href="/login" className="rounded-full px-5 py-3 text-center font-semibold text-white ring-1 ring-white/40">
                   Log in
                 </Link>
-                <a href="#join" onClick={() => setOpen(false)} className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-[#001E4E]">
+                <a href="#join" onClick={() => setOpen(false)} className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-brand-950">
                   Join the community
                 </a>
               </>

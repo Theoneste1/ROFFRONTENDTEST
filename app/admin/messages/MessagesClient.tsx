@@ -39,7 +39,7 @@ function MessageRow({ m, onNotice }: { m: ContactMessage; onNotice: (tone: "succ
         <td className={`${td} max-w-[340px]`}>
           <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="text-left">
             <span className="block font-semibold text-gray-800 break-words">{m.subject}</span>
-            <span className="block text-gray-500 break-words">{open ? "Hide message" : m.message.length > 90 ? `${m.message.slice(0, 90)}…` : m.message}</span>
+            <span className="block text-gray-600 break-words">{open ? "Hide message" : m.message.length > 90 ? `${m.message.slice(0, 90)}…` : m.message}</span>
           </button>
         </td>
         <td className={`${td} text-gray-700`}>
@@ -48,8 +48,8 @@ function MessageRow({ m, onNotice }: { m: ContactMessage; onNotice: (tone: "succ
             {m.email}
           </a>
         </td>
-        <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDateTime(m.createdAt)}</td>
-        <td className={`${td} text-gray-500 whitespace-nowrap`}>{m.notification === "QUEUED" ? "E-mail queued" : "No support e-mail set"}</td>
+        <td className={`${td} text-gray-600 whitespace-nowrap`}>{formatDateTime(m.createdAt)}</td>
+        <td className={`${td} text-gray-600 whitespace-nowrap`}>{m.notification === "QUEUED" ? "E-mail queued" : "No support e-mail set"}</td>
         <td className={td}>
           <Badge className={STATUS[m.status].badge}>{STATUS[m.status].label}</Badge>
         </td>
@@ -63,7 +63,7 @@ function MessageRow({ m, onNotice }: { m: ContactMessage; onNotice: (tone: "succ
         <tr className="bg-gray-50/60">
           <td colSpan={6} className="px-4 sm:px-6 py-4">
             <p className="whitespace-pre-wrap break-words text-sm text-gray-700">{m.message}</p>
-            {m.handledAt && <p className="mt-2 text-xs text-gray-400">Handled {formatDateTime(m.handledAt)}</p>}
+            {m.handledAt && <p className="mt-2 text-xs text-gray-500">Handled {formatDateTime(m.handledAt)}</p>}
           </td>
         </tr>
       )}

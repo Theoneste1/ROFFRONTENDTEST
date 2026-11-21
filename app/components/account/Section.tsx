@@ -8,7 +8,7 @@ export function Section({ title, icon, description, children }: { title: string;
         <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600 shrink-0">{icon}</span>
         <div className="min-w-0">
           <h2 className="text-base font-bold text-gray-900">{title}</h2>
-          {description && <p className="text-sm text-gray-500 mt-0.5">{description}</p>}
+          {description && <p className="text-sm text-gray-600 mt-0.5">{description}</p>}
         </div>
       </div>
       {children}

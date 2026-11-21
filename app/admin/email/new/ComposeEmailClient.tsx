@@ -159,7 +159,7 @@ function Composer() {
             />
           )}
           {state.mode === "EXPLICIT" && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-600">
               {picked.size === 0 ? "Choose people in the list below." : `${picked.size} ${picked.size === 1 ? "person" : "people"} chosen (at most ${EMAIL_RULES.explicitMax}).`}
             </p>
           )}
@@ -169,7 +169,7 @@ function Composer() {
               <span>I understand that every active, approved user of the platform — students, coaches and staff — will receive this e-mail.</span>
             </label>
           )}
-          {state.mode !== "EXPLICIT" && state.mode !== "ALL" && <p className="text-xs text-gray-400">Division and school e-mails go to students only.</p>}
+          {state.mode !== "EXPLICIT" && state.mode !== "ALL" && <p className="text-xs text-gray-500">Division and school e-mails go to students only.</p>}
           {errors.recipients && <Alert tone="error">{errors.recipients}</Alert>}
           {sendError && (
             <div data-testid="send-error">
@@ -201,7 +201,7 @@ function Composer() {
               <p>
                 <span className="font-semibold">“{state.subject.trim()}”</span> will be sent to {recipientsSummary()}.
               </p>
-              <p className="text-xs text-gray-500">It cannot be recalled once sent.</p>
+              <p className="text-xs text-gray-600">It cannot be recalled once sent.</p>
             </div>
           }
           onConfirm={doSend}
@@ -298,12 +298,12 @@ function RecipientPicker({ picked, onChange }: { picked: Map<string, EmailUser>;
                         />
                       </td>
                       <td className={`${td} font-semibold text-gray-800`}>
-                        {name} <span className="font-normal text-gray-400">@{u.username}</span>
-                        {!reachable && <span className="block font-normal text-gray-400">{u.isActive ? "Not approved" : "Suspended"} — cannot receive e-mail</span>}
+                        {name} <span className="font-normal text-gray-500">@{u.username}</span>
+                        {!reachable && <span className="block font-normal text-gray-500">{u.isActive ? "Not approved" : "Suspended"} — cannot receive e-mail</span>}
                       </td>
                       <td className={`${td} break-all`}>{u.email}</td>
                       <td className={td}>{roleLabel(u.role)}</td>
-                      <td className={`${td} text-gray-500`}>{u.school?.name ?? "—"}</td>
+                      <td className={`${td} text-gray-600`}>{u.school?.name ?? "—"}</td>
                     </tr>
                   );
                 })

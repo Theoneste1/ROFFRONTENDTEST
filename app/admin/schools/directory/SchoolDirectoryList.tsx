@@ -5,48 +5,117 @@
  * active and inactive) from `GET /admin/schools`, with search, filters, counts, and create /
  * edit / deactivate / reactivate. The students' school-claim review stays where it was
  * (/admin/schools/affiliations, `schoolAffiliations` + `schools.manage`).
+ *
+ * Schools table (2026-11-19): columns School code, School name, Country, District, Sector, Number of students (students
+ * whose current school claim an Administrator verified), Primary teacher, Status. Search, filters, sort (name or number
+ * of students; backends with schoolsTable) and page live in the URL; a row opens the school's page. On a small screen
+ * the table scrolls sideways inside its own container.
  */
-import { useState } from "react";
+import { useState, type KeyboardEvent, type MouseEvent } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCountryOptions } from "@/lib/queries/countries";
+import { countryDisplayName } from "@/lib/countries/reference";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Plus } from "lucide-react";
 import { hasFeature } from "@/lib/api/capabilities";
 import type { DirectorySchoolRecord, SchoolSource } from "@/lib/api/school-directory";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { invalidateAfterSchoolChange, useDirectorySchools, useSchoolLocations, useSyncAccess } from "@/lib/queries/school-directory";
 import { formatNumber } from "@/lib/format";
-import { RWANDA, SOURCE_LABEL, initialListState, isFiltered, listFilters, placeLabel, type ListState } from "@/lib/admin/school-directory";
+import {
+  RWANDA, SOURCE_LABEL, ariaSort, initialListState, isFiltered, listFilters, listStateFromParams, listStateToParams, nextSort, orDash,
+  type ListState, type SchoolSort,
+} from "@/lib/admin/school-directory";
+import { NO_PRIMARY_TEACHER } from "@/lib/schools/primary-teacher";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, Badge, Notice, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
 import SchoolActiveDialog from "./SchoolActiveDialog";
 import SchoolFormDialog from "./SchoolFormDialog";
+import { useRecordBulk } from "../../components/bulk/RecordBulk";
+import { bulkFilterFrom } from "@/lib/admin/bulk-records";
 
 type Dialog = { kind: "create" } | { kind: "edit"; school: DirectorySchoolRecord } | { kind: "active"; school: DirectorySchoolRecord } | null;
 
 export default function SchoolDirectoryList() {
-  const [state, setState] = useState<ListState>(initialListState);
+  const params = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const state = listStateFromParams(params);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [notice, setNotice] = useState<{ text: string; href?: string; warning?: string } | null>(null);
   const qc = useQueryClient();
-  const filters = listFilters(state);
+  const detection = useBackendCapabilities().detection;
+  const sortable = hasFeature(detection, "schoolsTable");
+  const filters = listFilters(state, { sortable });
   const schools = useDirectorySchools(filters);
   const locations = useSchoolLocations();
   const { can } = useSession();
-  const review = hasFeature(useBackendCapabilities().detection, "schoolAffiliations") && can("schools.manage");
+  const review = hasFeature(detection, "schoolAffiliations") && can("schools.manage");
   const sync = useSyncAccess().visible;
 
-  const [otherCountry, setOtherCountry] = useState(false);
   /** Remounts the search box on "Clear filters" (it keeps its own text while typing). */
   const [searchKey, setSearchKey] = useState(0);
-  const update = (patch: Partial<ListState>) => setState((s) => ({ ...s, ...patch, page: patch.page ?? 1 }));
-  const countryMode = otherCountry ? "OTHER" : state.countryCode === RWANDA ? RWANDA : "";
-  const showPlaces = countryMode !== "OTHER";
+  const go = (next: ListState) => {
+    const query = listStateToParams(next);
+    router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+  };
+  // Any change but a page change goes back to page 1; the sort is kept with every filter.
+  const update = (patch: Partial<ListState>) => go({ ...state, ...patch, page: patch.page ?? 1 });
+  const sortBy = (column: SchoolSort) => update(nextSort(state, column));
+  const open = (id: string) => router.push(`/admin/schools/${id}`);
+  // A row opens the school's page (its links and buttons keep their own action).
+  const rowClick = (e: MouseEvent<HTMLTableRowElement>, id: string) => {
+    if ((e.target as HTMLElement).closest("a,button")) return;
+    open(id);
+  };
+  const rowKey = (e: KeyboardEvent<HTMLTableRowElement>, id: string) => {
+    if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      open(id);
+    }
+  };
+  const sortHeader = (column: SchoolSort, label: string) =>
+    sortable ? (
+      <th className={th} aria-sort={ariaSort(state, column)}>
+        <button
+          type="button"
+          onClick={() => sortBy(column)}
+          className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+          data-testid={`sort-${column}`}
+        >
+          {label}
+          {ariaSort(state, column) === "ascending" ? (
+            <ArrowUp className="h-3 w-3" aria-hidden="true" />
+          ) : ariaSort(state, column) === "descending" ? (
+            <ArrowDown className="h-3 w-3" aria-hidden="true" />
+          ) : (
+            <ArrowUpDown className="h-3 w-3 text-gray-500" aria-hidden="true" />
+          )}
+        </button>
+      </th>
+    ) : (
+      <th className={th}>{label}</th>
+    );
+  // Province / district / sector belong to Rwanda: offered for "Any" and Rwanda, not for another country.
+  const showPlaces = !state.countryCode || state.countryCode === RWANDA;
+  // Every country (capability countries: the reference list; otherwise the built-in list, as before).
+  const countryList = useCountryOptions();
+  const countries = countryList.options;
   const provinces = locations.data ?? [];
   const districts = provinces.find((p) => p.province === state.province)?.districts ?? [];
   const sectors = districts.find((d) => d.district === state.district)?.sectors ?? [];
   const refresh = () => invalidateAfterSchoolChange(qc);
+  // Bulk actions (capability bulkOperationsGeneric): tick schools, or act on every school matching the filters.
+  const bulk = useRecordBulk("SCHOOL", {
+    pageIds: schools.data?.data.map((s) => s.id) ?? [],
+    filter: bulkFilterFrom(filters),
+    total: schools.data?.meta.total,
+    onStarted: () => void refresh(),
+  });
+  const cols = bulk.enabled ? 10 : 9;
 
   return (
     <AdminPage
@@ -96,27 +165,11 @@ export default function SchoolDirectoryList() {
         <SearchInput key={searchKey} value={state.q} onChange={(q) => update({ q })} placeholder="Name or code…" label="Search schools by name or code" />
         <SelectFilter
           label="Country"
-          value={countryMode}
-          onChange={(v) => {
-            setOtherCountry(v === "OTHER");
-            update({ countryCode: v === "OTHER" ? "" : v, province: "", district: "", sector: "" });
-          }}
-          options={[
-            { label: "Any", value: "" },
-            { label: "Rwanda", value: RWANDA },
-            { label: "Another country…", value: "OTHER" },
-          ]}
+          value={state.countryCode}
+          // A new country clears the place filters (they belong to Rwanda).
+          onChange={(v) => update({ countryCode: v, province: "", district: "", sector: "" })}
+          options={[{ label: "Any", value: "" }, ...countries]}
         />
-        {countryMode === "OTHER" && (
-          <input
-            aria-label="Country code"
-            value={state.countryCode}
-            onChange={(e) => update({ countryCode: e.target.value.toUpperCase().slice(0, 2) })}
-            maxLength={2}
-            placeholder="KE"
-            className="w-16 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs font-medium uppercase"
-          />
-        )}
         <SelectFilter
           label="Status"
           value={state.status}
@@ -165,14 +218,14 @@ export default function SchoolDirectoryList() {
           )}
         </div>
       )}
-      {(isFiltered(state) || otherCountry) && (
+      {isFiltered(state) && (
         <button
           type="button"
           className={`${linkBtn} mb-4`}
           onClick={() => {
-            setOtherCountry(false);
             setSearchKey((k) => k + 1);
-            setState(initialListState());
+            // Clears the filters; the sort stays.
+            go({ ...initialListState(), sort: state.sort, order: state.order });
           }}
         >
           Clear filters
@@ -180,16 +233,19 @@ export default function SchoolDirectoryList() {
       )}
 
       {schools.data && (
-        <p className="text-xs text-gray-500 mb-2" data-testid="school-count">
+        <p className="text-xs text-gray-600 mb-2" data-testid="school-count">
           {formatNumber(schools.data.meta.total)} school{schools.data.meta.total === 1 ? "" : "s"}
           {isFiltered(state) ? " match the filters" : ""}
         </p>
       )}
 
+      {bulk.toolbar}
       {schools.isError ? (
         <ErrorState error={schools.error} title="Couldn't load schools" onRetry={() => schools.refetch()} />
       ) : (
         <TableCard
+          tableClassName="min-w-[1080px]"
+          scrollTestId="schools-table-scroll"
           footer={
             schools.data && (
               <div className="px-4 pb-4">
@@ -205,11 +261,15 @@ export default function SchoolDirectoryList() {
           }
         >
           <thead>
-            <tr className="border-b border-gray-100">
-              <th className={th}>School</th>
-              <th className={th}>Place</th>
-              <th className={th}>Source</th>
-              <th className={th}>Students</th>
+            <tr className="border-b border-gray-100" data-testid="schools-table-head">
+              {bulk.enabled && <th className={`${th} w-8`} data-testid="bulk-select-col">{bulk.headerCheckbox}</th>}
+              <th className={th}>School code</th>
+              {sortHeader("name", "School name")}
+              <th className={th}>Country</th>
+              <th className={th}>District</th>
+              <th className={th}>Sector</th>
+              {sortHeader("verifiedStudents", "Number of students")}
+              <th className={th}>Primary teacher</th>
               <th className={th}>Status</th>
               <th className={th}>
                 <span className="sr-only">Actions</span>
@@ -218,24 +278,55 @@ export default function SchoolDirectoryList() {
           </thead>
           <tbody className={`divide-y divide-gray-100/80 ${schools.isFetching && schools.data ? "opacity-60" : ""}`}>
             {schools.isPending ? (
-              <TableMessage colSpan={6}>Loading schools…</TableMessage>
+              <TableMessage colSpan={cols}>Loading schools…</TableMessage>
             ) : schools.data.data.length === 0 ? (
-              <TableMessage colSpan={6}>{isFiltered(state) ? "No schools match the filters." : "No schools yet."}</TableMessage>
+              <TableMessage colSpan={cols}>{isFiltered(state) ? "No schools match the filters." : "No schools yet."}</TableMessage>
             ) : (
               schools.data.data.map((s) => (
-                <tr key={s.id} className="text-xs hover:bg-gray-50/60" data-testid="school-row">
-                  <td className={`${td} font-semibold text-gray-800`}>
+                <tr
+                  key={s.id}
+                  className="text-xs hover:bg-gray-50 cursor-pointer focus:outline-none focus-visible:bg-indigo-50/60"
+                  data-testid="school-row"
+                  tabIndex={0}
+                  aria-label={`Open ${s.name}`}
+                  onClick={(e) => rowClick(e, s.id)}
+                  onKeyDown={(e) => rowKey(e, s.id)}
+                >
+                  {bulk.enabled && (
+                    <td className={td} onClick={(e) => e.stopPropagation()}>
+                      {bulk.rowCheckbox(s.id, s.name)}
+                    </td>
+                  )}
+                  <td className={`${td} text-gray-700 font-mono whitespace-nowrap`} data-testid="school-code">
+                    {orDash(s.code)}
+                  </td>
+                  <td className={`${td} font-semibold text-gray-800`} data-testid="school-name">
                     {s.name}
-                    {s.code && <span className="block text-[11px] font-normal text-gray-400">Code {s.code}</span>}
+                    <span className="block text-[11px] font-normal text-gray-500">{SOURCE_LABEL[s.source] ?? s.source}</span>
                   </td>
-                  <td className={`${td} text-gray-500`}>{placeLabel(s)}</td>
-                  <td className={`${td} text-gray-500`}>{SOURCE_LABEL[s.source] ?? s.source}</td>
-                  <td className={`${td} text-gray-600 whitespace-nowrap`}>
-                    {formatNumber(s.students)}
-                    <span className="block text-[11px] text-gray-400">{formatNumber(s.verifiedStudents)} verified</span>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`} data-testid="school-country">
+                    {countryDisplayName(s.countryCode, countryList.countries)}
                   </td>
-                  <td className={td}>
-                    <Badge className={s.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}>{s.isActive ? "Active" : "Inactive"}</Badge>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`} data-testid="school-district">
+                    {orDash(s.district)}
+                  </td>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`} data-testid="school-sector">
+                    {orDash(s.sector)}
+                  </td>
+                  <td className={`${td} text-gray-800 font-semibold tabular-nums whitespace-nowrap`} data-testid="school-students">
+                    {formatNumber(s.verifiedStudents)}
+                  </td>
+                  <td className={`${td} whitespace-nowrap`} data-testid="school-primary-teacher">
+                    {s.primaryTeacher ? (
+                      <Link href={`/admin/users/${s.primaryTeacher.id}`} className="text-indigo-700 hover:underline font-medium">
+                        {`${s.primaryTeacher.firstName} ${s.primaryTeacher.lastName}`.trim()}
+                      </Link>
+                    ) : (
+                      <span className="text-gray-500">{NO_PRIMARY_TEACHER}</span>
+                    )}
+                  </td>
+                  <td className={td} data-testid="school-status">
+                    <Badge className={s.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}>{s.isActive ? "Active" : "Inactive"}</Badge>
                   </td>
                   <td className={`${td} whitespace-nowrap`}>
                     <span className="flex items-center gap-3">
@@ -283,6 +374,7 @@ export default function SchoolDirectoryList() {
           }}
         />
       ) : null}
+      {bulk.dialog}
     </AdminPage>
   );
 }

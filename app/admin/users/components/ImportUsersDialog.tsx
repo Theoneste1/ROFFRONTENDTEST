@@ -79,11 +79,11 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
   return (
     <Modal wide title="Import users from CSV" onClose={busy ? () => undefined : onClose}>
       <div className="space-y-4 text-sm">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-600">
           UTF-8 CSV, up to 1 MB and {USER_RULES.importMaxRows.toLocaleString()} rows. Every valid row receives an invitation e-mail. Header (first three columns required):
         </p>
         <code className="block text-[11px] bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 break-all">{importHeader(format)}</code>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-600">
           role: STUDENT (default), MENTOR (coach) or ADMIN · gradeLevel S1–S6, required for students · username: lowercase, generated when empty.{" "}
           {importSchoolHint(format)} An
           exported students list cannot be imported as it is.{" "}
@@ -114,7 +114,7 @@ export default function ImportUsersDialog({ onClose, onImported }: { onClose: ()
               <div className="max-h-48 overflow-auto border border-red-100 rounded-lg">
                 <table className="w-full min-w-[420px] text-[11px]">
                   <thead>
-                    <tr className="text-left text-gray-400 uppercase">
+                    <tr className="text-left text-gray-500 uppercase">
                       <th className="px-3 py-2">Row</th>
                       <th className="px-3 py-2">E-mail</th>
                       <th className="px-3 py-2">Problem</th>

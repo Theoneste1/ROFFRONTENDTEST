@@ -6,6 +6,8 @@
  * Add types here as modules are integrated; keep them in one place.
  */
 
+import type { OlympiadSubject } from "./teacher-registration";
+
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
 /**
@@ -39,9 +41,24 @@ export type Permission =
   // Teacher delegations: granted to an individual Teacher by an Administrator.
   | "students.viewProfile" | "students.viewProgress" | "submissions.submitOnBehalf"
   | "schools.manage" | "schools.syncDirectory"
-  // Account states and form availability (backends with accountStates / formAvailability).
+  // Account states, bulk operations and form availability (backend develop, Administrators and Super Admins).
   | "users.viewStatusHistory" | "users.changeStatus" | "users.suspend" | "users.archive"
-  | "forms.view" | "forms.manageAvailability" | "forms.editMessages";
+  | "users.bulkManage" | "users.export"
+  | "forms.view" | "forms.manageAvailability" | "forms.editMessages"
+  // Countries (owner decision 2026-11-19): Administrators and Super Admins.
+  | "reference.manage"
+  // Test Management (capability testManagement, 2026-11-19): Administrators (every subject), Head Coaches (their subjects).
+  | "tests.view" | "tests.manage" | "tests.manageMarkers"
+  // Test Management, Phase 2 (capability testSubmissions): extensions and tracking (Administrators, Head Coaches), a
+  // student's own answers, a teacher's answers for the verified students of their schools (G2).
+  | "tests.extensions" | "tests.viewSubmissions" | "tests.submit" | "tests.submitForStudents"
+  // Test Management, Phase 3 (capability testMarking): distribution and review (Administrators, Head Coaches), choosing /
+  // adjusting marks (the subject's Head Coaches only, G4), blind marking (Coaches: authorised subjects, assigned submissions).
+  | "tests.distribute" | "tests.review" | "tests.adjustMarks" | "tests.mark"
+  // Test Management, Phase 4 (capability testResults): publication (the override: Administrators only), results with
+  // identity and reports, internal rankings (Administrators, Head Coaches), own results (Students), school results (Teachers).
+  | "tests.publishResults" | "tests.overridePublication" | "tests.viewResults" | "tests.viewRankings"
+  | "tests.viewOwnResults" | "tests.viewSchoolResults";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
@@ -99,6 +116,26 @@ export interface CurrentUser {
   problemsSolved: number;
   lastLoginAt: string | null;
   createdAt: string;
+  /** Students' Olympiad interests (backends with `studentOlympiadInterests`; absent on older ones). */
+  olympiadInterests?: OlympiadSubject[];
+  // Students, backends with `studentRegistrationDetails` (absent or null otherwise):
+  /** An ISO instant ("2012-05-01T00:00:00.000Z"): use the first 10 characters (a date, never shifted by a time zone). */
+  dateOfBirth?: string | null;
+  phone?: string | null;
+  guardianPhone?: string | null;
+  country?: string | null;
+  homeProvince?: string | null;
+  homeDistrict?: string | null;
+  homeSector?: string | null;
+  /**
+   * Backends with `studentDateOfBirthStep`: true for a student without a date of birth (created by an Administrator,
+   * invited or imported), who must give it (PUT /me/date-of-birth) before anything else. Absent on older backends.
+   */
+  dateOfBirthRequired?: boolean;
+  /** FEMALE or MALE (backends with registrationGender); null when not given yet. */
+  gender?: "FEMALE" | "MALE" | null;
+  /** Backends with `genderStep`: true for a student, teacher or coach without a gender, who gives it once (PUT /me/gender). */
+  genderRequired?: boolean;
 }
 
 /**
@@ -555,6 +592,13 @@ export interface UpdateMeInput {
   firstName?: string;
   lastName?: string;
   homeLocation?: string;
+  /** homeLocationRules: the home country; with "RW" the province, district and sector are required (none otherwise). */
+  homeCountry?: string;
+  homeProvince?: string;
+  homeDistrict?: string;
+  homeSector?: string;
+  /** Only on a backend with `studentOlympiadInterests`; at least one. */
+  olympiadInterests?: OlympiadSubject[];
 }
 
 // ─── Mentor ─────────────────────────────────────────────────────────────────
@@ -771,7 +815,7 @@ export interface ReportsOverview {
 export type AuditCategory =
   | "USERS" | "ENROLLMENT" | "MENTOR_ASSIGNMENTS" | "ASSIGNMENTS" | "SUBMISSIONS" | "DISTRIBUTION"
   | "REVIEWS" | "RESULTS" | "MODERATION" | "SETTINGS" | "ACADEMIC_YEARS" | "COURSES" | "SECURITY"
-  | "DATA_EXPORTS" | "STUDY_GROUPS" | "OTHER";
+  | "DATA_EXPORTS" | "STUDY_GROUPS" | "TESTS" | "OTHER";
 
 /** `GET /admin/audit-logs` items (append-only). */
 export interface AuditLogEntry {
@@ -810,8 +854,28 @@ export interface AdminUser {
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt?: string;
+  /** Students' Olympiad interests (backends with studentOlympiadInterests). */
+  olympiadInterests?: string[];
   /** The account state (backends with accountStates); isActive is true exactly when it is ACTIVE. */
   accountStatus?: AccountState;
+  /**
+   * TEACHER rows of the users list (backends with primaryTeacher): PRIMARY when the teacher is the primary teacher (main
+   * contact) of at least one school, SECONDARY when only a secondary one, null without an active school.
+   */
+  teacherSchoolRole?: "PRIMARY" | "SECONDARY" | null;
+  /**
+   * Registration details (backends with studentRegistrationDetails): full values for ONE account
+   * (GET /admin/users/:id, users.manage); lists return phones masked ("+250••••••456").
+   */
+  dateOfBirth?: string | null;
+  phone?: string | null;
+  guardianPhone?: string | null;
+  country?: string | null;
+  homeProvince?: string | null;
+  homeDistrict?: string | null;
+  homeSector?: string | null;
+  /** FEMALE or MALE (registrationGender); null when not given. */
+  gender?: "FEMALE" | "MALE" | null;
 }
 
 /** Account states (capability accountStates). */
@@ -903,6 +967,21 @@ export interface MentorRequest {
   status: MentorRequestStatus;
   createdAt: string;
   updatedAt: string;
+  /** Backends with `coachApplicationDetails` (absent or null on older ones). */
+  country?: string | null;
+  occupation?: string | null;
+  educationLevel?: string | null;
+  olympiadInterests?: string[] | null;
+  /** Backends with `applicationDetails`. */
+  phone?: string | null;
+  affiliation?: string | null;
+  expertise?: string | null;
+  relevantExperience?: string | null;
+  yearsOfExperience?: number | null;
+  rejectionReason?: string | null;
+  infoRequests?: import("../accounts/application-details").InfoRequest[];
+  /** Backends with applicationPictureReview: the picture sent with the application, or null. */
+  avatarFileId?: string | null;
 }
 
 export interface MentorRequestApproval {

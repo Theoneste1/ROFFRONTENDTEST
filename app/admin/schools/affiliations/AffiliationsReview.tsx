@@ -25,6 +25,8 @@ import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
 import { SchoolPicker } from "../../users/components/userUi";
+import { useRecordBulk } from "../../components/bulk/RecordBulk";
+import { bulkFilterFrom } from "@/lib/admin/bulk-records";
 
 const STATUSES: { label: string; value: AffiliationStatus }[] = [
   { label: "Waiting", value: "PENDING" },
@@ -58,6 +60,14 @@ export default function AffiliationsReview() {
   const [matching, setMatching] = useState<SchoolAffiliation | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.accounts.all });
+  // Bulk actions (capability bulkOperationsGeneric): verify or reject many claims; others are skipped by the server.
+  const bulk = useRecordBulk("SCHOOL_AFFILIATION", {
+    pageIds: list.data?.data.map((c) => c.id) ?? [],
+    filter: bulkFilterFrom(filters),
+    total: list.data?.meta.total,
+    onStarted: () => void refresh(),
+  });
+  const cols = bulk.enabled ? 5 : 4;
 
   if (!enabled) {
     return (
@@ -102,12 +112,14 @@ export default function AffiliationsReview() {
           }}
         />
       </div>
+      {bulk.toolbar}
       {list.isError ? (
         <ErrorState error={list.error} title="Couldn't load the school claims" onRetry={() => list.refetch()} />
       ) : (
         <TableCard footer={list.data && <Pagination page={page} totalPages={list.data.meta.totalPages} total={list.data.meta.total} onPage={setPage} disabled={list.isFetching} />}>
           <thead className="bg-gray-50/60 border-b border-gray-100">
             <tr>
+              {bulk.enabled && <th className={`${th} w-8`}>{bulk.headerCheckbox}</th>}
               <th className={th}>Student</th>
               <th className={th}>School claimed</th>
               <th className={th}>Sent</th>
@@ -116,17 +128,18 @@ export default function AffiliationsReview() {
           </thead>
           <tbody className="divide-y divide-gray-50" data-testid="affiliations">
             {list.isPending ? (
-              <TableMessage colSpan={4}>Loading…</TableMessage>
+              <TableMessage colSpan={cols}>Loading…</TableMessage>
             ) : rows.length === 0 ? (
-              <TableMessage colSpan={4}>No {STATUSES.find((s) => s.value === status)!.label.toLowerCase()} claims.</TableMessage>
+              <TableMessage colSpan={cols}>No {STATUSES.find((s) => s.value === status)!.label.toLowerCase()} claims.</TableMessage>
             ) : (
               rows.map((c) => (
                 <tr key={c.id}>
+                  {bulk.enabled && <td className={td}>{bulk.rowCheckbox(c.id, `${c.student.firstName} ${c.student.lastName}`)}</td>}
                   <td className={td}>
                     <p className="font-semibold text-gray-800">
                       {c.student.firstName} {c.student.lastName}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       @{c.student.username}
                       {c.student.gradeLevel ? ` · ${c.student.gradeLevel}` : ""}
                     </p>
@@ -135,7 +148,7 @@ export default function AffiliationsReview() {
                     {c.school ? (
                       <>
                         {c.school.name}
-                        <span className="block text-xs text-gray-400">
+                        <span className="block text-xs text-gray-500">
                           {c.school.code ? `code ${c.school.code} · ` : ""}
                           {c.school.location}
                         </span>
@@ -143,16 +156,16 @@ export default function AffiliationsReview() {
                     ) : (
                       <>
                         {c.claimedName ?? "—"} <span className="text-[11px] text-amber-700">(not in the directory)</span>
-                        <span className="block text-xs text-gray-400">
+                        <span className="block text-xs text-gray-500">
                           {c.claimedCountry && c.claimedCountry !== "RW" ? countryLabel(c.claimedCountry) : [c.claimedSector, c.claimedDistrict, c.claimedProvince].filter(Boolean).join(", ") || "No place given"}
                         </span>
                       </>
                     )}
-                    {(c.decisionReason || c.revokeReason) && <span className="block text-xs text-gray-500 mt-1">Reason: {c.revokeReason ?? c.decisionReason}</span>}
+                    {(c.decisionReason || c.revokeReason) && <span className="block text-xs text-gray-600 mt-1">Reason: {c.revokeReason ?? c.decisionReason}</span>}
                   </td>
                   <td className={`${td} text-gray-600 text-xs`}>
                     {formatDate(c.createdAt)}
-                    <span className="block text-gray-400">{c.source.toLowerCase()}</span>
+                    <span className="block text-gray-500">{c.source.toLowerCase()}</span>
                   </td>
                   <td className={`${td} text-right whitespace-nowrap space-x-3`}>
                     {c.status === "PENDING" && c.school && (
@@ -193,7 +206,7 @@ export default function AffiliationsReview() {
           title={
             decision.kind === "verify" ? "Verify this school?" : decision.kind === "reject" ? "Reject this school claim?" : decision.kind === "revoke" ? "Revoke this verification?" : "Reopen this claim?"
           }
-          body={`${decision.claim.student.firstName} ${decision.claim.student.lastName} — ${decision.claim.school?.name ?? decision.claim.claimedName ?? ""}.${decision.kind === "verify" ? " The student's teachers at this school will see them." : decision.kind === "revoke" ? " The school's teachers stop seeing this student." : ""}`}
+          body={`${decision.claim.student.firstName} ${decision.claim.student.lastName} — ${decision.claim.school?.name ?? decision.claim.claimedName ?? ""}.${decision.kind === "verify" ? ` The student's teachers at this school will see them.${decision.claim.claimedName ? " The student named a school that wasn't listed, so they will be notified by e-mail and in the app that their school was verified." : ""}` : decision.kind === "revoke" ? " The school's teachers stop seeing this student." : ""}`}
           confirmLabel={decision.kind === "verify" ? "Verify" : decision.kind === "reject" ? "Reject" : decision.kind === "revoke" ? "Revoke" : "Reopen"}
           tone={decision.kind === "reject" || decision.kind === "revoke" ? "danger" : "primary"}
           note={decision.kind === "verify" ? NOTE : REASON}
@@ -212,6 +225,7 @@ export default function AffiliationsReview() {
           }}
         />
       )}
+      {bulk.dialog}
     </AdminPage>
   );
 }
@@ -235,24 +249,24 @@ function MatchDialog({ claim, onClose, onMatched }: { claim: SchoolAffiliation; 
   return (
     <Modal wide title={`Match “${claim.claimedName ?? ""}” to a school`} onClose={onClose}>
       <div className="space-y-4" data-testid="match-dialog">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-600">
           The student named a school that isn&apos;t linked to the directory. Choose the right one; the claim stays waiting until you verify it.
         </p>
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Schools with this name</h3>
+        <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">Schools with this name</h3>
         {candidates.isPending ? (
           <LoadingBlock />
         ) : candidates.isError ? (
           <ErrorState error={candidates.error} />
         ) : candidates.data.length === 0 ? (
-          <p className="text-sm text-gray-500">No school with this name. Search below.</p>
+          <p className="text-sm text-gray-600">No school with this name. Search below.</p>
         ) : (
           <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
             {candidates.data.map((s) => (
               <li key={s.id} className="px-3 py-2 flex items-center justify-between gap-3 text-sm">
                 <span className="min-w-0">
                   {s.name}
-                  {!s.isActive && <span className="ml-1.5 text-[11px] text-gray-400">(inactive)</span>}
-                  <span className="block text-xs text-gray-400">
+                  {!s.isActive && <span className="ml-1.5 text-[11px] text-gray-500">(inactive)</span>}
+                  <span className="block text-xs text-gray-500">
                     {s.code ? `code ${s.code} · ` : ""}
                     {[s.sector, s.district, s.province].filter(Boolean).join(", ") || s.countryCode}
                   </span>
@@ -264,7 +278,7 @@ function MatchDialog({ claim, onClose, onMatched }: { claim: SchoolAffiliation; 
             ))}
           </ul>
         )}
-        <SchoolPicker label="Or search all schools" value={other} onChange={setOther} />
+        <SchoolPicker label="Or choose another school" value={other} onChange={setOther} />
         {other && (
           <button type="button" className={btnPrimary} disabled={match.isPending} onClick={() => pick(other.id)}>
             Match to {other.name}

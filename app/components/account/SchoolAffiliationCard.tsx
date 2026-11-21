@@ -97,13 +97,13 @@ export default function SchoolAffiliationCard() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold text-gray-900">
                   {current.school?.name ?? current.claimedName ?? "—"}
-                  {current.claimedCountry && current.claimedCountry !== "RW" && <span className="font-normal text-gray-500"> · {countryLabel(current.claimedCountry)}</span>}
+                  {current.claimedCountry && current.claimedCountry !== "RW" && <span className="font-normal text-gray-600"> · {countryLabel(current.claimedCountry)}</span>}
                 </p>
                 <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${s.cls}`} data-testid="my-school-status">
                   {s.label}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 {s.text} Sent {formatDate(current.submittedAt)}
                 {current.decidedAt ? ` · decided ${formatDate(current.decidedAt)}` : ""}.
               </p>
@@ -135,7 +135,7 @@ export default function SchoolAffiliationCard() {
             </form>
           ) : (
             <div className="space-y-2">
-              {pending && <p className="text-xs text-gray-500">Chose the wrong school? Ask for the right one: it replaces the request that is waiting.</p>}
+              {pending && <p className="text-xs text-gray-600">Chose the wrong school? Ask for the right one: it replaces the request that is waiting.</p>}
               <Button
               type="button"
               variant="secondary"

@@ -15,7 +15,7 @@ import { useNotificationActions, useNotifications, useUnreadCount } from "@/lib/
 import { formatRelative } from "@/lib/format";
 import { errorMessage } from "@/lib/api/errors";
 import { Spinner } from "@/app/components/ui/feedback";
-import { CATEGORY_META, NotificationLink } from "./notificationUi";
+import { NotificationLink, notificationMeta } from "./notificationUi";
 
 const PREVIEW = 6;
 
@@ -71,7 +71,7 @@ export default function NotificationBell() {
         <Bell className="h-5 w-5 text-gray-700" />
         {unread > 0 && (
           <span
-            className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center"
+            className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-[18px] text-center"
             data-testid="unread-badge"
           >
             {unread > 99 ? "99+" : unread}
@@ -88,7 +88,7 @@ export default function NotificationBell() {
           <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100">
             <div>
               <p className="font-bold text-gray-900 text-sm">Notifications</p>
-              <p className="text-xs text-gray-500">{unread > 0 ? `${unread} unread` : "You're all caught up"}</p>
+              <p className="text-xs text-gray-600">{unread > 0 ? `${unread} unread` : "You're all caught up"}</p>
             </div>
             {unread > 0 && (
               <button
@@ -112,11 +112,11 @@ export default function NotificationBell() {
             ) : latest.isError ? (
               <p className="px-4 py-6 text-sm text-red-600">{errorMessage(latest.error)}</p>
             ) : items.length === 0 ? (
-              <p className="px-4 py-8 text-sm text-gray-500 text-center">No notifications yet.</p>
+              <p className="px-4 py-8 text-sm text-gray-600 text-center">No notifications yet.</p>
             ) : (
               <ul>
                 {items.map((n) => {
-                  const { icon: Icon, tone } = CATEGORY_META[n.category] ?? CATEGORY_META.ACCOUNT;
+                  const { icon: Icon, tone } = notificationMeta(n);
                   return (
                     <li key={n.id} className="border-b border-gray-50 last:border-0">
                       <NotificationLink
@@ -129,8 +129,8 @@ export default function NotificationBell() {
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className={`block text-sm ${n.isRead ? "font-medium text-gray-700" : "font-bold text-gray-900"}`}>{n.title}</span>
-                          {n.body && <span className="block text-xs text-gray-500 mt-0.5 line-clamp-2">{n.body}</span>}
-                          <span className="block text-[11px] text-gray-400 mt-1">{formatRelative(n.createdAt)}</span>
+                          {n.body && <span className="block text-xs text-gray-600 mt-0.5 line-clamp-2">{n.body}</span>}
+                          <span className="block text-[11px] text-gray-500 mt-1">{formatRelative(n.createdAt)}</span>
                         </span>
                         {!n.isRead && <span className="mt-1.5 h-2 w-2 rounded-full bg-indigo-600 shrink-0" aria-label="Unread" />}
                       </NotificationLink>

@@ -134,7 +134,7 @@ function FailedDeliveries() {
                   </td>
                   <td className={td}>{d.attempts}</td>
                   <td className={`${td} text-red-600 max-w-[260px] break-words`}>{d.errorMessage ?? "—"}</td>
-                  <td className={`${td} text-gray-500 whitespace-nowrap`}>{d.attemptedAt ? formatDateTime(d.attemptedAt) : "—"}</td>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`}>{d.attemptedAt ? formatDateTime(d.attemptedAt) : "—"}</td>
                   <td className={td}>
                     <button type="button" className={linkBtn} disabled={retry.isPending} onClick={() => void onRetry(d.id, d.recipientEmail)}>
                       Retry

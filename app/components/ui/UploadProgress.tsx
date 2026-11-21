@@ -39,18 +39,18 @@ export default function UploadProgress() {
       className="fixed bottom-4 right-4 left-4 sm:left-auto z-50 sm:w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg"
     >
       <div className="flex items-center gap-3">
-        <UploadCloud className="h-5 w-5 shrink-0 text-[#2B2BB2]" aria-hidden="true" />
+        <UploadCloud className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-800">{label}</p>
           {sum.total > 0 && !sum.processing && (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
               {formatFileSize(sum.loaded)} of {formatFileSize(sum.total)} · keep this page open
             </p>
           )}
         </div>
       </div>
       <progress
-        className="mt-3 h-2 w-full overflow-hidden rounded-full [&::-webkit-progress-bar]:bg-slate-100 [&::-webkit-progress-value]:bg-[#2B2BB2] [&::-moz-progress-bar]:bg-[#2B2BB2]"
+        className="mt-3 h-2 w-full overflow-hidden rounded-full [&::-webkit-progress-bar]:bg-slate-100 [&::-webkit-progress-value]:bg-brand [&::-moz-progress-bar]:bg-brand"
         max={100}
         value={sum.processing ? undefined : (percent ?? undefined)}
         aria-label="Upload progress"

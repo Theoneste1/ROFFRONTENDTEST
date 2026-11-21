@@ -9,6 +9,7 @@
  * level of replies. Reactions toggle (LIKE, HELPFUL, CONFUSED). Authors edit or
  * delete their own comments; anyone can report a comment.
  */
+import { AvatarBadge } from "@/app/components/account/UserAvatar";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Flag, HelpCircle, Info, Lightbulb, Lock, MessageSquare, MoreVertical, Pencil, Plus, ThumbsUp, Trash2 } from "lucide-react";
 import type { ThreadScope } from "@/lib/api/community";
@@ -55,7 +56,7 @@ export default function DiscussionPanel({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-3 bg-[#EEF4FF] border border-[#D0E1FF] text-[#2563EB] px-4 py-3 rounded-xl text-sm font-medium shadow-sm">
+      <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 text-brand-600 px-4 py-3 rounded-xl text-sm font-medium shadow-sm">
         <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
           <Info className="w-3.5 h-3.5" />
         </div>
@@ -82,7 +83,7 @@ export default function DiscussionPanel({
                 }}
                 className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                   selected?.id === t.id && !creating
-                    ? "bg-[#1E1B4B] text-white border-[#1E1B4B]"
+                    ? "bg-brand-950 text-white border-brand-950"
                     : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
                 }`}
               >
@@ -176,7 +177,7 @@ function NewThreadForm({
         <button
           type="submit"
           disabled={!valid || create.isPending}
-          className="inline-flex items-center gap-2 bg-[#2B36C8] hover:bg-blue-800 text-white font-medium text-xs px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 bg-brand hover:bg-blue-800 text-white font-medium text-xs px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50"
         >
           {create.isPending && <Spinner className="h-3.5 w-3.5 !text-white" />}
           Post topic
@@ -213,13 +214,13 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
       <div className="flex items-center justify-between gap-3 px-1">
         <div className="min-w-0">
           <h3 className="font-bold text-gray-900 truncate">{thread.title}</h3>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             Started by {personName(thread.createdBy, "a former member")} · {formatRelative(thread.createdAt)}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {locked && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
               <Lock className="w-3 h-3" /> {thread.status === "LOCKED" ? "Locked" : thread.status === "HIDDEN" ? "Hidden by moderators" : "Closed"}
             </span>
           )}
@@ -230,7 +231,7 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
                 setReportingTopic(true);
                 setTopicNotice(null);
               }}
-              className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-red-600 px-2 py-1 rounded-lg"
+              className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600 px-2 py-1 rounded-lg"
               title="Report this topic"
             >
               <Flag className="w-3.5 h-3.5" /> Report topic
@@ -252,9 +253,8 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
       {/* Comment bar */}
       {canPost && (
         <form onSubmit={onPost} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200/80 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#1E1B4B] text-white flex items-center justify-center font-bold text-sm shrink-0" aria-hidden="true">
-            {user?.firstName?.charAt(0).toUpperCase()}
-          </div>
+          {/* Your own avatar: your picture, or your generated avatar. */}
+          <AvatarBadge user={user} size="md" />
           <input
             type="text"
             placeholder="Write a comment..."
@@ -267,7 +267,7 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
           <button
             type="submit"
             disabled={!draft.trim() || actions.add.isPending}
-            className="inline-flex items-center gap-2 bg-[#2B36C8] hover:bg-blue-800 text-white font-medium text-xs px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 bg-brand hover:bg-blue-800 text-white font-medium text-xs px-6 py-2.5 rounded-xl transition-colors disabled:opacity-50"
           >
             {actions.add.isPending && <Spinner className="h-3.5 w-3.5 !text-white" />}
             Post
@@ -359,18 +359,21 @@ function CommentCard({
     <div className={`${isReply ? "bg-[#F8FAFC] border-gray-200/60" : "bg-white shadow-sm border-gray-200/80"} rounded-2xl p-5 border relative`}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white flex items-center justify-center font-bold text-sm shrink-0" aria-hidden="true">
-            {deleted ? "?" : comment.author!.firstName.charAt(0).toUpperCase()}
-          </div>
+          {/* Other people: the generated avatar only — no one else's photo (many authors are minors). */}
+          {deleted ? (
+            <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white flex items-center justify-center font-bold text-sm shrink-0" aria-hidden="true">?</div>
+          ) : (
+            <AvatarBadge user={{ id: comment.author!.id, firstName: comment.author!.firstName, lastName: comment.author!.lastName, username: comment.author!.username }} size="md" />
+          )}
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-gray-900 text-sm">{deleted ? "Deleted" : personName(comment.author)}</span>
               {!deleted && comment.author!.role !== "STUDENT" && (
-                <span className="bg-[#EFF6FF] text-[#3B82F6] text-[11px] font-semibold px-2 py-0.5 rounded-md">{roleLabel(comment.author!.role)}</span>
+                <span className="bg-brand-50 text-brand-500 text-[11px] font-semibold px-2 py-0.5 rounded-md">{roleLabel(comment.author!.role)}</span>
               )}
               {mine && <span className="bg-indigo-900 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">You</span>}
             </div>
-            <p className="text-xs text-gray-400 font-medium mt-0.5" title={formatDateTime(comment.createdAt)}>
+            <p className="text-xs text-gray-500 font-medium mt-0.5" title={formatDateTime(comment.createdAt)}>
               {formatRelative(comment.createdAt)}
               {comment.editedAt && " · edited"}
             </p>
@@ -404,13 +407,13 @@ function CommentCard({
             <button type="button" onClick={() => setEditing(false)} className="px-4 py-1.5 text-xs text-gray-600">
               Cancel
             </button>
-            <button type="submit" disabled={actions.edit.isPending || !editText.trim()} className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2B36C8] rounded-lg disabled:opacity-50">
+            <button type="submit" disabled={actions.edit.isPending || !editText.trim()} className="px-4 py-1.5 text-xs font-semibold text-white bg-brand rounded-lg disabled:opacity-50">
               Save
             </button>
           </div>
         </form>
       ) : (
-        <p className={`text-sm mt-4 leading-relaxed whitespace-pre-line ${deleted ? "italic text-gray-400" : "text-gray-700"}`}>{comment.content}</p>
+        <p className={`text-sm mt-4 leading-relaxed whitespace-pre-line ${deleted ? "italic text-gray-500" : "text-gray-700"}`}>{comment.content}</p>
       )}
 
       {/* Reactions and reply */}
@@ -443,7 +446,7 @@ function CommentCard({
             <button
               type="button"
               onClick={() => setReplying((r) => !r)}
-              className="text-xs font-semibold text-gray-500 hover:text-gray-800 ml-1 transition-colors"
+              className="text-xs font-semibold text-gray-600 hover:text-gray-800 ml-1 transition-colors"
             >
               Reply
             </button>
@@ -485,7 +488,7 @@ function CommentCard({
             className="flex-1 min-w-0 bg-[#F8FAFC] border border-gray-200 rounded-full py-2 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
             aria-label="Write a reply"
           />
-          <button type="submit" disabled={!reply.trim() || actions.add.isPending} className="px-4 py-2 text-xs font-semibold text-white bg-[#2B36C8] rounded-xl disabled:opacity-50">
+          <button type="submit" disabled={!reply.trim() || actions.add.isPending} className="px-4 py-2 text-xs font-semibold text-white bg-brand rounded-xl disabled:opacity-50">
             Reply
           </button>
         </form>
@@ -536,7 +539,7 @@ function CommentMenu({ mine, onEdit, onDelete, onReport }: { mine: boolean; onEd
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition-colors"
+        className="text-gray-500 hover:text-gray-600 p-1 rounded-lg transition-colors"
         aria-label="Comment options"
         aria-expanded={open}
       >

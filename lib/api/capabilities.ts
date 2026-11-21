@@ -23,6 +23,11 @@
 
 /** The `features` this frontend knows (schemaVersion 1). Unknown names in a response are ignored. */
 export const KNOWN_FEATURES = [
+  /**
+   * Teacher–student access (TS-1…TS-6): explicit teacher–student assignments, the School Access page, delegations
+   * limited to assigned or selected students, and on My Students how each student is seen and what you may do.
+   */
+  "teacherStudentAccess",
   "permissionScopes",
   "schoolReferenceRequired",
   "schoolAdministration",
@@ -63,6 +68,86 @@ export const KNOWN_FEATURES = [
    */
   "schoolDirectorySync",
   /**
+   * The decision-notification delivery log (`GET /admin/notification-deliveries`, retry of a failed
+   * row; email.bulkSend). Without it the backend has no delivery log: the menu item is hidden.
+   */
+  "notificationDeliveries",
+  /**
+   * Optional (listed only while the TEACHER role is enabled): the backend implements the public
+   * teacher application (GET/POST /auth/register/teacher…) and its review
+   * (/admin/teacher-applications, users.manageTeachers). Whether registration is currently OPEN
+   * comes from GET /auth/register/teacher/availability, not from this flag.
+   */
+  "teacherSelfRegistration",
+  /**
+   * Students' Olympiad interests (Mathematics, Computing, Physics; several at once): the sign-up
+   * form (`POST /auth/register/student`) and the profile (`PATCH /me`) send `olympiadInterests`,
+   * and profiles return it. Without it older backends refuse the field (400): neither shown nor sent.
+   */
+  "studentOlympiadInterests",
+  /**
+   * Profile pictures: `PUT /me/avatar` (multipart `file`: JPEG, PNG or WebP, at most 2 MB) and
+   * `DELETE /me/avatar`; `avatarUrl` is then an authenticated API path
+   * (`/api/v1/users/:id/avatar?v=…`). Without it My Profile offers no upload (the generated avatar is
+   * shown everywhere).
+   */
+  "profilePictures",
+  /**
+   * Student sign-up details: `POST /auth/register/student` takes `dateOfBirth`, `phone` (optional),
+   * `guardianPhone`, `homeCountry` and, in Rwanda, `homeProvince` / `homeDistrict` / `homeSector`
+   * (official list; then `homeLocation` is optional). Profiles return them. Without it: not asked.
+   */
+  "studentRegistrationDetails",
+  /**
+   * Administrator date-of-birth correction: `PUT /admin/users/:id/date-of-birth` { dateOfBirth, reason } for a
+   * student, and `GET /admin/users/:id/date-of-birth-history` (both users.manage). Without it: not offered.
+   */
+  "dateOfBirthCorrection",
+  /**
+   * Coach application details: `POST /mentor-requests` takes `country`, `occupation`,
+   * `educationLevel` and `olympiadInterests`; the administrators' list returns them. Without it: not asked.
+   */
+  "coachApplicationDetails",
+  /**
+   * Coaches' subject interests (owner decision 2026-11-19): `POST /mentor-requests` requires `olympiadInterests` (at
+   * least one); a Coach edits their own on `PATCH /me`; an Administrator edits a Coach's with `olympiadInterests` on
+   * `PATCH /admin/users/:id` (Coach accounts only). Information only. Without it: neither shown on profiles nor editable.
+   */
+  "coachOlympiadInterests",
+  /**
+   * Application details and requests for more information (backend ADR-009): Teacher position and years of
+   * experience; Coach phone, affiliation, expertise, experience; a Coach rejection reason; administrators ask the
+   * applicant a question, answered through a one-time link. Without it: none of this is shown or sent.
+   */
+  "applicationDetails",
+  /**
+   * Application picture review: admin rows of teacher and coach applications carry `avatarFileId`; the picture is
+   * served to the reviewer (`GET /admin/teacher-applications/:id/avatar`, `GET /mentor-requests/:id/avatar`) and is
+   * kept on approval only with `approvePicture: true` (otherwise discarded). Without it: nothing is shown or sent.
+   */
+  "applicationPictureReview",
+  /**
+   * Optional profile picture at registration (REG-02): registration answers carry a one-time avatarUploadToken for
+   * PUT /auth/register/avatar. Without it the registration forms do not offer a picture (My Profile does later).
+   */
+  "registrationAvatar",
+  /**
+   * Gender at sign-up (owner, 2026-11-20): the student, teacher and coach sign-ups require `gender` (FEMALE or MALE).
+   * Without it the forms neither ask for nor send it (older backends refuse the field).
+   */
+  "registrationGender",
+  /**
+   * Home location on every registration form and profile edit (owner, 2026-11-20): the home country is required; with
+   * Rwanda the home province, district and sector are required; with another country only the country
+   * (lib/accounts/home-location). Without it the forms keep their earlier home fields.
+   */
+  "homeLocationRules",
+  /**
+   * Gender step (owner, 2026-11-20): `genderRequired` on the profile for a student, teacher or coach without a gender;
+   * the portal asks it once (PUT /me/gender). An administrator corrects it (PATCH /admin/users/:id `gender`).
+   */
+  "genderStep",
+  /**
    * Account states: ACTIVE, DEACTIVATED, SUSPENDED, ARCHIVED (`accountStatus` on users) and
    * `POST /admin/users/:id/status-changes` { toStatus, reason, confirm? }. Accounts are archived, never
    * deleted (`DELETE /admin/users/:id` is refused with 409 PERMANENT_DELETION_DISABLED). Without it: suspend,
@@ -75,6 +160,66 @@ export const KNOWN_FEATURES = [
    * Without it: the fixed closed texts.
    */
   "formAvailability",
+  /**
+   * Bulk user operations: `/admin/users/bulk` — preview an action on chosen accounts or on every account matching the
+   * list filters, confirm it (bound to exactly the previewed accounts), follow its progress and per-account results,
+   * cancel it; `POST /admin/users/bulk/export` (users.export) downloads the selection as CSV. Without it: none of this.
+   */
+  "bulkUserOperations",
+  /**
+   * Bulk actions on any record type (2026-11-20): `/admin/bulk/*` — GET /admin/bulk/actions lists the record types and
+   * actions the administrator may run (schools, school claims, teacher and coach applications, accounts); preview,
+   * confirm (bound to exactly the previewed records), progress, per-record results and cancel. Without it: the
+   * accounts' own bulk actions only.
+   */
+  "bulkOperationsGeneric",
+  /**
+   * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
+   * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
+   */
+  "countries",
+  /**
+   * Primary teacher of a school (owner decision 2026-11-19): `role` PRIMARY | SECONDARY on teacher–school links (filter
+   * `?role=`), POST /admin/teacher-assignments/:id/primary (users.manageTeachers), `role` on School Access rows,
+   * `teacherSchoolRole` on TEACHER rows of the users list, and GET /teacher/schools for the teacher. Without it: no badges.
+   */
+  "primaryTeacher",
+  /**
+   * Schools table (2026-11-19): GET /admin/schools sorts by name or verified students (`sort`, `order`) and returns
+   * `primaryTeacher` per school. Without it: name order only, no sort controls.
+   */
+  "schoolsTable",
+  /**
+   * Test Management, Phase 1 (owner-approved plan 2026-11-19): `/admin/tests` (tests, questions with the sum rule, the
+   * paper and the marking guide; tests.view / tests.manage) and `/admin/test-markers` (marker authorisations per coach
+   * and subject; tests.manageMarkers). Administrators: every subject; Head Coaches: the subjects they head (coach portal).
+   * Without it: no Tests screens.
+   */
+  "testManagement",
+  /**
+   * Test Management, Phase 2 (owner-approved plan 2026-11-19): deadlines from the server's database time (extensions
+   * included); students' `/me/tests` (tests.submit: their tests, the paper, page-by-page uploads, submit / replace with
+   * every version kept); teachers' `/teacher/tests` (tests.submitForStudents: verified students of their own schools);
+   * `/admin/tests/:id/extensions` (tests.extensions) and `/admin/tests/:id/submissions` (tests.viewSubmissions: tracking,
+   * every version). Without it: no My tests / Tests menus for students and teachers, no Submissions / Extensions tabs.
+   */
+  "testSubmissions",
+  /**
+   * Test Management, Phase 3 (owner-approved plan 2026-11-19): distribution to authorised coaches and review on the test
+   * page — Markers & distribution (tests.distribute: even, manual, reassign; progress per coach), Review (tests.review:
+   * approve and lock, return with a comment, second marking, unlock; choosing / adjusting the mark: tests.adjustMarks,
+   * the subject's Head Coach only — G4), History (status changes, the mark-change log); the coach's blind marking queue
+   * `/mentor/marking` (tests.mark). Without it: none of these.
+   */
+  "testMarking",
+  /**
+   * Test Management, Phase 4 (owner-approved plan 2026-11-19): publication of the approved results (tests.publishResults;
+   * the Administrators' override with a mandatory reason: tests.overridePublication), results with identity, the report and
+   * CSV exports (tests.viewResults), internal rankings (tests.viewRankings), the reporting overview, students' own results
+   * (tests.viewOwnResults), teachers' school results (tests.viewSchoolResults) and the role dashboards' test widgets.
+   * Without it: none of these.
+   */
+  "testResults",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 

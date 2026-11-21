@@ -232,9 +232,10 @@ export function useMentorRequests(params: { status?: MentorRequestStatus; page?:
 export function useDecideMentorRequest() {
   const invalidate = useInvalidateAdmin();
   return useMutation({
-    mutationFn: async ({ id, decision }: { id: string; decision: "approve" | "reject" }): Promise<MentorRequestApproval | null> => {
-      if (decision === "approve") return mentorRequestsApi.approve(id);
-      await mentorRequestsApi.reject(id);
+    mutationFn: async ({ id, decision, reason, approveBody }: { id: string; decision: "approve" | "reject"; reason?: string; approveBody?: { approvePicture?: boolean } }): Promise<MentorRequestApproval | null> => {
+      // approveBody only when the picture was reviewed (applicationPictureReview); older backends take no body.
+      if (decision === "approve") return mentorRequestsApi.approve(id, approveBody);
+      await mentorRequestsApi.reject(id, reason);
       return null;
     },
     onSettled: () => invalidate(),

@@ -36,15 +36,15 @@ export default function ProgrammeCourses({ compact = false }: { compact?: boolea
     const courses = programmeCourses(rows);
     return (
       <ul className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="programme-courses">
-        {courses.length === 0 && <li className="text-sm text-gray-500">Your programmes have no courses yet.</li>}
+        {courses.length === 0 && <li className="text-sm text-gray-600">Your programmes have no courses yet.</li>}
         {courses.map((c) => (
           <li key={c.course.id} className="bg-white rounded-2xl border border-slate-200 p-5">
             <p className="text-xs font-semibold text-indigo-600">{c.course.code}</p>
             <h3 className="text-base font-bold text-gray-900">{c.course.title}</h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-600 mt-1">
               {formatNumber(c.students)} students · {formatNumber(c.opened)} opened the course · {formatNumber(c.submissions)} submissions
             </p>
-            <p className="text-xs text-gray-400 mt-2">{c.divisions.map((d) => d.division.name).join(" · ")}</p>
+            <p className="text-xs text-gray-500 mt-2">{c.divisions.map((d) => d.division.name).join(" · ")}</p>
           </li>
         ))}
       </ul>
@@ -108,9 +108,9 @@ function CourseAnalyticsPanel({ courseId, divisionId, label, onClose }: { course
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="text-base font-bold text-gray-900">{label}</h2>
-          <p className="text-xs text-gray-500">Course analytics. Scores are not shown to Head Coaches.</p>
+          <p className="text-xs text-gray-600">Course analytics. Scores are not shown to Head Coaches.</p>
         </div>
-        <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700" aria-label="Close analytics">
+        <button type="button" onClick={onClose} className="p-1 text-gray-500 hover:text-gray-700" aria-label="Close analytics">
           <X className="h-4 w-4" />
         </button>
       </div>

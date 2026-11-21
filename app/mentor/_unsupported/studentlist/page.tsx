@@ -129,7 +129,7 @@ export default function StudentListFilter() {
             <ArrowLeft className="mr-1 h-4 w-4" /> Go Back
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Student List</h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-600">
             Use a filter to identify students based on course activity.
           </p>
         </div>
@@ -154,7 +154,7 @@ export default function StudentListFilter() {
               <option value="All">All</option>
               <option value="Any">Any</option>
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-3.5 w-3.5 text-gray-500" />
+            <ChevronDown className="pointer-events-none absolute right-2 top-2.5 h-3.5 w-3.5 text-gray-600" />
           </div>
           <span>of the following criteria</span>
         </div>
@@ -168,7 +168,7 @@ export default function StudentListFilter() {
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-200" />
                   </div>
-                  <span className="relative bg-white px-3 text-xs uppercase text-gray-400">
+                  <span className="relative bg-white px-3 text-xs uppercase text-gray-500">
                     {item.logic}
                   </span>
                 </div>
@@ -189,7 +189,7 @@ export default function StudentListFilter() {
                     <option value="Submission">Submission</option>
                     <option value="Grade">Grade</option>
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-gray-400" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-gray-500" />
                 </div>
 
                 {/* Operator Selection */}
@@ -207,7 +207,7 @@ export default function StudentListFilter() {
                     <option value="has not submitted">has not submitted</option>
                     <option value="is less than">is less than</option>
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-gray-400" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-gray-500" />
                 </div>
 
                 {/* Comparison Selection */}
@@ -225,7 +225,7 @@ export default function StudentListFilter() {
                     <option value="at least one">at least one</option>
                     <option value="">None</option>
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-gray-400" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 text-gray-500" />
                 </div>
 
                 {/* Value Input */}
@@ -267,7 +267,7 @@ export default function StudentListFilter() {
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">Preview</h2>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-600">
               {mockStudents.length} students match this criteria
             </p>
           </div>
@@ -300,8 +300,8 @@ export default function StudentListFilter() {
                       <span>{student.name}</span>
                     </div>
                   </td>
-                  <td className="py-3.5 px-4 text-gray-500">{student.lastParticipation}</td>
-                  <td className="py-3.5 px-4 text-gray-500">{student.missingAssignments}</td>
+                  <td className="py-3.5 px-4 text-gray-600">{student.lastParticipation}</td>
+                  <td className="py-3.5 px-4 text-gray-600">{student.missingAssignments}</td>
                   <td className="py-3.5 px-4">
                     <span
                       className={`inline-block rounded-full px-3 py-1 text-xs font-bold ${student.grade < 50
@@ -324,7 +324,7 @@ export default function StudentListFilter() {
         <div className="mt-6 flex justify-end">
           <Link
             href="/mentor/courses/studentlist/message"
-            className="rounded-lg bg-[#2221B2] px-6 py-2.5 text-sm font-medium text-white shadow hover:bg-blue-900 transition"
+            className="rounded-lg bg-brand px-6 py-2.5 text-sm font-medium text-white shadow hover:bg-blue-900 transition"
           >
             Message Students ({mockStudents.length})
           </Link>

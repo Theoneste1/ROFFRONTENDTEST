@@ -182,7 +182,7 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
           <Stat icon={<Users className="w-5 h-5 text-blue-600" />} tone="bg-blue-100" value={totalStudents ?? "—"} label="Students in division" />
           <Stat icon={<CheckCircle2 className="w-5 h-5 text-green-600" />} tone="bg-green-100" value={a._count?.submissions ?? stats?.submissions ?? 0} label="Submitted" />
           <Stat icon={<AlertCircle className="w-5 h-5 text-purple-600" />} tone="bg-purple-100" value={reviewCounts.toReview} label="To review (you)" />
-          <Stat icon={<FileText className="w-5 h-5 text-amber-600" />} tone="bg-amber-100" value={reviewCounts.done} label="Reviewed (you)" />
+          <Stat icon={<FileText className="w-5 h-5 text-amber-700" />} tone="bg-amber-100" value={reviewCounts.done} label="Reviewed (you)" />
           <Stat
             icon={<BarChart3 className="w-5 h-5 text-indigo-600" />}
             tone="bg-indigo-100"
@@ -219,14 +219,14 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
             )}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200/80">
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <History className="w-5 h-5 text-gray-500" /> History
+                <History className="w-5 h-5 text-gray-600" /> History
               </h2>
               {history.isPending ? (
                 <Spinner />
               ) : history.isError ? (
                 <p className="text-sm text-red-600">{errorMessage(history.error)}</p>
               ) : history.data.length === 0 ? (
-                <p className="text-sm text-gray-500">No history yet.</p>
+                <p className="text-sm text-gray-600">No history yet.</p>
               ) : (
                 <ol className="space-y-3">
                   {history.data
@@ -239,17 +239,17 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
                           <p className="font-semibold text-gray-800">
                             {EVENT_LABEL[ev.type] ?? ev.type}
                             {ev.toStatus && ev.fromStatus && ev.toStatus !== ev.fromStatus && (
-                              <span className="font-normal text-gray-500">
+                              <span className="font-normal text-gray-600">
                                 {" "}
                                 · {ASSIGNMENT_STATUS[ev.fromStatus]?.label ?? ev.fromStatus} → {ASSIGNMENT_STATUS[ev.toStatus]?.label ?? ev.toStatus}
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-gray-500">
                             {formatDateTime(ev.createdAt)} · {personName(ev.actor, "System")}
                           </p>
                           {ev.note && <p className="text-xs text-gray-600 mt-0.5">{ev.note}</p>}
-                          {ev.changes && Object.keys(ev.changes).length > 0 && <p className="text-xs text-gray-500 mt-0.5">Changed: {Object.keys(ev.changes).join(", ")}</p>}
+                          {ev.changes && Object.keys(ev.changes).length > 0 && <p className="text-xs text-gray-600 mt-0.5">Changed: {Object.keys(ev.changes).join(", ")}</p>}
                         </div>
                       </li>
                     ))}
@@ -277,7 +277,7 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200/80">
               <h3 className="text-lg font-bold text-gray-900 mb-2">Workflow</h3>
-              <p className="text-xs text-gray-500 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Draft → Submit for approval → an administrator publishes (or returns it with a note) → students submit → an administrator distributes the work to
                 coaches → you review and submit each review to the administrator, who approves and publishes the results.
               </p>
@@ -306,7 +306,7 @@ function Stat({ icon, tone, value, label }: { icon: React.ReactNode; tone: strin
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      <p className="text-xs text-gray-600 mb-1">{label}</p>
       <p className="text-sm font-semibold text-gray-900">{value}</p>
     </div>
   );

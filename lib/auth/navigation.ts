@@ -1,6 +1,6 @@
 /**
- * Portal menus and the permission each item needs (type-only imports; unit-tested in
- * tests/roles.test.mjs).
+ * Portal menus and the permission each item needs (unit-tested in tests/roles.test.mjs and
+ * tests/notifications.test.mjs).
  *
  * Every permission named here is in the list `GET /me/permissions` returns
  * for that portal's roles today — including the frozen ADMIN / MENTOR lists
@@ -12,6 +12,8 @@
  * Hiding is navigation only: the API refuses everything not permitted.
  */
 import type { Permission } from "../api/types";
+import { NOTIFICATION_DELIVERIES_PERMISSION } from "../admin/notification-deliveries";
+import { FORMS_VIEW_PERMISSION } from "../admin/form-availability";
 
 export interface NavItem {
   href: string;
@@ -41,6 +43,79 @@ export const ADMIN_NAV: readonly NavItem[] = [
   // Contact messages are served to ADMIN and SUPER_ADMIN by role, not by a permission.
   { href: "/admin/messages", label: "Messages" },
 ];
+
+/**
+ * Teacher applications (teacher self-registration review). Not part of ADMIN_NAV: its permission
+ * (users.manageTeachers) is not in the frozen ADMIN list, and the page exists only on a backend
+ * advertising `teacherSelfRegistration`. The Sidebar shows it only when both are definitely known
+ * (lib/admin/teacher-applications.ts → teacherApplicationsNavVisible).
+ */
+export const ADMIN_TEACHER_APPLICATIONS: NavItem = { href: "/admin/teacher-applications", label: "Teacher Applications", permission: "users.manageTeachers" };
+
+/**
+ * Notification delivery log. Kept out of the frozen ADMIN_NAV and shown after it, like the other
+ * separately gated items; its permission is the single constant NOTIFICATION_DELIVERIES_PERMISSION
+ * (email.bulkSend, held by ADMIN and SUPER_ADMIN).
+ */
+export const ADMIN_NOTIFICATION_DELIVERIES: NavItem = { href: "/admin/notification-deliveries", label: "Notification Deliveries", permission: NOTIFICATION_DELIVERIES_PERMISSION };
+
+/**
+ * Forms (open, close, schedule and the closed messages of the registration and website forms). Separately
+ * gated like the items above: a backend advertising `formAvailability` and the known forms.view
+ * (lib/admin/form-availability.ts → formsNavVisible).
+ */
+export const ADMIN_FORMS: NavItem = { href: "/admin/forms", label: "Forms", permission: FORMS_VIEW_PERMISSION };
+
+/**
+ * Countries (correct a country's name or calling code; owner decision 2026-11-19). Separately gated like the items above:
+ * a backend advertising `countries` and the known reference.manage (lib/countries/reference.ts → countriesNavVisible).
+ */
+export const ADMIN_COUNTRIES: NavItem = { href: "/admin/countries", label: "Countries", permission: "reference.manage" };
+
+/**
+ * Tests (Test Management, owner-approved plan 2026-11-19): every subject for Administrators. Separately gated like the
+ * items above: a backend advertising `testManagement` and the known tests.view (lib/test-management/rules.ts →
+ * testsNavVisible). Never part of the frozen ADMIN_NAV.
+ */
+export const ADMIN_TESTS: NavItem = { href: "/admin/tests", label: "Tests", permission: "tests.view" };
+
+/**
+ * Tests in the coach portal: a Head Coach manages the tests of the subjects they head (tests.view, programme scope).
+ * Coaches hold no test permission (authorised markers arrive in a later phase). Same gate as ADMIN_TESTS; not part of
+ * MENTOR_NAV.
+ */
+export const MENTOR_TESTS: NavItem = { href: "/mentor/tests", label: "Tests", permission: "tests.view" };
+
+/**
+ * My tests in the student portal (Test Management Phase 2): the student's tests, deadlines and answers. Separately gated:
+ * a backend advertising `testSubmissions` and the known tests.submit (lib/test-management/submissions.ts →
+ * answerNavVisible). The student menu is written in its sidebar; this item is added after it.
+ */
+export const STUDENT_TESTS: NavItem = { href: "/student/tests", label: "My tests", permission: "tests.submit" };
+
+/**
+ * Tests in the teacher portal (G2: every teacher of the school submits for its verified students). Same gate with
+ * tests.submitForStudents; not part of TEACHER_NAV.
+ */
+export const TEACHER_TESTS: NavItem = { href: "/teacher/tests", label: "Tests", permission: "tests.submitForStudents" };
+
+/**
+ * Marking in the coach portal (Test Management Phase 3): the coach's blind marking queue. Separately gated: a backend
+ * advertising `testMarking` and the known tests.mark (lib/test-management/marking.ts → markingNavVisible); not part of
+ * MENTOR_NAV.
+ */
+export const MENTOR_MARKING: NavItem = { href: "/mentor/marking", label: "Marking", permission: "tests.mark" };
+
+/**
+ * Test Management Phase 4 (capability `testResults`): students' own published results and teachers' school results
+ * (menu items, gated by lib/test-management/results.ts → resultsNavVisible; never part of the frozen menus). The
+ * reporting overview for Administrators and Head Coaches is not a menu item (the Administrators' menu is full): it is
+ * linked from the Tests page and the dashboard's Tests widget, with the same gate.
+ */
+export const STUDENT_RESULTS: NavItem = { href: "/student/results", label: "My results", permission: "tests.viewOwnResults" };
+export const TEACHER_RESULTS: NavItem = { href: "/teacher/results", label: "Results", permission: "tests.viewSchoolResults" };
+export const ADMIN_TEST_REPORTS: NavItem = { href: "/admin/test-reports", label: "Test reports", permission: "tests.viewResults" };
+export const MENTOR_TEST_REPORTS: NavItem = { href: "/mentor/test-reports", label: "Test reports", permission: "tests.viewResults" };
 
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };

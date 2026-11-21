@@ -93,7 +93,7 @@ function RunsPage({ canApprove }: { canApprove: boolean }) {
           </div>
           {problem && <p className="text-xs text-red-600">{problem}</p>}
           {create.isError && <Alert tone="error">{syncErrorMessage(create.error)}</Alert>}
-          <p className="text-[11px] text-gray-500">
+          <p className="text-[11px] text-gray-600">
             At most 10 MB / 10,000 rows. Contact values are never shown in full here or in the report.
             {canApprove ? " As a Super Admin you can approve and apply a reviewed run." : " A Super Admin approves and applies a reviewed run."}
           </p>
@@ -135,7 +135,7 @@ function RunsPage({ canApprove }: { canApprove: boolean }) {
                 <tr key={r.id} className="text-xs">
                   <td className={`${td} font-semibold text-gray-800`}>
                     {r.datasetLabel}
-                    <span className="block text-[11px] font-normal text-gray-400">{r.fileName}</span>
+                    <span className="block text-[11px] font-normal text-gray-500">{r.fileName}</span>
                   </td>
                   <td className={td}>
                     <Badge className={STATUS_BADGE[r.expired ? "EXPIRED" : r.status]}>{r.expired ? "Expired" : RUN_STATUS_LABEL[r.status]}</Badge>

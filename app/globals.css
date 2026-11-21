@@ -1,8 +1,56 @@
 @import "tailwindcss";
 
+/* The wide layout of the multi-step form (app/components/forms/FormWizard, the administrators' test creation; same query
+   as WIDE_LAYOUT_QUERY in lib/forms/wizard.ts): two columns above 640px, one column on phones. */
+@custom-variant wizard-wide (@media (width > 640px));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+/* The colour of the ROF logo (#00428C), the one blue of the whole site: bg-brand, text-brand, ring-brand… (dark: hover;
+   deep: shading; light: tinted backgrounds) and a tonal scale brand-50 … brand-950 around it (700 = #00428C).
+   White on brand and brand on white are WCAG AA (about 9.6:1). */
+@theme {
+  --color-brand: #00428c;
+  --color-brand-dark: #003470;
+  --color-brand-deep: #002a5c;
+  --color-brand-light: #e6eef7;
+  --color-brand-50: #eef4fb;
+  --color-brand-100: #d9e6f4;
+  --color-brand-200: #b3cde9;
+  --color-brand-300: #82acd9;
+  --color-brand-400: #4d86c4;
+  --color-brand-500: #1f63ad;
+  --color-brand-600: #0b519e;
+  --color-brand-700: #00428c;
+  --color-brand-800: #003672;
+  --color-brand-900: #002b5c;
+  --color-brand-950: #001d3d;
+  /* Every blue of the site is the logo blue: the blue and indigo scales are the same tonal scale (700 = #00428C). */
+  --color-blue-50: #eef4fb;
+  --color-blue-100: #d9e6f4;
+  --color-blue-200: #b3cde9;
+  --color-blue-300: #82acd9;
+  --color-blue-400: #4d86c4;
+  --color-blue-500: #1f63ad;
+  --color-blue-600: #0b519e;
+  --color-blue-700: #00428c;
+  --color-blue-800: #003672;
+  --color-blue-900: #002b5c;
+  --color-blue-950: #001d3d;
+  --color-indigo-50: #eef4fb;
+  --color-indigo-100: #d9e6f4;
+  --color-indigo-200: #b3cde9;
+  --color-indigo-300: #82acd9;
+  --color-indigo-400: #4d86c4;
+  --color-indigo-500: #1f63ad;
+  --color-indigo-600: #0b519e;
+  --color-indigo-700: #00428c;
+  --color-indigo-800: #003672;
+  --color-indigo-900: #002b5c;
+  --color-indigo-950: #001d3d;
 }
 
 @theme inline {
@@ -23,7 +71,11 @@ html, body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* No sideways scrolling. "clip" (not "hidden") so html/body do not become scroll containers:
+     the portals' top bar and sidebar stick while the page scrolls. "hidden" stays as the fallback
+     for browsers without "clip". */
   overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
   box-sizing: border-box;
 }
@@ -55,4 +107,14 @@ html:focus-within { scroll-behavior: smooth; }
 .home-page section[id] { scroll-margin-top: 5rem; }
 @media (prefers-reduced-motion: reduce) {
   html:focus-within { scroll-behavior: auto; }
+}
+
+/* ─── Multi-step registration forms (app/components/forms/FormWizard): a light fade when a step is shown ─── */
+@keyframes wizard-step-in {
+  from { opacity: 0; transform: translateX(6px); }
+  to { opacity: 1; transform: none; }
+}
+.wizard-step:not([hidden]) { animation: wizard-step-in 0.16s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .wizard-step:not([hidden]) { animation: none; }
 }

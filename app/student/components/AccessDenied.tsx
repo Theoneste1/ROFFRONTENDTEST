@@ -5,9 +5,9 @@ import type { AssignmentTiming } from "@/lib/assessment/student-state";
 export default function AccessDenied({ title, body }: { title: string; body: string }) {
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm py-14 px-6 flex flex-col items-center text-center gap-2" role="alert" data-testid="student-denied">
-      <Lock className="h-9 w-9 text-slate-400" aria-hidden="true" />
+      <Lock className="h-9 w-9 text-slate-500" aria-hidden="true" />
       <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
-      <p className="text-sm text-slate-500 max-w-md">{body}</p>
+      <p className="text-sm text-slate-600 max-w-md">{body}</p>
     </div>
   );
 }

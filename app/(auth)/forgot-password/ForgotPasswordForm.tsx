@@ -32,8 +32,8 @@ export default function ForgotPasswordForm() {
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Forgot your password?</h1>
-        <p className="mt-1 text-sm text-slate-500">Enter the e-mail address of your account and we&apos;ll send you a link to choose a new password.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Forgot your password?</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">Enter the e-mail address of your account and we&apos;ll send you a link to choose a new password.</p>
       </div>
 
       {mutation.isSuccess ? (
@@ -55,7 +55,7 @@ export default function ForgotPasswordForm() {
             onChange={(e) => setEmail(e.target.value)}
             error={emailError ? "Enter a valid e-mail address." : undefined}
           />
-          <Button type="submit" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full">
+          <Button type="submit" variant="brand" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12">
             Send reset link
           </Button>
         </form>

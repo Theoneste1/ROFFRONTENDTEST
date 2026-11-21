@@ -12,7 +12,7 @@ export default function MentorLayout({
 }) {
     return (
         <RoleGate role="MENTOR">
-            <PortalShell avatarClassName="bg-purple-600" renderSidebar={(isOpen) => <Sidebar isOpen={isOpen} />}>
+            <PortalShell renderSidebar={(isOpen) => <Sidebar isOpen={isOpen} />}>
                 {children}
             </PortalShell>
         </RoleGate>

@@ -125,13 +125,13 @@ export default function ResourcesTab({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{cfg.title}</h2>
-          <p className="text-gray-500 text-sm mt-1">{cfg.subtitle}</p>
+          <p className="text-gray-600 text-sm mt-1">{cfg.subtitle}</p>
         </div>
         {canManage && (
           <button
             type="button"
             onClick={() => router.push(addHref)}
-            className="flex items-center gap-2.5 bg-[#2522A5] hover:bg-[#1d1a88] text-white px-6 py-3 rounded-2xl font-medium shadow-sm transition-all text-sm"
+            className="flex items-center gap-2.5 bg-brand-dark hover:bg-brand-800 text-white px-6 py-3 rounded-2xl font-medium shadow-sm transition-all text-sm"
           >
             <Plus className="w-4 h-4" />
             <span>{cfg.add}</span>
@@ -197,7 +197,7 @@ export default function ResourcesTab({
           <div className="overflow-x-auto relative">
             <table className="w-full text-left border-collapse min-w-[720px]">
               <thead>
-                <tr className="bg-[#DCE5F7] text-gray-600 text-xs font-semibold">
+                <tr className="bg-brand-100 text-gray-600 text-xs font-semibold">
                   <th className="py-3 md:py-4 px-4 md:px-6">Title</th>
                   <th className="py-3 md:py-4 px-4 md:px-6">Type</th>
                   <th className="py-3 md:py-4 px-4 md:px-6">Status</th>
@@ -218,14 +218,14 @@ export default function ResourcesTab({
                     <tr key={r.id} className="hover:bg-gray-50/60 transition-colors">
                       <td className="py-3 md:py-4 px-4 md:px-6">
                         <div className="flex items-center gap-3 md:gap-4">
-                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-[#E8F0FE] flex items-center justify-center shrink-0">
-                            <Icon className="w-4 h-4 md:w-5 md:h-5 text-[#2563EB]" />
+                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-brand-50 flex items-center justify-center shrink-0">
+                            <Icon className="w-4 h-4 md:w-5 md:h-5 text-brand-600" />
                           </div>
                           <div className="min-w-0">
                             <p className="font-bold text-gray-900 text-xs md:text-sm truncate max-w-[260px]" title={r.title}>
                               {r.title}
                             </p>
-                            <p className="text-[10px] md:text-xs text-gray-400 mt-0.5 truncate max-w-[260px]">
+                            <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 truncate max-w-[260px]">
                               {[r.author, r.year, r.source, r.tags.join(", ")].filter(Boolean).join(" · ") || "—"}
                             </p>
                           </div>
@@ -237,7 +237,7 @@ export default function ResourcesTab({
                       </td>
                       <td className="py-3 md:py-4 px-4 md:px-6">
                         <p className="font-bold text-gray-800 text-xs">{formatDate(r.createdAt)}</p>
-                        <p className="text-[10px] md:text-xs text-gray-400 mt-0.5">By {personName(r.uploadedBy, "—")}</p>
+                        <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">By {personName(r.uploadedBy, "—")}</p>
                       </td>
                       <td className="py-3 md:py-4 px-4 md:px-6 font-medium text-gray-600 text-xs">
                         {r.attachments.length} · {formatFileSize(size)}

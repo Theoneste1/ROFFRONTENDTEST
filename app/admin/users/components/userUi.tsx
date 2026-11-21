@@ -11,7 +11,14 @@ import { roleLabel } from "@/lib/auth/roles";
 import { assignableRoles, canPromoteToSuperAdmin, roleChangeNeedsPassword, roleChangeStepUp } from "@/lib/auth/role-rules";
 import { useSession } from "@/lib/auth/session";
 import { hasFeature, isLegacyBackend } from "@/lib/api/capabilities";
-import { adminSchoolsApi } from "@/lib/api/school-directory";
+import { adminSchoolsApi, type DirectorySchoolRow } from "@/lib/api/school-directory";
+import { countryName, RWANDA } from "@/lib/schools/countries";
+import SearchableSelect from "@/app/components/ui/SearchableSelect";
+import { useCountryOptions } from "@/lib/queries/countries";
+import { HOME_ERRORS, chooseHomeCountry, homeFromProfile, homeInRwanda, homePlacePayload, homeLocationRulesSupported, validateHome, type HomeDraft } from "@/lib/accounts/home-location";
+import { GENDER_OPTIONS } from "@/lib/accounts/gender";
+import { byName, emptyPlace, placeComplete, schoolFacts, type Place } from "@/lib/schools/school-cascade";
+import { CascadeSelect, CountrySelect, PlaceSelects, SchoolFactsPanel } from "@/app/components/schools/SchoolCascade";
 import { schoolRefFromDirectoryRow } from "@/lib/admin/school-directory";
 import { useSchoolDirectoryMode } from "@/lib/queries/school-directory";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -48,7 +55,7 @@ export const gradeDivision = (g: GradeLevel) => (["S1", "S2", "S3"].includes(g) 
 // ─── Form controls (admin style) ────────────────────────────────────────────
 
 const inputCls =
-  "w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500";
+  "w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500";
 
 export function Field({ label, error, hint, required, children, id }: { label: string; error?: string; hint?: ReactNode; required?: boolean; children: (id: string, describedBy?: string) => ReactNode; id?: string }) {
   const autoId = useId();
@@ -65,7 +72,7 @@ export function Field({ label, error, hint, required, children, id }: { label: s
           {error}
         </p>
       ) : hint ? (
-        <p id={`${fid}-hint`} className="mt-1 text-[11px] text-gray-400">
+        <p id={`${fid}-hint`} className="mt-1 text-[11px] text-gray-500">
           {hint}
         </p>
       ) : null}
@@ -111,21 +118,121 @@ export function SelectInput({ label, value, onChange, options, error, required }
 }
 
 /**
- * Pick an existing school, 2–100 characters.
- * - With the school directory (`schoolAdministration` + `schools.manage`): `GET /admin/schools`
- *   (active schools of every kind — official, administrator-created, legacy, other countries).
- *   The public `/schools/search` lists only official Rwandan schools on those backends, so a
- *   school an Administrator has just created could not otherwise be picked.
- * - Otherwise: `GET /schools/search` (both backends).
+ * Pick an existing school with the standard selection (lib/schools/school-cascade.ts):
+ *
+ *   Country → Province → District → Sector → School   (Rwanda)
+ *   Country → School                                    (another country)
+ *
+ * Plain dropdowns only; each lists what belongs to the step before it and changing a step clears
+ * the steps after it. Schools come from the school directory (`GET /admin/schools`, active schools
+ * of every kind — official, administrator-created, legacy — filtered by that place or country), so a
+ * school an Administrator has just created can be picked. Once chosen, its official details show.
+ * A backend without the school directory (no places) keeps the former name search (LegacySchoolSearch).
  */
 export function SchoolPicker({ value, onChange, label = "School" }: { value: SchoolRef | null; onChange: (s: SchoolRef | null) => void; label?: string }) {
+  const directory = useSchoolDirectoryMode() === "manage";
+  if (!directory) return <LegacySchoolSearch value={value} onChange={onChange} label={label} />;
+  return <SchoolCascadePicker value={value} onChange={onChange} label={label} />;
+}
+
+function SchoolCascadePicker({ value, onChange, label }: { value: SchoolRef | null; onChange: (s: SchoolRef | null) => void; label: string }) {
+  const [country, setCountry] = useState<string>(RWANDA);
+  const [place, setPlace] = useState<Place>(emptyPlace);
+  const [chosen, setChosen] = useState<DirectorySchoolRow | null>(null);
+  const rwanda = country === RWANDA;
+  const ready = !!country && (!rwanda || placeComplete(place));
+  const schools = useQuery({
+    queryKey: ["schools", "picker", country, place.province, place.district, place.sector],
+    queryFn: () =>
+      adminSchoolsApi.list({ countryCode: country, ...(rwanda && { province: place.province, district: place.district, sector: place.sector }), isActive: true, limit: 100 }),
+    enabled: ready,
+    staleTime: 60_000,
+  });
+  const list = byName(schools.data?.data ?? []);
+  const reset = () => {
+    setChosen(null);
+    onChange(null);
+  };
+
+  // A school already set by the form (e.g. an account being edited): show it, with Change.
+  if (value && !chosen) {
+    return (
+      <Field label={label}>
+        {(id) => (
+          <div id={id} className="flex items-center justify-between gap-2 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+            <span className="min-w-0 truncate">
+              {value.name} <span className="text-gray-500">· {value.location}</span>
+            </span>
+            <button type="button" onClick={reset} className="text-xs font-medium text-indigo-600 hover:text-indigo-800 shrink-0">
+              Change
+            </button>
+          </div>
+        )}
+      </Field>
+    );
+  }
+  return (
+    <fieldset className="space-y-3" data-testid="school-picker">
+      <legend className="block text-xs font-semibold text-gray-600 mb-1">{label}</legend>
+      <CountrySelect
+        variant="admin"
+        value={country}
+        onChange={(c) => {
+          setCountry(c);
+          setPlace(emptyPlace());
+          reset();
+        }}
+      />
+      {rwanda && (
+        <PlaceSelects
+          variant="admin"
+          value={place}
+          onChange={(p) => {
+            setPlace(p);
+            reset();
+          }}
+        />
+      )}
+      {ready &&
+        (schools.isError ? (
+          <p className="text-[11px] text-red-600" role="alert">
+            {errorMessage(schools.error)}
+          </p>
+        ) : (
+          <CascadeSelect
+            variant="admin"
+            label="School"
+            value={chosen?.id ?? ""}
+            disabled={schools.isPending}
+            placeholder={schools.isPending ? "Loading schools…" : list.length ? "Choose the school" : "No active school here"}
+            options={list.map((s) => ({ value: s.id, label: s.code ? `${s.name} (${s.code})` : s.name }))}
+            onChange={(id) => {
+              const s = list.find((x) => x.id === id) ?? null;
+              setChosen(s);
+              onChange(s ? schoolRefFromDirectoryRow(s) : null);
+            }}
+            hint={
+              (schools.data?.meta.total ?? 0) > list.length
+                ? `Showing the first ${list.length} of ${schools.data?.meta.total} schools.`
+                : !schools.isPending && list.length === 0
+                  ? "Add the school in Schools → Directory first."
+                  : undefined
+            }
+            testId="cascade-school"
+          />
+        ))}
+      {chosen && <SchoolFactsPanel variant="admin" facts={schoolFacts(chosen, undefined, rwanda ? undefined : countryName(chosen.countryCode))} />}
+    </fieldset>
+  );
+}
+
+/** The former name search, only for a backend without the school directory (no official places to choose from). */
+function LegacySchoolSearch({ value, onChange, label }: { value: SchoolRef | null; onChange: (s: SchoolRef | null) => void; label: string }) {
   const [q, setQ] = useState("");
   const term = q.trim().slice(0, 100);
-  const directory = useSchoolDirectoryMode() === "manage";
   const results = useQuery({
-    queryKey: ["schools", "search", directory ? "directory" : "public", term],
-    queryFn: async (): Promise<SchoolRef[]> =>
-      directory ? (await adminSchoolsApi.list({ q: term, isActive: true, limit: 20 })).data.map(schoolRefFromDirectoryRow) : schoolsApi.search(term),
+    queryKey: ["schools", "search", "public", term],
+    queryFn: (): Promise<SchoolRef[]> => schoolsApi.search(term),
     enabled: term.length >= 2,
     staleTime: 60_000,
   });
@@ -135,7 +242,7 @@ export function SchoolPicker({ value, onChange, label = "School" }: { value: Sch
         {(id) => (
           <div id={id} className="flex items-center justify-between gap-2 border border-gray-200 rounded-lg px-3 py-2 text-sm">
             <span className="min-w-0 truncate">
-              {value.name} <span className="text-gray-400">· {value.location}</span>
+              {value.name} <span className="text-gray-500">· {value.location}</span>
             </span>
             <button type="button" onClick={() => onChange(null)} className="text-xs font-medium text-indigo-600 hover:text-indigo-800 shrink-0">
               Change
@@ -153,15 +260,15 @@ export function SchoolPicker({ value, onChange, label = "School" }: { value: Sch
           {term.length >= 2 && (
             <div className="mt-1 border border-gray-100 rounded-lg max-h-40 overflow-y-auto">
               {results.isPending ? (
-                <p className="px-3 py-2 text-xs text-gray-400">Searching…</p>
+                <p className="px-3 py-2 text-xs text-gray-500">Searching…</p>
               ) : results.isError ? (
                 <p className="px-3 py-2 text-xs text-red-600">{errorMessage(results.error)}</p>
               ) : results.data.length === 0 ? (
-                <p className="px-3 py-2 text-xs text-gray-400">No school matches “{term}”.</p>
+                <p className="px-3 py-2 text-xs text-gray-500">No school matches “{term}”.</p>
               ) : (
                 results.data.map((s) => (
                   <button key={s.id} type="button" onClick={() => onChange(s)} className="block w-full text-left px-3 py-2 text-xs hover:bg-indigo-50">
-                    {s.name} <span className="text-gray-400">· {s.location}</span>
+                    {s.name} <span className="text-gray-500">· {s.location}</span>
                   </button>
                 ))
               )}
@@ -211,7 +318,7 @@ interface FormState {
   currentPassword: string;
 }
 
-const FIELDS = ["firstName", "lastName", "username", "email", "password", "role", "gradeLevel", "schoolId", "schoolName", "schoolLocation", "homeLocation", "currentPassword"] as const;
+const FIELDS = ["firstName", "lastName", "username", "email", "password", "role", "gradeLevel", "schoolId", "schoolName", "schoolLocation", "homeLocation", "currentPassword", "homeCountry", "homeProvince", "homeDistrict", "homeSector", "gender"] as const;
 
 export function UserForm({
   mode,
@@ -253,6 +360,16 @@ export function UserForm({
   const [stepUpAsked, setStepUpAsked] = useState(false);
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((s) => ({ ...s, [k]: v }));
   const isStudent = f.role === "STUDENT";
+  // Editing an account (homeLocationRules): its home location with the registration rules — Home country, then for
+  // Rwanda province → district → sector (lib/accounts/home-location) — instead of the free-text home location.
+  const homeRules = mode === "edit" && homeLocationRulesSupported(detection);
+  const countries = useCountryOptions().options;
+  const [home, setHome] = useState<HomeDraft>(() => homeFromProfile(initial ?? {}));
+  const initialHome = homeFromProfile(initial ?? {});
+  const homeChanged = home.country !== initialHome.country || JSON.stringify(home.place) !== JSON.stringify(initialHome.place);
+  // Correcting the account's gender (genderStep).
+  const genderEdit = mode === "edit" && hasFeature(detection, "genderStep");
+  const [gender, setGender] = useState<string>(initial?.gender ?? "");
   // New backends (schoolReferenceRequired): an invitation must name an existing school, and
   // an edit may remove the school (schoolId: null). Older backends keep the earlier behaviour.
   const schoolReference = hasFeature(detection, "schoolReferenceRequired");
@@ -275,7 +392,9 @@ export function UserForm({
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = "Enter a valid e-mail address.";
     if (mode === "create" && !PASSWORD_RULE.test(f.password)) e.password = PASSWORD_RULE.hint;
     if (isStudent && !f.gradeLevel) e.gradeLevel = "Students need a grade (it sets the division).";
-    if (f.homeLocation.trim() && !len(f.homeLocation, 2, 200)) e.homeLocation = "2–200 characters.";
+    if (!homeRules && f.homeLocation.trim() && !len(f.homeLocation, 2, 200)) e.homeLocation = "2–200 characters.";
+    // A changed home location follows the registration rules (an edit of other fields never requires it).
+    if (homeRules && homeChanged) Object.assign(e, validateHome(home));
     if (stepUp && !f.currentPassword) e.currentPassword = "Enter your own password to confirm this role change.";
     if (mode === "invite" && newSchoolByName && !f.school && (f.newSchoolName.trim() || f.newSchoolLocation.trim())) {
       if (!len(f.newSchoolName, 2, 200)) e.schoolName = "2–200 characters.";
@@ -314,7 +433,9 @@ export function UserForm({
     if (base.gradeLevel && base.gradeLevel !== initial.gradeLevel) changes.gradeLevel = base.gradeLevel;
     if (f.school && f.school.id !== initial.school?.id) changes.schoolId = f.school.id;
     if (!f.school && initial.school && schoolReference) changes.schoolId = null;
-    if (base.homeLocation && base.homeLocation !== (initial.homeLocation ?? "")) changes.homeLocation = base.homeLocation;
+    if (!homeRules && base.homeLocation && base.homeLocation !== (initial.homeLocation ?? "")) changes.homeLocation = base.homeLocation;
+    if (homeRules && homeChanged && home.country) Object.assign(changes, { homeCountry: home.country, ...homePlacePayload(home) });
+    if (genderEdit && (gender === "FEMALE" || gender === "MALE") && gender !== (initial.gender ?? "")) changes.gender = gender;
     if (changes.role && stepUp) changes.currentPassword = f.currentPassword;
     return changes;
   }
@@ -335,6 +456,8 @@ export function UserForm({
       await onSubmit(input);
     } catch (err) {
       const fe = fieldErrors(err, FIELDS);
+      const homeCoded = isApiError(err) && err.code ? HOME_ERRORS[err.code] : undefined;
+      if (homeCoded) fe[homeCoded.field] = homeCoded.message;
       if (isApiError(err) && err.code === "STEP_UP_REQUIRED") {
         fe.currentPassword = stepUp ? "That password isn't correct. Enter your own current password." : "Enter your own password to confirm this role change.";
         setStepUpAsked(true);
@@ -393,8 +516,52 @@ export function UserForm({
             error={errors.gradeLevel}
           />
         )}
-        <TextInput label="Home location" value={f.homeLocation} onChange={(v) => set("homeLocation", v)} error={errors.homeLocation} maxLength={200} placeholder="District or city" />
+        {!homeRules && (
+          <TextInput label="Home location" value={f.homeLocation} onChange={(v) => set("homeLocation", v)} error={errors.homeLocation} maxLength={200} placeholder="District or city" />
+        )}
+        {genderEdit && (
+          <SelectInput
+            label="Gender"
+            value={gender}
+            onChange={setGender}
+            options={[...(initial?.gender ? [] : [{ label: "Not given yet", value: "" }]), ...GENDER_OPTIONS.map((o) => ({ label: o.label, value: o.value }))]}
+            error={errors.gender}
+          />
+        )}
       </div>
+      {homeRules && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-testid="admin-home-location">
+          <SearchableSelect
+            label="Home country"
+            required={!!initialHome.country}
+            value={home.country}
+            onChange={(c) => {
+              setHome((h) => chooseHomeCountry(h, c));
+              setErrors((s) => ({ ...s, homeCountry: undefined, homeProvince: undefined, homeDistrict: undefined, homeSector: undefined }));
+            }}
+            options={countries}
+            placeholder="Type to search for a country"
+            error={errors.homeCountry}
+            testId="admin-home-country"
+          />
+          {homeInRwanda(home) &&
+            (["province", "district", "sector"] as const).map((level) => (
+              <PlaceSelects
+                key={level}
+                only={level}
+                variant="admin"
+                labelPrefix="Home "
+                testIdPrefix="admin-home"
+                value={home.place}
+                onChange={(place) => {
+                  setHome((h) => ({ ...h, place }));
+                  setErrors((s) => ({ ...s, homeProvince: undefined, homeDistrict: undefined, homeSector: undefined }));
+                }}
+                errors={{ province: errors.homeProvince, district: errors.homeDistrict, sector: errors.homeSector }}
+              />
+            ))}
+        </div>
+      )}
       {stepUp && (
         <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 space-y-2" data-testid="role-step-up">
           <p className="text-xs text-amber-800">
@@ -404,14 +571,14 @@ export function UserForm({
         </div>
       )}
       <SchoolPicker value={f.school} onChange={(s) => set("school", s)} />
-      {mode === "invite" && !newSchoolByName && !f.school && <p className="text-[11px] text-gray-400">An invitation can only name a school that already exists.</p>}
+      {mode === "invite" && !newSchoolByName && !f.school && <p className="text-[11px] text-gray-500">An invitation can only name a school that already exists.</p>}
       {mode === "invite" && newSchoolByName && !f.school && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TextInput label="…or a new school name" value={f.newSchoolName} onChange={(v) => set("newSchoolName", v)} error={errors.schoolName} maxLength={200} />
           <TextInput label="New school location" value={f.newSchoolLocation} onChange={(v) => set("newSchoolLocation", v)} error={errors.schoolLocation} maxLength={200} />
         </div>
       )}
-      {mode === "edit" && initial?.role === "STUDENT" && <p className="text-[11px] text-gray-400">Changing the grade moves the student to the matching division.</p>}
+      {mode === "edit" && initial?.role === "STUDENT" && <p className="text-[11px] text-gray-500">Changing the grade moves the student to the matching division.</p>}
       {formError && <Alert tone="error">{formError}</Alert>}
       <div className="flex justify-end gap-3">
         <button type="button" onClick={onCancel} disabled={busy} className="px-5 py-2 text-sm text-gray-600 disabled:opacity-50">

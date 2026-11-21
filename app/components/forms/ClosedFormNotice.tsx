@@ -15,7 +15,7 @@ export default function ClosedFormNotice({ notice, children }: { notice: Notice;
       </Alert>
       {notice.opensAtText && (
         <p className="flex items-center gap-2 text-sm text-slate-700" data-testid="closed-form-opens">
-          <CalendarClock className="h-4 w-4 text-slate-500" aria-hidden="true" /> Opens on {notice.opensAtText}.
+          <CalendarClock className="h-4 w-4 text-slate-600" aria-hidden="true" /> Opens on {notice.opensAtText}.
         </p>
       )}
       {notice.instructions && (
@@ -25,14 +25,14 @@ export default function ClosedFormNotice({ notice, children }: { notice: Notice;
         <ul className="space-y-1.5 text-sm" data-testid="closed-form-contact">
           {notice.contactEmail && (
             <li className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-slate-500" aria-hidden="true" />
-              <a href={`mailto:${notice.contactEmail}`} className="font-medium text-[#2B2BB2] hover:underline">{notice.contactEmail}</a>
+              <Mail className="h-4 w-4 text-slate-600" aria-hidden="true" />
+              <a href={`mailto:${notice.contactEmail}`} className="font-medium text-brand hover:underline">{notice.contactEmail}</a>
             </li>
           )}
           {notice.supportUrl && (
             <li className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4 text-slate-500" aria-hidden="true" />
-              <a href={notice.supportUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-[#2B2BB2] hover:underline">
+              <ExternalLink className="h-4 w-4 text-slate-600" aria-hidden="true" />
+              <a href={notice.supportUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-brand hover:underline">
                 More information
               </a>
             </li>

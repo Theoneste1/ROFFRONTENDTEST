@@ -15,7 +15,7 @@ export default function SubmissionControls({ value, onChange }: { value: Control
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
       <div className="relative w-full sm:w-80">
-        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
         <input
           type="search"
           placeholder="Search students by name..."

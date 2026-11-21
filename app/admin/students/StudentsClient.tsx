@@ -14,7 +14,7 @@ import { Badge, CsvButton, FilterPills, SearchInput, SelectFilter, TableCard, Ta
 
 const STATUS_BADGE: Record<ReportUserStatus, { label: string; badge: string }> = {
   ACTIVE: { label: "Active", badge: "bg-emerald-50 text-emerald-700" },
-  INACTIVE: { label: "Inactive", badge: "bg-gray-100 text-gray-500" },
+  INACTIVE: { label: "Inactive", badge: "bg-gray-100 text-gray-600" },
   AWAITING_SETUP: { label: "Awaiting setup", badge: "bg-amber-50 text-amber-700" },
 };
 
@@ -47,7 +47,7 @@ export default function StudentsClient() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Students</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Academic scores are managed by coaches and are not editable here.</p>
+          <p className="text-sm text-gray-600 mt-1 font-medium">Academic scores are managed by coaches and are not editable here.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/admin/schools" className={btnSecondary}>
@@ -114,20 +114,20 @@ export default function StudentsClient() {
                 <tr key={s.id} className="hover:bg-gray-50/60 transition-colors text-xs">
                   <td className={`${td} font-bold text-gray-800 whitespace-nowrap`}>
                     {s.name}
-                    <span className="block text-[11px] font-normal text-gray-400">
+                    <span className="block text-[11px] font-normal text-gray-500">
                       @{s.username} · last sign-in {s.lastLoginAt ? formatDate(s.lastLoginAt) : "never"}
                     </span>
                   </td>
-                  <td className={`${td} text-gray-500 font-medium`}>{s.email}</td>
+                  <td className={`${td} text-gray-600 font-medium`}>{s.email}</td>
                   <td className={`${td} text-gray-700 font-medium whitespace-nowrap`}>
                     {s.division ? s.division.name.replace(/ division$/i, "") : "—"}
-                    {s.gradeLevel && <span className="text-gray-400"> · {s.gradeLevel}</span>}
+                    {s.gradeLevel && <span className="text-gray-500"> · {s.gradeLevel}</span>}
                   </td>
                   <td className={`${td} text-gray-600`}>{s.school?.name ?? "—"}</td>
                   <td className={td}>
                     <Badge className={STATUS_BADGE[s.status].badge}>{STATUS_BADGE[s.status].label}</Badge>
                   </td>
-                  <td className={`${td} text-gray-500 font-medium whitespace-nowrap`}>
+                  <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>
                     {formatNumber(s.submissions)} submitted · {formatNumber(s.resultsPublished)} results · {formatNumber(s.points)} pts
                   </td>
                   <td className={`${td} text-right`}>

@@ -50,16 +50,16 @@ function DivisionCard({ division, courses, mentors }: { division: AdminDivision;
       <div>
         {/* Title & Subtitle */}
         <h2 className="text-lg font-bold text-gray-900">{division.name}</h2>
-        <p className="text-xs text-gray-400 mt-0.5 font-medium mb-6">
+        <p className="text-xs text-gray-500 mt-0.5 font-medium mb-6">
           {grades} · {formatNumber(division._count.students)} students · {mentors === undefined ? "…" : formatNumber(mentors)} coach{mentors === 1 ? "" : "s"}
-          {!division.isActive && <span className="ml-2 text-amber-600 font-semibold">Marked inactive</span>}
+          {!division.isActive && <span className="ml-2 text-amber-700 font-semibold">Marked inactive</span>}
         </p>
 
         {/* Courses Section */}
         <div className="mb-6">
-          <span className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">Available mathematics courses</span>
+          <span className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2.5">Available mathematics courses</span>
           <div className="flex flex-wrap gap-2">
-            {courses.length === 0 && <span className="text-xs text-gray-400">No courses yet.</span>}
+            {courses.length === 0 && <span className="text-xs text-gray-500">No courses yet.</span>}
             {courses.map((course) => (
               <span key={course} className="px-3 py-1 bg-indigo-50/70 text-indigo-700 text-xs font-semibold rounded-full">
                 {course}
@@ -141,7 +141,7 @@ export default function DivisionsContent() {
       {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Divisions</h1>
-        <p className="text-sm text-gray-500 mt-1 font-medium">The ROF LMS has exactly two divisions: Junior (S1–S3) and Senior (S4–S6).</p>
+        <p className="text-sm text-gray-600 mt-1 font-medium">The ROF LMS has exactly two divisions: Junior (S1–S3) and Senior (S4–S6).</p>
       </div>
 
       {divisions.isPending ? (

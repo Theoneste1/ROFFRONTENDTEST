@@ -48,9 +48,9 @@ function AccessDenied({ title, body }: { title: string; body: string }) {
   return (
     <Panel>
       <div className="py-14 px-6 flex flex-col items-center text-center gap-2" role="alert" data-testid="library-denied">
-        <Lock className="h-9 w-9 text-slate-400" aria-hidden="true" />
+        <Lock className="h-9 w-9 text-slate-500" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
-        <p className="text-sm text-slate-500 max-w-md">{body}</p>
+        <p className="text-sm text-slate-600 max-w-md">{body}</p>
       </div>
     </Panel>
   );
@@ -91,7 +91,7 @@ export default function ResourceLibrary() {
   const header = (
     <div className="mb-6">
       <h1 className="text-2xl font-bold text-gray-900">Mathematics resources</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-gray-600">
         {user?.division ? `${divisionLabel(user.division)} · ` : ""}Books, notes and past papers shared by your coaches.
       </p>
     </div>
@@ -160,7 +160,7 @@ export default function ResourceLibrary() {
           <label htmlFor="library-search" className="sr-only">
             Search resources
           </label>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" aria-hidden="true" />
           <input
             id="library-search"
             type="search"
@@ -216,7 +216,7 @@ export default function ResourceLibrary() {
         <LoadingBlock label="Loading resources…" />
       ) : (
         <>
-          <p className="mb-4 text-xs text-gray-500" aria-live="polite" data-testid="library-count">
+          <p className="mb-4 text-xs text-gray-600" aria-live="polite" data-testid="library-count">
             {shown.length === 1 ? "1 resource" : `${shown.length} resources`}
             {anyFilter ? " match your filters" : ""}
           </p>
@@ -246,7 +246,7 @@ export default function ResourceLibrary() {
                           {style.symbol}
                         </span>
                         {topicLabel(course)}
-                        {query.isSuccess && <span className="text-xs font-medium text-gray-400">· {items.length}</span>}
+                        {query.isSuccess && <span className="text-xs font-medium text-gray-500">· {items.length}</span>}
                       </h2>
                       <Link href={`/student/courses/${course.id}`} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 shrink-0">
                         Open course
@@ -254,12 +254,12 @@ export default function ResourceLibrary() {
                     </div>
                     {query.isError ? (
                       isApiError(query.error) && query.error.status === 404 ? (
-                        <p className="text-sm text-gray-500">This topic isn&apos;t available to your division right now.</p>
+                        <p className="text-sm text-gray-600">This topic isn&apos;t available to your division right now.</p>
                       ) : (
                         <ErrorState error={query.error} title={`Couldn't load the ${topicLabel(course)} resources`} onRetry={() => query.refetch()} />
                       )
                     ) : items.length === 0 ? (
-                      <p className="text-sm text-gray-500">No resources for this topic yet.</p>
+                      <p className="text-sm text-gray-600">No resources for this topic yet.</p>
                     ) : (
                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                         {items.map((r) => (
@@ -291,7 +291,7 @@ function ResourceCard({ resource: r }: { resource: CourseResource }) {
             <h3 className="font-semibold text-gray-900 break-words">{r.title}</h3>
             <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">{TYPE_LABEL[r.type] ?? r.type}</span>
           </div>
-          {meta && <p className="text-xs text-gray-500 mt-0.5">{meta}</p>}
+          {meta && <p className="text-xs text-gray-600 mt-0.5">{meta}</p>}
           {r.description && <p className="mt-2 text-sm text-gray-600 whitespace-pre-line line-clamp-4">{r.description}</p>}
           {r.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -311,7 +311,7 @@ function ResourceCard({ resource: r }: { resource: CourseResource }) {
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-xs text-gray-400">No file attached.</p>
+        <p className="mt-3 text-xs text-gray-500">No file attached.</p>
       )}
     </article>
   );

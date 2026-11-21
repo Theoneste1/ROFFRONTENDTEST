@@ -44,13 +44,13 @@ export default function ResultsPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Results</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Review your published results and your coaches&apos; feedback</p>
+          <p className="text-sm text-gray-600 mt-0.5">Review your published results and your coaches&apos; feedback</p>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap items-end gap-4">
           <div className="flex flex-col gap-1">
-            <label htmlFor="course" className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+            <label htmlFor="course" className="text-[10px] font-bold tracking-wider text-gray-600 uppercase">
               Course
             </label>
             <div className="relative">
@@ -67,12 +67,12 @@ export default function ResultsPage() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
             </div>
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="arrange" className="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+            <label htmlFor="arrange" className="text-[10px] font-bold tracking-wider text-gray-600 uppercase">
               Arrange by
             </label>
             <div className="relative">
@@ -86,7 +86,7 @@ export default function ResultsPage() {
                 <option value="score">Score (highest)</option>
                 <option value="name">Name (A–Z)</option>
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
             </div>
           </div>
 
@@ -124,7 +124,7 @@ export default function ResultsPage() {
             <div className={`overflow-x-auto ${query.isFetching ? "opacity-70" : ""}`}>
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#D9E1F2] text-gray-700 text-xs font-semibold uppercase tracking-wider">
+                  <tr className="bg-brand-100 text-gray-700 text-xs font-semibold uppercase tracking-wider">
                     <th className="py-3.5 px-6 font-semibold w-5/12">Assignment Name</th>
                     <th className="py-3.5 px-6 font-semibold w-3/12">Due</th>
                     <th className="py-3.5 px-6 font-semibold w-2/12">Score</th>
@@ -140,19 +140,19 @@ export default function ResultsPage() {
                           <Link href={href} className="hover:text-indigo-700">
                             {r.assignment.title}
                           </Link>
-                          <div className="text-[11px] text-gray-400 mt-0.5">
+                          <div className="text-[11px] text-gray-500 mt-0.5">
                             {r.assignment.course.title} · published {formatDate(r.publishedAt)}
                           </div>
                         </td>
                         <td className="py-4 px-6 text-gray-600">
                           <div className="flex items-center gap-2 whitespace-nowrap">
-                            <Clock className="h-4 w-4 text-gray-400 shrink-0" />
+                            <Clock className="h-4 w-4 text-gray-500 shrink-0" />
                             <span>{formatDate(r.assignment.deadline)}</span>
                           </div>
                         </td>
                         <td className="py-4 px-6 font-medium text-gray-700 whitespace-nowrap">
                           {r.score}/{r.maximumMarks}
-                          <span className="ml-2 text-xs text-gray-400">{r.percentage}%</span>
+                          <span className="ml-2 text-xs text-gray-500">{r.percentage}%</span>
                         </td>
                         <td className="py-4 px-6 text-right pr-8">
                           <Link

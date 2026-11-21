@@ -89,7 +89,7 @@ export default function ReadOnlySchoolsList() {
               schools.data.data.map((s) => (
                 <tr key={s.id} className="text-xs hover:bg-gray-50/60">
                   <td className={`${td} font-semibold text-gray-800`}>{s.name}</td>
-                  <td className={`${td} text-gray-500`}>{s.location}</td>
+                  <td className={`${td} text-gray-600`}>{s.location}</td>
                   <td className={`${td} text-gray-600`}>{formatNumber(s._count.students)}</td>
                   <td className={td}>
                     <Link href={`/admin/schools/${s.id}`} className={linkBtn} aria-label={`View students of ${s.name}`}>

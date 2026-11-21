@@ -141,7 +141,7 @@ function Grading({
               </h1>
               <ReviewStatusBadge status={s.status} />
             </div>
-            <p className="text-gray-500 mt-1 text-sm">
+            <p className="text-gray-600 mt-1 text-sm">
               Submitted on {formatDateTime(s.submittedAt)}
               {s.isLate && <span className="text-orange-600 font-semibold"> · late</span>}
             </p>
@@ -184,7 +184,7 @@ function Grading({
             {/* Student submission */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100/50">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Student Submission</h2>
+                <h2 className="text-xs font-bold text-gray-600 uppercase tracking-wider">Student Submission</h2>
                 {s.revisions.length > 1 && (
                   <div className="flex gap-1" role="tablist" aria-label="Attempts">
                     {s.revisions.map((r, i) => (
@@ -204,13 +204,13 @@ function Grading({
               </div>
               {attempt ? (
                 <div className="space-y-3">
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-500">
                     Attempt {attempt.revisionNumber} · {formatDateTime(attempt.submittedAt)}
                     {attempt.isLate && " · late"}
                   </p>
                   {attempt.answerText && <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-sm text-gray-700 whitespace-pre-line max-h-80 overflow-y-auto">{attempt.answerText}</div>}
                   {attempt.note && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-600">
                       <span className="font-semibold">Student note:</span> {attempt.note}
                     </p>
                   )}
@@ -221,11 +221,11 @@ function Grading({
                       ))}
                     </div>
                   ) : (
-                    !attempt.answerText && <p className="text-sm text-gray-400">This attempt has no files or text.</p>
+                    !attempt.answerText && <p className="text-sm text-gray-500">This attempt has no files or text.</p>
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-3 text-sm text-gray-500">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
                   <FileText className="w-5 h-5" /> No attempt found.
                 </div>
               )}
@@ -285,7 +285,7 @@ function Grading({
                 <History className="w-4 h-4" /> Review History
               </h2>
               {cycles.isPending ? (
-                <p className="text-xs text-gray-400">Loading…</p>
+                <p className="text-xs text-gray-500">Loading…</p>
               ) : cycles.isError ? (
                 <p className="text-xs text-red-600">{errorMessage(cycles.error)}</p>
               ) : (
@@ -296,7 +296,7 @@ function Grading({
                         Cycle {c.cycle} · {c.status.replace(/_/g, " ").toLowerCase()}
                         {c.score !== null && ` · ${c.score}/${max}`}
                       </p>
-                      <ul className="mt-1 space-y-0.5 text-gray-500">
+                      <ul className="mt-1 space-y-0.5 text-gray-600">
                         {c.events.map((e) => (
                           <li key={e.id}>
                             {formatDateTime(e.createdAt)} — {e.type.replace(/_/g, " ").toLowerCase()}
@@ -320,7 +320,7 @@ function Grading({
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs text-gray-400 font-medium">{label}</p>
+      <p className="text-xs text-gray-500 font-medium">{label}</p>
       <p className="text-gray-700 font-medium mt-0.5">{value}</p>
     </div>
   );

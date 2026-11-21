@@ -361,7 +361,7 @@ function YearFormDialog({ year, onClose, onSaved, onStale }: { year: AcademicYea
           {field("startsOn", "First day", "date")}
           {field("endsOn", "Last day", "date")}
         </div>
-        {!year && <p className="text-[11px] text-gray-500">A new year is planned; nothing changes for students until you start it.</p>}
+        {!year && <p className="text-[11px] text-gray-600">A new year is planned; nothing changes for students until you start it.</p>}
         {formError && <Alert tone={formError === "Nothing has changed." ? "info" : "error"}>{formError}</Alert>}
         <div className="flex justify-end gap-3">
           <button type="button" className={btnSecondary} onClick={onClose} disabled={save.isPending}>
@@ -495,7 +495,7 @@ function ActivateDialog({
           activate.isError && <Alert tone="error">{yearError(activate.error)}</Alert>
         )}
         {locked && !activate.isPending && !unknown && <Alert tone="info">An earlier start&apos;s outcome is still unknown. Starting is locked until the list shows the result.</Alert>}
-        {activate.isPending && <p className="text-xs text-gray-500">Starting the year… this can take a minute or two with many students. Keep this page open; this dialog can&apos;t be closed meanwhile.</p>}
+        {activate.isPending && <p className="text-xs text-gray-600">Starting the year… this can take a minute or two with many students. Keep this page open; this dialog can&apos;t be closed meanwhile.</p>}
         <div className="flex justify-end gap-3">
           <button type="button" className={btnSecondary} onClick={onClose} disabled={activate.isPending}>
             {unknown ? "Close" : "Cancel"}

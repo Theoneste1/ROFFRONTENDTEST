@@ -12,6 +12,6 @@ export function BackLink({ href, label }: { href: string; label: string }) {
 export const STATUS_BADGE: Record<string, string> = {
   PREVIEW: "bg-indigo-50 text-indigo-700",
   APPLIED: "bg-emerald-50 text-emerald-700",
-  EXPIRED: "bg-gray-100 text-gray-500",
-  SUPERSEDED: "bg-gray-100 text-gray-500",
+  EXPIRED: "bg-gray-100 text-gray-600",
+  SUPERSEDED: "bg-gray-100 text-gray-600",
 };

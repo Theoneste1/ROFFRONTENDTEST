@@ -56,7 +56,7 @@ export default function ProgrammeActivity({ courseTitle }: { courseTitle: (cours
                 <td className={`${td} text-gray-600 whitespace-nowrap`}>{formatDateTime(r.createdAt)}</td>
                 <td className={td}>
                   <p className="font-semibold text-gray-800">{personName(r.user)}</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-500">
                     @{r.user.username} · {roleLabel(r.user.role)}
                   </p>
                 </td>

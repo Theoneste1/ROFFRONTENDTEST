@@ -12,6 +12,7 @@
  * - 409 SCHOOL_CODE_TAKEN points to the school that has the code.
  */
 import { useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCountryOptions } from "@/lib/queries/countries";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { adminSchoolsApi, type DirectorySchoolRecord, type DuplicateCandidate } from "@/lib/api/school-directory";
@@ -40,7 +41,7 @@ import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Badge, Modal, btnPrimary, btnSecondary, linkBtn } from "../../components/adminUi";
 
 const input =
-  "w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-500";
+  "w-full px-3 py-2 bg-white border rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-gray-50 disabled:text-gray-600";
 
 export default function SchoolFormDialog({
   school,
@@ -61,6 +62,8 @@ export default function SchoolFormDialog({
   const locations = useSchoolLocations();
   const rwanda = f.countryCode.trim().toUpperCase() === RWANDA;
   const countryLocked = !!school?.code; // a school with a code stays in Rwanda (a code cannot be removed)
+  // Every country (capability countries: the reference list; otherwise the built-in list, as before).
+  const countries = useCountryOptions().options;
   const payload = school ? updatePayload(school, f) : null;
   const needsReason = !!school && !!payload && reasonRequired(school, payload);
 
@@ -121,12 +124,12 @@ export default function SchoolFormDialog({
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                 <span className="min-w-0">
                   <span className="font-semibold text-gray-800">{c.name}</span>
-                  <span className="block text-xs text-gray-500">
+                  <span className="block text-xs text-gray-600">
                     {[c.code && `Code ${c.code}`, c.district, c.countryCode].filter(Boolean).join(" · ")}
                   </span>
                 </span>
                 <span className="flex items-center gap-3">
-                  {!c.isActive && <Badge className="bg-gray-100 text-gray-500">Inactive</Badge>}
+                  {!c.isActive && <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>}
                   <Link href={`/admin/schools/${c.id}`} target="_blank" rel="noopener" className={linkBtn}>
                     Open
                   </Link>
@@ -156,39 +159,27 @@ export default function SchoolFormDialog({
           {(p) => <input {...p} value={f.name} onChange={(e) => set("name", e.target.value)} maxLength={200} className={cls(input, errors.name)} />}
         </Field>
 
-        <fieldset>
-          <legend className="block text-xs font-semibold text-gray-600 mb-1">
-            Country <span className="text-red-500">*</span>
-          </legend>
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="radio" name="country" checked={rwanda} disabled={countryLocked} onChange={() => set("countryCode", RWANDA)} /> Rwanda
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="country"
-                checked={!rwanda}
-                disabled={countryLocked}
-                onChange={() => set("countryCode", school && school.countryCode !== RWANDA ? school.countryCode : "")}
-              />{" "}
-              Another country
-            </label>
-            {!rwanda && (
-              <input
-                aria-label="Country code"
-                value={f.countryCode}
-                onChange={(e) => set("countryCode", e.target.value.toUpperCase().slice(0, 2))}
-                placeholder="KE"
-                maxLength={2}
-                className={`${cls(input, errors.countryCode)} !w-20 uppercase`}
-                aria-invalid={errors.countryCode ? true : undefined}
-              />
-            )}
-          </div>
-          {countryLocked && <p className="mt-1 text-[11px] text-gray-500">A school with an official code stays in Rwanda.</p>}
-          {errors.countryCode && <p className="mt-1 text-[11px] text-red-600">{errors.countryCode}</p>}
-        </fieldset>
+        <Field id="countryCode" label="Country" required error={errors.countryCode}>
+          {(p) => (
+            <select
+              {...p}
+              value={f.countryCode.trim().toUpperCase()}
+              disabled={countryLocked}
+              // A new country clears the Rwandan place (province, district and sector belong to Rwanda only).
+              onChange={(e) => setF((s) => ({ ...s, countryCode: e.target.value, province: "", district: "", sector: "" }))}
+              className={cls(input, errors.countryCode)}
+              data-testid="school-country"
+            >
+              <option value="">Choose the country</option>
+              {countries.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+        {countryLocked && <p className="-mt-2 text-[11px] text-gray-600">A school with an official code stays in Rwanda.</p>}
 
         {rwanda ? (
           <>
@@ -308,7 +299,7 @@ export default function SchoolFormDialog({
         )}
 
         {!school && (
-          <p className="text-[11px] text-gray-500" data-testid="school-create-note">
+          <p className="text-[11px] text-gray-600" data-testid="school-create-note">
             {rwanda
               ? "The school is created active. Students can find it by its name or place when they register or change their school; without an official code it is listed without one (no code is made up). Invitations and CSV imports name it by its official code or its id."
               : "The school is created active. Students at a school outside Rwanda type its name, and an administrator links their request to this school. Invitations and CSV imports name it by its id."}
@@ -366,7 +357,7 @@ function Field({
           {error}
         </p>
       ) : hint ? (
-        <p id={noteId} className="mt-1 text-[11px] text-gray-500">
+        <p id={noteId} className="mt-1 text-[11px] text-gray-600">
           {hint}
         </p>
       ) : null}

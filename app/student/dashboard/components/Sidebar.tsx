@@ -1,19 +1,22 @@
 'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutGrid,
   Trophy,
   BookOpen,
   FileText,
-  ChevronDown,
-  ChevronRight,
-  Library
+  Library,
+  FileQuestion,
+  Award
 } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { STUDENT_RESULTS, STUDENT_TESTS } from "@/lib/auth/navigation";
+import { resultsNavVisible } from "@/lib/test-management/results";
+import { answerNavVisible } from "@/lib/test-management/submissions";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
+import SidebarNav from "@/app/components/shell/SidebarNav";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,10 +24,14 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen }: SidebarProps) {
   const pathname = usePathname();
-  const [isAssignmentsOpen, setIsAssignmentsOpen] = useState(pathname.startsWith("/student/assignments"));
   // Shown while permissions load (menus follow /me/permissions once known); the API enforces access.
   const { knownPermissions } = useSession();
   const showResources = !knownPermissions || knownPermissions.has("resources.view");
+  // My tests: a backend with `testSubmissions` AND the known tests.submit (lib/test-management/submissions.ts).
+  const { detection } = useBackendCapabilities();
+  const showTests = answerNavVisible(detection, knownPermissions, "tests.submit");
+  // My results: a backend with `testResults` AND the known tests.viewOwnResults (lib/test-management/results.ts).
+  const showResults = resultsNavVisible(detection, knownPermissions, "tests.viewOwnResults");
 
   // Function to check if link is active
   const isActive = (path: string) => {
@@ -37,126 +44,38 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   return (
     <aside
       className={`${isOpen ? 'w-64 px-4' : 'w-20 px-3'
-        } h-full bg-[#001E4E] text-slate-300 flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out`}
+        } h-full bg-brand-950 text-slate-400 flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out`}
     >
       {/* TOP NAVIGATION LINKS */}
-      <div className="flex flex-col gap-3">
+      <div className="flex-1 min-h-0 flex flex-col gap-3">
         {/* Title Header */}
         <div className="text-white font-bold text-center text-lg tracking-wide pb-6 border-b border-blue-900/40 whitespace-nowrap">
           {isOpen ? "ROF LMS" : "ROF"}
         </div>
 
-        {/* Menu Link */}
-        <Link
-          href="/student/dashboard"
-          title="Dashboard"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/student/dashboard")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <LayoutGrid className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Dashboard</span>}
-        </Link>
-
-        {/* Leaderboard Link */}
-        <Link
-          href="/student/leaderboard"
-          title="Leaderboard"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/student/leaderboard")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <Trophy className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Leaderboard</span>}
-        </Link>
-
-        {/* Courses Link */}
-        <Link
-          href="/student/courses"
-          title="Courses"
-          className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-            } ${isActive("/student/courses")
-              ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-              : "hover:bg-white/5 text-slate-400 hover:text-white"
-            }`}
-        >
-          <BookOpen className="h-5 w-5 flex-shrink-0" />
-          {isOpen && <span className="whitespace-nowrap">Courses</span>}
-        </Link>
-
-        {/* Mathematics resource library */}
-        {showResources && (
-          <Link
-            href="/student/resources"
-            title="Resources"
-            className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-              } ${isActive("/student/resources")
-                ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-                : "hover:bg-white/5 text-slate-400 hover:text-white"
-              }`}
-          >
-            <Library className="h-5 w-5 flex-shrink-0" />
-            {isOpen && <span className="whitespace-nowrap">Resources</span>}
-          </Link>
-        )}
-
-        {/* Assignments Section (Collapsible) */}
-        <div>
-          {/* Assignments Header - Clickable to toggle */}
-          <button
-            onClick={() => setIsAssignmentsOpen(!isAssignmentsOpen)}
-            title="Assignments"
-            className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-              } ${isActive("/student/assignments")
-                ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-                : "hover:bg-white/5 text-slate-400 hover:text-white"
-              }`}
-          >
-            <FileText className="h-5 w-5 flex-shrink-0" />
-            {isOpen && (
-              <>
-                <span className="whitespace-nowrap flex-1 text-left">Assignments</span>
-                {isAssignmentsOpen ? (
-                  <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 flex-shrink-0" />
-                )}
-              </>
-            )}
-          </button>
-
-          {/* Nested Items - Only show when expanded and sidebar is open */}
-          {isAssignmentsOpen && isOpen && (
-            <div className="ml-4 mt-1 space-y-1 border-l-2 border-blue-900/40 pl-4">
-              <Link
-                href="/student/assignments"
-                className={`flex items-center gap-3 w-full py-2 px-3 rounded-lg font-medium text-sm transition-all ${pathname === "/student/assignments"
-                  ? "bg-blue-600/20 text-white"
-                  : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
-              >
-                <span className="whitespace-nowrap">All Assignments</span>
-              </Link>
-              <Link
-                href="/student/assignments/results"
-                className={`flex items-center gap-3 w-full py-2 px-3 rounded-lg font-medium text-sm transition-all ${pathname === "/student/assignments/results"
-                  ? "bg-blue-600/20 text-white"
-                  : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
-              >
-                <span className="whitespace-nowrap">Results</span>
-              </Link>
-            </div>
-          )}
-        </div>
+        <SidebarNav
+          isOpen={isOpen}
+          label="Student portal"
+          items={[
+            { href: "/student/dashboard", label: "Dashboard", icon: LayoutGrid, active: isActive("/student/dashboard") },
+            { href: "/student/leaderboard", label: "Leaderboard", icon: Trophy, active: isActive("/student/leaderboard") },
+            { href: "/student/courses", label: "Courses", icon: BookOpen, active: isActive("/student/courses") },
+            ...(showResources ? [{ href: "/student/resources", label: "Resources", icon: Library, active: isActive("/student/resources") }] : []),
+            {
+              href: "/student/assignments", label: "Assignments", icon: FileText, active: isActive("/student/assignments"),
+              children: [
+                { href: "/student/assignments", label: "All Assignments", active: pathname === "/student/assignments" },
+                { href: "/student/assignments/results", label: "Results", active: pathname === "/student/assignments/results" },
+              ],
+            },
+            ...(showTests ? [{ href: STUDENT_TESTS.href, label: STUDENT_TESTS.label, icon: FileQuestion, active: isActive(STUDENT_TESTS.href) }] : []),
+            ...(showResults ? [{ href: STUDENT_RESULTS.href, label: STUDENT_RESULTS.label, icon: Award, active: isActive(STUDENT_RESULTS.href) }] : []),
+          ]}
+        />
       </div>
 
       {/* BOTTOM UTILITY LINKS */}
-      <SidebarUtilities isOpen={isOpen} settingsHref="/student/profile" />
+      <SidebarUtilities isOpen={isOpen} settingsHref="/student/account" />
     </aside>
   );
 }

@@ -16,15 +16,25 @@ import { AdminPage, Card, ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, b
 import { AccountStatusBadge, UserForm } from "../components/userUi";
 import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
+import { interestsText } from "@/lib/accounts/olympiad-interests";
 import PermissionOverridesCard from "./PermissionOverridesCard";
+import StatusHistoryCard from "./StatusHistoryCard";
+import { statusHistoryVisible } from "@/lib/accounts/status-history";
 import { hasFeature } from "@/lib/api/capabilities";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { lifecycleActions, STATUS_REASON, stillBlockedText } from "@/lib/accounts/account-lifecycle";
+// ACC-02 and REG-13 (kept last so this branch merges cleanly with the account-history branch).
+import { personalDetailRows } from "@/lib/accounts/admin-user-details";
+import RegistrationHistoryCard from "./RegistrationHistoryCard";
+import DateOfBirthCard from "./DateOfBirthCard";
+import { canCorrectDateOfBirth } from "@/lib/accounts/date-of-birth-correction";
+import { canEditCoachSubjects, coachInterestsSupported } from "@/lib/accounts/coach-application";
+import CoachSubjectsCard from "./CoachSubjectsCard";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-start gap-0.5 sm:gap-4 py-2.5 border-b border-gray-100 last:border-0 text-sm">
-      <dt className="sm:w-44 shrink-0 text-xs font-semibold text-gray-400 uppercase tracking-wider pt-0.5">{label}</dt>
+      <dt className="sm:w-44 shrink-0 text-xs font-semibold text-gray-500 uppercase tracking-wider pt-0.5">{label}</dt>
       <dd className="text-gray-800 min-w-0 break-words">{children}</dd>
     </div>
   );
@@ -34,7 +44,7 @@ type Confirm = { action: UserAction; title: string; body: ReactNode; label: stri
 
 export default function UserDetail({ userId }: { userId: string }) {
   const router = useRouter();
-  const { user: me, can } = useSession();
+  const { user: me, can, permissionOverrides } = useSession();
   // Account states (archive instead of delete): only on a backend that advertises them; null while not known yet
   // (loading or UNKNOWN), when neither Delete nor Archive is offered.
   const { detection } = useBackendCapabilities();
@@ -101,16 +111,23 @@ export default function UserDetail({ userId }: { userId: string }) {
               <>
                 <Row label="Division">{u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}</Row>
                 <Row label="Points">{formatNumber(u.points)} · {formatNumber(u.problemsSolved)} problems solved</Row>
+                {u.olympiadInterests !== undefined && <Row label="Olympiad interests">{interestsText(u.olympiadInterests) || "None chosen"}</Row>}
               </>
             )}
             <Row label="School">{u.school ? `${u.school.name} · ${u.school.location}` : "—"}</Row>
             <Row label="Home location">{u.homeLocation || "—"}</Row>
+            {/* ACC-02: the account's personal details (sent to administrators for one account only). */}
+            {personalDetailRows(u).map((r) => (
+              <Row key={r.label} label={r.label}>
+                {r.value}
+              </Row>
+            ))}
             <Row label="Activated">{u.activatedAt ? formatDateTime(u.activatedAt) : "Not yet — waiting for the user to set a password"}</Row>
             <Row label="Last sign-in">{u.lastLoginAt ? formatDateTime(u.lastLoginAt) : "Never"}</Row>
             <Row label="Created">{formatDateTime(u.createdAt)}</Row>
           </dl>
           {u.role === "MENTOR" && (
-            <p className="mt-4 text-xs text-gray-500">
+            <p className="mt-4 text-xs text-gray-600">
               Course access for this coach is managed on the{" "}
               <Link href={`/admin/mentors?mentor=${u.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
                 Coaches page
@@ -119,7 +136,7 @@ export default function UserDetail({ userId }: { userId: string }) {
             </p>
           )}
           {u.role === "HEAD_COACH" && courseAccessTarget(me?.role, can, u.role) === "headCoach" && (
-            <p className="mt-4 text-xs text-gray-500" data-testid="head-coach-course-access">
+            <p className="mt-4 text-xs text-gray-600" data-testid="head-coach-course-access">
               To let this Head Coach prepare and grade work, give them course access on a course of a programme they head:{" "}
               <Link href={`/admin/mentors?mentor=${u.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
                 Course access
@@ -131,7 +148,7 @@ export default function UserDetail({ userId }: { userId: string }) {
 
         <Card className="p-6 h-fit">
           <h2 className="text-base font-bold text-gray-900 mb-1">Actions</h2>
-          <p className="text-xs text-gray-500 mb-4">Administrators never see or set another person&apos;s password; send a reset link instead.</p>
+          <p className="text-xs text-gray-600 mb-4">Administrators never see or set another person&apos;s password; send a reset link instead.</p>
           <div className="flex flex-col gap-2">
             {/* The backend approves any active account; a coach invited by a Head Coach waits for approval even before activation. */}
             {u.isActive && !u.isApproved && (
@@ -236,15 +253,21 @@ export default function UserDetail({ userId }: { userId: string }) {
                 <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Delete account
               </button>
             )}
-            {isMe && <p className="text-[11px] text-gray-400">This is your own account: it cannot be suspended, archived or deleted here, and its role cannot be changed.</p>}
+            {isMe && <p className="text-[11px] text-gray-500">This is your own account: it cannot be suspended, archived or deleted here, and its role cannot be changed.</p>}
           </div>
         </Card>
 
+        {/* A Coach's subjects (capability coachOlympiadInterests): shown, and edited by administrators (users.manage and users.manageCoaches, as the backend checks; canEditCoachSubjects). */}
+        {u.role === "MENTOR" && coachInterestsSupported(detection) && <CoachSubjectsCard userId={u.id} subjects={u.olympiadInterests} canEdit={canEditCoachSubjects({ role: me?.role, can, overrides: permissionOverrides })} />}
+        {/* Students' date of birth: correction with a reason, and its history (capability dateOfBirthCorrection). */}
+        {canCorrectDateOfBirth(detection, u.role, can("users.manage")) && <DateOfBirthCard userId={u.id} dateOfBirth={u.dateOfBirth} />}
+        {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
         {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}
         {/* Super Administrators: effective permissions (permissions.view) and overrides (permissions.manageOverrides). */}
         {(can("permissions.view") || can("permissions.manageOverrides")) && <PermissionOverridesCard user={u} />}
+        {statusHistoryVisible(detection, can) && <StatusHistoryCard userId={u.id} />}
       </div>
 
       {editing && (

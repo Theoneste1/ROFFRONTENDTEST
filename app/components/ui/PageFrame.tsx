@@ -12,7 +12,7 @@ export function PageFrame({ title, description, actions, children }: { title: st
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{title}</h1>
-          {description && <p className="text-sm text-gray-500 mt-1 font-medium">{description}</p>}
+          {description && <p className="text-sm text-gray-600 mt-1 font-medium">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
@@ -35,7 +35,7 @@ export function FilterPills<T extends string>({ options, value, onChange, label 
             className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${active ? "bg-indigo-600 text-white shadow-xs" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}
           >
             {o.label}
-            {o.count !== undefined && <span className={`ml-1.5 ${active ? "text-indigo-100" : "text-gray-400"}`}>{o.count}</span>}
+            {o.count !== undefined && <span className={`ml-1.5 ${active ? "text-indigo-100" : "text-gray-500"}`}>{o.count}</span>}
           </button>
         );
       })}

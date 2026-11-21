@@ -33,8 +33,8 @@ export default function ResultActions({ submission, onDone }: { submission: Admi
       )}
       {history.data && history.data.publications.length > 0 && (
         <div className="mt-4">
-          <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1">Result history</h3>
-          <ul className="space-y-1.5 text-[11px] text-gray-500">
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Result history</h3>
+          <ul className="space-y-1.5 text-[11px] text-gray-600">
             {history.data.publications.map((p) => (
               <li key={p.reviewId}>
                 Cycle {p.cycle}: {p.score} / {submission.assignment.maximumMarks} ({p.percentage}%) · published {formatDateTime(p.publishedAt)} by {personName(p.publishedBy, "—")}

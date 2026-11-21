@@ -72,7 +72,7 @@ export default function CoachCourseAccess({ programmeId }: { programmeId: string
 
   return (
     <div className="space-y-4" data-testid="coach-course-access">
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-600">
         A coach prepares assignments, reviews submissions and manages resources only in the courses and divisions given here. You can give access to coaches of your
         programme, on your programme&apos;s courses.
       </p>
@@ -144,7 +144,7 @@ export default function CoachCourseAccess({ programmeId }: { programmeId: string
                   <tr key={s.id}>
                     <td className={td}>
                       <p className="font-semibold text-gray-800">{personName(s.mentor)}</p>
-                      <p className="text-xs text-gray-400">@{s.mentor.username}</p>
+                      <p className="text-xs text-gray-500">@{s.mentor.username}</p>
                     </td>
                     <td className={`${td} text-gray-600`}>{s.course.title}</td>
                     <td className={`${td} text-gray-600`}>{s.division.name}</td>

@@ -51,7 +51,7 @@ export default function AdminResources() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Course resources</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Books, past papers and materials. Students see a resource only after it is published.</p>
+          <p className="text-sm text-gray-600 mt-1 font-medium">Books, past papers and materials. Students see a resource only after it is published.</p>
         </div>
         <ScopeSelect scopes={list} value={scopeKey(scope)} onChange={(v) => go({ scope: v })} label="Course and division" />
       </div>
@@ -64,7 +64,7 @@ export default function AdminResources() {
             role="tab"
             aria-selected={tab === t}
             onClick={() => go({ tab: t })}
-            className={`pb-3 whitespace-nowrap transition-colors ${tab === t ? "text-indigo-600 font-semibold border-b-2 border-indigo-600 -mb-[2px]" : "text-slate-500 hover:text-slate-800"}`}
+            className={`pb-3 whitespace-nowrap transition-colors ${tab === t ? "text-indigo-600 font-semibold border-b-2 border-indigo-600 -mb-[2px]" : "text-slate-600 hover:text-slate-800"}`}
           >
             {KIND[t].title}
           </button>

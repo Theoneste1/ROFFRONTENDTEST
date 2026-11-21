@@ -1,5 +1,6 @@
 /** Auth and current-user endpoints. */
-import { api, setAccessToken } from "./client";
+import { api, apiBlob, setAccessToken } from "./client";
+import type { OlympiadSubject } from "./teacher-registration";
 import { isApiError } from "./errors";
 import type {
   ActivateResponse,
@@ -98,6 +99,23 @@ export const meApi = {
   /** Only firstName, lastName and homeLocation can be changed. */
   update: (input: UpdateMeInput) => api<CurrentUser>("/me", { method: "PATCH", body: input }),
   permissions: () => api<MePermissions>("/me/permissions"),
+  /**
+   * `PUT /me/date-of-birth` (capability `studentDateOfBirthStep`): a student without a date of birth gives it once
+   * ("YYYY-MM-DD"); returns the profile. 400 VALIDATION_FAILED, 409 DATE_OF_BIRTH_ALREADY_SET.
+   */
+  setDateOfBirth: (dateOfBirth: string) => api<CurrentUser>("/me/date-of-birth", { method: "PUT", body: { dateOfBirth } }),
+  /** `PUT /me/gender` (capability `genderStep`): a user without a gender gives it once; returns the profile. 409 GENDER_ALREADY_SET. */
+  setGender: (gender: "FEMALE" | "MALE") => api<CurrentUser>("/me/gender", { method: "PUT", body: { gender } }),
+  /** `PUT /me/avatar` (capability `profilePictures`): the new picture; returns the profile. Upload progress is tracked by the client. */
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api<CurrentUser>("/me/avatar", { method: "PUT", body: form });
+  },
+  /** `DELETE /me/avatar`: back to the generated avatar; returns the profile. */
+  removeAvatar: () => api<CurrentUser>("/me/avatar", { method: "DELETE" }),
+  /** A picture behind authentication (`/users/:id/avatar?v=…`), as a blob (the token is never put in a URL). */
+  avatarImage: (path: string) => apiBlob(path, {}, "avatar"),
 };
 
 /**
@@ -121,8 +139,21 @@ export interface RegisterStudentInput {
   schoolDistrict?: string;
   schoolSector?: string;
   country?: string;
-  /** Student's home district or city (required, 2–200 characters). */
-  homeLocation: string;
+  /** Student's home district or city (2–200 characters); not sent when the Rwandan home place is. */
+  homeLocation?: string;
+  /** Only on a backend with `registrationGender` (lib/accounts/gender), where it is required. */
+  gender?: "FEMALE" | "MALE";
+  /** Olympiad interests (only on a backend with `studentOlympiadInterests`; the form requires one). */
+  olympiadInterests?: OlympiadSubject[];
+  // Only on a backend with `studentRegistrationDetails` (lib/accounts/student-details.ts):
+  dateOfBirth?: string;
+  phone?: string;
+  guardianPhone?: string;
+  /** Where the student lives (ISO alpha-2); `country` above is the school's country. */
+  homeCountry?: string;
+  homeProvince?: string;
+  homeDistrict?: string;
+  homeSector?: string;
 }
 
 /** `POST /auth/register/student` response (the created profile plus what happens next). */
@@ -133,6 +164,8 @@ export interface RegisterStudentResult {
   requiresEmailVerification: boolean;
   /** New backend: "PENDING" while an administrator verifies the school (absent on older backends). */
   schoolVerification?: "PENDING" | null;
+  /** Backends with registrationAvatar: one-time token for the OPTIONAL picture (REG-02). */
+  avatarUploadToken?: string;
 }
 
 export interface MentorApplicationInput {
@@ -141,6 +174,24 @@ export interface MentorApplicationInput {
   username: string;
   email: string;
   password: string;
+  /** Only on a backend with `registrationGender` (lib/accounts/gender), where it is required. */
+  gender?: "FEMALE" | "MALE";
+  // Only on a backend with `coachApplicationDetails` (lib/accounts/coach-application.ts):
+  /** The applicant's home country (required with homeLocationRules). */
+  country?: string;
+  /** homeLocationRules: the home place, only for a home in Rwanda (all three). */
+  homeProvince?: string;
+  homeDistrict?: string;
+  homeSector?: string;
+  occupation?: string;
+  educationLevel?: string;
+  olympiadInterests?: OlympiadSubject[];
+  // Only on a backend with `applicationDetails` (lib/accounts/application-details.ts):
+  phone?: string;
+  affiliation?: string;
+  expertise?: string;
+  relevantExperience?: string;
+  yearsOfExperience?: number;
 }
 
 /** `GET /public/statistics`: aggregate counts of active members (teachers: null — not on the platform yet). */
@@ -178,9 +229,7 @@ export const publicApi = {
   /** Student self-registration (may be closed by the administrators: 403 REGISTRATION_CLOSED). */
   registerStudent: (input: RegisterStudentInput) => api<RegisterStudentResult>("/auth/register/student", { method: "POST", body: input, auth: false }),
   /** Teacher / coach application: a mentor request that an administrator approves or rejects. */
-  applyAsMentor: (input: MentorApplicationInput) => api<{ id: string; status: string }>("/mentor-requests", { method: "POST", body: input, auth: false }),
-  /** School name suggestions (at least 2 characters; up to 10 results). */
-  searchSchools: (q: string) => api<{ id: string; name: string; location: string }[]>("/schools/search", { query: { q }, auth: false }),
+  applyAsMentor: (input: MentorApplicationInput) => api<{ id: string; status: string; avatarUploadToken?: string }>("/mentor-requests", { method: "POST", body: input, auth: false }),
 };
 
 /** Backend password policy (src/auth/dto/password.rules.ts). */

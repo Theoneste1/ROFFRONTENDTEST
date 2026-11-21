@@ -18,6 +18,7 @@ export default function NewPasswordFields({
   onConfirm,
   errors,
   label = "New password",
+  only,
 }: {
   password: string;
   confirm: string;
@@ -25,30 +26,36 @@ export default function NewPasswordFields({
   onConfirm: (v: string) => void;
   errors: { password?: string; confirm?: string };
   label?: string;
+  /** Only one of the two (a form that places them separately, e.g. the registration steps). */
+  only?: "password" | "confirm";
 }) {
   return (
     <>
-      <PasswordField
-        label={label}
-        name="new-password"
-        autoComplete="new-password"
-        required
-        maxLength={PASSWORD_RULE.max}
-        value={password}
-        onChange={(e) => onPassword(e.target.value)}
-        error={errors.password}
-        hint={PASSWORD_RULE.hint}
-      />
-      <PasswordField
-        label="Confirm password"
-        name="confirm-password"
-        autoComplete="new-password"
-        required
-        maxLength={PASSWORD_RULE.max}
-        value={confirm}
-        onChange={(e) => onConfirm(e.target.value)}
-        error={errors.confirm}
-      />
+      {only !== "confirm" && (
+        <PasswordField
+          label={label}
+          name="new-password"
+          autoComplete="new-password"
+          required
+          maxLength={PASSWORD_RULE.max}
+          value={password}
+          onChange={(e) => onPassword(e.target.value)}
+          error={errors.password}
+          hint={PASSWORD_RULE.hint}
+        />
+      )}
+      {only !== "password" && (
+        <PasswordField
+          label="Confirm password"
+          name="confirm-password"
+          autoComplete="new-password"
+          required
+          maxLength={PASSWORD_RULE.max}
+          value={confirm}
+          onChange={(e) => onConfirm(e.target.value)}
+          error={errors.confirm}
+        />
+      )}
     </>
   );
 }

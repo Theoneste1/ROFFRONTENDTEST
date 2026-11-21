@@ -4,6 +4,8 @@
  * and publish — they never grade and never create assignments.
  */
 import { api, apiBlob, saveFile, type QueryValue } from "./client";
+import type { DateOfBirthHistoryEntry } from "../accounts/date-of-birth-correction";
+import type { OlympiadSubject } from "./teacher-registration";
 import type {
   AdminDashboard,
   AdminDivision,
@@ -153,6 +155,15 @@ export interface InviteUserInput {
 export type UpdateUserInput = Partial<Omit<CreateUserInput, "password" | "schoolId">> & {
   schoolId?: string | null;
   currentPassword?: string;
+  /** A Coach's subjects (capability coachOlympiadInterests; Coach accounts only, at least one). */
+  olympiadInterests?: OlympiadSubject[];
+  /** homeLocationRules: the home country; with "RW" the province, district and sector (none otherwise). */
+  homeCountry?: string;
+  homeProvince?: string;
+  homeDistrict?: string;
+  homeSector?: string;
+  /** genderStep: correct the account's gender. */
+  gender?: "FEMALE" | "MALE";
 };
 
 /** Drop empty strings so optional fields are omitted, not sent as "". */
@@ -188,6 +199,14 @@ export const usersApi = {
    */
   changeStatus: (id: string, body: { toStatus: AccountState; reason?: string; confirm?: boolean }) =>
     api<{ user: AdminUser; stillBlockedBy?: string[] }>(`/admin/users/${id}/status-changes`, { method: "POST", body }),
+  /**
+   * Correct a student's date of birth (capability dateOfBirthCorrection): "YYYY-MM-DD" and a reason (5–500 characters).
+   * 400 VALIDATION_FAILED / NOT_A_STUDENT, 409 DATE_OF_BIRTH_UNCHANGED.
+   */
+  correctDateOfBirth: (id: string, body: { dateOfBirth: string; reason: string }) =>
+    api<AdminUser>(`/admin/users/${id}/date-of-birth`, { method: "PUT", body }),
+  /** Corrections and the first-sign-in entry, newest first. */
+  dateOfBirthHistory: (id: string) => api<DateOfBirthHistoryEntry[]>(`/admin/users/${id}/date-of-birth-history`),
 };
 
 // ─── Divisions & schools (lookups) ──────────────────────────────────────────
@@ -232,8 +251,13 @@ export const mentorRequestsApi = {
   list: (params: { status?: MentorRequestStatus; page?: number; limit?: number } = {}) =>
     api<Page<MentorRequest>>("/mentor-requests", { query: params }),
   /** Creates the mentor account (activation e-mail when verification is on). */
-  approve: (id: string) => api<MentorRequestApproval>(`/mentor-requests/${id}/approve`, { method: "PATCH" }),
-  reject: (id: string) => api<{ id: string; status: MentorRequestStatus }>(`/mentor-requests/${id}/reject`, { method: "PATCH" }),
+  approve: (id: string, body?: { approvePicture?: boolean }) =>
+    api<MentorRequestApproval>(`/mentor-requests/${id}/approve`, { method: "PATCH", ...(body && { body }) }),
+  /** The application's picture (applicationPictureReview), fetched with the session; 404 when there is none. */
+  avatar: (id: string) => apiBlob(`/mentor-requests/${id}/avatar`, {}, "picture"),
+  /** `reason` (backends with applicationDetails) is e-mailed to the applicant; older backends take no body. */
+  reject: (id: string, reason?: string) =>
+    api<{ id: string; status: MentorRequestStatus }>(`/mentor-requests/${id}/reject`, { method: "PATCH", ...(reason && { body: { reason } }) }),
 };
 
 // ─── Students ───────────────────────────────────────────────────────────────

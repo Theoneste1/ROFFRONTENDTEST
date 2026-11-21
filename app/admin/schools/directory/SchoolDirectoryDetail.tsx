@@ -21,27 +21,33 @@ import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, Badge, Card, MetricCard, Notice, TableCard, TableMessage, btnDanger, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
 import SchoolActiveDialog from "./SchoolActiveDialog";
 import SchoolContactsTab from "./SchoolContactsTab";
+import SchoolTeachersTab from "./SchoolTeachersTab";
+import { useSession } from "@/lib/auth/session";
+import { schoolTeachersVisible } from "@/lib/schools/school-teachers";
 import SchoolFormDialog from "./SchoolFormDialog";
 import SchoolOfferingsTab from "./SchoolOfferingsTab";
+import { useSchoolAccessPageAvailable } from "@/lib/queries/teacher";
 
-type Tab = "students" | "contacts" | "offerings" | "history";
-const TAB_LABEL: Record<Tab, string> = { students: "Students", contacts: "Contacts", offerings: "Offerings", history: "History" };
+type Tab = "students" | "teachers" | "contacts" | "offerings" | "history";
+const TAB_LABEL: Record<Tab, string> = { students: "Students", teachers: "Teachers", contacts: "Contacts", offerings: "Offerings", history: "History" };
 
 const CLAIM_BADGE: Record<SchoolClaimStatus, string> = {
   PENDING: "bg-amber-50 text-amber-700",
   VERIFIED: "bg-emerald-50 text-emerald-700",
   REJECTED: "bg-red-50 text-red-700",
-  REVOKED: "bg-gray-100 text-gray-500",
+  REVOKED: "bg-gray-100 text-gray-600",
 };
 
 export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }) {
   const valid = isUuid(schoolId);
   const school = useDirectorySchool(schoolId, valid);
   const [tab, setTab] = useState<Tab>("students");
+  const { can } = useSession();
   const [dialog, setDialog] = useState<"edit" | "active" | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [notice, setNotice] = useState<{ text: string; warning?: string } | null>(null);
   const qc = useQueryClient();
+  const accessPage = useSchoolAccessPageAvailable();
   const back = (
     <Link href="/admin/schools" className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800 mb-4">
       <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> All schools
@@ -86,6 +92,11 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       description={placeLabel(s)}
       actions={
         <>
+          {accessPage && (
+            <Link href={`/admin/schools/${s.id}/access`} className={btnSecondary} data-testid="school-access-link">
+              Teacher &amp; student access
+            </Link>
+          )}
           <button type="button" className={btnSecondary} onClick={() => setDialog("edit")}>
             Edit
           </button>
@@ -126,7 +137,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       <SchoolRecord school={s} />
 
       <div role="tablist" aria-label="School information" className="flex gap-2 my-4">
-        {(Object.keys(TAB_LABEL) as Tab[]).map((t) => (
+        {(Object.keys(TAB_LABEL) as Tab[]).filter((t) => t !== "teachers" || schoolTeachersVisible(can)).map((t) => (
           <button
             key={t}
             type="button"
@@ -141,6 +152,8 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       </div>
       {tab === "students" ? (
         <StudentsTab schoolId={s.id} />
+      ) : tab === "teachers" && schoolTeachersVisible(can) ? (
+        <SchoolTeachersTab schoolId={s.id} schoolName={s.name} />
       ) : tab === "contacts" ? (
         <SchoolContactsTab schoolId={s.id} />
       ) : tab === "offerings" ? (
@@ -209,7 +222,7 @@ function SchoolRecord({ school: s }: { school: DirectorySchoolDetail }) {
       <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 p-5 text-sm" data-testid="school-record">
         {rows.map(([k, v]) => (
           <div key={k}>
-            <dt className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{k}</dt>
+            <dt className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{k}</dt>
             <dd className="text-gray-800">{v}</dd>
           </div>
         ))}
@@ -253,15 +266,15 @@ function StudentsTab({ schoolId }: { schoolId: string }) {
             <tr key={st.id} className="text-xs hover:bg-gray-50/60">
               <td className={`${td} font-semibold text-gray-800 whitespace-nowrap`}>
                 {st.firstName} {st.lastName}
-                <span className="block text-[11px] font-normal text-gray-400">@{st.username}</span>
+                <span className="block text-[11px] font-normal text-gray-500">@{st.username}</span>
               </td>
               <td className={`${td} text-gray-600 whitespace-nowrap`}>
                 {st.division?.name.replace(/ division$/i, "") ?? "—"}
-                {st.gradeLevel && <span className="text-gray-400"> · {st.gradeLevel}</span>}
+                {st.gradeLevel && <span className="text-gray-500"> · {st.gradeLevel}</span>}
               </td>
-              <td className={td}>{st.claim ? <Badge className={CLAIM_BADGE[st.claim.status]}>{CLAIM_LABEL[st.claim.status]}</Badge> : <span className="text-gray-400">No claim</span>}</td>
+              <td className={td}>{st.claim ? <Badge className={CLAIM_BADGE[st.claim.status]}>{CLAIM_LABEL[st.claim.status]}</Badge> : <span className="text-gray-500">No claim</span>}</td>
               <td className={td}>
-                <Badge className={!st.isApproved ? "bg-amber-50 text-amber-700" : st.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}>
+                <Badge className={!st.isApproved ? "bg-amber-50 text-amber-700" : st.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}>
                   {!st.isApproved ? "Awaiting approval" : st.isActive ? "Active" : "Suspended"}
                 </Badge>
               </td>
@@ -290,9 +303,9 @@ function HistoryTab({ schoolId }: { schoolId: string }) {
         <div className="p-5">
           <h2 className="text-sm font-bold text-gray-800 mb-3">Changes</h2>
           {!h.auditVisible || !h.audit ? (
-            <p className="text-xs text-gray-500">Changes are listed only for administrators who can view the audit log (audit.view).</p>
+            <p className="text-xs text-gray-600">Changes are listed only for administrators who can view the audit log (audit.view).</p>
           ) : h.audit.data.length === 0 ? (
-            <p className="text-xs text-gray-500">No recorded changes.</p>
+            <p className="text-xs text-gray-600">No recorded changes.</p>
           ) : (
             <>
               <ol className={`divide-y divide-gray-100 ${history.isFetching ? "opacity-60" : ""}`}>
@@ -302,7 +315,7 @@ function HistoryTab({ schoolId }: { schoolId: string }) {
                     <li key={entry.id} className="py-3 text-xs">
                       <p className="font-semibold text-gray-800">
                         {d.title}
-                        <span className="font-normal text-gray-400">
+                        <span className="font-normal text-gray-500">
                           {" "}
                           · {formatDateTime(entry.createdAt)}
                           {entry.actorUsername ? ` · @${entry.actorUsername}` : ""}
@@ -330,7 +343,7 @@ function HistoryTab({ schoolId }: { schoolId: string }) {
         <div className="p-5">
           <h2 className="text-sm font-bold text-gray-800 mb-3">Official directory records</h2>
           {h.sourceRecords.length === 0 ? (
-            <p className="text-xs text-gray-500">This school has not been matched with an official directory record.</p>
+            <p className="text-xs text-gray-600">This school has not been matched with an official directory record.</p>
           ) : (
             <ul className="divide-y divide-gray-100 text-xs">
               {h.sourceRecords.map((r) => {
@@ -338,7 +351,7 @@ function HistoryTab({ schoolId }: { schoolId: string }) {
                 return (
                   <li key={r.id} className="py-2">
                     <span className="font-semibold text-gray-800">{r.datasetLabel ?? r.dataSource.name}</span>
-                    <span className="text-gray-500">
+                    <span className="text-gray-600">
                       {" "}
                       · {formatDate(r.createdAt)}
                       {r.sourceRef ? ` · row ${r.sourceRef}` : ""}

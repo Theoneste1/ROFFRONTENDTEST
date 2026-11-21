@@ -163,7 +163,7 @@ function Form({
 
         <div className="border-b border-gray-300/80 pb-3 md:pb-4 mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 mb-1">{isEdit ? "Edit resource" : "Upload a resource"}</h1>
-          <p className="text-sm md:text-base text-gray-500 font-normal">
+          <p className="text-sm md:text-base text-gray-600 font-normal">
             {isEdit ? "Update the details or files." : "Add a learning resource for your students. It stays hidden until you publish it."}
           </p>
         </div>
@@ -193,7 +193,7 @@ function Form({
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="w-4 h-4 text-slate-600 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 )}
               </Field>
@@ -209,7 +209,7 @@ function Form({
                     placeholder="Provide a short description..."
                     className="w-full px-4 pt-3 pb-8 bg-transparent text-slate-800 focus:outline-none text-sm resize-none"
                   />
-                  <span className="absolute bottom-2 right-3 text-[10px] text-slate-400 font-medium">{form.description.length}/2000</span>
+                  <span className="absolute bottom-2 right-3 text-[10px] text-slate-500 font-medium">{form.description.length}/2000</span>
                 </div>
               </Field>
 
@@ -223,7 +223,7 @@ function Form({
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="w-4 h-4 text-slate-600 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                 </Field>
                 <Field label="Year" error={err("year")} htmlFor="year">
@@ -246,7 +246,7 @@ function Form({
                   <input type="checkbox" checked={form.publish} onChange={(e) => set("publish", e.target.checked)} className="w-4 h-4 mt-0.5 text-indigo-600 rounded border-slate-300" />
                   <span>
                     <span className="block text-sm font-medium text-slate-900">Publish now</span>
-                    <span className="block text-xs text-slate-400">Students of the division see it and are notified.</span>
+                    <span className="block text-xs text-slate-500">Students of the division see it and are notified.</span>
                   </span>
                 </label>
               )}
@@ -261,8 +261,8 @@ function Form({
                   {kept.map((a) => (
                     <li key={a.id} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
                       <span className="text-xs font-medium text-slate-800 truncate flex-1">{a.file.originalName}</span>
-                      <span className="text-[10px] text-slate-400">{formatFileSize(a.file.size)}</span>
-                      <button type="button" onClick={() => setRemoved((r) => [...r, a.id])} className="p-1 text-slate-400 hover:text-red-600" aria-label={`Remove ${a.file.originalName}`}>
+                      <span className="text-[10px] text-slate-500">{formatFileSize(a.file.size)}</span>
+                      <button type="button" onClick={() => setRemoved((r) => [...r, a.id])} className="p-1 text-slate-500 hover:text-red-600" aria-label={`Remove ${a.file.originalName}`}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </li>
@@ -281,7 +281,7 @@ function Form({
             <button
               type="submit"
               disabled={save.isPending}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#2B2E9D] hover:bg-[#232580] text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-60"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-dark hover:bg-brand-800 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-60"
             >
               {save.isPending && <Spinner className="h-4 w-4 !text-white" />}
               {isEdit ? "Save changes" : "Upload"}
@@ -300,7 +300,7 @@ function Field({ label, required, error, hint, htmlFor, children }: { label: str
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
-      {error ? <p className="mt-1.5 text-xs text-red-600">{error}</p> : hint ? <p className="mt-1.5 text-xs text-slate-400">{hint}</p> : null}
+      {error ? <p className="mt-1.5 text-xs text-red-600">{error}</p> : hint ? <p className="mt-1.5 text-xs text-slate-500">{hint}</p> : null}
     </div>
   );
 }

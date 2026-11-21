@@ -102,7 +102,7 @@ function EmailPreferences() {
               <li key={p.category} className="flex items-center justify-between gap-4 py-3">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-gray-800">{CATEGORY_META[p.category]?.label ?? p.category}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-600">
                     {CATEGORY_HINT[p.category]}
                     {p.locked && " · always sent"}
                   </p>
@@ -185,7 +185,7 @@ function TypeSettings() {
           <div className="overflow-x-auto -mx-1">
             <table className="w-full text-sm" data-testid="notification-settings">
               <thead>
-                <tr className="text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                <tr className="text-left text-[11px] font-bold uppercase tracking-wider text-gray-500">
                   <th className="px-1 pb-2">Notification</th>
                   <th className="px-2 pb-2 text-center w-16">In app</th>
                   <th className="px-2 pb-2 text-center w-16">E-mail</th>
@@ -198,7 +198,7 @@ function TypeSettings() {
                     <tr key={s.type} data-type={s.type}>
                       <td className="px-1 py-3 pr-3">
                         <p className="font-semibold text-gray-800">{s.label}</p>
-                        <p className="text-xs text-gray-500">{s.description}</p>
+                        <p className="text-xs text-gray-600">{s.description}</p>
                         {s.emailAvailable && !s.categoryEmailEnabled && (
                           <p className="text-xs text-amber-700 mt-0.5">E-mail for {CATEGORY_META[s.category]?.label.toLowerCase() ?? s.category} is off in your e-mail notifications above.</p>
                         )}
@@ -210,7 +210,7 @@ function TypeSettings() {
                         {s.emailAvailable ? (
                           <Switch checked={c.emailEnabled} onChange={(v) => set(s.type, "emailEnabled", v)} disabled={busy} label={`E-mail: ${s.label}`} />
                         ) : (
-                          <span className="text-xs text-gray-400" title="This notification is only shown in the app.">
+                          <span className="text-xs text-gray-500" title="This notification is only shown in the app.">
                             App only
                           </span>
                         )}

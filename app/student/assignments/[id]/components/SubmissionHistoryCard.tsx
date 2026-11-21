@@ -16,7 +16,7 @@ export default function SubmissionHistoryCard({ submissionId, query }: { submiss
   return (
     <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
       <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-        <History className="w-5 h-5 text-gray-500" /> Submission History
+        <History className="w-5 h-5 text-gray-600" /> Submission History
       </h2>
 
       {query.isPending ? (
@@ -42,7 +42,7 @@ export default function SubmissionHistoryCard({ submissionId, query }: { submiss
                       Attempt {rev.revisionNumber}
                       {idx === 0 && <span className="ml-2 text-[10px] font-bold uppercase text-blue-600">Latest</span>}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-600">
                       {formatDateTime(rev.submittedAt)}
                       {rev.isLate && <span className="ml-2 font-semibold text-orange-600">Late</span>}
                     </span>
@@ -53,7 +53,7 @@ export default function SubmissionHistoryCard({ submissionId, query }: { submiss
                         <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-xs text-gray-700 whitespace-pre-line max-h-56 overflow-y-auto">{rev.answerText}</div>
                       ) : null}
                       {rev.note && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-600">
                           <span className="font-semibold">Note:</span> {rev.note}
                         </p>
                       )}
@@ -64,7 +64,7 @@ export default function SubmissionHistoryCard({ submissionId, query }: { submiss
                           ))}
                         </div>
                       ) : (
-                        !rev.answerText && <p className="text-xs text-gray-400">No files in this attempt.</p>
+                        !rev.answerText && <p className="text-xs text-gray-500">No files in this attempt.</p>
                       )}
                     </div>
                   )}
@@ -74,12 +74,12 @@ export default function SubmissionHistoryCard({ submissionId, query }: { submiss
 
           {query.data.resubmissionRequests.length > 0 && (
             <li className="pt-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Coach requests</p>
+              <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Coach requests</p>
               <ul className="space-y-2">
                 {query.data.resubmissionRequests.map((r, i) => (
                   <li key={`${r.at}-${i}`} className="text-xs text-gray-700 bg-red-50/50 border border-red-100 rounded-xl px-3 py-2">
                     <span className="font-semibold">{r.type === 'WITHDRAWN' || /withdraw/i.test(r.type) ? 'Request withdrawn' : 'Resubmission requested'}</span>
-                    <span className="text-gray-400"> · {formatDateTime(r.at)}</span>
+                    <span className="text-gray-500"> · {formatDateTime(r.at)}</span>
                     {r.note && <p className="mt-1 whitespace-pre-line">{r.note}</p>}
                   </li>
                 ))}

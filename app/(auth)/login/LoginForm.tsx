@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Sign in (the page around it, with the ROF brand panel, is app/components/shell/AuthShell).
+ * The fields, rules, request, messages and redirects are those of the existing sign-in.
+ */
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,6 +14,7 @@ import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { Button, PasswordField, TextField } from "@/app/components/ui/form";
 import { accountRefusalMessage } from "@/lib/auth/login-refusals";
 import { LOGIN_NOTICE_TEXT, clearLoginNotice, peekLoginNotice } from "@/lib/auth/notice";
+import { AuthHeading } from "@/app/components/auth/AuthUi";
 
 export default function LoginForm() {
   const session = useSession();
@@ -22,6 +27,7 @@ export default function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [failures, setFailures] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
   // A one-time message from the previous page (e.g. after a password change).
   const [notice] = useState(peekLoginNotice);
   useEffect(() => clearLoginNotice(), []);
@@ -36,6 +42,12 @@ export default function LoginForm() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (submitting) return;
+    // Required fields: explained beside each field (the button stays enabled so the reason is shown).
+    const fe: { username?: string; password?: string } = {};
+    if (username.trim().length < 3) fe.username = "Enter your username or e-mail address.";
+    if (!password) fe.password = "Enter your password.";
+    setFieldErrors(fe);
+    if (fe.username || fe.password) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -59,11 +71,14 @@ export default function LoginForm() {
   const statusMessage = isApiError(error) ? accountRefusalMessage(error.code) : null;
 
   return (
-    <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Sign in</h1>
-        <p className="mt-1 text-sm text-slate-500">Use your ROF username or e-mail address.</p>
-      </div>
+    <form
+      method="post"
+      onSubmit={onSubmit}
+      noValidate
+      className="mx-auto w-full max-w-md space-y-5 sm:space-y-6 [&_input]:h-12 [&_input]:rounded-xl [&_input]:text-base [&_label.block]:mb-1.5 [&_label.block]:text-slate-800 sm:[&_input]:text-sm"
+      data-testid="login-form"
+    >
+      <AuthHeading title="Sign in" subtitle="Welcome back. Enter your account details to continue." />
 
       {notice && error == null && <Alert tone="success">{LOGIN_NOTICE_TEXT[notice]}</Alert>}
 
@@ -102,61 +117,65 @@ export default function LoginForm() {
         </Alert>
       )}
 
-      <TextField
-        label="Username or e-mail"
-        name="username"
-        autoComplete="username"
-        autoFocus
-        required
-        minLength={3}
-        maxLength={254}
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="e.g. student.s2"
-      />
-
-      <div>
-        <PasswordField
-          label="Password"
-          name="password"
-          autoComplete="current-password"
+      <div className="space-y-5">
+        <TextField
+          label="Username or email"
+          name="username"
+          autoComplete="username"
+          autoFocus
           required
-          maxLength={100}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          minLength={3}
+          maxLength={254}
+          value={username}
+          onChange={(e) => {
+            setUsername(e.target.value);
+            setFieldErrors((s) => ({ ...s, username: undefined }));
+          }}
+          error={fieldErrors.username}
+          placeholder="Enter your username or email"
         />
-        <div className="mt-2 text-right">
-          <Link href="/forgot-password" className="text-xs font-medium text-[#2B2BB2] hover:underline">
-            Forgot password?
-          </Link>
+
+        <div>
+          <PasswordField
+            label="Password"
+            name="password"
+            autoComplete="current-password"
+            required
+            maxLength={100}
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setFieldErrors((s) => ({ ...s, password: undefined }));
+            }}
+            error={fieldErrors.password}
+            placeholder="Enter your password"
+          />
+          <div className="-mb-2 flex justify-end">
+            <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-sm font-medium text-brand hover:underline" data-testid="login-forgot">
+              Forgot password?
+            </Link>
+          </div>
         </div>
       </div>
 
-      <Button type="submit" loading={submitting} disabled={username.trim().length < 3 || password.length === 0} className="w-full">
+      <Button type="submit" variant="brand" loading={submitting} className="h-12 w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12 rounded-xl text-[15px]">
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
 
-      <div className="text-center text-sm text-slate-600" data-testid="signup-links">
-        <p>
+      <div className="space-y-2 border-t border-slate-200 pt-5 text-center">
+        <p className="text-sm text-slate-700">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-semibold text-[#2B2BB2] hover:underline">
-            Sign up
+          <Link href="/register" className="font-semibold text-brand hover:underline" data-testid="login-create-account">
+            Create account
           </Link>
         </p>
-        <p className="mt-1 text-xs text-slate-500">
-          Want to mentor ROF students?{" "}
-          <Link href="/apply" className="font-medium text-[#2B2BB2] hover:underline">
-            Apply as a coach
+        <p className="text-xs text-slate-600">
+          Need help?{" "}
+          <Link href="/support" className="font-medium text-brand hover:underline">
+            Help and support
           </Link>
         </p>
       </div>
-
-      <p className="text-center text-xs text-slate-500">
-        Need help?{" "}
-        <Link href="/support" className="font-medium text-[#2B2BB2] hover:underline">
-          Help and support
-        </Link>
-      </p>
     </form>
   );
 }

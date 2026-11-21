@@ -20,6 +20,10 @@ export const queryKeys = {
     /** Students: GET /me/school-affiliation. */
     schoolAffiliation: () => [...queryKeys.me.all, "school-affiliation"] as const,
   },
+  /** Profile pictures by their API path (the path changes with every new picture: ?v=<file id>). */
+  avatars: {
+    image: (path: string) => ["avatars", path] as const,
+  },
   /** Academic years and enrolments (lib/api/academic-years.ts). */
   academicYears: {
     all: ["academic-years"] as const,
@@ -32,16 +36,63 @@ export const queryKeys = {
     list: (filters: object) => [...queryKeys.schoolDirectory.all, "list", filters] as const,
     detail: (id: string) => [...queryKeys.schoolDirectory.all, "detail", id] as const,
     students: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "students", id, page] as const,
+    /** Teacher assignments of the school (INT-07). */
+    teachers: (id: string, filter: string, page: number) => [...queryKeys.schoolDirectory.all, "teachers", id, filter, page] as const,
+    /** The school's primary teacher (primaryTeacher). */
+    primaryTeacher: (id: string) => [...queryKeys.schoolDirectory.all, "teachers", id, "primary"] as const,
     history: (id: string, page: number) => [...queryKeys.schoolDirectory.all, "history", id, page] as const,
     contacts: (id: string, includeRemoved: boolean) => [...queryKeys.schoolDirectory.all, "contacts", id, includeRemoved] as const,
     offerings: (id: string) => [...queryKeys.schoolDirectory.all, "offerings", id] as const,
     referenceData: () => [...queryKeys.schoolDirectory.all, "reference-data"] as const,
     /** The public province → district → sector list (the same key the claim form uses). */
     locations: () => ["schools", "locations"] as const,
+    /** The public search filtered by place (GET /schools/search?province=&district=). */
+  },
+  /** Teacher self-registration (lib/api/teacher-registration.ts). */
+  teacherRegistration: {
+    availability: () => ["teacher-registration", "availability"] as const,
   },
   /** Public form availability (GET /forms/:key). */
   forms: {
     public: (key: string) => ["forms", "public", key] as const,
+  },
+  /** Bulk actions on any record type (lib/api/bulk.ts). */
+  bulk: {
+    all: ["bulk"] as const,
+    actions: () => [...queryKeys.bulk.all, "actions"] as const,
+    list: (filters: object) => [...queryKeys.bulk.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.bulk.all, "detail", id] as const,
+    items: (id: string, filters: object) => [...queryKeys.bulk.all, "items", id, filters] as const,
+  },
+  /** Bulk user operations (lib/api/bulk-users.ts). */
+  bulkUsers: {
+    all: ["bulk-users"] as const,
+    list: (filters: object) => [...queryKeys.bulkUsers.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.bulkUsers.all, "detail", id] as const,
+    items: (id: string, filters: object) => [...queryKeys.bulkUsers.all, "items", id, filters] as const,
+  },
+  /** Teacher application review (`/admin/teacher-applications`). */
+  teacherApplications: {
+    all: ["teacher-applications"] as const,
+    list: (filters: object) => [...queryKeys.teacherApplications.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.teacherApplications.all, "detail", id] as const,
+  },
+  /** Admin delivery log of the decision notifications (lib/api/notification-deliveries.ts). */
+  notificationDeliveries: {
+    all: ["notification-deliveries"] as const,
+    list: (filters: object) => [...queryKeys.notificationDeliveries.all, "list", filters] as const,
+  },
+  /** Countries (lib/api/countries.ts): the public list and the administrators' screen. */
+  countries: {
+    all: ["countries"] as const,
+    list: () => ["countries", "list"] as const,
+    admin: () => ["countries", "admin"] as const,
+  },
+  /** Administrators' form management (lib/api/admin-forms.ts). */
+  adminForms: {
+    all: ["admin-forms"] as const,
+    list: () => [...queryKeys.adminForms.all, "list"] as const,
+    history: (key: string) => [...queryKeys.adminForms.all, "history", key] as const,
   },
   /** Official-directory sync runs (lib/api/school-sync.ts). */
   schoolSync: {
@@ -60,6 +111,9 @@ export const queryKeys = {
     candidates: (id: string) => [...queryKeys.accounts.all, "candidates", id] as const,
     teacherSchools: (teacherId: string) => [...queryKeys.accounts.all, "teacher-schools", teacherId] as const,
     delegations: (teacherId: string) => [...queryKeys.accounts.all, "delegations", teacherId] as const,
+    teacherStudents: (filters: object) => [...queryKeys.accounts.all, "teacher-students", filters] as const,
+    schoolAccess: (schoolId: string) => [...queryKeys.accounts.all, "school-access", schoolId] as const,
+    schoolAccessStudents: (schoolId: string, filters: object) => [...queryKeys.accounts.all, "school-access", schoolId, "students", filters] as const,
     programmeHeads: (programmeId: string) => [...queryKeys.accounts.all, "programme-heads", programmeId] as const,
   },
   support: ["support"] as const,
@@ -67,6 +121,8 @@ export const queryKeys = {
   teacher: {
     all: ["teacher"] as const,
     students: (filters: Record<string, unknown> = {}) => [...queryKeys.teacher.all, "students", filters] as const,
+    summary: () => [...queryKeys.teacher.all, "summary"] as const,
+    schools: () => [...queryKeys.teacher.all, "schools"] as const,
     profile: (studentId: string) => [...queryKeys.teacher.all, "profile", studentId] as const,
     progress: (studentId: string) => [...queryKeys.teacher.all, "progress", studentId] as const,
   },
@@ -85,6 +141,44 @@ export const queryKeys = {
     coachAccess: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "coach-access", filters] as const,
     peopleSearch: (filters: Record<string, unknown> = {}) => [...queryKeys.programmes.all, "people", filters] as const,
     studentCandidates: (programmeId: string, q: string) => [...queryKeys.programmes.all, "candidates", programmeId, q] as const,
+  },
+  /** Test Management (lib/api/tests.ts): tests, their detail, subjects and marker authorisations. */
+  tests: {
+    all: ["tests"] as const,
+    subjects: () => [...queryKeys.tests.all, "subjects"] as const,
+    list: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "list", filters] as const,
+    detail: (id: string) => [...queryKeys.tests.all, "detail", id] as const,
+    markers: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "markers", filters] as const,
+    candidates: (subjectId: string, q: string) => [...queryKeys.tests.all, "candidates", subjectId, q] as const,
+    // Phase 2 (lib/api/test-submissions.ts)
+    mine: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "mine", filters] as const,
+    teacher: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "teacher", filters] as const,
+    teacherStudents: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "teacher-students", testId, filters] as const,
+    answer: (testId: string, studentId: string | null) => [...queryKeys.tests.all, "answer", testId, studentId ?? "me"] as const,
+    tracking: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "tracking", testId, filters] as const,
+    submission: (testId: string, submissionId: string) => [...queryKeys.tests.all, "submission", testId, submissionId] as const,
+    extensions: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "extensions", testId, filters] as const,
+    extensionTargets: (testId: string, kind: string, q: string) => [...queryKeys.tests.all, "extension-targets", testId, kind, q] as const,
+    // Phase 3 (lib/api/test-marking.ts)
+    marking: (testId: string) => [...queryKeys.tests.all, "marking", testId] as const,
+    review: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "marking", testId, "review", filters] as const,
+    reviewDetail: (testId: string, submissionId: string) => [...queryKeys.tests.all, "marking", testId, "detail", submissionId] as const,
+    markingHistory: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "marking", testId, "history", filters] as const,
+    queue: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "queue", filters] as const,
+    toMark: (code: string) => [...queryKeys.tests.all, "to-mark", code] as const,
+    // Phase 4 (lib/api/test-results.ts)
+    publication: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "results", testId, "preview", filters] as const,
+    publications: (testId: string) => [...queryKeys.tests.all, "results", testId, "publications"] as const,
+    results: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "results", testId, "list", filters] as const,
+    rankings: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "results", testId, "rankings", filters] as const,
+    report: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "results", testId, "report", filters] as const,
+    reports: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "reports", filters] as const,
+    myResults: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "my-results", filters] as const,
+    myResult: (testId: string) => [...queryKeys.tests.all, "my-result", testId] as const,
+    schoolResultTests: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "school-results", filters] as const,
+    schoolResults: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "school-results", testId, filters] as const,
+    schoolResult: (testId: string, studentId: string) => [...queryKeys.tests.all, "school-result", testId, studentId] as const,
+    dashboard: (who: string) => [...queryKeys.tests.all, "dashboard", who] as const,
   },
   /** Backend-wide information (`GET /api/v1`), the same for every user. */
   backend: {
@@ -176,6 +270,8 @@ export const queryKeys = {
     usersAll: ["admin", "users"] as const,
     users: (filters: UserFilters = {}) => [...queryKeys.admin.usersAll, "list", filters] as const,
     user: (id: string) => [...queryKeys.admin.usersAll, "detail", id] as const,
+    /** GET /admin/users/:id/status-history (lib/accounts/status-history.ts). */
+    userStatusHistory: (id: string, page: number) => [...queryKeys.admin.usersAll, "status-history", id, page] as const,
     divisions: () => [...queryKeys.admin.all, "divisions"] as const,
     schools: (params: { search?: string; page?: number; limit?: number } = {}) => [...queryKeys.admin.all, "schools", "list", params] as const,
     school: (id: string, page = 1) => [...queryKeys.admin.all, "schools", "detail", id, page] as const,

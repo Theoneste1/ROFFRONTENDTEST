@@ -14,7 +14,7 @@ import { errorMessage } from "@/lib/api/errors";
 import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
 import Pagination from "@/app/components/ui/Pagination";
-import { CATEGORIES, CATEGORY_META, NotificationLink, useOpenNotification } from "./notificationUi";
+import { CATEGORIES, CATEGORY_META, NotificationLink, notificationMeta, useOpenNotification } from "./notificationUi";
 
 const PAGE_SIZE = 20;
 type Show = "all" | "unread";
@@ -118,7 +118,7 @@ export default function NotificationsInbox() {
 function InboxRow({ n }: { n: AppNotification }) {
   const { markRead, markUnread } = useNotificationActions();
   const { hrefOf } = useOpenNotification();
-  const { icon: Icon, tone, label } = CATEGORY_META[n.category] ?? CATEGORY_META.ACCOUNT;
+  const { icon: Icon, tone, label } = notificationMeta(n);
   const toggle = n.isRead ? markUnread : markRead;
   const href = hrefOf(n);
 
@@ -134,7 +134,7 @@ function InboxRow({ n }: { n: AppNotification }) {
             {!n.isRead && <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">New</span>}
           </span>
           {n.body && <span className="block text-sm text-gray-600 mt-1 whitespace-pre-line break-words">{n.body}</span>}
-          <span className="block text-xs text-gray-400 mt-1.5" title={formatDateTime(n.createdAt)}>
+          <span className="block text-xs text-gray-500 mt-1.5" title={formatDateTime(n.createdAt)}>
             {label} · {formatRelative(n.createdAt)}
           </span>
         </span>
@@ -145,7 +145,7 @@ function InboxRow({ n }: { n: AppNotification }) {
           type="button"
           onClick={() => toggle.mutate(n.id)}
           disabled={toggle.isPending}
-          className="p-2 rounded-lg text-gray-400 hover:text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+          className="p-2 rounded-lg text-gray-500 hover:text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
           title={n.isRead ? "Mark as unread" : "Mark as read"}
           aria-label={n.isRead ? "Mark as unread" : "Mark as read"}
         >

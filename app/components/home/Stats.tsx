@@ -48,7 +48,7 @@ export default function Stats() {
   const { ref, inView } = useInView<HTMLDivElement>();
 
   return (
-    <section id="impact" className="relative overflow-hidden bg-gradient-to-b from-[#001E4E] to-[#00428c] py-20 sm:py-28" aria-labelledby="impact-title">
+    <section id="impact" className="relative overflow-hidden bg-gradient-to-b from-brand-950 to-brand py-20 sm:py-28" aria-labelledby="impact-title">
       <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-amber-400/10 blur-3xl" aria-hidden="true" />
       <div className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-sky-400/10 blur-3xl" aria-hidden="true" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

@@ -70,7 +70,7 @@ export default function DeadlineCalendar({ assignments, cursor: controlled, onCu
           aria-label="Previous month"
           className="p-1 rounded hover:bg-white/60"
         >
-          <ChevronLeft className="w-4 h-4 text-slate-500 hover:text-slate-800" />
+          <ChevronLeft className="w-4 h-4 text-slate-600 hover:text-slate-800" />
         </button>
         <span className="text-sm font-bold text-slate-800">{monthFmt.format(cursor)}</span>
         <button
@@ -79,11 +79,11 @@ export default function DeadlineCalendar({ assignments, cursor: controlled, onCu
           aria-label="Next month"
           className="p-1 rounded hover:bg-white/60"
         >
-          <ChevronRight className="w-4 h-4 text-slate-500 hover:text-slate-800" />
+          <ChevronRight className="w-4 h-4 text-slate-600 hover:text-slate-800" />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-slate-400 mb-3">
+      <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-slate-600 mb-3">
         {WEEKDAYS.map((d) => (
           <span key={d}>{d}</span>
         ))}
@@ -100,8 +100,8 @@ export default function DeadlineCalendar({ assignments, cursor: controlled, onCu
               title={mark ? `Due: ${mark.titles.join(", ")}` : undefined}
               className={
                 isToday
-                  ? "bg-[#03045e] text-white rounded-xl w-7 h-7 flex items-center justify-center mx-auto text-xs font-bold shadow-md relative"
-                  : `relative ${inMonth ? "" : "text-slate-300"}`
+                  ? "bg-brand-900 text-white rounded-xl w-7 h-7 flex items-center justify-center mx-auto text-xs font-bold shadow-md relative"
+                  : `relative ${inMonth ? "" : "text-slate-600"}`
               }
             >
               {d.getDate()}
@@ -115,7 +115,7 @@ export default function DeadlineCalendar({ assignments, cursor: controlled, onCu
         })}
       </div>
 
-      <div className="mt-5 flex items-center gap-4 text-[10px] text-slate-500">
+      <div className="mt-5 flex items-center gap-4 text-[10px] text-slate-600">
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Deadline
         </span>

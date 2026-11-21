@@ -14,7 +14,7 @@ export const SITE = {
   description:
     "The learning platform of the Rwanda Olympiad Foundation: courses, practice problems, assignments and a community of students, coaches and schools preparing for mathematics Olympiads.",
   /** Official website and social profiles. Add only confirmed official URLs; empty entries are not shown. */
-  website: "",
+  website: "https://rwandaolympiadfoundation.org/",
   social: {
     facebook: "https://www.facebook.com/profile.php?id=100077870672247",
     linkedin: "https://www.linkedin.com/company/rwanda-olympiad-foundation/",

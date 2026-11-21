@@ -29,7 +29,7 @@ function Row({ icon, label, children }: { icon: ReactNode; label: string; childr
     <li className="flex items-start gap-3">
       <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600 shrink-0">{icon}</span>
       <div className="min-w-0">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</p>
         <div className="text-sm text-slate-800 break-words">{children}</div>
       </div>
     </li>
@@ -52,8 +52,8 @@ export default function SupportInfo() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Help and support</h1>
-        <p className="mt-1 text-sm text-slate-500">{s.platformName ?? "ROF Learning Platform"}</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Help and support</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">{s.platformName ?? "ROF Learning Platform"}</p>
       </div>
 
       {s.message && <p className="text-sm text-slate-700 whitespace-pre-line">{s.message}</p>}
@@ -62,14 +62,14 @@ export default function SupportInfo() {
         <ul className="space-y-4" data-testid="support-contacts">
           {s.email && (
             <Row icon={<Mail className="h-4 w-4" />} label="E-mail">
-              <a href={`mailto:${s.email}`} className="font-medium text-[#2B2BB2] hover:underline">
+              <a href={`mailto:${s.email}`} className="font-medium text-brand hover:underline">
                 {s.email}
               </a>
             </Row>
           )}
           {s.phone && (
             <Row icon={<Phone className="h-4 w-4" />} label="Phone">
-              <a href={`tel:${s.phone.replace(/[^\d+]/g, "")}`} className="font-medium text-[#2B2BB2] hover:underline">
+              <a href={`tel:${s.phone.replace(/[^\d+]/g, "")}`} className="font-medium text-brand hover:underline">
                 {s.phone}
               </a>
             </Row>
@@ -81,7 +81,7 @@ export default function SupportInfo() {
           )}
           {helpUrl && (
             <Row icon={<ExternalLink className="h-4 w-4" />} label="Help centre">
-              <a href={helpUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-[#2B2BB2] hover:underline">
+              <a href={helpUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-brand hover:underline">
                 {helpUrl}
               </a>
             </Row>
@@ -94,7 +94,7 @@ export default function SupportInfo() {
             <>
               {" "}
               You can add them under{" "}
-              <Link href="/admin/settings" className="font-semibold text-[#2B2BB2] hover:underline">
+              <Link href="/admin/settings" className="font-semibold text-brand hover:underline">
                 platform settings
               </Link>{" "}
               (support e-mail, phone, hours, help link and message).

@@ -12,7 +12,7 @@ import Sidebar from "./components/Sidebar";
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   return (
     <RoleGate role="TEACHER">
-      <PortalShell avatarClassName="bg-emerald-600" renderSidebar={(isOpen) => <Sidebar isOpen={isOpen} />}>
+      <PortalShell renderSidebar={(isOpen) => <Sidebar isOpen={isOpen} />}>
         {children}
       </PortalShell>
     </RoleGate>

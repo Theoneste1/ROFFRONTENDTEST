@@ -149,7 +149,7 @@ function EmailJob({ jobId }: { jobId: string }) {
                     <DeliveryStatusBadge status={d.status} />
                   </td>
                   <td className={td}>{d.attempts}</td>
-                  <td className={`${td} text-gray-500 whitespace-nowrap`}>{d.attemptedAt ? formatDateTime(d.attemptedAt) : "—"}</td>
+                  <td className={`${td} text-gray-600 whitespace-nowrap`}>{d.attemptedAt ? formatDateTime(d.attemptedAt) : "—"}</td>
                   <td className={`${td} text-red-600 max-w-[320px] break-words`}>{d.errorMessage ?? ""}</td>
                 </tr>
               ))

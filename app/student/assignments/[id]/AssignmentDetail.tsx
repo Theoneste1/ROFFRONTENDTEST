@@ -102,7 +102,7 @@ export default function AssignmentDetail({ assignmentId }: { assignmentId: strin
                 role="tab"
                 aria-selected={activeTab === t.id}
                 onClick={() => setTab(t.id)}
-                className={`pb-3 text-base font-semibold transition-colors relative ${activeTab === t.id ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`pb-3 text-base font-semibold transition-colors relative ${activeTab === t.id ? 'text-blue-600' : 'text-gray-600 hover:text-gray-700'}`}
               >
                 {t.label}
                 {activeTab === t.id && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />}
@@ -180,7 +180,7 @@ export default function AssignmentDetail({ assignmentId }: { assignmentId: strin
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-500 uppercase mb-1">{label}</p>
+      <p className="text-xs font-semibold text-gray-600 uppercase mb-1">{label}</p>
       <p className="text-sm font-medium text-gray-900">{value}</p>
     </div>
   );

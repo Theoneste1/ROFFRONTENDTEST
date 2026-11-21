@@ -50,9 +50,9 @@ function ActivityLog() {
     <AdminPage title="Activity" description="What learners do on the platform: sign-ins, course and resource views, submissions and discussion posts.">
       {/* Summary */}
       <section aria-labelledby="activity-summary" className="mb-6">
-        <h2 id="activity-summary" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+        <h2 id="activity-summary" className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">
           {s ? `${formatDate(s.from)} – ${formatDate(s.to)}` : "Summary"}
-          {!query.from && !query.to && <span className="normal-case font-medium text-gray-400"> (last 30 days)</span>}
+          {!query.from && !query.to && <span className="normal-case font-medium text-gray-500"> (last 30 days)</span>}
         </h2>
         {summary.isError ? (
           <ErrorState error={summary.error} title="Couldn't load the summary" onRetry={() => summary.refetch()} />
@@ -76,16 +76,16 @@ function ActivityLog() {
           onChange={(v) => setParam("courseId", v)}
           options={[{ label: "Any", value: "" }, ...(courses.data ?? []).map((c) => ({ label: c.title, value: c.id }))]}
         />
-        <label className="flex items-center gap-2 text-xs text-gray-500">
+        <label className="flex items-center gap-2 text-xs text-gray-600">
           <span className="font-semibold">From</span>
           <input type="date" value={raw.from ?? ""} onChange={(e) => setParam("from", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-500">
+        <label className="flex items-center gap-2 text-xs text-gray-600">
           <span className="font-semibold">To</span>
           <input type="date" value={raw.to ?? ""} onChange={(e) => setParam("to", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
         </label>
         <form
-          className="flex items-center gap-2 text-xs text-gray-500"
+          className="flex items-center gap-2 text-xs text-gray-600"
           onSubmit={(e) => {
             e.preventDefault();
             if (!userInvalid) setParam("userId", userText.trim());
@@ -151,7 +151,7 @@ function ActivityLog() {
             ) : (
               list.data.data.map((a) => (
                 <tr key={a.id} className="text-xs" data-testid="activity-row" data-type={a.type}>
-                  <td className={`${td} text-gray-400 whitespace-nowrap`}>{formatDateTime(a.createdAt)}</td>
+                  <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDateTime(a.createdAt)}</td>
                   <td className={`${td} whitespace-nowrap`}>
                     {a.user ? (
                       <button
@@ -163,18 +163,18 @@ function ActivityLog() {
                           setParam("userId", a.userId);
                         }}
                       >
-                        {a.user.firstName} {a.user.lastName} <span className="font-normal text-gray-400">@{a.user.username}</span>
+                        {a.user.firstName} {a.user.lastName} <span className="font-normal text-gray-500">@{a.user.username}</span>
                       </button>
                     ) : (
                       "—"
                     )}
                   </td>
-                  <td className={`${td} text-gray-500`}>{a.user ? roleLabel(a.user.role) : "—"}</td>
+                  <td className={`${td} text-gray-600`}>{a.user ? roleLabel(a.user.role) : "—"}</td>
                   <td className={td}>
                     <Badge className="bg-indigo-50 text-indigo-700">{ACTIVITY_LABEL[a.type as ActivityType] ?? a.type}</Badge>
                   </td>
                   <td className={`${td} text-gray-600`}>{a.courseId ? (courseName.get(a.courseId) ?? a.courseId.slice(0, 8)) : "—"}</td>
-                  <td className={`${td} text-gray-500`}>{a.entityType ? `${a.entityType}${a.entityId ? ` · ${a.entityId.slice(0, 8)}` : ""}` : "—"}</td>
+                  <td className={`${td} text-gray-600`}>{a.entityType ? `${a.entityType}${a.entityId ? ` · ${a.entityId.slice(0, 8)}` : ""}` : "—"}</td>
                 </tr>
               ))
             )}

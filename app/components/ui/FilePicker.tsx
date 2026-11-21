@@ -81,9 +81,9 @@ export default function FilePicker({
         } ${dragging ? "border-blue-400 bg-blue-50/50" : "border-slate-200 hover:border-blue-300"}`}
       >
         <input ref={inputRef} type="file" multiple accept={rules.accept} className="sr-only" disabled={disabled} onChange={(e) => add(e.target.files)} />
-        <UploadCloud className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+        <UploadCloud className="w-10 h-10 text-slate-500 mx-auto mb-3" />
         <p className="text-sm font-semibold text-slate-700 mb-1">{title}</p>
-        <p className="text-xs text-slate-400">{rules.label}</p>
+        <p className="text-xs text-slate-500">{rules.label}</p>
       </label>
       {error && <p className="text-xs text-red-600">{error}</p>}
       {files.length > 0 && (
@@ -94,11 +94,11 @@ export default function FilePicker({
               <span className="text-xs font-medium text-slate-800 truncate flex-1" title={f.name}>
                 {f.name}
               </span>
-              <span className="text-[10px] text-slate-400">{formatFileSize(f.size)}</span>
+              <span className="text-[10px] text-slate-500">{formatFileSize(f.size)}</span>
               <button
                 type="button"
                 onClick={() => onChange(files.filter((_, j) => j !== i))}
-                className="p-1 text-slate-400 hover:text-red-600"
+                className="p-1 text-slate-500 hover:text-red-600"
                 aria-label={`Remove ${f.name}`}
               >
                 <X className="w-3.5 h-3.5" />

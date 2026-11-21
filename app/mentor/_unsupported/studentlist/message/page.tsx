@@ -50,7 +50,7 @@ export default function NewMessage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">New Message</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-gray-600">
           Compose and send message to filtered students.
         </p>
       </div>
@@ -61,7 +61,7 @@ export default function NewMessage() {
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <span className="text-sm font-semibold text-gray-700">Recipients</span>
-            <div className="flex items-center rounded-full bg-[#1E40AF] px-3 py-1 text-xs font-medium text-white shadow-sm">
+            <div className="flex items-center rounded-full bg-brand-dark px-3 py-1 text-xs font-medium text-white shadow-sm">
               <span>5 Students</span>
               <button
                 type="button"
@@ -73,7 +73,7 @@ export default function NewMessage() {
           </div>
           <button
             type="button"
-            className="text-sm font-semibold text-[#1E40AF] hover:underline"
+            className="text-sm font-semibold text-brand-dark hover:underline"
           >
             Show Recipients
           </button>
@@ -107,7 +107,7 @@ export default function NewMessage() {
                   type="button"
                   className="flex items-center rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
                 >
-                  Paragraph <ChevronDown className="ml-1 h-3.5 w-3.5 text-gray-500" />
+                  Paragraph <ChevronDown className="ml-1 h-3.5 w-3.5 text-gray-600" />
                 </button>
               </div>
               <div className="h-4 w-px bg-gray-300" />
@@ -195,7 +195,7 @@ export default function NewMessage() {
                 onChange={handleFileChange}
               />
             </label>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-600">
               {selectedFile ? selectedFile.name : 'No file chosen'}
             </span>
           </div>
@@ -213,7 +213,7 @@ export default function NewMessage() {
         <button
           type="button"
           onClick={handleSendMessage}
-          className="rounded-xl bg-[#2221B2] px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-900 transition"
+          className="rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-900 transition"
         >
           Send Message
         </button>

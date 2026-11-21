@@ -24,13 +24,13 @@ export default function ResultsTable() {
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Results</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Coaches score and give feedback. You check completed reviews and publish results.</p>
+          <p className="text-sm text-gray-600 mt-1 font-medium">Coaches score and give feedback. You check completed reviews and publish results.</p>
         </div>
         <CsvButton onDownload={() => downloadCsv("/admin/reports/results-publication.csv", {}, "results-publication.csv")} />
       </div>
 
       {report.data && (
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-gray-600 mb-4">
           {report.data.summary.resultsPublished} results published in {report.data.summary.releases} release{report.data.summary.releases === 1 ? "" : "s"} · {report.data.summary.awaitingPublication} approved and waiting
         </p>
       )}
@@ -44,23 +44,23 @@ export default function ResultsTable() {
               <thead>
                 <tr className="border-b border-gray-100">
                   {["Assignment", "Course", "Division", "Reviewed", "Ready", "Published"].map((h) => (
-                    <th key={h} className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">
+                    <th key={h} className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-600">
                       {h}
                     </th>
                   ))}
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500 text-right sm:pr-8">Action</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-600 text-right sm:pr-8">Action</th>
                 </tr>
               </thead>
               <tbody className={`divide-y divide-gray-100/80 ${report.isFetching && report.data ? "opacity-60" : ""}`}>
                 {report.isPending ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-xs text-gray-400">
+                    <td colSpan={7} className="px-6 py-10 text-center text-xs text-gray-500">
                       Loading results…
                     </td>
                   </tr>
                 ) : report.data.data.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-xs text-gray-400">
+                    <td colSpan={7} className="px-6 py-10 text-center text-xs text-gray-500">
                       No published assignments yet.
                     </td>
                   </tr>
@@ -74,7 +74,7 @@ export default function ResultsTable() {
                         {/* Assignment Title + Submissions Subtext */}
                         <td className="px-4 sm:px-6 py-4">
                           <div className="font-bold text-gray-900">{r.title}</div>
-                          <div className="text-[11px] text-gray-400 font-medium mt-0.5">
+                          <div className="text-[11px] text-gray-500 font-medium mt-0.5">
                             {r.submissions} submission{r.submissions === 1 ? "" : "s"} · due {formatDate(r.deadline)}
                           </div>
                         </td>
@@ -82,14 +82,14 @@ export default function ResultsTable() {
                         <td className="px-4 sm:px-6 py-4 text-gray-600 font-medium whitespace-nowrap">{r.division.name.replace(/ division$/i, "")}</td>
                         <td className="px-4 sm:px-6 py-4 text-gray-600 font-medium whitespace-nowrap">
                           {reviewed} / {r.submissions}
-                          {r.awaitingApproval > 0 && <span className="block text-[11px] text-amber-600">{r.awaitingApproval} awaiting approval</span>}
+                          {r.awaitingApproval > 0 && <span className="block text-[11px] text-amber-700">{r.awaitingApproval} awaiting approval</span>}
                         </td>
-                        <td className="px-4 sm:px-6 py-4 text-gray-500 font-medium">{ready}</td>
+                        <td className="px-4 sm:px-6 py-4 text-gray-600 font-medium">{ready}</td>
                         <td className="px-4 sm:px-6 py-4">
                           <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${allPublished ? "bg-emerald-50 text-emerald-700" : r.published > 0 ? "bg-blue-50 text-blue-700" : "bg-amber-50/80 text-amber-700"}`}>
                             {allPublished ? "Results Published" : r.published > 0 ? `${r.published} published` : "Not Published"}
                           </span>
-                          {r.lastPublishedAt && <span className="block text-[11px] text-gray-400 mt-0.5">{formatDate(r.lastPublishedAt)}</span>}
+                          {r.lastPublishedAt && <span className="block text-[11px] text-gray-500 mt-0.5">{formatDate(r.lastPublishedAt)}</span>}
                         </td>
                         {/* Action Buttons */}
                         <td className="px-4 sm:px-6 py-4 text-right sm:pr-8">

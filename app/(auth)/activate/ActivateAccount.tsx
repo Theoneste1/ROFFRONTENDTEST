@@ -66,12 +66,12 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
   if (mutation.isSuccess) {
     return (
       <div className="space-y-5">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Account activated</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Account activated</h1>
         <Alert tone="success">
           Welcome, {info.firstName}! Your account is ready. Sign in with the username <strong>{mutation.data.username}</strong>.
         </Alert>
         <Link href="/login" className="block">
-          <span className="w-full inline-flex justify-center px-6 py-3 text-sm font-semibold rounded-lg bg-[#2B2BB2] hover:bg-[#232c94] text-white shadow-md">
+          <span className="w-full inline-flex justify-center px-6 py-3 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-dark text-white shadow-md">
             Sign in
           </span>
         </Link>
@@ -82,8 +82,8 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
   return (
     <form method="post" onSubmit={onSubmit} noValidate className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Welcome, {info.firstName}</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Welcome, {info.firstName}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
           {info.requiresPassword
             ? "Choose a password to activate your account."
             : "Confirm your e-mail address to activate your account."}
@@ -91,9 +91,9 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
       </div>
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
-        <dt className="text-slate-500">Username</dt>
+        <dt className="text-slate-600">Username</dt>
         <dd className="font-medium text-slate-800 break-all">{info.username}</dd>
-        <dt className="text-slate-500">E-mail</dt>
+        <dt className="text-slate-600">E-mail</dt>
         <dd className="font-medium text-slate-800 break-all">{info.email}</dd>
       </dl>
 
@@ -103,7 +103,7 @@ function ActivateForm({ token, info }: { token: string; info: { firstName: strin
         <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} errors={errors} label="Password" />
       )}
 
-      <Button type="submit" loading={mutation.isPending} className="w-full">
+      <Button type="submit" variant="brand" loading={mutation.isPending} className="w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12">
         Activate account
       </Button>
     </form>
@@ -123,8 +123,8 @@ function ResendActivation({ invalidLink = false }: { invalidLink?: boolean }) {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{invalidLink ? "Link not valid" : "Activate your account"}</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{invalidLink ? "Link not valid" : "Activate your account"}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
           {invalidLink
             ? "This activation link is invalid, has already been used, or has expired."
             : "Open the activation link from your e-mail, or request a new one below."}
@@ -148,13 +148,13 @@ function ResendActivation({ invalidLink = false }: { invalidLink?: boolean }) {
             onChange={(e) => setEmail(e.target.value)}
             error={emailError ? "Enter a valid e-mail address." : undefined}
           />
-          <Button type="submit" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full">
+          <Button type="submit" variant="brand" loading={mutation.isPending} disabled={!email.includes("@")} className="w-full sm:mx-auto sm:flex sm:w-fit sm:min-w-[15rem] sm:px-12">
             Send a new activation link
           </Button>
         </form>
       )}
 
-      <Link href="/login" className="block text-center text-sm font-medium text-[#2B2BB2] hover:underline">
+      <Link href="/login" className="block text-center text-sm font-medium text-brand hover:underline">
         Back to sign in
       </Link>
     </div>

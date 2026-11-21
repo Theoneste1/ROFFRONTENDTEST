@@ -10,6 +10,8 @@ import { formatDate, personName } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AssignmentBadge, CsvButton, FilterPills, SearchInput, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { useRecordBulk } from "../components/bulk/RecordBulk";
+import { bulkFilterFrom } from "@/lib/admin/bulk-records";
 
 const TABS: { label: string; value: "" | AssignmentStatus }[] = [
   { label: "All", value: "" },
@@ -25,7 +27,7 @@ const PAGE_SIZE = 20;
 
 /** Reviewed = approved + published of the submissions received. */
 function ReviewProgress({ row }: { row: AssignmentReportRow | undefined }) {
-  if (!row) return <span className="text-gray-400">—</span>;
+  if (!row) return <span className="text-gray-500">—</span>;
   const done = row.byStage.approved + row.byStage.published;
   const pct = row.submitted ? Math.round((done / row.submitted) * 100) : 0;
   return (
@@ -33,7 +35,7 @@ function ReviewProgress({ row }: { row: AssignmentReportRow | undefined }) {
       <div className="w-full bg-gray-200/80 rounded-full h-1.5 overflow-hidden" aria-hidden="true">
         <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-gray-500 font-medium shrink-0">
+      <span className="text-gray-600 font-medium shrink-0">
         {done} / {row.submitted}
       </span>
     </div>
@@ -52,6 +54,14 @@ export default function AssignmentsClient() {
 
   const filters: AdminAssignmentFilters = { status: status || undefined, courseId: courseId || undefined, divisionId: divisionId || undefined, q: q || undefined, page, limit: PAGE_SIZE };
   const assignments = useAdminAssignments(filters);
+  // Bulk actions (capability bulkOperationsGeneric, record type ASSIGNMENT): publish, close or archive many at once.
+  const bulk = useRecordBulk("ASSIGNMENT", {
+    pageIds: assignments.data?.data.map((a) => a.id) ?? [],
+    filter: bulkFilterFrom(filters),
+    total: assignments.data?.meta.total,
+    onStarted: () => void assignments.refetch(),
+  });
+  const cols = bulk.enabled ? 9 : 8;
   const report = useAssignmentReport({ status: filters.status, courseId: filters.courseId, divisionId: filters.divisionId });
   const pending = useAdminAssignments({ status: "PENDING_APPROVAL", limit: 1 });
   const courses = useCourses();
@@ -73,7 +83,7 @@ export default function AssignmentsClient() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Assignments</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">
+          <p className="text-sm text-gray-600 mt-1 font-medium">
             Coaches prepare assignments; administrators approve and publish them, then follow submissions and reviews.
           </p>
         </div>
@@ -95,6 +105,7 @@ export default function AssignmentsClient() {
         />
       </div>
 
+      {bulk.toolbar}
       {assignments.isError ? (
         <ErrorState error={assignments.error} title="Couldn't load assignments" onRetry={() => assignments.refetch()} />
       ) : (
@@ -109,6 +120,7 @@ export default function AssignmentsClient() {
         >
           <thead>
             <tr className="border-b border-gray-100">
+              {bulk.enabled && <th className={`${th} w-8`}>{bulk.headerCheckbox}</th>}
               <th className={th}>Assignment</th>
               <th className={th}>Course</th>
               <th className={th}>Division</th>
@@ -123,23 +135,24 @@ export default function AssignmentsClient() {
           </thead>
           <tbody className={`divide-y divide-gray-100/80 ${assignments.isFetching && assignments.data ? "opacity-60" : ""}`}>
             {assignments.isPending ? (
-              <TableMessage colSpan={8}>Loading assignments…</TableMessage>
+              <TableMessage colSpan={cols}>Loading assignments…</TableMessage>
             ) : assignments.data.data.length === 0 ? (
-              <TableMessage colSpan={8}>{status === "PENDING_APPROVAL" ? "No assignments are waiting for approval." : "No assignments found matching your criteria."}</TableMessage>
+              <TableMessage colSpan={cols}>{status === "PENDING_APPROVAL" ? "No assignments are waiting for approval." : "No assignments found matching your criteria."}</TableMessage>
             ) : (
               assignments.data.data.map((a) => {
                 const r = byId.get(a.id);
                 return (
                   <tr key={a.id} className="hover:bg-gray-50/60 transition-colors text-xs">
+                    {bulk.enabled && <td className={td}>{bulk.rowCheckbox(a.id, a.title)}</td>}
                     <td className={`${td} font-bold text-gray-800`}>
                       <Link href={`/admin/assignments/${a.id}`} className="hover:text-indigo-700">
                         {a.title}
                       </Link>
-                      <span className="block text-[11px] font-normal text-gray-400">by {personName(a.createdBy, "a coach")}</span>
+                      <span className="block text-[11px] font-normal text-gray-500">by {personName(a.createdBy, "a coach")}</span>
                     </td>
                     <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>{a.course.title}</td>
                     <td className={`${td} text-gray-600 font-medium whitespace-nowrap`}>{a.division.name.replace(/ division$/i, "")}</td>
-                    <td className={`${td} text-gray-500 whitespace-nowrap`}>{formatDate(a.deadline)}</td>
+                    <td className={`${td} text-gray-600 whitespace-nowrap`}>{formatDate(a.deadline)}</td>
                     <td className={`${td} text-gray-600 whitespace-nowrap`}>{r ? `${r.submitted} / ${r.expectedStudents} submitted` : `${a._count?.submissions ?? 0} submitted`}</td>
                     <td className={td}>
                       <ReviewProgress row={r} />
@@ -159,6 +172,7 @@ export default function AssignmentsClient() {
           </tbody>
         </TableCard>
       )}
+      {bulk.dialog}
     </>
   );
 }

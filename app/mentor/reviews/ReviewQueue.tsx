@@ -45,7 +45,7 @@ export default function ReviewQueue() {
     <div className="min-h-screen p-4 md:p-10 font-sans text-slate-800 bg-[#E6EBF2]">
       <div className="max-w-5xl">
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Reviews</h1>
-        <p className="text-slate-500 text-sm mt-1 mb-6">Student work an administrator assigned to you for review.</p>
+        <p className="text-slate-600 text-sm mt-1 mb-6">Student work an administrator assigned to you for review.</p>
 
         <div className="flex flex-wrap items-end gap-4 mb-6">
           {scopes.data && scopes.data.length > 0 && (
@@ -60,7 +60,7 @@ export default function ReviewQueue() {
             />
           )}
           <div className="flex flex-col gap-1">
-            <label htmlFor="status" className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+            <label htmlFor="status" className="text-[10px] font-bold tracking-wider text-slate-600 uppercase">
               Status
             </label>
             <select
@@ -108,10 +108,10 @@ export default function ReviewQueue() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-bold text-slate-900 truncate">{personName(s.student)}</h3>
-                    <p className="text-xs text-slate-500 truncate">
+                    <p className="text-xs text-slate-600 truncate">
                       {s.assignment.title} · {s.assignment.course.title} · {s.assignment.division.name}
                     </p>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Submitted {formatDateTime(s.submittedAt)}
                       {s.isLate && " · late"}
                     </p>
@@ -119,7 +119,7 @@ export default function ReviewQueue() {
                 </div>
                 <div className="flex items-center gap-3">
                   <ReviewStatusBadge status={s.status} />
-                  <span className={`text-xs font-semibold ${OPEN_REVIEW_STATUSES.includes(s.status) ? "text-indigo-700" : "text-slate-500"}`}>
+                  <span className={`text-xs font-semibold ${OPEN_REVIEW_STATUSES.includes(s.status) ? "text-indigo-700" : "text-slate-600"}`}>
                     {OPEN_REVIEW_STATUSES.includes(s.status) ? "Review →" : "View →"}
                   </span>
                 </div>

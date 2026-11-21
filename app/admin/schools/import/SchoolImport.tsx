@@ -160,7 +160,7 @@ function ImportWorkflow() {
             </button>
           </div>
           {fileError && <p className="text-xs text-red-600">{fileError}</p>}
-          <p className="text-[11px] text-gray-500">A check creates nothing. It lists every row with an error and every row that may duplicate an existing school.</p>
+          <p className="text-[11px] text-gray-600">A check creates nothing. It lists every row with an error and every row that may duplicate an existing school.</p>
         </div>
       </Card>
 
@@ -266,7 +266,7 @@ function PreviewSection({ preview, confirmed, setConfirmed }: { preview: ImportP
                       ))}
                     </ul>
                     {r.candidates.length > 0 && (
-                      <ul className="mt-1 text-gray-500 list-disc pl-4">
+                      <ul className="mt-1 text-gray-600 list-disc pl-4">
                         {r.candidates.map((c) => (
                           <li key={c.id}>
                             <Link href={`/admin/schools/${c.id}`} className={linkBtn} target="_blank">
@@ -290,7 +290,7 @@ function PreviewSection({ preview, confirmed, setConfirmed }: { preview: ImportP
           <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5" />
           <span>
             I reviewed the possible duplicates: these rows are different schools and should be created.
-            {preview.reviewExpiresAt && <span className="text-gray-500"> (Review valid until {formatDateTime(preview.reviewExpiresAt)}.)</span>}
+            {preview.reviewExpiresAt && <span className="text-gray-600"> (Review valid until {formatDateTime(preview.reviewExpiresAt)}.)</span>}
           </span>
         </label>
       )}

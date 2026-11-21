@@ -40,7 +40,7 @@ export default function ProgrammeHeadsCard({ userId, name }: { userId: string; n
     <Card className="p-6 lg:col-span-3">
       <div data-testid="programme-heads">
         <h2 className="text-base font-bold text-gray-900 mb-1">Programmes headed</h2>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-xs text-gray-600 mb-4">
           {name} monitors the programmes ticked here: their students, coaches and reports. Preparing and grading work still needs course access on the Coaches page.
         </p>
         {error && <Alert tone="error">{error}</Alert>}
@@ -49,7 +49,7 @@ export default function ProgrammeHeadsCard({ userId, name }: { userId: string; n
         ) : programmes.isError ? (
           <Alert tone="error">{errorMessage(programmes.error)}</Alert>
         ) : list.length === 0 ? (
-          <p className="text-sm text-gray-500">There are no programmes yet.</p>
+          <p className="text-sm text-gray-600">There are no programmes yet.</p>
         ) : (
           <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
             {list.map((p, i) => {
@@ -70,9 +70,9 @@ export default function ProgrammeHeadsCard({ userId, name }: { userId: string; n
                     <span className="min-w-0">
                       <span className="text-sm font-medium text-gray-800">
                         {p.name}
-                        {!p.isActive && <span className="ml-1.5 text-[11px] text-gray-400">(inactive)</span>}
+                        {!p.isActive && <span className="ml-1.5 text-[11px] text-gray-500">(inactive)</span>}
                       </span>
-                      <span className="block text-xs text-gray-400">
+                      <span className="block text-xs text-gray-500">
                         {q?.isPending ? "Loading heads…" : q?.isError ? errorMessage(q.error) : others.length ? `Also headed by ${others.map((h) => `@${h.username}`).join(", ")}` : "No other head"}
                       </span>
                     </span>

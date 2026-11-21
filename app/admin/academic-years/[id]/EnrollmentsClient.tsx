@@ -146,7 +146,7 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
                     <Link href={`/admin/users/${e.student.id}`} className="font-semibold text-gray-800 hover:text-indigo-700">
                       {name(e)}
                     </Link>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       @{e.student.username}
                       {!e.student.isActive && " · suspended"}
                     </p>

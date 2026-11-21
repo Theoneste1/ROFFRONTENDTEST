@@ -1,7 +1,6 @@
 'use client';
 
 import React from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -9,11 +8,17 @@ import {
     BookOpen,
     FileText,
     ClipboardCheck,
-    Network
+    Network,
+    FileQuestion,
+    PenLine
 } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
+import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { MENTOR_NAV, visibleNav } from "@/lib/auth/navigation";
+import { MENTOR_MARKING, MENTOR_NAV, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { testsNavVisible } from "@/lib/test-management/rules";
+import { markingNavVisible } from "@/lib/test-management/marking";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 interface SidebarProps {
     isOpen: boolean;
@@ -25,6 +30,8 @@ const ICONS: Record<string, LucideIcon> = {
     "/mentor/assignments": FileText,
     "/mentor/reviews": ClipboardCheck,
     "/mentor/programme": Network,
+    "/mentor/tests": FileQuestion,
+    "/mentor/marking": PenLine,
 };
 
 /**
@@ -35,6 +42,14 @@ const ICONS: Record<string, LucideIcon> = {
 export default function Sidebar({ isOpen }: SidebarProps) {
     const pathname = usePathname();
     const { knownPermissions } = useSession();
+    const { detection } = useBackendCapabilities();
+    // Tests: Head Coaches (tests.view) on a backend with `testManagement` (lib/test-management/rules.ts). Marking: coaches
+    // (tests.mark) on a backend with `testMarking` (lib/test-management/marking.ts).
+    const items = [
+        ...visibleNav(MENTOR_NAV, knownPermissions),
+        ...(testsNavVisible(detection, knownPermissions) ? [MENTOR_TESTS] : []),
+        ...(markingNavVisible(detection, knownPermissions) ? [MENTOR_MARKING] : []),
+    ];
 
     // Function to check if link is active
     const isActive = (path: string) => {
@@ -47,37 +62,24 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     return (
         <aside
             className={`${isOpen ? 'w-64 px-4' : 'w-20 px-3'
-                } h-full bg-[#001E4E] text-slate-300 flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out`}
+                } h-full bg-brand-950 text-slate-400 flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out`}
         >
             {/* TOP NAVIGATION LINKS */}
-            <div className="flex flex-col gap-3">
+            <div className="flex-1 min-h-0 flex flex-col gap-3">
                 {/* Title Header */}
                 <div className="text-white font-bold text-center text-lg tracking-wide pb-6 border-b border-blue-900/40 whitespace-nowrap">
                     {isOpen ? "ROF LMS" : "ROF"}
                 </div>
 
-                {visibleNav(MENTOR_NAV, knownPermissions).map((item) => {
-                    const Icon = ICONS[item.href] ?? LayoutGrid;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            title={item.label}
-                            className={`flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all ${isOpen ? 'px-4' : 'justify-center px-0'
-                                } ${isActive(item.href)
-                                    ? "bg-gradient-to-r from-[#6366F1] to-[#4F46E5] text-white shadow-md shadow-indigo-950/50"
-                                    : "hover:bg-white/5 text-slate-400 hover:text-white"
-                                }`}
-                        >
-                            <Icon className="h-5 w-5 flex-shrink-0" />
-                            {isOpen && <span className="whitespace-nowrap">{item.label}</span>}
-                        </Link>
-                    );
-                })}
+                <SidebarNav
+                    isOpen={isOpen}
+                    label="Coach portal"
+                    items={items.map((item) => ({ href: item.href, label: item.label, icon: ICONS[item.href] ?? LayoutGrid, active: isActive(item.href) }))}
+                />
             </div>
 
             {/* BOTTOM UTILITY LINKS */}
-            <SidebarUtilities isOpen={isOpen} settingsHref="/mentor/profile" />
+            <SidebarUtilities isOpen={isOpen} settingsHref="/mentor/account" />
         </aside>
     );
 }

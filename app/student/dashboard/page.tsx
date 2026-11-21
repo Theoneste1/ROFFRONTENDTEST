@@ -18,6 +18,7 @@ import { StatusBadge, courseStyle } from "../components/studentUi";
 import DeadlineCalendar from "./components/DeadlineCalendar";
 import { NotificationLink } from "@/app/components/notifications/notificationUi";
 import { useNow } from "@/lib/hooks/useNow";
+import { StudentTestsWidget } from "@/app/components/test-management/ResultViews";
 
 export default function StudentDashboard() {
   const { user } = useSession();
@@ -33,7 +34,7 @@ export default function StudentDashboard() {
       {/* LEFT COLUMN */}
       <div className="lg:col-span-2 space-y-8 min-w-0">
         {/* Welcome Banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-[#030959] p-8 text-white shadow-sm flex flex-col justify-between min-h-[220px]">
+        <div className="relative overflow-hidden rounded-3xl bg-brand-900 p-8 text-white shadow-sm flex flex-col justify-between min-h-[220px]">
           <div className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none opacity-20">
             <div className="w-48 h-48 border-2 border-white/40 rounded-3xl rotate-12 flex items-center justify-center bg-white/10 backdrop-blur-sm">
               <Calculator className="w-20 h-20 text-white" />
@@ -59,6 +60,7 @@ export default function StudentDashboard() {
           </div>
         </div>
 
+        <StudentTestsWidget />
         <ActiveCourses />
         <CurrentAssignments />
       </div>
@@ -117,11 +119,11 @@ function ActiveCourses() {
                   <div className="flex items-start justify-between gap-2">
                     <span className={`px-3.5 py-2 rounded-xl inline-block text-lg font-bold ${style.chip}`}>{style.symbol}</span>
                     {progress && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{progress.displayStatus}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{progress.displayStatus}</span>
                     )}
                   </div>
                   <h4 className="font-bold text-slate-800 text-base">{course.title}</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed">{course.description}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">{course.description}</p>
                 </div>
                 <span className={`${style.button} text-white text-[11px] font-bold px-5 py-2 rounded-xl w-fit mt-4`}>
                   {progress?.status === "UNROLLED" ? "Start" : "Continue"}
@@ -137,7 +139,7 @@ function ActiveCourses() {
 
 function deadlineChip(a: StudentAssignment, now: number) {
   const days = daysUntil(a.deadline, now);
-  if (a.status === "CLOSED" || days < 0) return { text: "Closed", tone: "bg-slate-100 text-slate-500" };
+  if (a.status === "CLOSED" || days < 0) return { text: "Closed", tone: "bg-slate-100 text-slate-600" };
   if (!a.canSubmit) return null;
   if (days <= 3) return { text: days <= 0 ? "Due today" : `${days} day${days === 1 ? "" : "s"} left`, tone: "bg-red-50 text-red-600" };
   return { text: `${days} days left`, tone: "bg-indigo-50 text-indigo-600" };
@@ -168,7 +170,7 @@ function CurrentAssignments() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-slate-100 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                <tr className="border-b border-slate-100 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
                   <th className="py-4 px-6">Assignment</th>
                   <th className="py-4 px-6">Deadline</th>
                   <th className="py-4 px-6">Status</th>
@@ -183,9 +185,9 @@ function CurrentAssignments() {
                         <Link href={`/student/assignments/${a.id}`} className="font-bold text-slate-800 hover:text-indigo-700">
                           {a.title}
                         </Link>
-                        <div className="text-[11px] text-slate-400 mt-0.5">{a.course.title}</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">{a.course.title}</div>
                       </td>
-                      <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
+                      <td className="py-4 px-6 text-slate-600 whitespace-nowrap">
                         {formatDate(a.deadline)}
                         {chip && (
                           <span className={`ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${chip.tone}`}>{chip.text}</span>
@@ -214,7 +216,7 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
     <div className="rounded-3xl bg-white p-6 shadow-sm border border-slate-100 flex flex-col justify-between min-h-[200px]">
       <div>
         <div className="flex items-start justify-between">
-          <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+          <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
             {divisionName ? `${divisionName} Division Ranking` : "Division Ranking"}
           </span>
           <Trophy className="w-10 h-10 text-purple-200 stroke-[1.2]" />
@@ -225,27 +227,27 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
           </div>
         ) : rank.isError ? (
           leaderboardHidden(rank.error) ? (
-            <p className="mt-4 text-xs text-slate-500">{HIDDEN_TEXT}</p>
+            <p className="mt-4 text-xs text-slate-600">{HIDDEN_TEXT}</p>
           ) : (
             <p className="mt-4 text-xs text-red-600">Couldn&apos;t load your ranking.</p>
           )
         ) : rank.data.rank === null ? (
           <>
-            <h2 className="text-2xl font-black text-[#03045e] mt-2">{rankLabel(null)}</h2>
-            <p className="mt-4 text-xs font-medium text-slate-500">{formatNumber(rank.data.points)} points so far.</p>
+            <h2 className="text-2xl font-black text-brand-900 mt-2">{rankLabel(null)}</h2>
+            <p className="mt-4 text-xs font-medium text-slate-600">{formatNumber(rank.data.points)} points so far.</p>
           </>
         ) : (
           <>
-            <h2 className="text-5xl font-black text-[#03045e] mt-2">
+            <h2 className="text-5xl font-black text-brand-900 mt-2">
               {rankLabel(rank.data.rank)}
-              <span className="text-base font-bold text-slate-400 ml-2">of {formatNumber(rank.data.outOf)}</span>
+              <span className="text-base font-bold text-slate-500 ml-2">of {formatNumber(rank.data.outOf)}</span>
             </h2>
-            <p className="mt-4 text-xs font-medium text-slate-500">
+            <p className="mt-4 text-xs font-medium text-slate-600">
               {rank.data.rank === 1 ? (
                 <>You&apos;re at the top of your division. Keep it up!</>
               ) : above.data ? (
                 <>
-                  <span className="font-bold text-[#03045e]">{formatNumber(Math.max(above.data.points - rank.data.points, 0) + 1)} points</span>{" "}
+                  <span className="font-bold text-brand-900">{formatNumber(Math.max(above.data.points - rank.data.points, 0) + 1)} points</span>{" "}
                   to pass #{above.data.rank}.
                 </>
               ) : (
@@ -257,7 +259,7 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
       </div>
       <Link
         href="/student/leaderboard"
-        className="w-full mt-6 rounded-2xl bg-[#03045e] py-3 text-xs font-semibold text-white transition-colors hover:bg-[#0b1784] text-center"
+        className="w-full mt-6 rounded-2xl bg-brand-900 py-3 text-xs font-semibold text-white transition-colors hover:bg-brand-800 text-center"
       >
         Full Leaderboard
       </Link>
@@ -300,7 +302,7 @@ function RecentAlerts() {
       ) : query.isError ? (
         <p className="text-xs text-red-600">Couldn&apos;t load your notifications.</p>
       ) : query.data.data.length === 0 ? (
-        <p className="text-xs text-slate-500">No notifications yet. Updates about assignments, results and discussions will appear here.</p>
+        <p className="text-xs text-slate-600">No notifications yet. Updates about assignments, results and discussions will appear here.</p>
       ) : (
         <div className="space-y-4">
           {query.data.data.map((n: AppNotification) => {
@@ -312,8 +314,8 @@ function RecentAlerts() {
                 </div>
                 <div className="min-w-0">
                   <h4 className={`text-xs ${n.isRead ? "font-semibold text-slate-600" : "font-bold text-slate-800"}`}>{n.title}</h4>
-                  {n.body && <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>}
-                  <p className="text-[10px] text-slate-400 mt-0.5">{formatRelative(n.createdAt, now)}</p>
+                  {n.body && <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-2">{n.body}</p>}
+                  <p className="text-[10px] text-slate-500 mt-0.5">{formatRelative(n.createdAt, now)}</p>
                 </div>
               </NotificationLink>
             );

@@ -55,7 +55,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
     const notFound = isApiError(assignment.error) && [400, 403, 404].includes(assignment.error.status);
     return (
       <div className="min-h-screen bg-[#E6EBF2] p-6 space-y-4">
-        <Link href="/mentor/assignments" className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800">
+        <Link href="/mentor/assignments" className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800">
           <ArrowLeft className="w-4 h-4" /> Back to Assignments
         </Link>
         {notFound ? (
@@ -85,7 +85,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
   return (
     <div className="min-h-screen bg-[#E6EBF2] p-4 md:p-6 text-slate-800 font-sans">
       <div className="mb-4">
-        <Link href={`/mentor/assignments/${a.id}`} className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-slate-800 transition w-fit">
+        <Link href={`/mentor/assignments/${a.id}`} className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition w-fit">
           <ArrowLeft className="w-4 h-4" />
           Back to Assignment
         </Link>
@@ -102,11 +102,11 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-2xl font-bold text-slate-900 break-words">{a.title}</h1>
-                  <span className="px-3 py-0.5 text-xs font-medium bg-slate-100 text-slate-500 rounded-full">{a.course.title}</span>
+                  <span className="px-3 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-full">{a.course.title}</span>
                   <AssignmentStatusBadge status={a.status} />
                 </div>
-                {a.description && <p className="text-sm text-slate-500 mt-1 max-w-xl">{a.description}</p>}
-                <div className="flex items-center gap-1 text-xs text-slate-400 mt-2">
+                {a.description && <p className="text-sm text-slate-600 mt-1 max-w-xl">{a.description}</p>}
+                <div className="flex items-center gap-1 text-xs text-slate-500 mt-2">
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Due {formatDateTime(a.deadline)}</span>
                 </div>
@@ -115,7 +115,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
             {editable && (
               <Link
                 href={`/mentor/assignments/${a.id}/edit`}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-[#2B2BB2] text-white font-medium text-sm rounded-xl hover:bg-indigo-800 transition w-full md:w-auto"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-brand text-white font-medium text-sm rounded-xl hover:bg-indigo-800 transition w-full md:w-auto"
               >
                 <Edit className="w-4 h-4" />
                 Edit Assignment
@@ -131,7 +131,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
               </div>
               <div>
                 <h2 className="font-bold text-slate-900">Student Engagement</h2>
-                <p className="text-xs text-slate-400">Division totals; review counts are for work assigned to you.</p>
+                <p className="text-xs text-slate-500">Division totals; review counts are for work assigned to you.</p>
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 w-full md:w-auto text-center md:text-left">
@@ -141,7 +141,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
                     <span className={`w-2 h-2 rounded-full inline-block ${e.dot}`} />
                     {e.value}
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">{e.label}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{e.label}</p>
                 </div>
               ))}
             </div>

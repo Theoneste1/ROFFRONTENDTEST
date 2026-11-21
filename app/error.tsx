@@ -20,11 +20,11 @@ export default function ErrorPage({ error, retry }: { error: unknown; retry: () 
       <div className="space-y-5 text-center" role="alert" data-testid="error-page">
         <h1 className="text-xl font-bold text-slate-900">Something went wrong</h1>
         <p className="text-sm text-slate-600">This page could not be shown. Please try again; if it keeps happening, contact the Rwanda Olympiad Foundation team.</p>
-        {digest && <p className="text-xs text-slate-400">Reference: {digest}</p>}
+        {digest && <p className="text-xs text-slate-500">Reference: {digest}</p>}
         <button
           type="button"
           onClick={() => retry()}
-          className="inline-flex w-full items-center justify-center rounded-lg border border-[#2B2BB2] px-6 py-3 text-sm font-semibold text-[#2B2BB2] hover:bg-indigo-50"
+          className="inline-flex w-full items-center justify-center rounded-lg border border-brand px-6 py-3 text-sm font-semibold text-brand hover:bg-indigo-50"
         >
           Try again
         </button>

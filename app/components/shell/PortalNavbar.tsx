@@ -1,17 +1,16 @@
 'use client';
 
-/** The portal top bar (logo, menu toggle, notification bell, user), shared by the portals. */
+/** The portal top bar (menu toggle, ROF logo linking to the ROF website, notification bell, profile menu), shared by the portals. */
 
+import Link from "next/link";
 import type { Ref } from "react";
 import { Menu } from "lucide-react";
-import NavbarUser from "@/app/components/shell/NavbarUser";
+import ProfileMenu from "@/app/components/shell/ProfileMenu";
 import NotificationBell from "@/app/components/notifications/NotificationBell";
 import Image from "@/app/components/ui/Image";
 
 interface NavbarProps {
   onMenuClick: () => void;
-  /** Avatar colour per portal (blue: student and admin, purple: mentor). */
-  avatarClassName: string;
   menuButtonRef?: Ref<HTMLButtonElement>;
   /** Whether the menu the hamburger controls is open (aria-expanded). */
   menuExpanded?: boolean;
@@ -19,7 +18,7 @@ interface NavbarProps {
   menuControls?: string;
 }
 
-export default function PortalNavbar({ onMenuClick, avatarClassName, menuButtonRef, menuExpanded, menuControls }: NavbarProps) {
+export default function PortalNavbar({ onMenuClick, menuButtonRef, menuExpanded, menuControls }: NavbarProps) {
   return (
     <div className="h-20 w-full flex items-center justify-between gap-2 px-3 sm:px-4 md:px-6 border-blue-200">
       {/* LEFT SIDE */}
@@ -37,12 +36,17 @@ export default function PortalNavbar({ onMenuClick, avatarClassName, menuButtonR
           <Menu className="h-6 w-6 text-gray-700 cursor-pointer" />
         </button>
 
-        {/* Logo + Text */}
-        <div className="flex items-center gap-2 md:gap-4 min-w-0">
+        {/* Logo + Text: opens the ROF LMS home page (owner, 2026-11-20: never the foundation's website) */}
+        <Link
+          href="/"
+          aria-label="ROF LMS home page"
+          data-testid="rof-logo-link"
+          className="flex items-center gap-2 md:gap-4 min-w-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        >
           <div className="h-10 w-10 md:h-12 md:w-12 rounded-full overflow-hidden flex-shrink-0">
             <Image
               src="/logo.png"
-              alt="Rwanda Olympiad Foundation"
+              alt=""
               width={48}
               height={48}
               className="h-full w-full object-cover"
@@ -61,14 +65,14 @@ export default function PortalNavbar({ onMenuClick, avatarClassName, menuButtonR
               <div>Foundation</div>
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* RIGHT SIDE */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-6 flex-shrink-0">
         <NotificationBell />
 
-        <NavbarUser avatarClassName={avatarClassName} />
+        <ProfileMenu />
       </div>
     </div>
   );
