@@ -42,3 +42,44 @@ export function sameInterests(a: readonly string[] | null | undefined, b: readon
   const x = normaliseInterests(a), y = normaliseInterests(b);
   return x.length === y.length && x.every((v, i) => v === y[i]);
 }
+
+// ─── "Other" Olympiad interest (owner, 2026-11-21; capability olympiadInterestOther) ───────────────────────────────
+// Beside the three subjects, a person may tick "Other" and name another Olympiad in words (e.g. Chemistry). In a form
+// the value is null while "Other" is not ticked (always on backends without the capability), else the text typed.
+// "Other" alone counts as an interest. It is never a subject: it grants nothing.
+
+export const OTHER_INTEREST_MIN = 2;
+export const OTHER_INTEREST_MAX = 100;
+export const OTHER_INTEREST_PROBLEM = "Name the other Olympiad (2–100 characters), for example Chemistry.";
+
+/** The backend accepts `olympiadInterestOther`. */
+export function otherInterestSupported(detection: BackendDetection | null | undefined): boolean {
+  return hasFeature(detection, "olympiadInterestOther");
+}
+
+/**
+ * The interests error, "Other" included: with Other ticked, its text must be 2–100 characters (and then no subject is
+ * needed); without it, `required` = the message when no subject is chosen.
+ */
+export function validateInterestsWithOther(interests: readonly OlympiadSubject[], other: string | null, required: string = INTERESTS_REQUIRED): string | undefined {
+  if (other !== null) {
+    const n = other.trim().length;
+    return n < OTHER_INTEREST_MIN || n > OTHER_INTEREST_MAX ? OTHER_INTEREST_PROBLEM : undefined;
+  }
+  return interests.length === 0 ? required : undefined;
+}
+
+/**
+ * The request field: the trimmed text while Other is ticked; null to clear one stored before (`before`) when Other was
+ * unticked; nothing otherwise (older backends never receive the field).
+ */
+export function otherInterestField(other: string | null, before?: string | null): { olympiadInterestOther?: string | null } {
+  if (other !== null && other.trim()) return { olympiadInterestOther: other.trim() };
+  if (other === null && before) return { olympiadInterestOther: null };
+  return {};
+}
+
+/** "Mathematics, Physics, Other: Chemistry"; "" when nothing was chosen. */
+export function interestsWithOtherText(values: readonly string[] | null | undefined, other: string | null | undefined): string {
+  return [interestsText(values), other ? `Other: ${other}` : ""].filter(Boolean).join(", ");
+}

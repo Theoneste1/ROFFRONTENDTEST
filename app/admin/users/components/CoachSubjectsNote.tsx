@@ -7,12 +7,12 @@
 import { coachInterestsSupported, coachSubjectsText } from "@/lib/accounts/coach-application";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
-export default function CoachSubjectsNote({ role, subjects }: { role: string; subjects: readonly string[] | null | undefined }) {
+export default function CoachSubjectsNote({ role, subjects, other }: { role: string; subjects: readonly string[] | null | undefined; other?: string | null }) {
   const { detection } = useBackendCapabilities();
   if (role !== "MENTOR" || !coachInterestsSupported(detection)) return null;
   return (
     <span className="block text-xs font-normal text-gray-600" data-testid="coach-subjects-note">
-      Subjects: {coachSubjectsText(subjects)}
+      Subjects: {coachSubjectsText(subjects, other)}
     </span>
   );
 }

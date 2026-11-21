@@ -14,6 +14,8 @@ export const TESTS_SUBMIT: Permission = "tests.submit";
 export const TESTS_SUBMIT_FOR_STUDENTS: Permission = "tests.submitForStudents";
 export const TESTS_EXTENSIONS: Permission = "tests.extensions";
 export const TESTS_VIEW_SUBMISSIONS: Permission = "tests.viewSubmissions";
+/** Allow one more version of a locked answer (Administrators; owner 2026-11-21). */
+export const TESTS_AUTHORIZE_RESUBMISSION: Permission = "tests.authorizeResubmission";
 
 /** Answer pages: PDF or images (phone photos included), at most 20 MB each, at most 30 per version (the backend's rules). */
 export const ANSWER_PAGE_ACCEPT = ".pdf,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif";
@@ -236,4 +238,24 @@ export function extensionProblems(d: ExtensionDraft, closesAtIso: string, now: n
   const reason = d.reason.trim();
   if (reason.length < 3 || reason.length > 500) e.reason = "Give a reason of 3–500 characters.";
   return e;
+}
+
+// ── Locked submissions (owner 2026-11-21, capability testSubmissionLock) ─────────
+
+/** A submitted answer is locked; only an Administrator authorizes one more version. Also: level / subject filters. */
+export function submissionLockSupported(detection: BackendDetection | null | undefined): boolean {
+  return hasFeature(detection, "testSubmissionLock");
+}
+
+/** The resubmission reason an Administrator gives (3–500 characters, as the backend checks). */
+export function resubmissionReasonProblem(reason: string): string | undefined {
+  const r = reason.trim();
+  return r.length < 3 || r.length > 500 ? "Give a reason of 3–500 characters." : undefined;
+}
+
+/** The action a list offers for one answer: submit, submit again (an Administrator allowed it), or view. */
+export function answerActionLabel(canSubmit: boolean, submitted: boolean, lockAware: boolean): "Submit" | "Submit again" | "Replace" | "View" {
+  if (!canSubmit) return "View";
+  if (!submitted) return "Submit";
+  return lockAware ? "Submit again" : "Replace";
 }

@@ -145,6 +145,8 @@ export interface RegisterStudentInput {
   gender?: "FEMALE" | "MALE";
   /** Olympiad interests (only on a backend with `studentOlympiadInterests`; the form requires one). */
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   // Only on a backend with `studentRegistrationDetails` (lib/accounts/student-details.ts):
   dateOfBirth?: string;
   phone?: string;
@@ -186,6 +188,8 @@ export interface MentorApplicationInput {
   occupation?: string;
   educationLevel?: string;
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   // Only on a backend with `applicationDetails` (lib/accounts/application-details.ts):
   phone?: string;
   affiliation?: string;

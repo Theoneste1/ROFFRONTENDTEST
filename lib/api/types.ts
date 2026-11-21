@@ -51,7 +51,7 @@ export type Permission =
   | "tests.view" | "tests.manage" | "tests.manageMarkers"
   // Test Management, Phase 2 (capability testSubmissions): extensions and tracking (Administrators, Head Coaches), a
   // student's own answers, a teacher's answers for the verified students of their schools (G2).
-  | "tests.extensions" | "tests.viewSubmissions" | "tests.submit" | "tests.submitForStudents"
+  | "tests.extensions" | "tests.viewSubmissions" | "tests.authorizeResubmission" | "tests.submit" | "tests.submitForStudents"
   // Test Management, Phase 3 (capability testMarking): distribution and review (Administrators, Head Coaches), choosing /
   // adjusting marks (the subject's Head Coaches only, G4), blind marking (Coaches: authorised subjects, assigned submissions).
   | "tests.distribute" | "tests.review" | "tests.adjustMarks" | "tests.mark"
@@ -118,6 +118,8 @@ export interface CurrentUser {
   createdAt: string;
   /** Students' Olympiad interests (backends with `studentOlympiadInterests`; absent on older ones). */
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   // Students, backends with `studentRegistrationDetails` (absent or null otherwise):
   /** An ISO instant ("2012-05-01T00:00:00.000Z"): use the first 10 characters (a date, never shifted by a time zone). */
   dateOfBirth?: string | null;
@@ -599,6 +601,8 @@ export interface UpdateMeInput {
   homeSector?: string;
   /** Only on a backend with `studentOlympiadInterests`; at least one. */
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
 }
 
 // ─── Mentor ─────────────────────────────────────────────────────────────────
@@ -856,6 +860,10 @@ export interface AdminUser {
   updatedAt?: string;
   /** Students' Olympiad interests (backends with studentOlympiadInterests). */
   olympiadInterests?: string[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
+  /** testSubmissionLock, TEACHER rows of the Users list: false when an Administrator turned off their test submission. */
+  testSubmissionAllowed?: boolean;
   /** The account state (backends with accountStates); isActive is true exactly when it is ACTIVE. */
   accountStatus?: AccountState;
   /**
@@ -972,6 +980,8 @@ export interface MentorRequest {
   occupation?: string | null;
   educationLevel?: string | null;
   olympiadInterests?: string[] | null;
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   /** Backends with `applicationDetails`. */
   phone?: string | null;
   affiliation?: string | null;
