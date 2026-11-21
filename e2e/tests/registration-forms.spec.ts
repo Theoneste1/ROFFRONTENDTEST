@@ -111,7 +111,7 @@ test.describe("public sign-up forms", () => {
     expect(hasPicture).toBe(true);
   });
 
-  test("a teacher applies; the application waits for an administrator", async ({ page }) => {
+  test("a teacher of a listed school registers: the account at once, signed in, on the teacher dashboard (owner 2026-11-21)", async ({ page }) => {
     const username = `signup.teacher.${RUN}`;
     await page.goto("/register/teacher");
     const form = page.getByTestId("teacher-register-form");
@@ -141,13 +141,17 @@ test.describe("public sign-up forms", () => {
     await homeSector.selectOption({ index: 1 });
     await form.locator('input[name="username"]').fill(username);
     await fillPassword(page);
-    await submitAndExpect(page, "Apply as a teacher", "teacher-register-done");
-    // The application holds the details; no account exists until an Administrator approves it.
+    await page.getByRole("button", { name: "Apply as a teacher" }).click();
+    // No Administrator: signed in and taken to the teacher portal.
+    await page.waitForURL(/\/teacher(\/|$)/, { timeout: 60_000 });
     const row = await withDb(async (c) => ({
       ...(await c.query(`SELECT status::text AS status, position, "yearsOfExperience" AS years FROM "TeacherApplication" WHERE username = $1`, [username])).rows[0],
-      accounts: Number((await c.query(`SELECT count(*) FROM "User" WHERE username = $1`, [username])).rows[0].count),
+      account: (await c.query(
+        `SELECT u.role::text AS role, u."accountStatus"::text AS state, s.name AS school
+           FROM "User" u JOIN "TeacherSchoolAssignment" a ON a."teacherId" = u.id AND a."isActive" JOIN "School" s ON s.id = a."schoolId"
+          WHERE u.username = $1`, [username])).rows,
     }));
-    expect(row).toEqual({ status: "PENDING", position: "Olympiad club coordinator", years: 5, accounts: 0 });
+    expect(row).toEqual({ status: "APPROVED", position: "Olympiad club coordinator", years: 5, account: [{ role: "TEACHER", state: "ACTIVE", school: SCHOOL.name }] });
   });
 
   test("a coach applies; the request waits for an administrator", async ({ page }) => {

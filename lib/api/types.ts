@@ -51,7 +51,7 @@ export type Permission =
   | "tests.view" | "tests.manage" | "tests.manageMarkers"
   // Test Management, Phase 2 (capability testSubmissions): extensions and tracking (Administrators, Head Coaches), a
   // student's own answers, a teacher's answers for the verified students of their schools (G2).
-  | "tests.extensions" | "tests.viewSubmissions" | "tests.submit" | "tests.submitForStudents"
+  | "tests.extensions" | "tests.viewSubmissions" | "tests.authorizeResubmission" | "tests.submit" | "tests.submitForStudents"
   // Test Management, Phase 3 (capability testMarking): distribution and review (Administrators, Head Coaches), choosing /
   // adjusting marks (the subject's Head Coaches only, G4), blind marking (Coaches: authorised subjects, assigned submissions).
   | "tests.distribute" | "tests.review" | "tests.adjustMarks" | "tests.mark"
@@ -862,6 +862,8 @@ export interface AdminUser {
   olympiadInterests?: string[];
   /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
   olympiadInterestOther?: string | null;
+  /** testSubmissionLock, TEACHER rows of the Users list: false when an Administrator turned off their test submission. */
+  testSubmissionAllowed?: boolean;
   /** The account state (backends with accountStates); isActive is true exactly when it is ACTIVE. */
   accountStatus?: AccountState;
   /**

@@ -1,6 +1,7 @@
 /**
- * Teacher self-registration (owner-approved design): a public application that an Administrator
- * reviews. Nothing — no account, no school assignment, no school record — exists until approval.
+ * Teacher self-registration. A teacher of a listed school gets the account at once (owner 2026-11-21, capability
+ * testSubmissionLock: `accountCreated: true`, linked to the school by its code, no Administrator); a school that is not
+ * listed yet is still an application an Administrator reviews (nothing exists until approval).
  *
  *   GET  /auth/register/teacher/availability          public  { open }
  *   POST /auth/register/teacher                       public  the application (201)
@@ -72,8 +73,15 @@ export interface TeacherRegistrationResult {
   id: string;
   /** Backends with registrationAvatar: one-time token for the OPTIONAL picture (REG-02). */
   avatarUploadToken?: string;
-  status: "PENDING";
-  requiresApproval: true;
+  /** APPROVED with `accountCreated` (a listed school, owner 2026-11-21); PENDING: an Administrator reviews it. */
+  status: "PENDING" | "APPROVED";
+  requiresApproval: boolean;
+  /** True: the TEACHER account exists now (older backends: absent = an application only). */
+  accountCreated?: boolean;
+  /** With accountCreated: the account's username (as stored). */
+  username?: string;
+  /** With accountCreated: the e-mail must be confirmed before the first sign-in. */
+  emailVerificationRequired?: boolean;
   school: TeacherApplicationSchool | null;
   proposedSchoolName: string | null;
 }

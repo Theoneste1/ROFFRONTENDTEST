@@ -1,7 +1,9 @@
 /**
  * Test Management, Phase 2 (owner-approved plan 2026-11-19), in a real browser against the real backend and PostgreSQL.
  *  1. A student opens My tests, answers with typed text and two photo pages (one page's upload fails on a weak
- *     connection and is retried on its own), submits, replaces (a new version), and sees both versions.
+ *     connection and is retried on its own), submits — then the answer is locked (owner 2026-11-21): no form, a
+ *     "Submitted and locked" notice. An Administrator allows one more submission with a reason (history kept); the
+ *     student submits version 2, locked again, and sees both versions.
  *  2. An Administrator gives the student an extension (Extensions tab) and sees the submissions (Submissions tab: state,
  *     versions with the submitter, the "Extended" mark). The student then sees the new deadline — and no "Extended" mark.
  *  3. A teacher (G2) opens Tests, the test's students, and submits for a verified student of their school.
@@ -13,6 +15,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 import { assignTeacherSchool, claim, createSchool, createStudent, idOf, withDb } from "../support/db";
 import { navigateViaSidebar, signIn } from "../support/session";
+import { passwordOf } from "../support/accounts";
 
 const run = Date.now().toString(36);
 const title = `E2E Answer round ${run}`;
@@ -133,13 +136,43 @@ test.describe.serial("Student: answer page by page, replace, see every version",
     await page.unroute(/\/uploads\/[0-9a-f-]+\/pages\/2$/);
   });
 
-  test("replace before the deadline → version 2; version 1 is kept", async () => {
-    await expect(page.getByRole("heading", { name: "Replace the answer" })).toBeVisible();
+  test("submitted → locked: no answer form, the locked notice; My tests marks it Locked", async () => {
+    await expect(page.getByTestId("answer-locked")).toContainText("Submitted and locked");
+    await expect(page.getByTestId("answer-form")).toHaveCount(0);
+    await navigateViaSidebar(page, "/student/tests");
+    await expect(page.getByTestId(`my-test-${testId}`).getByTestId("locked-badge")).toBeVisible();
+  });
+
+  test("an Administrator allows one more submission (reason, history); the student submits version 2, locked again; version 1 is kept", async ({ browser }) => {
+    test.setTimeout(120_000);
+    const adminPage = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
+    await signIn(adminPage, "admin");
+    await adminPage.goto(`/admin/tests/${testId}`);
+    await adminPage.getByTestId("tab-submissions").click();
+    await adminPage.getByLabel("Search students").fill("e2e.student");
+    const row = adminPage.getByTestId("tracking-e2e.student");
+    await expect(row.getByTestId("locked-badge")).toBeVisible({ timeout: 30_000 });
+    await row.getByRole("button", { name: /Versions of/ }).click();
+    const panel = adminPage.getByTestId("resubmission-panel");
+    await expect(panel).toContainText("Submitted and locked");
+    await panel.getByTestId("resubmission-allow").click();
+    await panel.getByTestId("resubmission-confirm").click();
+    await expect(panel.getByText("Give a reason of 3–500 characters.")).toBeVisible();   // checked before sending
+    await panel.getByTestId("resubmission-reason").fill("Wrong base case photographed");
+    await panel.getByTestId("resubmission-confirm").click();
+    await expect(panel).toContainText("Resubmission allowed");
+    await expect(panel.getByTestId("resubmission-history")).toContainText("Wrong base case photographed");
+    await adminPage.context().close();
+
+    await page.goto(`/student/tests/${testId}`);
+    await expect(page.getByTestId("answer-resubmission")).toContainText("Wrong base case photographed");
     await page.getByTestId("typed-answer").fill("By induction on n (corrected base case).");
     await page.getByTestId("submit-answer").click();
     await expect(page.getByText("Your answer was submitted: version 2.")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("version-2")).toContainText("Current");
     await expect(page.getByTestId("version-1")).toBeVisible();
+    await expect(page.getByTestId("answer-locked")).toBeVisible();
+    await expect(page.getByTestId("answer-form")).toHaveCount(0);
     await withDb(async (c) => {
       const rows = (await c.query(
         `SELECT v.number, v."submitterRole", v."pageCount", v."typedAnswer" IS NOT NULL AS typed
@@ -151,6 +184,13 @@ test.describe.serial("Student: answer page by page, replace, see every version",
       ]);
       const pages = (await c.query(`SELECT count(*)::int AS n FROM "TestAnswerPage" WHERE "testId" = $1 AND "studentId" = $2 AND "versionId" IS NULL`, [testId, studentId])).rows[0].n;
       expect(pages).toBe(0);   // nothing left pending
+      const auth = (await c.query(
+        `SELECT r.reason, r."usedAt" IS NOT NULL AS used, v.number AS version FROM "TestResubmissionAuthorization" r
+           JOIN "TestSubmission" s ON s.id = r."submissionId" LEFT JOIN "TestSubmissionVersion" v ON v.id = r."usedVersionId"
+          WHERE s."testId" = $1 AND s."studentId" = $2`, [testId, studentId])).rows;
+      expect(auth).toEqual([{ reason: "Wrong base case photographed", used: true, version: 2 }]);
+      const audit = (await c.query(`SELECT count(*)::int AS n FROM "AuditLog" WHERE action = 'TEST_RESUBMISSION_AUTHORIZED' AND metadata->>'testId' = $1`, [testId])).rows[0].n;
+      expect(audit).toBe(1);
     });
   });
 });
@@ -223,13 +263,24 @@ test.describe.serial("Teacher (G2): submits for a verified student of their scho
     await page.waitForURL(new RegExp(`/teacher/tests/${testId}$`));
     const row = page.getByTestId(`student-row-${classmate}`);
     await expect(row).toContainText("Not yet");
-    await expect(page.getByTestId("student-row-e2e.student")).toContainText("Submitted");
+    const own = page.getByTestId("student-row-e2e.student");
+    await expect(own).toContainText("Submitted");
+    // The student's own answer is locked for the teacher too: View, never Replace.
+    await expect(own.getByTestId("locked-badge")).toBeVisible();
+    await expect(own.getByRole("link", { name: /^View for/ })).toBeVisible();
+    // Level and subject: shown per student, and filters.
+    await expect(row.getByTestId("student-level-subjects")).toContainText("Junior");
+    await page.getByRole("button", { name: "Senior (S4–S6)" }).click();
+    await expect(page.getByTestId(`student-row-${classmate}`)).toHaveCount(0);
+    await page.getByRole("button", { name: "Junior (S1–S3)" }).click();
+    await expect(page.getByTestId(`student-row-${classmate}`)).toBeVisible();
     await row.getByRole("link", { name: /^Submit for/ }).click();
     await expect(page.getByRole("heading", { name: new RegExp(`Answer for ${classmateName}`) })).toBeVisible({ timeout: 30_000 });
     await page.getByTestId("typed-answer").fill("Written by the student in class; typed by the teacher.");
     await page.getByTestId("submit-answer").click();
     await expect(page.getByText("Your answer was submitted: version 1.")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("version-1")).toContainText("(teacher)");
+    await expect(page.getByTestId("answer-locked")).toBeVisible();   // locked at once: neither the student nor a teacher replaces it
     await withDb(async (c) => {
       const teacherId = await idOf(c, "e2e.teacher");
       const v = (await c.query(
@@ -237,5 +288,45 @@ test.describe.serial("Teacher (G2): submits for a verified student of their scho
           WHERE s."testId" = $1 AND s."studentId" = $2`, [testId, classmateId])).rows;
       expect(v).toEqual([{ submitterRole: "TEACHER", submittedById: teacherId, teacherId }]);
     });
+  });
+});
+
+test.describe.serial("Administrator: a teacher's test submission, off and back on, in one switch (owner 2026-11-21)", () => {
+  test("turned off with a reason: the teacher still signs in and sees the Students page, but not the test's students; turned back on", async ({ browser }) => {
+    test.setTimeout(120_000);
+    const teacherId = await withDb((c) => idOf(c, "e2e.teacher"));
+    const admin = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
+    await signIn(admin, "admin");
+    await admin.goto(`/admin/users/${teacherId}`);
+    const card = admin.getByTestId("teacher-test-submission");
+    await expect(card.getByTestId("teacher-test-submission-state")).toContainText("Allowed", { timeout: 30_000 });
+    await card.getByTestId("teacher-test-submission-revoke").click();
+    await card.getByTestId("teacher-test-submission-reason").fill("Submitted for students of another school");
+    await card.getByTestId("teacher-test-submission-confirm").click();
+    await expect(card.getByTestId("teacher-test-submission-state")).toContainText("Turned off");
+    await expect(card.getByTestId("teacher-test-submission-state")).toContainText("Submitted for students of another school");
+
+    // The account is untouched: the teacher signs in; the test's students are refused (the backend decides).
+    const teacher = await (await browser.newContext()).newPage();
+    await signIn(teacher, "teacher");
+    const refused = await teacher.request.get(`/api/v1/teacher/tests/${testId}/students`, {
+      headers: { Authorization: `Bearer ${await apiToken(teacher.request, "e2e.teacher", passwordOf("teacher"))}` },
+    });
+    expect(refused.status()).toBe(403);
+
+    // The Users list marks the teacher.
+    await admin.goto("/admin/users?role=TEACHER&q=e2e.teacher");
+    await expect(admin.getByTestId("test-submission-off").first()).toBeVisible({ timeout: 30_000 });
+
+    await admin.goto(`/admin/users/${teacherId}`);
+    await card.getByTestId("teacher-test-submission-restore").click();
+    await expect(card.getByTestId("teacher-test-submission-state")).toContainText("Allowed");
+    await withDb(async (c) => {
+      const actions = (await c.query(`SELECT action FROM "AuditLog" WHERE "entityId" = $1 AND action LIKE 'TEACHER_TEST_SUBMISSION_%' ORDER BY "createdAt"`, [teacherId])).rows.map((r) => r.action);
+      expect(actions).toEqual(["TEACHER_TEST_SUBMISSION_REVOKED", "TEACHER_TEST_SUBMISSION_RESTORED"]);
+      expect((await c.query(`SELECT "accountStatus"::text AS s FROM "User" WHERE id = $1`, [teacherId])).rows[0].s).toBe("ACTIVE");
+    });
+    await admin.context().close();
+    await teacher.context().close();
   });
 });

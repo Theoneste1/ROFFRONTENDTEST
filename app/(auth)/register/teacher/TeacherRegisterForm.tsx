@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Teacher self-registration (`POST /auth/register/teacher`), the owner-approved design: an
- * application that an Administrator reviews. No account, school assignment or school record
- * exists until approval.
+ * Teacher self-registration (`POST /auth/register/teacher`). A listed school (owner 2026-11-21): the TEACHER account is
+ * created at once, linked to the school by its code — the teacher is signed in and taken to the teacher dashboard
+ * (unless the e-mail must be confirmed first: then "check your e-mail"). A school that is not listed yet: an application
+ * an Administrator reviews; no account, school assignment or school record exists until approval.
  *
  * Gate (lib/accounts/teacher-registration → teacherRegistrationGate): wait for GET /api/v1; the
  * backend must advertise `teacherSelfRegistration` and GET /auth/register/teacher/availability
@@ -20,6 +21,9 @@
  * validateTeacherRegistration; a failed check or a refused field: focus goes to the first highlighted field.
  */
 import { useState, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth/session";
+import { postLoginPath } from "@/lib/auth/roles";
 import SignupForm, { SIGNUP_FORM_CLASS, useSignupFocus } from "@/app/components/forms/SignupForm";
 import { errorKeys } from "@/lib/forms/wizard";
 import { TEACHER_PARTS, visibleParts } from "@/lib/forms/registration-fields";
@@ -216,6 +220,10 @@ function OpenForm() {
     return true;
   });
   const focus = useSignupFocus();
+  const session = useSession();
+  const router = useRouter();
+  // The account was created but signing in right away failed (shown on the done view with a link to sign in).
+  const [signInFailed, setSignInFailed] = useState(false);
 
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
@@ -235,6 +243,16 @@ function OpenForm() {
     try {
       const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d, homeRules), ...(extraOn && teacherExtraPayload(extra)), ...(genderOn && gender && { gender }) });
       if (pictureOn) setPictureResult(await uploadRegistrationAvatar(result.avatarUploadToken, picture));
+      // A listed school: the account exists — sign in and open the teacher dashboard (no Administrator involved).
+      if (result.accountCreated && !result.emailVerificationRequired) {
+        try {
+          const user = await session.login(result.username ?? d.username.trim().toLowerCase(), d.password);
+          router.replace(postLoginPath(user.role, null));
+          return;
+        } catch {
+          setSignInFailed(true);
+        }
+      }
       setDone(result);
     } catch (err) {
       setError(err);
@@ -248,6 +266,28 @@ function OpenForm() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (done?.accountCreated) {
+    return (
+      <div className="space-y-5" data-testid="teacher-register-done">
+        <AuthHeading title="Your teacher account is ready" />
+        <Alert tone="success">Welcome to ROF LMS. Your account is linked to your school.</Alert>
+        <ul className="space-y-2 text-sm text-slate-700 list-disc pl-5">
+          {done.school && <li>School: <strong>{done.school.name}</strong>{done.school.code ? ` (code ${done.school.code})` : ""}.</li>}
+          <li>You will see the students who registered with your school, and you can submit their tests.</li>
+          {done.emailVerificationRequired
+            ? <li data-testid="teacher-register-verify">We sent you an e-mail: confirm your address, then sign in with the username and password you chose.</li>
+            : signInFailed && <li>Sign in with the username and password you chose.</li>}
+        </ul>
+        {pictureOutcomeText(pictureResult) && (
+          <p className="text-sm text-slate-700" data-testid="picture-outcome">{pictureOutcomeText(pictureResult)}</p>
+        )}
+        <Link href="/login" className={primaryLink} data-testid="teacher-register-sign-in">
+          Sign in
+        </Link>
+      </div>
+    );
   }
 
   if (done) {

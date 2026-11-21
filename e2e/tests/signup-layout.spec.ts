@@ -41,7 +41,8 @@ async function dropFile(page: Page, file: { name: string; type: string; base64: 
 
 const FORMS = [
   { key: "student", path: "/register", submit: "Create my account", done: "register-done" },
-  { key: "teacher", path: "/register/teacher", submit: "Apply as a teacher", done: "teacher-register-done" },
+  // A listed school's teacher: the account at once, signed in, on the teacher portal (owner 2026-11-21).
+  { key: "teacher", path: "/register/teacher", submit: "Apply as a teacher", done: "teacher-portal" },
   { key: "coach", path: "/apply", submit: "Apply as a coach", done: "apply-done" },
 ] as const;
 
@@ -60,14 +61,16 @@ async function submitAndExpect(page: Page, button: string, doneTestId: string) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     await page.getByRole("button", { name: button }).click();
     const outcome = await Promise.race([
-      page.getByTestId(doneTestId).waitFor({ timeout: 30_000 }).then(() => "done" as const, () => null),
+      (doneTestId === "teacher-portal" ? page.waitForURL(/\/teacher(\/|$)/, { timeout: 30_000 }) : page.getByTestId(doneTestId).waitFor({ timeout: 30_000 }))
+        .then(() => "done" as const, () => null),
       page.getByRole("alert").filter({ hasText: /Too many requests/i }).waitFor({ timeout: 30_000 }).then(() => "limited" as const, () => null),
     ]);
     if (outcome !== "limited") break;
     test.info().setTimeout(test.info().timeout + 70_000);
     await page.waitForTimeout(61_000);
   }
-  await expect(page.getByTestId(doneTestId)).toBeVisible({ timeout: 30_000 });
+  if (doneTestId === "teacher-portal") await page.waitForURL(/\/teacher(\/|$)/, { timeout: 30_000 });
+  else await expect(page.getByTestId(doneTestId)).toBeVisible({ timeout: 30_000 });
 }
 
 test.describe("the registration forms: one continuous form that fits every window", () => {
@@ -126,7 +129,7 @@ test.describe("the registration forms: one continuous form that fits every windo
           const row = await withDb(async (c) => (await c.query(
             `SELECT status::text AS status, "firstName", phone, position, "homeDistrict", "schoolId" IS NOT NULL AS school, "olympiadInterests"::text AS interests, "avatarFileId" IS NULL AS no_picture
                FROM "TeacherApplication" WHERE username = $1`, [username])).rows[0]);
-          expect(row).toMatchObject({ status: "PENDING", firstName: "Aline", phone: expect.stringContaining("788123456"), position: "Mathematics teacher", homeDistrict: "Gasabo", school: true, no_picture: true });
+          expect(row).toMatchObject({ status: "APPROVED", firstName: "Aline", phone: expect.stringContaining("788123456"), position: "Mathematics teacher", homeDistrict: "Gasabo", school: true, no_picture: true });
           expect(row.interests).toContain("MATHEMATICS");
         } else if (form.key === "coach") {
           const row = await withDb(async (c) => (await c.query(

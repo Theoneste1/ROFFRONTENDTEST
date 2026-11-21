@@ -6,6 +6,8 @@
  * assigned to them directly. The backend decides which students appear; this page never widens it. On those
  * backends each row says how the teacher sees the student and what their permissions let them do for that student
  * (`access`, `can`); students still waiting for school verification are only counted, never named.
+ * Backends with testSubmissionLock (owner 2026-11-21): every student who registered with the school code is listed,
+ * pending verification included — nothing to wait for, so no "waiting" count.
  */
 import { useState } from "react";
 import Link from "next/link";
@@ -20,6 +22,7 @@ import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame } from "@/app/components/ui/PageFrame";
 import { Badge, Notice, SearchInput, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "@/app/admin/components/adminUi";
 import { TeacherTestsWidget } from "@/app/components/test-management/ResultViews";
+import { submissionLockSupported } from "@/lib/test-management/submissions";
 
 const GRADES: GradeLevel[] = ["S1", "S2", "S3", "S4", "S5", "S6"];
 const PAGE_SIZE = 20;
@@ -31,15 +34,18 @@ export default function TeacherStudents() {
   const [page, setPage] = useState(1);
   const [access, setAccess] = useState<"" | "SCHOOL" | "ASSIGNED">("");
   const tsa = teacherStudentAccessSupported(useBackendCapabilities().detection);
+  const selfService = submissionLockSupported(useBackendCapabilities().detection);
   const summary = useTeacherStudentsSummary(tsa);
   const students = useTeacherStudents({ q: q || undefined, gradeLevel: grade || undefined, ...(tsa && access && { access }), page, limit: PAGE_SIZE });
 
   const canOpen = can("students.viewProfile") || can("students.viewProgress") || can("submissions.submitOnBehalf");
-  const pending = pendingText(summary.data?.pendingVerification);
+  const pending = selfService ? null : pendingText(summary.data?.pendingVerification);
   const rows = students.data?.data ?? [];
 
   return (
-    <PageFrame title="My students" description={tsa ? "Verified students of your schools, and students an administrator assigned to you." : "Students of the schools assigned to you by an administrator."}>
+    <PageFrame title="My students" description={selfService
+      ? "Every student who registered with your school code appears here automatically. Submit their tests from Tests."
+      : tsa ? "Verified students of your schools, and students an administrator assigned to you." : "Students of the schools assigned to you by an administrator."}>
       {/* Tests (Phase 4 dashboard: capability testResults, tests.submitForStudents) */}
       <div className="mb-6"><TeacherTestsWidget /></div>
       {pending && (
@@ -47,7 +53,7 @@ export default function TeacherStudents() {
           <Notice tone="info">{pending}</Notice>
         </div>
       )}
-      {!canOpen && (
+      {!canOpen && !selfService && (
         <Notice tone="info">
           You can see the list of your students. To open a student&apos;s profile or progress, or to submit work for a student, an administrator must grant you that permission.
         </Notice>
@@ -114,7 +120,9 @@ export default function TeacherStudents() {
                 <TableMessage colSpan={canOpen ? 5 : 4}>
                   {q || grade || access
                     ? "No student matches these filters."
-                    : "No students to show yet. Students appear here once an administrator has assigned you their school and verified their affiliation with it."}
+                    : selfService
+                      ? "No students yet. Students appear here as soon as they register with your school code."
+                      : "No students to show yet. Students appear here once an administrator has assigned you their school and verified their affiliation with it."}
                 </TableMessage>
               ) : (
                 rows.map((s) => {

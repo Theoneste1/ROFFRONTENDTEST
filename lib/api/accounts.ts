@@ -223,7 +223,20 @@ export interface SchoolAccessStudentFilters {
 
 export const DELEGATION_RULES = { reasonMin: 3, reasonMax: 500 };
 
+/** testSubmissionLock: whether a teacher may submit tests for their students (on by default), and the revocation. */
+export interface TeacherTestSubmissionState {
+  userId: string;
+  allowed: boolean;
+  revokedAt: string | null;
+  reason: string | null;
+  revokedBy: PersonRef | null;
+}
+
 export const teachersAdminApi = {
+  /** testSubmissionLock (users.manageTeachers). */
+  testSubmission: (teacherId: string) => api<TeacherTestSubmissionState>(`/admin/teachers/${encodeURIComponent(teacherId)}/test-submission`),
+  setTestSubmission: (teacherId: string, body: { allowed: true } | { allowed: false; reason: string }) =>
+    api<TeacherTestSubmissionState>(`/admin/teachers/${encodeURIComponent(teacherId)}/test-submission`, { method: "PUT", body }),
   assignments: (teacherId: string) =>
     api<Page<TeacherSchoolAssignment>>("/admin/teacher-assignments", { query: { teacherId, limit: 100 } }),
   /** A school's Teacher assignments (INT-07): names only, never contact details. */
