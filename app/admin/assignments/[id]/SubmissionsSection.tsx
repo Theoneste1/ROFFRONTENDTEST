@@ -11,6 +11,7 @@ import { formatDateTime, personName } from "@/lib/format";
 import { Alert, ErrorState, Spinner } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { Badge, Card, FilterPills, Modal, Notice, SubmissionBadge, TableCard, TableMessage, btnPrimary, linkBtn, td, th } from "../../components/adminUi";
+import StudentName from "@/app/components/students/StudentName";
 
 const STATUS_TABS: { label: string; value: "" | SubmissionStatus }[] = [
   { label: "All", value: "" },
@@ -235,7 +236,7 @@ export default function SubmissionsSection({ assignment }: { assignment: MentorA
                 return (
                   <tr key={s.id} className="text-xs hover:bg-gray-50/60">
                     <td className={`${td} font-semibold text-gray-800 whitespace-nowrap`}>
-                      {personName(s.student)}
+                      <StudentName student={s.student} />
                       <span className="block text-[11px] font-normal text-gray-500">
                         @{s.student.username}
                         {s.student.gradeLevel && ` · ${s.student.gradeLevel}`}

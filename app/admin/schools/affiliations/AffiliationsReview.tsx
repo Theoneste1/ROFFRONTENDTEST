@@ -27,6 +27,8 @@ import { AdminPage, ConfirmDialog, FilterPills, Modal, Notice, TableCard, TableM
 import { SchoolPicker } from "../../users/components/userUi";
 import { useRecordBulk } from "../../components/bulk/RecordBulk";
 import { bulkFilterFrom } from "@/lib/admin/bulk-records";
+import { StudentLink } from "@/app/components/students/StudentProfileHeader";
+import { AvatarBadge } from "@/app/components/account/UserAvatar";
 
 const STATUSES: { label: string; value: AffiliationStatus }[] = [
   { label: "Waiting", value: "PENDING" },
@@ -50,7 +52,8 @@ type Decision = { kind: "verify" | "reject" | "revoke" | "reopen"; claim: School
 
 export default function AffiliationsReview() {
   const { can } = useSession();
-  const enabled = hasFeature(useBackendCapabilities().detection, "schoolAffiliations") && can("schools.manage");
+  const { detection } = useBackendCapabilities();
+  const enabled = hasFeature(detection, "schoolAffiliations") && can("schools.manage");
   const qc = useQueryClient();
   const [status, setStatus] = useState<AffiliationStatus>("PENDING");
   const [page, setPage] = useState(1);
@@ -136,13 +139,19 @@ export default function AffiliationsReview() {
                 <tr key={c.id}>
                   {bulk.enabled && <td className={td}>{bulk.rowCheckbox(c.id, `${c.student.firstName} ${c.student.lastName}`)}</td>}
                   <td className={td}>
-                    <p className="font-semibold text-gray-800">
-                      {c.student.firstName} {c.student.lastName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      @{c.student.username}
-                      {c.student.gradeLevel ? ` · ${c.student.gradeLevel}` : ""}
-                    </p>
+                    {/* The student's photo (owner 2026-11-22): the picture, or the initials avatar. */}
+                    <div className="flex items-center gap-3">
+                      <AvatarBadge user={c.student} size="lg" />
+                      <div>
+                        <p className="font-semibold text-gray-800">
+                          {hasFeature(detection, "studentOverview") ? <StudentLink student={c.student} /> : <>{c.student.firstName} {c.student.lastName}</>}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          @{c.student.username}
+                          {c.student.gradeLevel ? ` · ${c.student.gradeLevel}` : ""}
+                        </p>
+                      </div>
+                    </div>
                   </td>
                   <td className={`${td} text-gray-700`}>
                     {c.school ? (

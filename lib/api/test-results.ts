@@ -28,7 +28,8 @@ import type { MarkingKind } from "./test-marking";
 import type { Page } from "./types";
 
 export type RankingBy = "overall" | "division" | "school";
-export type RankingDivision = "JUNIOR" | "SENIOR" | "UNKNOWN";
+/** A division code or UNKNOWN. */
+export type RankingDivision = string;
 export type ExportType = "results" | "schools" | "divisions" | "questions";
 export type PreviewWarning = "UNAPPROVED_RESULTS" | "ACTIVE_INDIVIDUAL_EXTENSIONS" | "ACTIVE_TEST_EXTENSION" | "DEADLINE_NOT_PASSED";
 

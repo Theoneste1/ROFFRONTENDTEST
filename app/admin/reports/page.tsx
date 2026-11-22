@@ -13,6 +13,9 @@ import { CsvButton } from "../components/adminUi";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { hasFeature } from "@/lib/api/capabilities";
 import { exportPlan } from "@/lib/admin/report-exports";
+import Link from "next/link";
+import { useSession } from "@/lib/auth/session";
+import { customReportsNavVisible } from "@/lib/reports/custom-reports";
 
 interface ReportItemProps {
   label: string;
@@ -76,6 +79,9 @@ export default function ReportsContent() {
   const [courseId, setCourseId] = useState("");
   const [divisionId, setDivisionId] = useState("");
   const [timeframe, setTimeframe] = useState<"30" | "7" | "all">("30");
+  // Custom reports (customReports + reports.build) open from here: the Administrator menu keeps its size.
+  const { knownPermissions } = useSession();
+  const customReports = customReportsNavVisible(useBackendCapabilities().detection, knownPermissions, true);
 
   // Plain dates (stable query keys within a day); the backend reads a date as the whole day.
   const filters = useMemo<ReportFilters>(() => {
@@ -116,9 +122,16 @@ export default function ReportsContent() {
   return (
     <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800 font-sans">
       {/* Header Section */}
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Reports</h1>
-        <p className="text-sm text-gray-600 mt-1 font-medium">Live figures for the current academic year, filtered by course, division and period.</p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Reports</h1>
+          <p className="text-sm text-gray-600 mt-1 font-medium">Live figures for the current academic year, filtered by course, division and period.</p>
+        </div>
+        {customReports && (
+          <Link href="/admin/custom-reports" className="inline-flex items-center gap-1.5 rounded-xl bg-[#00428C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#003370]" data-testid="open-custom-reports">
+            Custom reports
+          </Link>
+        )}
       </div>
 
       {/* Filter Bar */}

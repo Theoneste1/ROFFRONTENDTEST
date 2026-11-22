@@ -157,6 +157,8 @@ export type UpdateUserInput = Partial<Omit<CreateUserInput, "password" | "school
   currentPassword?: string;
   /** A Coach's subjects (capability coachOlympiadInterests; Coach accounts only, at least one). */
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   /** homeLocationRules: the home country; with "RW" the province, district and sector (none otherwise). */
   homeCountry?: string;
   homeProvince?: string;
@@ -213,9 +215,59 @@ export const usersApi = {
 
 export const divisionsApi = {
   list: () => api<AdminDivision[]>("/admin/divisions"),
-  update: (id: string, input: { name?: string; description?: string; isActive?: boolean }) =>
+  /** Public (every signed-in screen): every division, in display order, with its suggested grades. */
+  publicList: () => api<AdminDivision[]>("/divisions"),
+  update: (id: string, input: DivisionInput) =>
     api<AdminDivision>(`/admin/divisions/${id}`, { method: "PATCH", body: input }),
+  /** Capability adminDivisions: a new division (its code is permanent). */
+  create: (input: DivisionInput & { code: string; name: string }) => api<AdminDivision>("/admin/divisions", { method: "POST", body: input }),
+  /** Capability adminDivisions: the courses and whether this division offers them. */
+  courses: (id: string) => api<DivisionCourse[]>(`/admin/divisions/${id}/courses`),
+  /** Capability adminDivisions: exactly these courses are offered in this division. */
+  setCourses: (id: string, courseIds: string[]) => api<DivisionCourse[]>(`/admin/divisions/${id}/courses`, { method: "PUT", body: { courseIds } }),
 };
+
+/** Fields an Administrator edits on a division (adminDivisions: suggested grades and order). */
+export interface DivisionInput {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+  suggestedGrades?: GradeLevel[];
+  sortOrder?: number;
+}
+
+export interface DivisionCourse {
+  id: string;
+  code: string;
+  title: string;
+  status: string;
+  discipline: { id: string; code: string; name: string };
+  offered: boolean;
+}
+
+/** One course x division pair of a bulk coach assignment, as previewed or applied. */
+export interface BulkAssignmentPair {
+  course: { id: string; code: string; title: string };
+  division: { id: string; code: string; name: string };
+  state: "NEW" | "REACTIVATE" | "ALREADY_ASSIGNED";
+}
+
+export interface BulkAssignmentResult {
+  mentor: { id: string; firstName: string; lastName: string };
+  scope: "ALL" | "DIVISION" | "PAIRS";
+  pairs: BulkAssignmentPair[];
+  notOffered: Array<{ courseId: string; divisionId: string }>;
+  counts: { total: number; new: number; reactivate: number; alreadyAssigned: number; notOffered: number };
+  applied: boolean;
+}
+
+export interface BulkAssignmentInput {
+  mentorId: string;
+  scope: "ALL" | "DIVISION" | "PAIRS";
+  divisionId?: string;
+  pairs?: Array<{ courseId: string; divisionId: string }>;
+  dryRun?: boolean;
+}
 
 export const schoolsApi = {
   list: (params: { search?: string; page?: number; limit?: number } = {}) => api<Page<SchoolSummary>>("/schools", { query: params }),
@@ -245,6 +297,8 @@ export const mentorsApi = {
     api<MentorScope>("/admin/mentor-assignments", { method: "POST", body: input }),
   /** Deactivate; reports open reviews that should be reassigned. */
   removeScope: (id: string) => api<MentorScope & { openReviewsToReassign: number }>(`/admin/mentor-assignments/${id}`, { method: "DELETE" }),
+  /** Capability adminDivisions: many course x division pairs at once (ALL / DIVISION / PAIRS); dryRun previews. */
+  bulkAssign: (input: BulkAssignmentInput) => api<BulkAssignmentResult>("/admin/mentor-assignments/bulk", { method: "POST", body: input }),
 };
 
 export const mentorRequestsApi = {

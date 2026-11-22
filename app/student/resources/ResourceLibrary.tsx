@@ -121,7 +121,7 @@ export default function ResourceLibrary() {
       <div className="p-6">
         {header}
         {noDivision ? (
-          <AccessDenied title="Your account has no division yet" body="Resources are shared by division (Junior S1–S3 or Senior S4–S6). An administrator needs to set your grade before you can see them." />
+          <AccessDenied title="Your account has no division yet" body="Resources are shared by Olympiad level. An administrator needs to set your grade or level before you can see them." />
         ) : (
           <ErrorState error={lib.courses.error} title="Couldn't load the resource library" onRetry={() => lib.courses.refetch()} />
         )}

@@ -29,7 +29,8 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
 import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
 import { applicationDetailsSupported, coachExtraPayload, emptyCoachExtra, validateCoachExtra, type CoachExtraDraft } from "@/lib/accounts/application-details";
-import { CoachExtraFields } from "@/app/components/applications/ExtraFields";
+import { ChoiceWithOtherField, CoachExtraFields } from "@/app/components/applications/ExtraFields";
+import { OCCUPATIONS } from "@/lib/accounts/coach-choices";
 import {
   coachDetailsPayload,
   coachDetailsSupported,
@@ -46,6 +47,7 @@ import { HOME_ERRORS, homeLocationRulesSupported, homePlacePayload, validateHome
 import { emptyPlace, type Place } from "@/lib/schools/school-cascade";
 import { RWANDA } from "@/lib/schools/countries";
 import OlympiadInterestsField from "@/app/components/account/OlympiadInterestsField";
+import { otherInterestSupported } from "@/lib/accounts/olympiad-interests";
 import SignupForm, { SIGNUP_FORM_CLASS, useSignupFocus } from "@/app/components/forms/SignupForm";
 import { errorKeys } from "@/lib/forms/wizard";
 import { coachParts } from "@/lib/forms/registration-fields";
@@ -315,15 +317,17 @@ function CoachApplication() {
       ),
     ])),
     occupation: (
-      <TextField
+      <ChoiceWithOtherField
         label="Current or most recent occupation"
         name="occupation"
-        required
-        maxLength={200}
+        options={OCCUPATIONS}
+        placeholder="Choose your occupation"
+        otherLabel="Your occupation"
+        otherHint="For example: Accountant, Medical student, Retired teacher."
+        max={200}
         value={details.occupation}
-        onChange={(e) => setDetail("occupation", e.target.value, "occupation")}
+        onChange={(v) => setDetail("occupation", v, "occupation")}
         error={detailErrors.occupation}
-        hint="For example: mathematics teacher, engineering student, software developer."
       />
     ),
     educationLevel: (
@@ -343,6 +347,8 @@ function CoachApplication() {
         value={details.interests}
         onChange={(next) => setDetail("interests", next, "olympiadInterests")}
         error={detailErrors.olympiadInterests}
+        other={details.interestOther}
+        onOtherChange={otherInterestSupported(detection) ? (next) => setDetail("interestOther", next, "olympiadInterests") : undefined}
         label={COACH_SUBJECTS_LABEL}
         hint="Choose one or more. You can change them later on your profile."
       />

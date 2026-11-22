@@ -28,7 +28,7 @@ import { TESTS_EXTENSIONS, TESTS_VIEW_SUBMISSIONS, staffTabVisible } from "@/lib
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime, formatFileSize, hasAcceptedExtension, personName } from "@/lib/format";
 import {
-  ANSWER_FORMAT_LABEL, DIVISION_LABEL, TESTS_MANAGE, TESTS_MANAGE_MARKERS, TEST_FILE_ACCEPT, TEST_FILE_MAX_BYTES, detailsChange,
+  ANSWER_FORMAT_LABEL, TESTS_MANAGE, TESTS_MANAGE_MARKERS, TEST_FILE_ACCEPT, TEST_FILE_MAX_BYTES, detailsChange,
   detailsDraftOf, detailsProblems, moveItem, parseMarks, publishProblemText, questionBody, questionProblems, questionSum, sumText,
   type DetailsDraft, type DetailsField, type QuestionDraft,
 } from "@/lib/test-management/rules";
@@ -38,6 +38,7 @@ import { PageFrame } from "@/app/components/ui/PageFrame";
 import { ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, btnSecondary } from "@/app/admin/components/adminUi";
 import { DetailsFields, StatusBadge, TestsGate, inputBad, inputCls, inputOk, labelCls } from "./shared";
 import MarkersPanel from "./MarkersPanel";
+import LevelName from "./LevelName";
 import SubmissionsPanel from "./SubmissionsPanel";
 import ExtensionsPanel from "./ExtensionsPanel";
 import DistributionPanel from "./DistributionPanel";
@@ -113,7 +114,7 @@ function Detail({ id, base, initialTab }: { id: string; base: string; initialTab
   return (
     <PageFrame
       title={t.title}
-      description={<span className="inline-flex flex-wrap items-center gap-2"><StatusBadge status={t.status} /> {t.subject.name} · {DIVISION_LABEL[t.division]} · {t.maxMarks} marks</span>}
+      description={<span className="inline-flex flex-wrap items-center gap-2"><StatusBadge status={t.status} /> {t.subject.name} · <LevelName code={t.division} /> · {t.maxMarks} marks</span>}
       actions={canManage && (
         <>
           {t.status === "DRAFT" ? (
@@ -240,7 +241,7 @@ function DetailsTab({ test, canManage, onSaved }: { test: Test; canManage: boole
     return (
       <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
         <Info label="Subject">{test.subject.name}</Info>
-        <Info label="Division">{DIVISION_LABEL[test.division]}</Info>
+        <Info label="Level"><LevelName code={test.division} /></Info>
         <Info label="How students answer">{ANSWER_FORMAT_LABEL[test.answerFormat]}</Info>
         <Info label="Maximum marks">{test.maxMarks}</Info>
         <Info label="Opens">{formatDateTime(test.opensAt)}</Info>

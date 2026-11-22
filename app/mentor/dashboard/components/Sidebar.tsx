@@ -15,7 +15,8 @@ import {
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { MENTOR_MARKING, MENTOR_NAV, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { MENTOR_MARKING, MENTOR_NAV, MENTOR_SHARED_REPORTS, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { customReportsNavVisible } from "@/lib/reports/custom-reports";
 import { testsNavVisible } from "@/lib/test-management/rules";
 import { markingNavVisible } from "@/lib/test-management/marking";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -31,6 +32,7 @@ const ICONS: Record<string, LucideIcon> = {
     "/mentor/reviews": ClipboardCheck,
     "/mentor/programme": Network,
     "/mentor/tests": FileQuestion,
+    "/mentor/reports": FileQuestion,
     "/mentor/marking": PenLine,
 };
 
@@ -49,6 +51,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         ...visibleNav(MENTOR_NAV, knownPermissions),
         ...(testsNavVisible(detection, knownPermissions) ? [MENTOR_TESTS] : []),
         ...(markingNavVisible(detection, knownPermissions) ? [MENTOR_MARKING] : []),
+        ...(customReportsNavVisible(detection, knownPermissions, false) ? [MENTOR_SHARED_REPORTS] : []),
     ];
 
     // Function to check if link is active

@@ -24,7 +24,8 @@
 import { api, apiBlob, type DownloadedFile } from "./client";
 import type { Page } from "./types";
 
-export type TestDivision = "JUNIOR" | "SENIOR" | "ALL";
+/** A division code (JUNIOR, MIDDLE, SENIOR or one an Administrator created) or ALL. */
+export type TestDivision = string;
 export type TestAnswerFormat = "UPLOAD_ONLY" | "TYPED_ONLY" | "BOTH";
 export type TestStatus = "DRAFT" | "PUBLISHED";
 /** The file kinds as they appear in the URL. */

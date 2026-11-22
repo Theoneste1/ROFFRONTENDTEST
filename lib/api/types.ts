@@ -16,7 +16,8 @@ import type { OlympiadSubject } from "./teacher-registration";
  * a role must also cope with an unknown value (see lib/auth/role-rules.ts).
  */
 export type Role = "STUDENT" | "TEACHER" | "MENTOR" | "HEAD_COACH" | "ADMIN" | "SUPER_ADMIN";
-export type DivisionCode = "JUNIOR" | "SENIOR";
+/** A division's code: JUNIOR, MIDDLE, SENIOR or one an Administrator created (capability adminDivisions). */
+export type DivisionCode = string;
 export type GradeLevel = "S1" | "S2" | "S3" | "S4" | "S5" | "S6";
 
 /** Permission strings from `GET /me/permissions` (src/auth/permissions.ts). */
@@ -51,14 +52,16 @@ export type Permission =
   | "tests.view" | "tests.manage" | "tests.manageMarkers"
   // Test Management, Phase 2 (capability testSubmissions): extensions and tracking (Administrators, Head Coaches), a
   // student's own answers, a teacher's answers for the verified students of their schools (G2).
-  | "tests.extensions" | "tests.viewSubmissions" | "tests.submit" | "tests.submitForStudents"
+  | "tests.extensions" | "tests.viewSubmissions" | "tests.authorizeResubmission" | "tests.submit" | "tests.submitForStudents"
   // Test Management, Phase 3 (capability testMarking): distribution and review (Administrators, Head Coaches), choosing /
   // adjusting marks (the subject's Head Coaches only, G4), blind marking (Coaches: authorised subjects, assigned submissions).
   | "tests.distribute" | "tests.review" | "tests.adjustMarks" | "tests.mark"
   // Test Management, Phase 4 (capability testResults): publication (the override: Administrators only), results with
   // identity and reports, internal rankings (Administrators, Head Coaches), own results (Students), school results (Teachers).
   | "tests.publishResults" | "tests.overridePublication" | "tests.viewResults" | "tests.viewRankings"
-  | "tests.viewOwnResults" | "tests.viewSchoolResults";
+  | "tests.viewOwnResults" | "tests.viewSchoolResults"
+  // Olympiad levels (Administrators, User Managers; Coaches and Head Coaches for their programmes) and custom reports (owner 2026-11-22).
+  | "students.classifyLevel" | "reports.build";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
@@ -118,6 +121,8 @@ export interface CurrentUser {
   createdAt: string;
   /** Students' Olympiad interests (backends with `studentOlympiadInterests`; absent on older ones). */
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   // Students, backends with `studentRegistrationDetails` (absent or null otherwise):
   /** An ISO instant ("2012-05-01T00:00:00.000Z"): use the first 10 characters (a date, never shifted by a time zone). */
   dateOfBirth?: string | null;
@@ -599,6 +604,8 @@ export interface UpdateMeInput {
   homeSector?: string;
   /** Only on a backend with `studentOlympiadInterests`; at least one. */
   olympiadInterests?: OlympiadSubject[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
 }
 
 // ─── Mentor ─────────────────────────────────────────────────────────────────
@@ -845,6 +852,8 @@ export interface AdminUser {
   activatedAt: string | null;
   avatarUrl: string | null;
   division: DivisionRef | null;
+  /** olympiadLevels: the level was set by hand (it no longer follows the grade). */
+  divisionManual?: boolean;
   gradeLevel: GradeLevel | null;
   school: SchoolRef | null;
   homeLocation: string | null;
@@ -856,6 +865,10 @@ export interface AdminUser {
   updatedAt?: string;
   /** Students' Olympiad interests (backends with studentOlympiadInterests). */
   olympiadInterests?: string[];
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
+  /** testSubmissionLock, TEACHER rows of the Users list: false when an Administrator turned off their test submission. */
+  testSubmissionAllowed?: boolean;
   /** The account state (backends with accountStates); isActive is true exactly when it is ACTIVE. */
   accountStatus?: AccountState;
   /**
@@ -900,7 +913,10 @@ export interface AdminDivision {
   description: string | null;
   isActive: boolean;
   gradeLevels: GradeLevel[];
-  _count: { students: number; mentorAssignments: number };
+  /** adminDivisions: the grades this division is suggested for, and its display order. */
+  suggestedGrades?: GradeLevel[];
+  sortOrder?: number;
+  _count?: { students: number; mentorAssignments: number };
 }
 
 /** `GET /schools` items (admin). */
@@ -972,6 +988,8 @@ export interface MentorRequest {
   occupation?: string | null;
   educationLevel?: string | null;
   olympiadInterests?: string[] | null;
+  /** Another Olympiad named in words ("Other"; capability olympiadInterestOther). */
+  olympiadInterestOther?: string | null;
   /** Backends with `applicationDetails`. */
   phone?: string | null;
   affiliation?: string | null;

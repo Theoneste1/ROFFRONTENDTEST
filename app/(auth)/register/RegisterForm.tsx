@@ -69,7 +69,7 @@ import {
   type HomeDraft,
 } from "@/lib/accounts/home-location";
 import { genderSupported, validateGender, type Gender } from "@/lib/accounts/gender";
-import { studentInterestsSupported, validateInterests, type OlympiadSubject } from "@/lib/accounts/olympiad-interests";
+import { otherInterestField, otherInterestSupported, studentInterestsSupported, validateInterestsWithOther, type OlympiadSubject } from "@/lib/accounts/olympiad-interests";
 import { registrationGate, type RegistrationSchoolMode } from "@/lib/accounts/registration-mode";
 import {
   birthDateBounds,
@@ -133,6 +133,9 @@ export default function RegisterForm() {
   // Olympiad interests: asked for only when the backend accepts them (decided with the school mode).
   const [interestsOn, setInterestsOn] = useState(false);
   const [interests, setInterests] = useState<OlympiadSubject[]>([]);
+  // "Other" Olympiad (capability olympiadInterestOther): null while not ticked.
+  const [otherOn, setOtherOn] = useState(false);
+  const [interestOther, setInterestOther] = useState<string | null>(null);
   // Gender: asked for (required) only when the backend accepts it (decided with the school mode).
   const [genderOn, setGenderOn] = useState(false);
   const [gender, setGender] = useState<Gender | "">("");
@@ -156,6 +159,7 @@ export default function RegisterForm() {
   if (schoolMode === null && gate.state === "ready") {
     setSchoolMode(gate.mode);
     setInterestsOn(studentInterestsSupported(caps.detection));
+    setOtherOn(otherInterestSupported(caps.detection));
     setGenderOn(genderSupported(caps.detection));
     setDetailsOn(studentDetailsSupported(caps.detection));
     setRulesOn(studentDetailsSupported(caps.detection) && homeLocationRulesSupported(caps.detection));
@@ -220,7 +224,7 @@ export default function RegisterForm() {
     }
     if (!detailsOn && v.homeLocation.trim().length < 2) e.homeLocation = "Enter where you live (e.g. district).";
     if (interestsOn) {
-      const i = validateInterests(interests);
+      const i = validateInterestsWithOther(interests, interestOther);
       if (i) e.olympiadInterests = i;
     }
     const p = validateNewPassword(password, confirm);
@@ -258,7 +262,7 @@ export default function RegisterForm() {
           : rulesOn
             ? { ...studentPersonalPayload(details), homeCountry: home.country, ...homePlacePayload(home) }
             : studentDetailsPayload(details)),
-        ...(interestsOn && { olympiadInterests: interests }),
+        ...(interestsOn && { olympiadInterests: interests, ...otherInterestField(interestOther) }),
         ...(genderOn && gender && { gender }),
       });
       if (pictureOn) setPictureResult(await uploadRegistrationAvatar(res.avatarUploadToken, picture));
@@ -529,7 +533,7 @@ export default function RegisterForm() {
         {errors.gradeLevel ? (
           <p id="gradeLevel-error" className="mt-1.5 text-xs text-red-600">{errors.gradeLevel}</p>
         ) : (
-          <p id="gradeLevel-hint" className="mt-1.5 text-xs text-slate-600">S1–S3 study in the Junior division, S4–S6 in the Senior division.</p>
+          <p id="gradeLevel-hint" className="mt-1.5 text-xs text-slate-600">Your Olympiad level (Junior, Middle or Senior) is suggested from your grade; a coach can change it.</p>
         )}
       </div>
     ),
@@ -541,6 +545,11 @@ export default function RegisterForm() {
           setErrors((s) => ({ ...s, olympiadInterests: undefined }));
         }}
         error={errors.olympiadInterests}
+        other={interestOther}
+        onOtherChange={otherOn ? (next) => {
+          setInterestOther(next);
+          setErrors((s) => ({ ...s, olympiadInterests: undefined }));
+        } : undefined}
       />
     ),
     schoolCountry: directory && claimPiece("country"),

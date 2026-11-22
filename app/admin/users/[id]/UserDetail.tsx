@@ -16,7 +16,9 @@ import { AdminPage, Card, ConfirmDialog, Modal, Notice, btnDanger, btnPrimary, b
 import { AccountStatusBadge, UserForm } from "../components/userUi";
 import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
-import { interestsText } from "@/lib/accounts/olympiad-interests";
+import TeacherTestSubmissionCard from "./TeacherTestSubmissionCard";
+import { submissionLockSupported } from "@/lib/test-management/submissions";
+import { interestsWithOtherText } from "@/lib/accounts/olympiad-interests";
 import PermissionOverridesCard from "./PermissionOverridesCard";
 import StatusHistoryCard from "./StatusHistoryCard";
 import { statusHistoryVisible } from "@/lib/accounts/status-history";
@@ -30,6 +32,8 @@ import DateOfBirthCard from "./DateOfBirthCard";
 import { canCorrectDateOfBirth } from "@/lib/accounts/date-of-birth-correction";
 import { canEditCoachSubjects, coachInterestsSupported } from "@/lib/accounts/coach-application";
 import CoachSubjectsCard from "./CoachSubjectsCard";
+import OlympiadLevelCard from "@/app/components/students/OlympiadLevelCard";
+import { AvatarTile } from "@/app/components/account/UserAvatar";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -95,6 +99,15 @@ export default function UserDetail({ userId }: { userId: string }) {
       }
     >
       {back}
+      {/* The photo first (owner 2026-11-22): the picture, or the initials avatar when there is none. */}
+      <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-center" data-testid="user-photo">
+        <AvatarTile user={u} />
+        {u.role === "STUDENT" && hasFeature(detection, "studentOverview") && (
+          <Link href={`/admin/profiles/${u.id}`} className={btnSecondary} data-testid="open-student-profile">
+            Student profile
+          </Link>
+        )}
+      </div>
       {notice && (
         <Notice tone={notice.tone} onClose={() => setNotice(null)}>
           {notice.text}
@@ -109,12 +122,13 @@ export default function UserDetail({ userId }: { userId: string }) {
             <Row label="Role">{roleLabel(u.role)}</Row>
             {u.role === "STUDENT" && (
               <>
-                <Row label="Division">{u.division ? `${u.division.name}${u.gradeLevel ? ` · ${u.gradeLevel}` : ""}` : "—"}</Row>
+                <Row label="Grade">{u.gradeLevel ?? "—"}</Row>
+                <Row label="Olympiad level">{u.division ? `${u.division.name}${u.divisionManual ? " (set by hand)" : ""}` : "—"}</Row>
                 <Row label="Points">{formatNumber(u.points)} · {formatNumber(u.problemsSolved)} problems solved</Row>
-                {u.olympiadInterests !== undefined && <Row label="Olympiad interests">{interestsText(u.olympiadInterests) || "None chosen"}</Row>}
+                {u.olympiadInterests !== undefined && <Row label="Olympiad interests">{interestsWithOtherText(u.olympiadInterests, u.olympiadInterestOther) || "None chosen"}</Row>}
               </>
             )}
-            <Row label="School">{u.school ? `${u.school.name} · ${u.school.location}` : "—"}</Row>
+            <Row label="School">{u.school ? u.school.name : "—"}</Row>
             <Row label="Home location">{u.homeLocation || "—"}</Row>
             {/* ACC-02: the account's personal details (sent to administrators for one account only). */}
             {personalDetailRows(u).map((r) => (
@@ -257,12 +271,16 @@ export default function UserDetail({ userId }: { userId: string }) {
           </div>
         </Card>
 
+        {/* A student's Olympiad level and its history (olympiadLevels; students.classifyLevel). */}
+        {u.role === "STUDENT" && hasFeature(detection, "olympiadLevels") && can("students.classifyLevel") && <OlympiadLevelCard studentId={u.id} canChange className="lg:col-span-3" />}
         {/* A Coach's subjects (capability coachOlympiadInterests): shown, and edited by administrators (users.manage and users.manageCoaches, as the backend checks; canEditCoachSubjects). */}
-        {u.role === "MENTOR" && coachInterestsSupported(detection) && <CoachSubjectsCard userId={u.id} subjects={u.olympiadInterests} canEdit={canEditCoachSubjects({ role: me?.role, can, overrides: permissionOverrides })} />}
+        {u.role === "MENTOR" && coachInterestsSupported(detection) && <CoachSubjectsCard userId={u.id} subjects={u.olympiadInterests} other={u.olympiadInterestOther ?? null} canEdit={canEditCoachSubjects({ role: me?.role, can, overrides: permissionOverrides })} />}
         {/* Students' date of birth: correction with a reason, and its history (capability dateOfBirthCorrection). */}
         {canCorrectDateOfBirth(detection, u.role, can("users.manage")) && <DateOfBirthCard userId={u.id} dateOfBirth={u.dateOfBirth} />}
         {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
+        {/* A teacher's test submission for students: one switch, the account untouched (testSubmissionLock). */}
+        {u.role === "TEACHER" && can("users.manageTeachers") && submissionLockSupported(detection) && !isMe && <TeacherTestSubmissionCard teacherId={u.id} />}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
         {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}
         {/* Super Administrators: effective permissions (permissions.view) and overrides (permissions.manageOverrides). */}

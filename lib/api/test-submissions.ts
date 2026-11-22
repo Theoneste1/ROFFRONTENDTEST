@@ -24,6 +24,11 @@
  *     GET    /admin/tests/:id/submissions?status&schoolId&division&q   tests.viewSubmissions (tracking + counts)
  *     GET    /admin/tests/:id/submissions/:submissionId        every version, submitter, extension status
  *     GET    /admin/tests/:id/submissions/:sid/versions/:vid/pages/:n
+ *   Locked submissions (owner 2026-11-21, capability testSubmissionLock): a submitted answer is locked for the student
+ *   and every teacher (409 SUBMISSION_LOCKED); only an Administrator allows one more version, with a reason:
+ *     POST   /admin/tests/:id/submissions/:sid/resubmission    { reason } — tests.authorizeResubmission
+ *     DELETE /admin/tests/:id/submissions/:sid/resubmission    withdraw it while not used yet
+ *   Teachers also see the students whose school claim is still pending, and filter by level and subject.
  */
 import { api, apiBlob, type DownloadedFile } from "./client";
 import type { TestAnswerFormat, TestDivision, TestPerson, TestSubject } from "./tests";
@@ -35,6 +40,9 @@ export type TrackingState = "SUBMITTED" | "NOT_SUBMITTED" | "LATE_BLOCKED";
 export type TrackingFilter = TrackingState | "UNDER_EXTENSION";
 export type ExtensionKind = "TEST" | "STUDENT" | "TEACHER";
 export type ExtensionState = "ACTIVE" | "EXPIRED" | "CANCELLED";
+/** A division code (Olympiad level). */
+export type TestLevel = string;
+export type OlympiadSubjectCode = "MATHEMATICS" | "PHYSICS" | "COMPUTING";
 export type SubmissionStatus =
   | "SUBMITTED" | "ASSIGNED" | "MARKING_IN_PROGRESS" | "MARKED" | "APPROVED" | "PUBLISHED" | "RETURNED" | "AWAITING_SECOND_MARKING";
 
@@ -87,6 +95,10 @@ export interface AnswerView {
     versions: AnswerVersion[];
   } | null;
   canSubmit: boolean;
+  /** testSubmissionLock: submitted and locked (no Administrator's authorization open). */
+  locked?: boolean;
+  /** testSubmissionLock: an Administrator allowed one more version (reason, when). */
+  resubmission?: { reason: string; authorizedAt: string } | null;
   limits: { maxPages: number };
   /** On a submission: the same clientKey was already committed (nothing new was created). */
   replayed?: boolean;
@@ -102,7 +114,7 @@ export interface MyTestRow {
   opensAt: string;
   deadline: string;
   window: AnswerWindow;
-  submission: { status: SubmissionStatus; versionCount: number; lastSubmittedAt: string | null } | null;
+  submission: { status: SubmissionStatus; versionCount: number; lastSubmittedAt: string | null; locked?: boolean; resubmissionOpen?: boolean } | null;
   canSubmit: boolean;
 }
 
@@ -113,11 +125,20 @@ export interface TeacherTestRow extends Omit<MyTestRow, "submission" | "canSubmi
 }
 
 export interface TeacherStudentRow {
-  student: { id: string; username: string; firstName: string; lastName: string; gradeLevel: string | null; school: { id: string; name: string } | null };
+  student: {
+    id: string; username: string; firstName: string; lastName: string; gradeLevel: string | null; school: { id: string; name: string } | null;
+    /** testSubmissionLock: the student's level (from the grade) and Olympiad subjects. */
+    division?: TestLevel | null;
+    olympiadInterests?: string[];
+    olympiadInterestOther?: string | null;
+  };
   /** The deadline when I submit for this student. */
   deadline: string;
   state: TrackingState;
-  submission: { status: SubmissionStatus; versionCount: number; lastSubmittedAt: string | null; lastSubmitterRole: SubmitterRole | null } | null;
+  submission: {
+    status: SubmissionStatus; versionCount: number; lastSubmittedAt: string | null; lastSubmitterRole: SubmitterRole | null;
+    locked?: boolean; resubmissionOpen?: boolean;
+  } | null;
   canSubmit: boolean;
 }
 
@@ -157,6 +178,22 @@ export interface StaffSubmissionSummary {
   current: {
     number: number; submittedAt: string; submitterRole: SubmitterRole; submittedBy: TestPerson; teacher: TestPerson | null; underExtension: boolean;
   } | null;
+  /** testSubmissionLock: locked after submission; an Administrator's authorization is open. */
+  locked?: boolean;
+  resubmissionOpen?: boolean;
+}
+
+/** testSubmissionLock: one Administrator's permission for one more version (history kept). */
+export interface ResubmissionAuthorization {
+  id: string;
+  reason: string;
+  authorizedAt: string;
+  authorizedBy: TestPerson | null;
+  state: "OPEN" | "USED" | "CANCELLED";
+  usedAt: string | null;
+  usedVersion: number | null;
+  cancelledAt: string | null;
+  cancelledBy: TestPerson | null;
 }
 
 export interface TrackingRow {
@@ -192,6 +229,8 @@ export interface StaffSubmissionDetail extends StaffSubmissionSummary {
   extensionId: string | null;
   versions: StaffVersion[];
   statusHistory: Array<{ fromStatus: SubmissionStatus | null; toStatus: SubmissionStatus; actorRole: string; reason: string | null; createdAt: string; actor: TestPerson | null }>;
+  /** testSubmissionLock: every resubmission authorization, newest first. */
+  resubmissions?: ResubmissionAuthorization[];
 }
 
 export interface TestExtension {
@@ -267,7 +306,7 @@ export const myTestsApi = {
 
 export const teacherTestsApi = {
   list: (f: { window?: AnswerWindow; page?: number; limit?: number } = {}) => api<Page<TeacherTestRow>>("/teacher/tests", { query: { ...f } }),
-  students: (testId: string, f: { status?: TrackingState; schoolId?: string; q?: string; page?: number; limit?: number } = {}) =>
+  students: (testId: string, f: { status?: TrackingState; schoolId?: string; q?: string; division?: TestLevel; subject?: OlympiadSubjectCode; page?: number; limit?: number } = {}) =>
     api<Page<TeacherStudentRow> & { counts: { students: number; submitted: number; notSubmitted: number; lateBlocked: number } }>(
       `/teacher/tests/${enc(testId)}/students`, { query: { ...f } }),
 };
@@ -286,9 +325,15 @@ export const testExtensionsApi = {
 };
 
 export const testTrackingApi = {
-  list: (testId: string, f: { status?: TrackingFilter; schoolId?: string; division?: "JUNIOR" | "SENIOR"; q?: string; page?: number; limit?: number } = {}) =>
+  list: (testId: string, f: { status?: TrackingFilter; schoolId?: string; division?: string; q?: string; page?: number; limit?: number } = {}) =>
     api<TrackingPage>(`${A(testId)}/submissions`, { query: { ...f } }),
   get: (testId: string, submissionId: string) => api<StaffSubmissionDetail>(`${A(testId)}/submissions/${enc(submissionId)}`),
   page: (testId: string, submissionId: string, versionId: string, page: number): Promise<DownloadedFile> =>
     apiBlob(`${A(testId)}/submissions/${enc(submissionId)}/versions/${enc(versionId)}/pages/${page}`, {}, `page-${page}`),
+  /** testSubmissionLock: allow one more version of a submitted answer (Administrators; reason 3–500). */
+  authorizeResubmission: (testId: string, submissionId: string, reason: string) =>
+    api<StaffSubmissionDetail>(`${A(testId)}/submissions/${enc(submissionId)}/resubmission`, { method: "POST", body: { reason } }),
+  /** testSubmissionLock: withdraw an authorization not used yet (the answer is locked again). */
+  cancelResubmission: (testId: string, submissionId: string) =>
+    api<StaffSubmissionDetail>(`${A(testId)}/submissions/${enc(submissionId)}/resubmission`, { method: "DELETE" }),
 };

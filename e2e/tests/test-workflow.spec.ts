@@ -101,7 +101,7 @@ test.describe.serial("the complete test workflow, from creation to republication
     const subject = admin.getByLabel("Subject");
     await expect(subject.locator("option", { hasText: "Physics" })).toBeAttached();
     await subject.selectOption({ label: "Physics" });
-    await admin.getByLabel("Division").selectOption("ALL");
+    await admin.getByRole("combobox", { name: "Level", exact: true }).selectOption("ALL");
     await admin.getByLabel("How students answer").selectOption("BOTH");
     await admin.getByLabel("Maximum marks").fill("20");
     await admin.getByLabel("Opens").fill(local(1, 9));

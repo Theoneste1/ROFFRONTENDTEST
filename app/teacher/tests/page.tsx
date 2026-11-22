@@ -4,7 +4,7 @@ import { TeacherTests } from "@/app/components/test-management/AnswerLists";
 
 export const metadata: Metadata = { title: "Tests" };
 
-/** Teachers (G2): published tests and how many of their verified students have submitted (tests.submitForStudents). */
+/** Teachers (G2): published tests and how many of their students have submitted (tests.submitForStudents). */
 export default function TeacherTestsPage() {
   return (
     <PermissionsGate>

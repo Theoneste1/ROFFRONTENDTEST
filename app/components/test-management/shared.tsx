@@ -5,6 +5,7 @@
  * (`/mentor/tests`) pages — the page gate, the status badge and the details fields (create wizard and Details tab).
  * Rules: lib/test-management/rules.ts. The backend remains the authority (subject scope, every rule).
  */
+import { useTestLevelOptions } from "@/lib/queries/divisions";
 import { useId, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { testsApi, type TestStatus } from "@/lib/api/tests";
@@ -12,7 +13,7 @@ import { useSession } from "@/lib/auth/session";
 import { queryKeys } from "@/lib/query/keys";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import {
-  ANSWER_FORMAT_OPTIONS, DIVISION_OPTIONS, MAX_TEST_MARKS, STATUS_BADGE, testsPageMode, type DetailsDraft, type DetailsField,
+  ANSWER_FORMAT_OPTIONS, MAX_TEST_MARKS, STATUS_BADGE, testsPageMode, type DetailsDraft, type DetailsField,
 } from "@/lib/test-management/rules";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { PageFrame } from "@/app/components/ui/PageFrame";
@@ -83,6 +84,7 @@ export function DetailsFields({
 }) {
   const base = useId();
   const subjects = useTestSubjects();
+  const levelOptions = useTestLevelOptions();
   const set = <K extends DetailsField>(k: K) => (v: DetailsDraft[K]) => onChange({ ...draft, [k]: v });
   const show = (f: DetailsField) => !only || only.includes(f);
   const id = (f: string) => `${base}-${f}`;
@@ -108,11 +110,12 @@ export function DetailsFields({
         </Field>
       )}
       {show("division") && (
-        <Field id={id("division")} label="Division" error={errors.division} hint="Junior: S1–S3. Senior: S4–S6.">
+        <Field id={id("division")} label="Level" error={errors.division} hint="All levels, or one Olympiad level. Students of that level get the test.">
           <select id={id("division")} name="division" className={cls("division")} value={draft.division}
             onChange={(e) => set("division")(e.target.value as DetailsDraft["division"])} aria-invalid={!!errors.division}
             aria-describedby={describe(id("division"), errors.division, "x")}>
-            {DIVISION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {levelOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            {!levelOptions.some((o) => o.value === draft.division) && <option value={draft.division}>{draft.division}</option>}
           </select>
         </Field>
       )}

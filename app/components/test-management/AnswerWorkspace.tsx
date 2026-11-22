@@ -15,7 +15,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Camera, CheckCircle2, Clock, FilePlus2, Loader2, RotateCcw, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, Camera, CheckCircle2, Clock, FilePlus2, Loader2, Lock, RotateCcw, Trash2, XCircle } from "lucide-react";
 import { answersApi, type AnswerTarget, type AnswerVersion, type AnswerView } from "@/lib/api/test-submissions";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import type { Permission } from "@/lib/api/types";
@@ -23,7 +23,8 @@ import { useSession } from "@/lib/auth/session";
 import { queryKeys } from "@/lib/query/keys";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { formatDateTime, formatFileSize, personName } from "@/lib/format";
-import { ANSWER_FORMAT_LABEL, DIVISION_LABEL } from "@/lib/test-management/rules";
+import { ANSWER_FORMAT_LABEL } from "@/lib/test-management/rules";
+import LevelName from "./LevelName";
 import {
   ANSWER_PAGE_ACCEPT, FORMAT_HELP, MAX_TYPED_ANSWER, SUBMISSION_STATUS_LABEL, WINDOW_BADGE, addPages, answerPageMode, answerProblem, formatAllows,
   newClientKey, nextQueued, pageFileProblem, queueSummary, queueText, removePage, retryDelayMs, retryFailed, setPage, shouldAutoRetry,
@@ -84,7 +85,7 @@ function Workspace({ target, backHref, backLabel }: { target: AnswerTarget; back
     const notFound = isApiError(view.error) && (view.error.status === 404 || view.error.code === "STUDENT_NOT_IN_SCOPE");
     return (
       <PageFrame title="Test">
-        {notFound ? <Notice tone="info">{isApiError(view.error) && view.error.code === "STUDENT_NOT_IN_SCOPE" ? "You can submit only for verified students of your own schools." : "This test is not available."}</Notice>
+        {notFound ? <Notice tone="info">{isApiError(view.error) && view.error.code === "STUDENT_NOT_IN_SCOPE" ? "You can submit only for students of your own schools." : "This test is not available."}</Notice>
           : <ErrorState error={view.error} title="Couldn't load the test" onRetry={() => view.refetch()} />}
         <Link href={backHref} className="text-sm font-medium text-indigo-700 hover:underline">{backLabel}</Link>
       </PageFrame>
@@ -97,7 +98,7 @@ function Workspace({ target, backHref, backLabel }: { target: AnswerTarget; back
   return (
     <PageFrame
       title={t.title}
-      description={<span className="inline-flex flex-wrap items-center gap-2"><WindowBadge window={t.window} /> {t.subject.name} · {DIVISION_LABEL[t.division]} · {t.maxMarks} marks</span>}
+      description={<span className="inline-flex flex-wrap items-center gap-2"><WindowBadge window={t.window} /> {t.subject.name} · <LevelName code={t.division} /> · {t.maxMarks} marks</span>}
     >
       <Link href={backHref} className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:underline">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> {backLabel}
@@ -122,6 +123,18 @@ function Workspace({ target, backHref, backLabel }: { target: AnswerTarget; back
             <p className="mt-3 text-xs text-slate-600">Times are shown in your device&apos;s time zone; the server&apos;s clock decides the deadline.</p>
             {t.window === "UPCOMING" && <div className="mt-3"><Alert tone="info">This test has not opened yet. Come back when it opens.</Alert></div>}
             {t.window === "CLOSED" && <div className="mt-3"><Alert tone="info">The deadline has passed: answers can no longer be submitted or replaced.</Alert></div>}
+            {/* testSubmissionLock (owner 2026-11-21): a submitted answer is locked for the student and every teacher. */}
+            {v.locked && (
+              <div className="mt-3 flex items-start gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-800" role="status" data-testid="answer-locked">
+                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-slate-700" aria-hidden="true" />
+                <span><strong>Submitted and locked.</strong> {forStudent ? "Neither you nor the student can replace it." : "It can no longer be replaced."} Only an administrator can allow it to be submitted again.</span>
+              </div>
+            )}
+            {v.resubmission && (
+              <div className="mt-3" data-testid="answer-resubmission">
+                <Alert tone="info">An administrator allowed one more submission ({formatDateTime(v.resubmission.authorizedAt)}): {v.resubmission.reason}. The new version will be locked again once submitted.</Alert>
+              </div>
+            )}
           </section>
 
           {t.window !== "UPCOMING" && (t.hasPaper || t.questions.length > 0) && (
@@ -164,6 +177,7 @@ function Workspace({ target, backHref, backLabel }: { target: AnswerTarget; back
 
 function AnswerForm({ view, target, onSubmitted }: { view: AnswerView; target: AnswerTarget; onSubmitted: (v: AnswerView) => void }) {
   const ids = useId();
+  const qc = useQueryClient();
   const t = view.test;
   const allows = formatAllows(t.answerFormat);
   const storage = uploadKeyStorageKey(target.testId, target.studentId);
@@ -181,6 +195,12 @@ function AnswerForm({ view, target, onSubmitted }: { view: AnswerView; target: A
   const replacing = !!view.submission;
 
   useEffect(() => { storeKey(storage, clientKey); }, [storage, clientKey]);
+  /** A fresh key for the next version, remembered at once (see submit). */
+  const renewKey = () => {
+    const fresh = newClientKey();
+    storeKey(storage, fresh);
+    setClientKey(fresh);
+  };
 
   // Resume an attempt after a reload: pages already uploaded under the remembered key.
   useEffect(() => {
@@ -260,14 +280,18 @@ function AnswerForm({ view, target, onSubmitted }: { view: AnswerView; target: A
       files.current.clear();
       setItems([]);
       setTyped("");
-      setClientKey(newClientKey());
+      // Stored now, not only by the effect: a submitted answer is locked, the form unmounts with this update and the
+      // effect would never run — the next allowed version would then reuse this key and be taken as a replay.
+      renewKey();
       onSubmitted(next);
     } catch (err) {
       if (isApiError(err) && err.code === "PAGES_INCOMPLETE") {
         const missing = ((err.details as { missing?: number[] } | undefined)?.missing ?? []);
         setItems((s) => s.map((x) => (missing.includes(x.page) ? { ...x, status: files.current.has(x.id) ? "queued" : "failed", attempts: 0, error: "Upload this page again." } : x)));
       }
-      if (isApiError(err) && err.code === "UPLOAD_ALREADY_SUBMITTED") setClientKey(newClientKey());
+      if (isApiError(err) && err.code === "UPLOAD_ALREADY_SUBMITTED") renewKey();
+      // Submitted meanwhile by someone else (the student or a teacher): show the locked answer.
+      if (isApiError(err) && err.code === "SUBMISSION_LOCKED") void qc.invalidateQueries({ queryKey: queryKeys.tests.answer(target.testId, target.studentId) });
       setError(errorMessage(err));
     } finally {
       setSending(false);

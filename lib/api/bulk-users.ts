@@ -18,7 +18,9 @@ import type { GradeLevel, Page, Role } from "./types";
 export type BulkAction =
   | "activate" | "deactivate" | "suspend" | "archive" | "restore" | "assignRole" | "changeClassification" | "message"
   // Teacher–student access (backends with teacherStudentAccess): the selected students and one teacher.
-  | "assignTeacher" | "unassignTeacher" | "grantDelegation" | "revokeDelegation";
+  | "assignTeacher" | "unassignTeacher" | "grantDelegation" | "revokeDelegation"
+  // Olympiad levels (backends with olympiadLevels): a division code, or AUTOMATIC (follow the grade).
+  | "setOlympiadLevel";
 
 /** The filters of GET /admin/users (JSON booleans). */
 export interface BulkFilter {
@@ -45,6 +47,8 @@ export interface BulkParams {
   teacherId?: string;
   /** grantDelegation / revokeDelegation: students.viewProfile, students.viewProgress or submissions.submitOnBehalf. */
   permission?: string;
+  /** setOlympiadLevel: a division code (set by hand) or AUTOMATIC (the level the grade suggests). */
+  olympiadLevel?: string;
 }
 
 export interface BulkAccount {

@@ -44,12 +44,17 @@ export function testsPageMode(opts: {
 
 // ── Labels ─────────────────────────────────────────────────────────────────────
 
+/**
+ * The fixed choices of older backends; with administrator-managed divisions (adminDivisions) the screens use
+ * testLevelOptions() / divisionLabel() from lib/divisions with the divisions the backend lists.
+ */
 export const DIVISION_OPTIONS: ReadonlyArray<{ value: TestDivision; label: string }> = [
   { value: "ALL", label: "All (S1–S6)" },
   { value: "JUNIOR", label: "Junior (S1–S3)" },
   { value: "SENIOR", label: "Senior (S4–S6)" },
 ];
-export const DIVISION_LABEL: Record<TestDivision, string> = { ALL: "All", JUNIOR: "Junior", SENIOR: "Senior" };
+/** Built-in names (the screens prefer the divisions the backend lists: useDivisionLabel). */
+export const DIVISION_LABEL: Record<string, string> = { ALL: "All", JUNIOR: "Junior", MIDDLE: "Middle", SENIOR: "Senior" };
 
 export const ANSWER_FORMAT_OPTIONS: ReadonlyArray<{ value: TestAnswerFormat; label: string }> = [
   { value: "UPLOAD_ONLY", label: "Upload only (PDF or photos)" },

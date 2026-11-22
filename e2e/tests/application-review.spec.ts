@@ -39,7 +39,22 @@ const rowOf = (page: Page, k: string) => page.locator("tr", { hasText: `Review $
 
 test.describe("Administrator reviews coach applications", () => {
   test.beforeAll(async () => {
+    // The e-mail outbox clears a message's body once it is sent (privacy), on its next tick: the answer link could be
+    // gone before this spec reads it. On this disposable test database only, a trigger keeps a copy of each new
+    // message to the applicants of this run (dropped after the run).
+    await withDb((c) => c.query(`
+      CREATE TABLE IF NOT EXISTS e2e_mail_copy ("recipientEmail" text, body text, "createdAt" timestamptz DEFAULT clock_timestamp());
+      CREATE OR REPLACE FUNCTION e2e_mail_copy() RETURNS trigger AS $$
+      BEGIN
+        IF NEW."recipientEmail" LIKE 'review.%' THEN INSERT INTO e2e_mail_copy ("recipientEmail", body) VALUES (NEW."recipientEmail", NEW.body); END IF;
+        RETURN NEW;
+      END $$ LANGUAGE plpgsql;
+      DROP TRIGGER IF EXISTS e2e_mail_copy ON "EmailDelivery";
+      CREATE TRIGGER e2e_mail_copy AFTER INSERT ON "EmailDelivery" FOR EACH ROW EXECUTE FUNCTION e2e_mail_copy();`));
     for (const k of ["Ask", "Reject", "Approve"]) await applyAsCoach(k);
+  });
+  test.afterAll(async () => {
+    await withDb((c) => c.query(`DROP TRIGGER IF EXISTS e2e_mail_copy ON "EmailDelivery"; DROP FUNCTION IF EXISTS e2e_mail_copy(); DROP TABLE IF EXISTS e2e_mail_copy;`));
   });
 
   test("ask for more information, reject with a reason, approve", async ({ page, browser }) => {
@@ -61,7 +76,7 @@ test.describe("Administrator reviews coach applications", () => {
 
     // 1b. The applicant answers through the e-mailed link (no account, signed out).
     const link = await withDb(async (c) => {
-      const body = (await c.query(`SELECT body FROM "EmailDelivery" WHERE "recipientEmail" = $1 ORDER BY "createdAt" DESC LIMIT 1`, [`${who("Ask").username}@e2e.local`])).rows[0]?.body as string;
+      const body = (await c.query(`SELECT body FROM e2e_mail_copy WHERE "recipientEmail" = $1 ORDER BY "createdAt" DESC LIMIT 1`, [`${who("Ask").username}@e2e.local`])).rows[0]?.body as string;
       return /(\/applications\/respond\?token=[^\s"&<]+)/.exec(body)?.[1];
     });
     expect(link, "the e-mail carries the answer link").toBeTruthy();

@@ -4,7 +4,7 @@ import { TeacherTestStudents } from "@/app/components/test-management/AnswerList
 
 export const metadata: Metadata = { title: "Students for a test" };
 
-/** Teachers: their verified students for one test — deadline, state, submission. */
+/** Teachers: the students of their schools for one test — deadline, state, submission. */
 export default async function TeacherTestPage({ params }: PageProps<"/teacher/tests/[id]">) {
   const { id } = await params;
   return (

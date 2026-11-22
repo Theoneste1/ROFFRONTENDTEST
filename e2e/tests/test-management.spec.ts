@@ -68,7 +68,7 @@ test.describe.serial("Administrator: a test from the wizard to its marker", () =
     const subject = page.getByLabel("Subject");
     await expect(subject.locator("option", { hasText: "Mathematics" })).toBeAttached();
     await subject.selectOption({ label: "Mathematics" });
-    await page.getByLabel("Division").selectOption("JUNIOR");
+    await page.getByRole("combobox", { name: "Level", exact: true }).selectOption("JUNIOR");
     await page.getByLabel("How students answer").selectOption("BOTH");
     await page.getByLabel("Maximum marks").fill("20");
     await page.getByLabel("Opens").fill(local(1, 9));

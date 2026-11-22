@@ -181,3 +181,12 @@ test("teacher permission labels for the confirmation and the operations list", (
   assert.equal(delegationLabel("submissions.submitOnBehalf"), "Submit work on a student's behalf");
   assert.equal(delegationLabel("something.else"), "something.else");
 });
+
+test("Olympiad level in bulk: only with olympiadLevels and students.classifyLevel; a level or Automatic", () => {
+  assert.ok(!allowedActions(can("students.classifyLevel")).includes("setOlympiadLevel"));
+  assert.ok(!allowedActions(can(), false, true).includes("setOlympiadLevel"));
+  assert.deepEqual(allowedActions(can("students.classifyLevel"), false, true), ["changeClassification", "setOlympiadLevel", "assignRole"]);
+  assert.deepEqual(buildParams("setOlympiadLevel", { ...EMPTY }), { problem: "Choose the Olympiad level, or Automatic." });
+  assert.deepEqual(buildParams("setOlympiadLevel", { ...EMPTY, olympiadLevel: "MIDDLE" }), { params: { olympiadLevel: "MIDDLE" } });
+  assert.deepEqual(buildParams("setOlympiadLevel", { ...EMPTY, olympiadLevel: "AUTOMATIC" }), { params: { olympiadLevel: "AUTOMATIC" } });
+});
