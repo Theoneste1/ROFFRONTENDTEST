@@ -260,6 +260,24 @@ export const queryKeys = {
    * Administrator data. Most admin actions change several views (dashboard
    * counts, queues, reports), so mutations usually invalidate `admin.all`.
    */
+  /** Divisions = Olympiad levels (lib/queries/divisions.ts). */
+  divisions: {
+    all: ["divisions"] as const,
+    list: () => ["divisions", "list"] as const,
+    courses: (id: string) => ["divisions", "courses", id] as const,
+  },
+  /** Student Profile Overview, Olympiad level, custom reports and table layouts (owner 2026-11-22). */
+  overview: (id: string) => ["student-overview", id] as const,
+  olympiadLevel: (id: string) => ["olympiad-level", id] as const,
+  reports: {
+    all: ["custom-reports"] as const,
+    list: () => ["custom-reports", "list"] as const,
+    sources: () => ["custom-reports", "sources"] as const,
+    one: (id: string) => ["custom-reports", "one", id] as const,
+    run: (id: string, page: number) => ["custom-reports", "run", id, page] as const,
+    grants: (id: string) => ["custom-reports", "grants", id] as const,
+  },
+  tableLayout: (table: string) => ["table-layout", table] as const,
   admin: {
     all: ["admin"] as const,
     dashboard: (filters: ReportFilters = {}) => [...queryKeys.admin.all, "dashboard", filters] as const,

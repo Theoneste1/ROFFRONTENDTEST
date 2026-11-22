@@ -301,8 +301,8 @@ export default function SchoolDirectoryList() {
                     {orDash(s.code)}
                   </td>
                   <td className={`${td} font-semibold text-gray-800`} data-testid="school-name">
+                    {/* The school's name only (owner 2026-11-22): its source stays in the filter and on the school's page. */}
                     {s.name}
-                    <span className="block text-[11px] font-normal text-gray-500">{SOURCE_LABEL[s.source] ?? s.source}</span>
                   </td>
                   <td className={`${td} text-gray-600 whitespace-nowrap`} data-testid="school-country">
                     {countryDisplayName(s.countryCode, countryList.countries)}

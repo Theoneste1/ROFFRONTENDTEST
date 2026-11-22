@@ -11,6 +11,9 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usersApi } from "@/lib/api/admin";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { hasFeature } from "@/lib/api/capabilities";
+import { useDivisions } from "@/lib/queries/divisions";
+import { activeDivisions, divisionOptionLabel } from "@/lib/divisions/divisions";
 import { bulkUsersApi, type BulkAction, type BulkPreview, type BulkSelection } from "@/lib/api/bulk-users";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import type { Permission } from "@/lib/api/types";
@@ -63,7 +66,9 @@ export default function BulkActionDialog({
   const qc = useQueryClient();
   const { detection } = useBackendCapabilities();
   const teacherActions = teacherStudentBulkSupported(detection);
-  const actions = useMemo(() => allowedActions(can, teacherActions), [can, teacherActions]);
+  const levelActions = hasFeature(detection, "olympiadLevels");
+  const actions = useMemo(() => allowedActions(can, teacherActions, levelActions), [can, teacherActions, levelActions]);
+  const divisions = useDivisions();
   const [action, setAction] = useState<BulkAction | "">(actions[0] ?? "");
   const [params, setParams] = useState<ParamsDraft>(EMPTY_PARAMS);
   const [teacher, setTeacher] = useState<ChosenTeacher | null>(null);
@@ -176,7 +181,7 @@ export default function BulkActionDialog({
           {action === "changeClassification" && (
             <div>
               <label htmlFor="bulk-grade" className={labelCls}>
-                New grade (students only; S1–S3 Junior, S4–S6 Senior)
+                New grade (students only; a level that follows the grade follows it)
               </label>
               <select id="bulk-grade" className={inputCls} value={params.gradeLevel} onChange={(e) => setParams((p) => ({ ...p, gradeLevel: e.target.value }))}>
                 <option value="">Choose…</option>
@@ -186,6 +191,23 @@ export default function BulkActionDialog({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+          {action === "setOlympiadLevel" && (
+            <div>
+              <label htmlFor="bulk-level" className={labelCls}>
+                Olympiad level (students only)
+              </label>
+              <select id="bulk-level" className={inputCls} value={params.olympiadLevel} onChange={(e) => setParams((p) => ({ ...p, olympiadLevel: e.target.value }))} data-testid="bulk-level">
+                <option value="">Choose…</option>
+                {activeDivisions(divisions.data).map((d) => (
+                  <option key={d.code} value={d.code}>
+                    {divisionOptionLabel(d)}
+                  </option>
+                ))}
+                <option value="AUTOMATIC">Automatic — follow the grade</option>
+              </select>
+              <p className="mt-1 text-xs text-slate-600">A level chosen here is kept when the grade changes. Automatic returns each student to the level of their grade. A reason is required.</p>
             </div>
           )}
           {action !== "" && TEACHER_STUDENT_ACTIONS.includes(action) && (

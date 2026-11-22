@@ -80,6 +80,14 @@ export const ADMIN_COUNTRIES: NavItem = { href: "/admin/countries", label: "Coun
 export const ADMIN_TESTS: NavItem = { href: "/admin/tests", label: "Tests", permission: "tests.view" };
 
 /**
+ * Shared custom reports (capability customReports, owner 2026-11-22): coaches, Head Coaches and teachers see the
+ * reports shared with them (no permission: the grants decide, and an empty list says so). Administrators open Custom
+ * reports from Reports (no extra menu item). Gated by lib/reports/custom-reports.ts customReportsNavVisible.
+ */
+export const MENTOR_SHARED_REPORTS: NavItem = { href: "/mentor/reports", label: "Shared reports" };
+export const TEACHER_SHARED_REPORTS: NavItem = { href: "/teacher/reports", label: "Shared reports" };
+
+/**
  * Tests in the coach portal: a Head Coach manages the tests of the subjects they head (tests.view, programme scope).
  * Coaches hold no test permission (authorised markers arrive in a later phase). Same gate as ADMIN_TESTS; not part of
  * MENTOR_NAV.

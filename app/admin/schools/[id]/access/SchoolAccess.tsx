@@ -21,6 +21,7 @@ import { usersApi } from "@/lib/api/admin";
 import type { GradeLevel } from "@/lib/api/types";
 import { errorMessage, isApiError } from "@/lib/api/errors";
 import { personName, formatNumber } from "@/lib/format";
+import StudentName from "@/app/components/students/StudentName";
 import { queryKeys } from "@/lib/query/keys";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -246,7 +247,7 @@ export default function SchoolAccess({ schoolId }: { schoolId: string }) {
                       disabled={!selected.has(s.id) && selected.size >= MAX_STUDENTS_PER_REQUEST} />
                   </td>
                   <td className={td}>
-                    <p className="font-semibold text-gray-800">{personName(s)}</p>
+                    <p className="font-semibold text-gray-800"><StudentName student={s} /></p>
                     <p className="text-xs text-gray-500">@{s.username}</p>
                   </td>
                   <td className={`${td} text-gray-600`}>{s.gradeLevel ?? "—"}</td>

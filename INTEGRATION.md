@@ -72,6 +72,20 @@ as `/assignments/:id`. The frontend serves each of these routes.
 | `CORS_ORIGINS` = the Netlify site address (exact, no trailing slash) | `NEXT_PUBLIC_API_UPLOAD_ORIGIN` = backend address |
 | service address `https://rofbackendtest.onrender.com` | `API_PROXY_TARGET` and the `/api/*` redirect target = backend address |
 
+## Features the backend announces (`GET /api/v1` capabilities)
+
+A screen that needs a newer backend appears only when the backend lists its capability. The frontend therefore works
+against an older backend; merge and deploy the backend first. The capabilities added on 2026-11-22
+(`lib/api/capabilities.ts`, `KNOWN_FEATURES`) are:
+
+| Capability | What appears | Backend routes |
+|---|---|---|
+| `olympiadLevels` | Olympiad level card with history (user page, student profiles); bulk "Set the Olympiad level" | `GET/PUT /admin/students/:id/olympiad-level` (students.classifyLevel) |
+| `adminDivisions` | Divisions page: create, suggested grades, activate or deactivate, courses offered; coaches' "Assign many courses"; live levels in Test Management | `GET /divisions`, `POST/PATCH /admin/divisions…`, `GET/PUT /admin/divisions/:id/courses`, `POST /admin/mentor-assignments/bulk` |
+| `studentOverview` | Student profile pages `/<portal>/profiles/:id`; names in lists open them | `GET /students/:id/overview` |
+| `customReports` | Reports → Custom reports (builders); Shared reports (coaches, Head Coaches, teachers) | `/reports…` (reports.build to build; grants decide the rest) |
+| `tableLayouts` | Users list: columns per role tab, saved layouts, sortable headers | `/me/table-layouts/:table`, `/admin/table-layouts/:table`; `GET /admin/users?sort=&order=` |
+
 ## Test results (2026-11-07)
 
 **Local, both apps running, browser-equivalent requests through the frontend's `/api` proxy, uploads cross-origin as in production:**

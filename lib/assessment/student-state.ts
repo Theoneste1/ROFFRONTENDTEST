@@ -72,7 +72,7 @@ export function submitErrorStale(error: unknown): boolean {
 export function studentAccessDenied(error: unknown): { title: string; body: string } | null {
   if (!isApiError(error) || error.status !== 403) return null;
   if (error.code === "NO_DIVISION") {
-    return { title: "Your account has no division yet", body: "Assignments are given by division (Junior S1–S3 or Senior S4–S6). An administrator needs to set your grade first." };
+    return { title: "Your account has no division yet", body: "Assignments are given by Olympiad level. An administrator needs to set your grade or level first." };
   }
   return { title: "Not available to your account", body: "Your account isn't allowed to see this. Contact an administrator if you think this is a mistake." };
 }

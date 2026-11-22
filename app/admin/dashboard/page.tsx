@@ -105,8 +105,6 @@ export default function DashboardMain() {
   const courses = useCourses();
 
   const d = dashboard.data;
-  const junior = d?.students.byDivision.find((x) => x.code === 'JUNIOR');
-  const senior = d?.students.byDivision.find((x) => x.code === 'SENIOR');
   const publishedCourses = courses.data?.filter((c) => c.status === 'PUBLISHED').length;
 
   return (
@@ -132,11 +130,13 @@ export default function DashboardMain() {
           <ErrorState error={dashboard.error} title="Couldn't load the dashboard" onRetry={() => dashboard.refetch()} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
           <MetricCard label="Total students" value={formatNumber(d!.students.total)} subtext={`${formatNumber(d!.students.active)} active · ${formatNumber(d!.students.awaitingSetup)} awaiting setup`} />
           <MetricCard label="Total coaches" value={formatNumber(d!.mentors.total)} subtext={`${formatNumber(d!.mentors.active)} active · ${formatNumber(d!.mentors.awaitingSetup)} awaiting setup`} />
-          <MetricCard label="Junior students" value={formatNumber(junior?.students ?? 0)} subtext="S1–S3" />
-          <MetricCard label="Senior students" value={formatNumber(senior?.students ?? 0)} subtext="S4–S6" />
+          {/* One card per division (Olympiad level), as many as the administrators keep. */}
+          {d!.students.byDivision.map((x) => (
+            <MetricCard key={x.id} label={`${x.name} students`} value={formatNumber(x.students)} subtext="Olympiad level" />
+          ))}
           <MetricCard
             label="Published courses"
             value={courses.isPending ? '…' : courses.isError ? '—' : formatNumber(publishedCourses ?? 0)}

@@ -533,7 +533,7 @@ export default function RegisterForm() {
         {errors.gradeLevel ? (
           <p id="gradeLevel-error" className="mt-1.5 text-xs text-red-600">{errors.gradeLevel}</p>
         ) : (
-          <p id="gradeLevel-hint" className="mt-1.5 text-xs text-slate-600">S1–S3 study in the Junior division, S4–S6 in the Senior division.</p>
+          <p id="gradeLevel-hint" className="mt-1.5 text-xs text-slate-600">Your Olympiad level (Junior, Middle or Senior) is suggested from your grade; a coach can change it.</p>
         )}
       </div>
     ),

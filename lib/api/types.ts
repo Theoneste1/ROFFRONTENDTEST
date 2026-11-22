@@ -16,7 +16,8 @@ import type { OlympiadSubject } from "./teacher-registration";
  * a role must also cope with an unknown value (see lib/auth/role-rules.ts).
  */
 export type Role = "STUDENT" | "TEACHER" | "MENTOR" | "HEAD_COACH" | "ADMIN" | "SUPER_ADMIN";
-export type DivisionCode = "JUNIOR" | "SENIOR";
+/** A division's code: JUNIOR, MIDDLE, SENIOR or one an Administrator created (capability adminDivisions). */
+export type DivisionCode = string;
 export type GradeLevel = "S1" | "S2" | "S3" | "S4" | "S5" | "S6";
 
 /** Permission strings from `GET /me/permissions` (src/auth/permissions.ts). */
@@ -58,7 +59,9 @@ export type Permission =
   // Test Management, Phase 4 (capability testResults): publication (the override: Administrators only), results with
   // identity and reports, internal rankings (Administrators, Head Coaches), own results (Students), school results (Teachers).
   | "tests.publishResults" | "tests.overridePublication" | "tests.viewResults" | "tests.viewRankings"
-  | "tests.viewOwnResults" | "tests.viewSchoolResults";
+  | "tests.viewOwnResults" | "tests.viewSchoolResults"
+  // Olympiad levels (Administrators, User Managers; Coaches and Head Coaches for their programmes) and custom reports (owner 2026-11-22).
+  | "students.classifyLevel" | "reports.build";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
@@ -849,6 +852,8 @@ export interface AdminUser {
   activatedAt: string | null;
   avatarUrl: string | null;
   division: DivisionRef | null;
+  /** olympiadLevels: the level was set by hand (it no longer follows the grade). */
+  divisionManual?: boolean;
   gradeLevel: GradeLevel | null;
   school: SchoolRef | null;
   homeLocation: string | null;
@@ -908,7 +913,10 @@ export interface AdminDivision {
   description: string | null;
   isActive: boolean;
   gradeLevels: GradeLevel[];
-  _count: { students: number; mentorAssignments: number };
+  /** adminDivisions: the grades this division is suggested for, and its display order. */
+  suggestedGrades?: GradeLevel[];
+  sortOrder?: number;
+  _count?: { students: number; mentorAssignments: number };
 }
 
 /** `GET /schools` items (admin). */

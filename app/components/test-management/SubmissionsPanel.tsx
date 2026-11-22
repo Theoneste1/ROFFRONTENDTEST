@@ -6,6 +6,7 @@
  * division, name) and pagination; one submission opens with EVERY version (submitter, teacher, time, the deadline that
  * applied, the under-extension mark, pages) and its status history. "Extended" is shown here only (never to markers).
  */
+import { useTestLevelOptions } from "@/lib/queries/divisions";
 import { useState, type FormEvent } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lock, Unlock } from "lucide-react";
@@ -21,6 +22,7 @@ import FileButton from "@/app/components/ui/FileButton";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills } from "@/app/components/ui/PageFrame";
 import { MetricCard, Modal, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "@/app/admin/components/adminUi";
+import StudentName from "@/app/components/students/StudentName";
 
 export function ExtendedBadge({ label = "Extended" }: { label?: string }) {
   return <span className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-900" data-testid="extended-badge">{label}</span>;
@@ -28,7 +30,8 @@ export function ExtendedBadge({ label = "Extended" }: { label?: string }) {
 
 export default function SubmissionsPanel({ testId }: { testId: string }) {
   const [status, setStatus] = useState<"" | TrackingFilter>("");
-  const [division, setDivision] = useState<"" | "JUNIOR" | "SENIOR">("");
+  const [division, setDivision] = useState("");
+  const levelOptions = useTestLevelOptions().filter((o) => o.value !== "ALL");
   const [schoolId, setSchoolId] = useState("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -59,8 +62,8 @@ export default function SubmissionsPanel({ testId }: { testId: string }) {
       <FilterPills label="State" options={[...TRACKING_FILTERS]} value={status} onChange={reset(setStatus)} />
       <div className="flex flex-wrap items-end gap-3">
         <SearchInput value={q} onChange={reset(setQ)} placeholder="Search students" label="Search students" />
-        <SelectFilter label="Division" value={division} onChange={(v) => reset(setDivision)(v as "" | "JUNIOR" | "SENIOR")}
-          options={[{ label: "All divisions", value: "" }, { label: "Junior (S1–S3)", value: "JUNIOR" }, { label: "Senior (S4–S6)", value: "SENIOR" }]} />
+        <SelectFilter label="Level" value={division} onChange={(v) => reset(setDivision)(v)}
+          options={[{ label: "All levels", value: "" }, ...levelOptions]} />
         {schools.data && (
           <SelectFilter label="School" value={schoolId} onChange={reset(setSchoolId)}
             options={[{ label: "All schools", value: "" }, ...schools.data.data.map((s) => ({ label: s.name, value: s.id }))]} />
@@ -85,7 +88,7 @@ export default function SubmissionsPanel({ testId }: { testId: string }) {
                 return (
                   <tr key={r.student.id} className="text-xs" data-testid={`tracking-${r.student.username}`}>
                     <td className={td}>
-                      <span className="font-semibold text-gray-900">{personName(r.student)}</span> <span className="text-gray-600">@{r.student.username}</span>
+                      <span className="font-semibold text-gray-900"><StudentName student={r.student} /></span> <span className="text-gray-600">@{r.student.username}</span>
                       <span className="block text-gray-700">{r.student.gradeLevel ?? "—"}{r.student.school && ` · ${r.student.school.name}`}</span>
                     </td>
                     <td className={td}>

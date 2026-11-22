@@ -20,6 +20,7 @@ import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills } from "@/app/components/ui/PageFrame";
 import { MetricCard, Modal, Notice, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "@/app/admin/components/adminUi";
 import { inputBad, inputCls, inputOk, labelCls } from "./shared";
+import StudentName from "@/app/components/students/StudentName";
 
 export function SubmissionStatusBadge({ status }: { status: SubmissionStatus }) {
   return <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${STATUS_BADGE[status]}`} data-testid="submission-status">{SUBMISSION_STATUS_LABEL[status]}</span>;
@@ -204,7 +205,7 @@ function Assignments({ testId, o, onDone }: { testId: string; o: MarkingOverview
                         onChange={() => setPicked((x) => (x.includes(r.id) ? x.filter((y) => y !== r.id) : [...x, r.id]))} />
                     </td>
                   )}
-                  <td className={td}><span className="font-semibold text-gray-900">{personName(r.student)}</span>{r.student.school && <span className="block text-gray-600">{r.student.school.name}</span>}</td>
+                  <td className={td}><span className="font-semibold text-gray-900"><StudentName student={r.student} /></span>{r.student.school && <span className="block text-gray-600">{r.student.school.name}</span>}</td>
                   <td className={`${td} font-mono text-gray-800`}>{r.publicCode}</td>
                   <td className={td}>
                     <SubmissionStatusBadge status={r.status} />
