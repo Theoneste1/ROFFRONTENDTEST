@@ -1,4 +1,5 @@
 import type { ApiErrorBody } from "./types";
+import { plainValidationMessage } from "./plain-validation";
 
 /**
  * An error answered by the API (or a network failure, `status: 0`).
@@ -59,31 +60,62 @@ export function fieldErrors(error: unknown, fields: readonly string[]): Record<s
   if (!isApiError(error)) return out;
   for (const msg of error.validationMessages) {
     const field = fields.find((f) => msg === f || msg.startsWith(f + " "));
-    if (field && !out[field]) out[field] = msg;
+    // Shown next to the field in plain words ("Opens at must be a valid date and time."), never the raw rule.
+    if (field && !out[field]) out[field] = plainValidationMessage(msg);
   }
   return out;
 }
 
-/** A user-facing message for any thrown value. */
-export function errorMessage(error: unknown, fallback = "Something went wrong. Please try again."): string {
+/** Codes the server uses for a status without a reason of its own (all-exceptions.filter.ts STATUS_CODES). */
+const GENERIC_CODES = new Set(["BAD_REQUEST", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "CONFLICT", "SERVICE_UNAVAILABLE", "INTERNAL_ERROR", "ERROR"]);
+
+/** The fallback when nothing better is known. */
+export const UNEXPECTED_ERROR = "Something unexpected went wrong. Please try again. If it keeps happening, contact the Rwanda Olympiad Foundation team.";
+
+/**
+ * A user-facing message for any thrown value (owner 2026-11-22: every error says clearly what happened and what to do).
+ * Our own API errors carry a message written for people; this adds plain words where the answer is technical or empty
+ * (a proxy's HTML page, a server restart, a validation rule) and the reference to quote for server failures.
+ */
+export function errorMessage(error: unknown, fallback = UNEXPECTED_ERROR): string {
   if (error instanceof UserFacingError && error.message) return error.message;
-  if (isApiError(error)) {
-    switch (error.code) {
-      case "NETWORK_ERROR":
-        return "Cannot reach the server. Check your connection and try again.";
-      case "SESSION_REFRESH_UNAVAILABLE":
-        return "Can't reach the server to renew your session. You are still signed in — please try again in a moment.";
-      case "VALIDATION_FAILED":
-        return error.validationMessages[0] ?? error.message;
-      // Phase 1 backend: every pooled database connection stayed busy (503, Retry-After: 2).
-      // The request was refused before anything changed, so saying so lets people retry safely.
-      case "DATABASE_BUSY":
-        return "The server is busy right now. Nothing was changed — please try again in a moment.";
-      default:
-        if (error.status === 429) return "Too many requests. Please wait a moment and try again.";
-        if (error.status >= 500) return "The server had a problem. Please try again shortly.";
-        return error.message || fallback;
+  if (!isApiError(error)) return fallback;
+  const ref = error.requestId ? ` (reference ${error.requestId})` : "";
+  switch (error.code) {
+    case "NETWORK_ERROR":
+      return "Cannot reach the server. Check your internet connection, then try again.";
+    case "SESSION_REFRESH_UNAVAILABLE":
+      return "Can't reach the server to renew your session. You are still signed in — please try again in a moment.";
+    case "VALIDATION_FAILED": {
+      const first = error.validationMessages[0];
+      if (!first) return error.message || "Some of the information is missing or not valid. Check the form and try again.";
+      const more = error.validationMessages.length - 1;
+      return `${plainValidationMessage(first)}${more > 0 ? ` (and ${more} more problem${more === 1 ? "" : "s"} — check the form)` : ""}`;
     }
+    // Every pooled database connection stayed busy (503, Retry-After: 2): refused before anything changed.
+    case "DATABASE_BUSY":
+      return "The server is busy right now. Nothing was changed — please try again in a moment.";
+    case "INTERNAL_ERROR":
+      return `Something went wrong on our side and this could not be completed. Please try again in a moment. If it keeps happening, contact the Rwanda Olympiad Foundation team${ref ? ` and give them the reference ${error.requestId}` : ""}.`;
   }
-  return fallback;
+  if (error.status === 429) return "Too many attempts in a short time. Wait a minute, then try again.";
+  // An answer that is not ours (a proxy or a hosting page, no JSON body): code "ERROR" with the HTTP status text.
+  if (error.code === "ERROR") {
+    if (error.status === 401) return "Your session has ended. Please sign in again.";
+    if (error.status === 403) return "You don't have permission to do this. If you think you should, contact an administrator.";
+    if (error.status === 404) return "This page or item wasn't found. It may have been removed, or the link is wrong. Go back and try again.";
+    if (error.status === 408) return "The server took too long to answer. Check your connection and try again.";
+    if (error.status === 413) return "What you sent is too large. Choose a smaller file (or a lower-resolution photo) and try again.";
+    if (error.status === 502 || error.status === 503 || error.status === 504) {
+      return "The server isn't responding right now (it may be restarting). Wait a minute, then try again. If you were saving something, check whether it was saved before trying again.";
+    }
+    if (error.status >= 500) return `The server had a problem${ref}. Please try again in a moment. If it keeps happening, contact the Rwanda Olympiad Foundation team.`;
+    return fallback;
+  }
+  // A server failure without a specific code of ours ("Service Unavailable"): plain words and the reference. Specific
+  // codes (an e-mail service not configured, a data source missing …) carry their own message, written for people.
+  if (error.status >= 500 && (!error.message || GENERIC_CODES.has(error.code))) {
+    return `The server had a problem${ref}. Please try again in a moment. If it keeps happening, contact the Rwanda Olympiad Foundation team.`;
+  }
+  return error.message || fallback;
 }

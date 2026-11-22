@@ -116,5 +116,5 @@ test("publish: a closing time already passed is seen before asking the server", 
 test("a message written for the user is shown as written, never as 'Something went wrong'", async () => {
   const { UserFacingError, errorMessage } = await import("../lib/api/errors.ts");
   assert.equal(errorMessage(new UserFacingError("Move the closing time later.")), "Move the closing time later.");
-  assert.equal(errorMessage(new Error("TypeError: x is undefined")), "Something went wrong. Please try again.", "technical errors stay hidden");
+  assert.doesNotMatch(errorMessage(new Error("TypeError: x is undefined")), /TypeError/, "technical errors stay hidden");
 });

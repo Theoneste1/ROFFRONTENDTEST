@@ -10,7 +10,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import { isApiError } from "@/lib/api/errors";
+import { errorMessage, isApiError } from "@/lib/api/errors";
 import type { DirectorySchoolDetail, SchoolClaimStatus } from "@/lib/api/school-directory";
 import { invalidateAfterSchoolChange, useDirectorySchool, useDirectorySchoolHistory, useDirectorySchoolStudents } from "@/lib/queries/school-directory";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
@@ -81,7 +81,7 @@ export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }
       setNotice({ text: verification.verified ? "The school was verified again." : "The school is now verified." });
       void refresh();
     } catch (err) {
-      setNotice({ text: isApiError(err) ? err.message : "Couldn't verify the school. Please try again." });
+      setNotice({ text: errorMessage(err, "Couldn't verify the school. Please try again.") });
     } finally {
       setVerifying(false);
     }
