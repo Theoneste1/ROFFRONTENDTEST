@@ -9,6 +9,9 @@ import { useAdminDivisions, useAdminUser, useMentorScopes, useScopeAction } from
 import { useCourses } from "@/lib/queries/learning";
 import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import { Modal, btnPrimary } from "../../components/adminUi";
+import { hasFeature } from "@/lib/api/capabilities";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import BulkAssignSection from "./BulkAssignSection";
 
 /**
  * A mentor's course × division access (`/admin/mentor-assignments`). Adding
@@ -27,6 +30,7 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
   const courses = useCourses();
   const divisions = useAdminDivisions();
   const action = useScopeAction();
+  const bulkOn = hasFeature(useBackendCapabilities().detection, "adminDivisions");
   const [courseId, setCourseId] = useState("");
   const [divisionId, setDivisionId] = useState("");
   const [message, setMessage] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
@@ -147,6 +151,7 @@ export default function CourseAccessDialog({ mentorId, mentorName, onClose }: { 
               Add access
             </button>
           </form>
+          {bulkOn && <BulkAssignSection mentorId={mentorId} />}
         </div>
       )}
       {message && (

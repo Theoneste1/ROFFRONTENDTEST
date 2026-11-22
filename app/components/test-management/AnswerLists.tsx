@@ -20,7 +20,10 @@ import { subjectLabel } from "@/lib/accounts/olympiad-interests";
 import { isApiError } from "@/lib/api/errors";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime, personName } from "@/lib/format";
-import { ANSWER_FORMAT_LABEL, DIVISION_LABEL } from "@/lib/test-management/rules";
+import { ANSWER_FORMAT_LABEL } from "@/lib/test-management/rules";
+import { useDivisions } from "@/lib/queries/divisions";
+import { activeDivisions, divisionOptionLabel } from "@/lib/divisions/divisions";
+import LevelName from "./LevelName";
 import { SUBMISSION_STATUS_LABEL, SUBMITTER_LABEL, TESTS_SUBMIT, TESTS_SUBMIT_FOR_STUDENTS, TRACKING_BADGE, answerActionLabel, submissionLockSupported } from "@/lib/test-management/submissions";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
@@ -43,12 +46,7 @@ export function MyTests() {
   );
 }
 
-/** Levels and subjects the teacher filters by (testSubmissionLock). ROF has two levels: Junior (S1–S3), Senior (S4–S6). */
-const LEVELS: { label: string; value: "" | TestLevel }[] = [
-  { label: "All", value: "" },
-  { label: "Junior (S1–S3)", value: "JUNIOR" },
-  { label: "Senior (S4–S6)", value: "SENIOR" },
-];
+/** Subjects the teacher filters by (testSubmissionLock); the levels are the active divisions (useDivisions). */
 const SUBJECTS: { label: string; value: "" | OlympiadSubjectCode }[] = [
   { label: "All", value: "" },
   { label: "Mathematics", value: "MATHEMATICS" },
@@ -87,7 +85,7 @@ function Mine() {
                     <p className="font-bold text-slate-900">{t.title}</p>
                     <WindowBadge window={t.window} />
                   </div>
-                  <p className="mt-1 text-xs text-slate-700">{t.subject.name} · {DIVISION_LABEL[t.division]} · {ANSWER_FORMAT_LABEL[t.answerFormat]} · {t.maxMarks} marks</p>
+                  <p className="mt-1 text-xs text-slate-700">{t.subject.name} · <LevelName code={t.division} /> · {ANSWER_FORMAT_LABEL[t.answerFormat]} · {t.maxMarks} marks</p>
                   <p className="mt-2 text-sm text-slate-900">{t.window === "UPCOMING" ? <>Opens {formatDateTime(t.opensAt)}</> : <>Deadline <span className="font-semibold">{formatDateTime(t.deadline)}</span></>}</p>
                   <p className="mt-1 flex items-center justify-between text-xs">
                     <span className={`inline-flex items-center gap-2 ${t.submission ? "font-semibold text-emerald-800" : "text-slate-700"}`}>
@@ -139,7 +137,7 @@ function TeacherList() {
                 <tr key={t.id} className="text-xs" data-testid={`teacher-test-${t.id}`}>
                   <td className={td}>
                     <span className="font-semibold text-gray-900">{t.title}</span> <WindowBadge window={t.window} />
-                    <span className="block text-gray-700">{t.subject.name} · {DIVISION_LABEL[t.division]} · {ANSWER_FORMAT_LABEL[t.answerFormat]}</span>
+                    <span className="block text-gray-700">{t.subject.name} · <LevelName code={t.division} /> · {ANSWER_FORMAT_LABEL[t.answerFormat]}</span>
                   </td>
                   <td className={`${td} text-gray-800`}>{t.window === "UPCOMING" ? `Opens ${formatDateTime(t.opensAt)}` : formatDateTime(t.deadline)}</td>
                   <td className={`${td} text-gray-800`}>{t.submitted} of {t.students} submitted</td>
@@ -174,6 +172,8 @@ function StudentsOfTest({ testId }: { testId: string }) {
   const lockAware = submissionLockSupported(useBackendCapabilities().detection);
   const [status, setStatus] = useState<"" | TrackingState>("");
   const [level, setLevel] = useState<"" | TestLevel>("");
+  const divisions = useDivisions();
+  const LEVELS: { label: string; value: "" | TestLevel }[] = [{ label: "All", value: "" }, ...activeDivisions(divisions.data).map((d) => ({ label: divisionOptionLabel(d), value: d.code }))];
   const [subject, setSubject] = useState<"" | OlympiadSubjectCode>("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -235,7 +235,7 @@ function StudentsOfTest({ testId }: { testId: string }) {
                     </td>
                     {lockAware && (
                       <td className={`${td} text-gray-800`} data-testid="student-level-subjects">
-                        <span className="font-semibold">{r.student.division ? DIVISION_LABEL[r.student.division] : "—"}</span>
+                        <span className="font-semibold"><LevelName code={r.student.division} /></span>
                         <span className="block text-gray-700">{subjects.length ? subjects.join(", ") : "—"}</span>
                       </td>
                     )}

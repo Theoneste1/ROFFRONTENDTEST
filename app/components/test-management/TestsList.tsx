@@ -13,7 +13,9 @@ import { useSession } from "@/lib/auth/session";
 import { actionAllowed } from "@/lib/auth/navigation";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime } from "@/lib/format";
-import { DIVISION_LABEL, DIVISION_OPTIONS, TESTS_MANAGE } from "@/lib/test-management/rules";
+import { TESTS_MANAGE } from "@/lib/test-management/rules";
+import { useTestLevelOptions } from "@/lib/queries/divisions";
+import LevelName from "./LevelName";
 import { TESTS_VIEW_RESULTS, resultsTabVisible } from "@/lib/test-management/results";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
@@ -41,6 +43,7 @@ function List({ base, headCoach }: { base: string; headCoach?: boolean }) {
   const subjects = useTestSubjects();
   const [subjectId, setSubjectId] = useState("");
   const [division, setDivision] = useState<"" | TestDivision>("");
+  const levelOptions = useTestLevelOptions();
   const [status, setStatus] = useState<"" | TestStatus>("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -77,7 +80,7 @@ function List({ base, headCoach }: { base: string; headCoach?: boolean }) {
         <SelectFilter label="Subject" value={subjectId} onChange={reset(setSubjectId)}
           options={[{ label: "All subjects", value: "" }, ...(subjects.data ?? []).map((s) => ({ label: s.name, value: s.id }))]} />
         <SelectFilter label="Division" value={division} onChange={(v) => reset(setDivision)(v as "" | TestDivision)}
-          options={[{ label: "Any", value: "" }, ...DIVISION_OPTIONS.map((o) => ({ label: o.label, value: o.value }))]} />
+          options={[{ label: "Any", value: "" }, ...levelOptions.map((o) => ({ label: o.label, value: o.value }))]} />
         <SearchInput value={q} onChange={reset(setQ)} placeholder="Search titles" label="Search tests" />
       </div>
       {list.isPending ? (
@@ -109,7 +112,7 @@ function List({ base, headCoach }: { base: string; headCoach?: boolean }) {
                       <Link href={`${base}/${t.id}`} className="text-indigo-700 hover:text-indigo-900 hover:underline">{t.title}</Link>
                     </td>
                     <td className={`${td} text-gray-700`}>{t.subject.name}</td>
-                    <td className={`${td} text-gray-700`}>{DIVISION_LABEL[t.division]}</td>
+                    <td className={`${td} text-gray-700`}><LevelName code={t.division} /></td>
                     <td className={`${td} text-gray-700 whitespace-nowrap`}>{formatDateTime(t.opensAt)}</td>
                     <td className={`${td} text-gray-700 whitespace-nowrap`}>
                       {formatDateTime(t.closesAt)}

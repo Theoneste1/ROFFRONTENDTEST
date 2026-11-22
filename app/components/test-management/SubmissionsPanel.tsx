@@ -6,6 +6,7 @@
  * division, name) and pagination; one submission opens with EVERY version (submitter, teacher, time, the deadline that
  * applied, the under-extension mark, pages) and its status history. "Extended" is shown here only (never to markers).
  */
+import { useTestLevelOptions } from "@/lib/queries/divisions";
 import { useState, type FormEvent } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Lock, Unlock } from "lucide-react";
@@ -28,7 +29,8 @@ export function ExtendedBadge({ label = "Extended" }: { label?: string }) {
 
 export default function SubmissionsPanel({ testId }: { testId: string }) {
   const [status, setStatus] = useState<"" | TrackingFilter>("");
-  const [division, setDivision] = useState<"" | "JUNIOR" | "SENIOR">("");
+  const [division, setDivision] = useState("");
+  const levelOptions = useTestLevelOptions().filter((o) => o.value !== "ALL");
   const [schoolId, setSchoolId] = useState("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -59,8 +61,8 @@ export default function SubmissionsPanel({ testId }: { testId: string }) {
       <FilterPills label="State" options={[...TRACKING_FILTERS]} value={status} onChange={reset(setStatus)} />
       <div className="flex flex-wrap items-end gap-3">
         <SearchInput value={q} onChange={reset(setQ)} placeholder="Search students" label="Search students" />
-        <SelectFilter label="Division" value={division} onChange={(v) => reset(setDivision)(v as "" | "JUNIOR" | "SENIOR")}
-          options={[{ label: "All divisions", value: "" }, { label: "Junior (S1–S3)", value: "JUNIOR" }, { label: "Senior (S4–S6)", value: "SENIOR" }]} />
+        <SelectFilter label="Level" value={division} onChange={(v) => reset(setDivision)(v)}
+          options={[{ label: "All levels", value: "" }, ...levelOptions]} />
         {schools.data && (
           <SelectFilter label="School" value={schoolId} onChange={reset(setSchoolId)}
             options={[{ label: "All schools", value: "" }, ...schools.data.data.map((s) => ({ label: s.name, value: s.id }))]} />

@@ -79,12 +79,13 @@ export const RANKING_BY: ReadonlyArray<{ label: string; value: RankingBy }> = [
   { label: "By school", value: "school" },
 ];
 
-export const DIVISION_TEXT: Record<RankingDivision, string> = { JUNIOR: "Junior (S1–S3)", SENIOR: "Senior (S4–S6)", UNKNOWN: "Unknown grade" };
+/** Built-in names (the screens show the names of the divisions the backend lists: LevelName). */
+export const DIVISION_TEXT: Record<RankingDivision, string> = { JUNIOR: "Junior", MIDDLE: "Middle", SENIOR: "Senior", UNKNOWN: "Unknown grade" };
 
 /** The heading of a ranking row's group (null overall), so a table can show where a group starts. */
 export function groupLabel(row: Pick<RankingRow, "group">): string | null {
   if (!row.group) return null;
-  if ("division" in row.group) return DIVISION_TEXT[row.group.division];
+  if ("division" in row.group) return DIVISION_TEXT[row.group.division] ?? row.group.division;
   return row.group.schoolName ?? "No school";
 }
 

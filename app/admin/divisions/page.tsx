@@ -286,7 +286,7 @@ export default function DivisionsContent() {
           <p className="text-sm text-gray-600 mt-1 font-medium max-w-2xl">
             {managed
               ? "Each division is an Olympiad level. Students follow the division their grade is suggested for, unless a coach or a user manager sets it. Divisions are never deleted: deactivate one you no longer use."
-              : "The ROF LMS has two divisions: Junior (S1–S3) and Senior (S4–S6)."}
+              : "Divisions and the grades they are suggested for."}
           </p>
         </div>
         {managed && (

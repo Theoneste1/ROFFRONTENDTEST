@@ -28,6 +28,9 @@ import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills } from "@/app/components/ui/PageFrame";
 import { MetricCard, Modal, Notice, SearchInput, TableCard, TableMessage, btnDanger, btnPrimary, btnSecondary, td, th } from "@/app/admin/components/adminUi";
 import { SubmissionStatusBadge } from "./DistributionPanel";
+import LevelName from "./LevelName";
+import { useDivisions } from "@/lib/queries/divisions";
+import { activeDivisions } from "@/lib/divisions/divisions";
 import { inputBad, inputCls, inputOk, labelCls } from "./shared";
 
 const invalidateResults = (qc: ReturnType<typeof useQueryClient>, testId: string) =>
@@ -252,6 +255,7 @@ export function RankingsPanel({ testId }: { testId: string }) {
   const [division, setDivision] = useState<"" | RankingDivision>("");
   const [publishedOnly, setPublishedOnly] = useState(false);
   const [page, setPage] = useState(1);
+  const levels = activeDivisions(useDivisions().data);
   const filters = { by, ...(by === "division" && division && { division }), ...(publishedOnly && { published: true }), page, limit: 50 };
   const list = useQuery({ queryKey: queryKeys.tests.rankings(testId, filters), queryFn: () => testResultsApi.rankings(testId, filters), placeholderData: keepPreviousData });
   const rows = list.data?.data ?? [];
@@ -269,7 +273,8 @@ export function RankingsPanel({ testId }: { testId: string }) {
             <label htmlFor={`${ids}-div`} className={labelCls}>Division</label>
             <select id={`${ids}-div`} className={`${inputCls} ${inputOk}`} value={division} onChange={(e) => { setDivision(e.target.value as "" | RankingDivision); setPage(1); }}>
               <option value="">All divisions</option>
-              {(["JUNIOR", "SENIOR", "UNKNOWN"] as const).map((d) => <option key={d} value={d}>{DIVISION_TEXT[d]}</option>)}
+              {levels.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
+              <option value="UNKNOWN">{DIVISION_TEXT.UNKNOWN}</option>
             </select>
           </div>
         )}
@@ -386,7 +391,7 @@ export function ResultsReportPanel({ testId }: { testId: string }) {
                   <thead><tr className="border-b border-gray-100"><th className={th}>Division</th><th className={th}>Results</th><th className={th}>Average</th><th className={th}>Highest</th></tr></thead>
                   <tbody className="divide-y divide-gray-100/80" data-testid="by-division">
                     {r.byDivision.length === 0 ? <TableMessage colSpan={4}>No result yet.</TableMessage> : r.byDivision.map((x) => (
-                      <tr key={x.division} className="text-sm"><td className={td}>{DIVISION_TEXT[x.division]}</td><td className={td}>{x.results}</td><td className={`${td} font-semibold`}>{statText(x.average)}</td><td className={td}>{statText(x.max)}</td></tr>
+                      <tr key={x.division} className="text-sm"><td className={td}><LevelName code={x.division} /></td><td className={td}>{x.results}</td><td className={`${td} font-semibold`}>{statText(x.average)}</td><td className={td}>{statText(x.max)}</td></tr>
                     ))}
                   </tbody>
                 </TableCard>

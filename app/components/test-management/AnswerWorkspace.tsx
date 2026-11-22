@@ -23,7 +23,8 @@ import { useSession } from "@/lib/auth/session";
 import { queryKeys } from "@/lib/query/keys";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { formatDateTime, formatFileSize, personName } from "@/lib/format";
-import { ANSWER_FORMAT_LABEL, DIVISION_LABEL } from "@/lib/test-management/rules";
+import { ANSWER_FORMAT_LABEL } from "@/lib/test-management/rules";
+import LevelName from "./LevelName";
 import {
   ANSWER_PAGE_ACCEPT, FORMAT_HELP, MAX_TYPED_ANSWER, SUBMISSION_STATUS_LABEL, WINDOW_BADGE, addPages, answerPageMode, answerProblem, formatAllows,
   newClientKey, nextQueued, pageFileProblem, queueSummary, queueText, removePage, retryDelayMs, retryFailed, setPage, shouldAutoRetry,
@@ -97,7 +98,7 @@ function Workspace({ target, backHref, backLabel }: { target: AnswerTarget; back
   return (
     <PageFrame
       title={t.title}
-      description={<span className="inline-flex flex-wrap items-center gap-2"><WindowBadge window={t.window} /> {t.subject.name} · {DIVISION_LABEL[t.division]} · {t.maxMarks} marks</span>}
+      description={<span className="inline-flex flex-wrap items-center gap-2"><WindowBadge window={t.window} /> {t.subject.name} · <LevelName code={t.division} /> · {t.maxMarks} marks</span>}
     >
       <Link href={backHref} className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:underline">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> {backLabel}

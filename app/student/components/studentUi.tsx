@@ -55,8 +55,8 @@ export function courseStyle(code: string) {
   return COURSE_STYLE[code as CourseCode] ?? COURSE_STYLE.ALGEBRA;
 }
 
-/** Junior (S1–S3) / Senior (S4–S6). */
+/** The student's Olympiad level ("Middle level"): divisions are managed by administrators, so no grade range is assumed. */
 export function divisionLabel(division: { code: string; name: string } | null | undefined): string {
   if (!division) return "";
-  return division.code === "JUNIOR" ? `${division.name} division · S1–S3` : division.code === "SENIOR" ? `${division.name} division · S4–S6` : division.name;
+  return `${division.name} level`;
 }
