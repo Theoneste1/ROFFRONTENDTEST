@@ -3,7 +3,7 @@
  * The primary teacher is the school's MAIN CONTACT only — primary and secondary teachers have the same rights.
  *  1. the school's Teachers tab shows the primary teacher and a Primary / Secondary badge on each current teacher;
  *  2. the Administrator makes the secondary teacher primary (confirm dialog): the previous primary becomes secondary;
- *  3. the badge appears on the teacher's admin page and in the Users list; the teacher sees it on their own profile;
+ *  3. the badge (and the school) appear on the teacher's admin page and in the Users list; the teacher sees it on their own profile;
  *  4. ending the primary's school assignment leaves the school with "No primary teacher" (nobody is promoted).
  * Fixtures (fresh per run, synthetic): a school; a teacher created for this run as its PRIMARY and the e2e Teacher as
  * SECONDARY (database links with an explicit role — what an Administrator's assignments produce).
@@ -89,6 +89,8 @@ test.describe.serial("Primary teacher", () => {
     await admin.goto(`/admin/users?role=TEACHER&q=${first.username}`);
     const listRow = admin.locator("tr", { hasText: first.username });
     await expect(listRow.getByTestId("teacher-role-badge")).toHaveText("Secondary");
+    // The School column shows the teacher's school (a teacher's school is their school link, owner 2026-11-22).
+    await expect(listRow).toContainText(school);
   });
 
   test("the teacher sees their role on their own profile", async ({ browser }) => {
