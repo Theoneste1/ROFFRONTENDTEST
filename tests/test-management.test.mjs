@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 
 import {
   EMPTY_DETAILS, MAX_TEST_MARKS, TESTS_VIEW, detailsBody, detailsChange, detailsDraftOf, detailsProblems, fromLocalInput, moveItem,
-  parseMarks, publishProblemText, questionProblems, questionSum, sumText, testManagementSupported, testsNavVisible, testsPageMode,
+  knownPublishProblems, parseMarks, publishProblemText, questionProblems, questionSum, sumText, testManagementSupported, testsNavVisible, testsPageMode,
   toLocalInput,
 } from "../lib/test-management/rules.ts";
 import { ADMIN_NAV, ADMIN_TESTS, MENTOR_NAV, MENTOR_TESTS } from "../lib/auth/navigation.ts";
@@ -95,7 +95,26 @@ test("reordering moves one question one place; the ends stay", () => {
 });
 
 test("publish refusals are explained", () => {
-  assert.match(publishProblemText("NO_PAPER_OR_QUESTIONS"), /paper or at least one question/);
-  assert.match(publishProblemText("QUESTION_MARKS_MISMATCH"), /add up exactly/);
-  assert.equal(publishProblemText("SOMETHING_NEW"), "SOMETHING_NEW");
+  assert.match(publishProblemText("NO_PAPER_OR_QUESTIONS"), /paper .*or at least one question/);
+  assert.match(publishProblemText("QUESTION_MARKS_MISMATCH"), /don't add up to the test's maximum/);
+  // Never a bare code: an unknown problem still reads as a sentence.
+  assert.match(publishProblemText("SOMETHING_NEW"), /isn't ready to be published/);
+  // The closing time that passed is named, with what to do.
+  assert.equal(
+    publishProblemText("ALREADY_CLOSED", { closesAt: "2026-11-22T19:28:00.000Z", formatTime: () => "22 Nov 2026, 21:28" }),
+    "The closing time (22 Nov 2026, 21:28) has already passed, so students could no longer answer. Open the Details tab, move the closing time later, save, then publish.",
+  );
+  assert.match(publishProblemText("ALREADY_CLOSED"), /move the closing time later/);
+});
+
+test("publish: a closing time already passed is seen before asking the server", () => {
+  const now = new Date("2026-11-22T19:39:00.000Z");
+  assert.deepEqual(knownPublishProblems({ closesAt: "2026-11-22T19:28:00.000Z" }, now), ["ALREADY_CLOSED"]);
+  assert.deepEqual(knownPublishProblems({ closesAt: "2026-11-23T19:28:00.000Z" }, now), []);
+});
+
+test("a message written for the user is shown as written, never as 'Something went wrong'", async () => {
+  const { UserFacingError, errorMessage } = await import("../lib/api/errors.ts");
+  assert.equal(errorMessage(new UserFacingError("Move the closing time later.")), "Move the closing time later.");
+  assert.equal(errorMessage(new Error("TypeError: x is undefined")), "Something went wrong. Please try again.", "technical errors stay hidden");
 });

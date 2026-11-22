@@ -35,6 +35,17 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * A message written for the person using the page (not a technical error): dialogs and forms show it exactly as written.
+ * Throw it when a page turns a server's refusal into its own words — a plain Error would be shown as "Something went wrong".
+ */
+export class UserFacingError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UserFacingError";
+  }
+}
+
 export function isApiError(e: unknown): e is ApiError {
   return e instanceof ApiError;
 }
@@ -55,6 +66,7 @@ export function fieldErrors(error: unknown, fields: readonly string[]): Record<s
 
 /** A user-facing message for any thrown value. */
 export function errorMessage(error: unknown, fallback = "Something went wrong. Please try again."): string {
+  if (error instanceof UserFacingError && error.message) return error.message;
   if (isApiError(error)) {
     switch (error.code) {
       case "NETWORK_ERROR":

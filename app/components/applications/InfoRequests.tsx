@@ -7,7 +7,7 @@
  */
 import { useState } from "react";
 import { applicationInfoApi, INFO_STATE_LABEL, LIMITS, infoRequestState, openInfoRequest, type ApplicationKind, type InfoRequest } from "@/lib/accounts/application-details";
-import { errorMessage } from "@/lib/api/errors";
+import { UserFacingError, errorMessage } from "@/lib/api/errors";
 import { formatDateTime } from "@/lib/format";
 import { ConfirmDialog, linkBtn } from "@/app/admin/components/adminUi";
 
@@ -69,7 +69,7 @@ export function AskForInformation({
               if (kind === "TEACHER") await applicationInfoApi.requestTeacher(applicationId, question);
               else await applicationInfoApi.requestCoach(applicationId, question);
             } catch (e) {
-              throw new Error(errorMessage(e));
+              throw new UserFacingError(errorMessage(e));
             }
             onAsked(`${applicantName}: question sent by e-mail.`);
           }}
