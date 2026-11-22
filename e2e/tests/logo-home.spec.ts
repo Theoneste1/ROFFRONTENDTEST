@@ -17,8 +17,10 @@ test("the logo opens the LMS home page: home page, a portal, a public page", asy
   await signIn(page, "student");
   const portalLogo = page.getByTestId("rof-logo-link").first();
   await expect(portalLogo).toHaveAttribute("href", "/");
+  // The home page sends a signed-in user on to their portal (HomeNav): the click goes to "/", which then lands on the
+  // student's dashboard — never the foundation's website.
   await portalLogo.click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/($|student\/dashboard)/);
   await expect(page).not.toHaveURL(/rwandaolympiadfoundation\.org/);
 });
 
