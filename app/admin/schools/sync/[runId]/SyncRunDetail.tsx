@@ -168,6 +168,23 @@ function RunPage({ runId, access, back }: { runId: string; access: SyncAccess; b
         </Card>
       )}
 
+      {r.counts?.summary && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4" data-testid="sync-headline">
+          <MetricCard label="Schools found" value={formatNumber(r.counts.summary.totalFound)} subtext="rows in the file" />
+          <MetricCard
+            label="Already in the directory"
+            value={formatNumber(r.counts.summary.existing)}
+            subtext={r.mode === "NEW_ONLY" ? "recognised by code — left untouched" : "recognised by code — differences proposed"}
+          />
+          <MetricCard
+            label={r.status === "APPLIED" ? "New schools" : "New schools to import"}
+            value={formatNumber(r.counts.summary.newSchools)}
+            subtext="new official codes"
+          />
+          <MetricCard label="Needs attention" value={formatNumber(r.counts.summary.needsAttention)} subtext="no usable code, conflicts, invalid or possible duplicates" />
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 my-4" data-testid="sync-counts">
         <MetricCard label="Status" value={<Badge className={STATUS_BADGE[r.expired ? "EXPIRED" : r.status]}>{status}</Badge>} subtext={r.status === "PREVIEW" ? `review until ${formatDateTime(r.expiresAt)}` : undefined} />
         <MetricCard label="Rows" value={formatNumber(r.rowCount)} />

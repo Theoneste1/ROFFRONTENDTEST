@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileUp } from "lucide-react";
-import { SYNC_DATASETS, schoolSyncApi, type SyncDatasetKey } from "@/lib/api/school-sync";
+import { SYNC_DATASETS, schoolSyncApi, type SyncDatasetKey, type SyncMode } from "@/lib/api/school-sync";
 import { RUN_STATUS_LABEL, labelProblem, outcomeLines, OUTCOME_LABEL, syncErrorMessage, syncFileProblem } from "@/lib/admin/school-sync";
 import { invalidateSyncRun, useSyncAccess, useSyncRuns } from "@/lib/queries/school-directory";
 import { formatDateTime, formatNumber } from "@/lib/format";
@@ -42,9 +42,11 @@ function RunsPage({ canApprove }: { canApprove: boolean }) {
   const [file, setFile] = useState<File | null>(null);
   const [dataset, setDataset] = useState<SyncDatasetKey>(SYNC_DATASETS[0].key);
   const [label, setLabel] = useState("");
+  // Owner decision 2026-11-22: by default only schools with a new code are imported; existing ones are left untouched.
+  const [mode, setMode] = useState<SyncMode>("NEW_ONLY");
   const [problem, setProblem] = useState<string | null>(null);
   const create = useMutation({
-    mutationFn: () => schoolSyncApi.createRun(file!, dataset, label.trim() || undefined),
+    mutationFn: () => schoolSyncApi.createRun(file!, dataset, label.trim() || undefined, mode),
     onSuccess: (run) => {
       void invalidateSyncRun(qc);
       router.push(`/admin/schools/sync/${run.id}`);
@@ -83,6 +85,13 @@ function RunsPage({ canApprove }: { canApprove: boolean }) {
               <input type="file" accept=".xlsx,.csv" data-testid="sync-file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="text-xs" />
             </label>
             <label className="text-xs text-gray-600">
+              <span className="block font-semibold mb-1">What to import</span>
+              <select value={mode} onChange={(e) => setMode(e.target.value as SyncMode)} data-testid="sync-mode" className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs">
+                <option value="NEW_ONLY">New schools only — schools already listed are left untouched</option>
+                <option value="FULL">New schools and updates to schools already listed</option>
+              </select>
+            </label>
+            <label className="text-xs text-gray-600">
               <span className="block font-semibold mb-1">Label (optional)</span>
               <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={200} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs w-56" />
             </label>
@@ -94,6 +103,8 @@ function RunsPage({ canApprove }: { canApprove: boolean }) {
           {problem && <p className="text-xs text-red-600">{problem}</p>}
           {create.isError && <Alert tone="error">{syncErrorMessage(create.error)}</Alert>}
           <p className="text-[11px] text-gray-600">
+            The school code identifies a school: a code already in the directory is recognised as that school, a new code is
+            imported as a new school, and a row without a usable code needs attention — it is never imported.
             At most 10 MB / 10,000 rows. Contact values are never shown in full here or in the report.
             {canApprove ? " As a Super Admin you can approve and apply a reviewed run." : " A Super Admin approves and applies a reviewed run."}
           </p>
