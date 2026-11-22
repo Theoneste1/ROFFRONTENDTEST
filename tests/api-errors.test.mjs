@@ -45,6 +45,18 @@ test("network, session, validation, rate-limit and business errors are unchanged
     "Opens at must be a valid date and time. (and 1 more problem — check the form)",
   );
   assert.match(errorMessage(new ApiError(429, "TOO_MANY_REQUESTS", "x")), /Too many attempts .* Wait a minute/);
+  // The server's own wait comes first (a sign-in lock can last up to an hour); a specific limit keeps its message.
+  assert.equal(
+    errorMessage(new ApiError(429, "TOO_MANY_REQUESTS", "Too many sign-in attempts.", { retryAfter: 1800 })),
+    "Too many attempts in a short time. Wait 30 minutes, then try again.",
+  );
+  assert.match(errorMessage(new ApiError(429, "TOO_MANY_REQUESTS", "x", { retryAfter: 3540 })), /Wait about an hour/);
+  assert.match(errorMessage(new ApiError(429, "TOO_MANY_REQUESTS", "x", { retryAfter: 42 })), /Wait a minute/);
+  assert.equal(
+    errorMessage(new ApiError(429, "CONTACT_LIMIT", "Too many messages from this e-mail address. Please try again later.")),
+    "Too many messages from this e-mail address. Please try again later.",
+  );
+  assert.match(errorMessage(new ApiError(429, "ERROR", "Too Many Requests")), /Wait a minute/);
   assert.equal(errorMessage(new ApiError(409, "STUDENT_IN_OTHER_PROGRAMME", "This student is active in another programme.")), "This student is active in another programme.");
   // A technical error inside the page is never shown as it is.
   assert.equal(errorMessage(new Error("boom")), UNEXPECTED_ERROR);

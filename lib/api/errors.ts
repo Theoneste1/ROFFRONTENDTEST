@@ -69,6 +69,27 @@ export function fieldErrors(error: unknown, fields: readonly string[]): Record<s
 /** Codes the server uses for a status without a reason of its own (all-exceptions.filter.ts STATUS_CODES). */
 const GENERIC_CODES = new Set(["BAD_REQUEST", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "CONFLICT", "SERVICE_UNAVAILABLE", "INTERNAL_ERROR", "ERROR"]);
 
+/**
+ * 429: how long to wait. The server's own wait (details.retryAfter, seconds: a sign-in lock can last up to an hour)
+ * comes first; a specific limit of ours keeps its message (the contact form's daily limit …); the generic per-minute
+ * limits (every route's throttle resets within 60 seconds) say "a minute".
+ */
+function tooManyMessage(error: ApiError): string {
+  const after = (error.details as { retryAfter?: unknown } | undefined)?.retryAfter;
+  if (typeof after === "number" && Number.isFinite(after) && after > 0) {
+    return `Too many attempts in a short time. Wait ${waitText(after)}, then try again.`;
+  }
+  if (error.code !== "TOO_MANY_REQUESTS" && error.code !== "ERROR" && error.message) return error.message;
+  return "Too many attempts in a short time. Wait a minute, then try again.";
+}
+
+/** 45 → "a minute"; 300 → "5 minutes"; 3600 → "about an hour". */
+export function waitText(seconds: number): string {
+  if (seconds <= 60) return "a minute";
+  if (seconds >= 3300) return "about an hour";
+  return `${Math.ceil(seconds / 60)} minutes`;
+}
+
 /** The fallback when nothing better is known. */
 export const UNEXPECTED_ERROR = "Something unexpected went wrong. Please try again. If it keeps happening, contact the Rwanda Olympiad Foundation team.";
 
@@ -98,7 +119,7 @@ export function errorMessage(error: unknown, fallback = UNEXPECTED_ERROR): strin
     case "INTERNAL_ERROR":
       return `Something went wrong on our side and this could not be completed. Please try again in a moment. If it keeps happening, contact the Rwanda Olympiad Foundation team${ref ? ` and give them the reference ${error.requestId}` : ""}.`;
   }
-  if (error.status === 429) return "Too many attempts in a short time. Wait a minute, then try again.";
+  if (error.status === 429) return tooManyMessage(error);
   // An answer that is not ours (a proxy or a hosting page, no JSON body): code "ERROR" with the HTTP status text.
   if (error.code === "ERROR") {
     if (error.status === 401) return "Your session has ended. Please sign in again.";
