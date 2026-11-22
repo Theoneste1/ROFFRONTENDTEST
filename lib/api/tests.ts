@@ -46,7 +46,7 @@ export interface TestPerson {
 
 export interface TestFileInfo {
   fileId: string;
-  /** Neutral name (test-paper.pdf, marking-guide.png …), never the uploader's own. */
+  /** Named after the test's title ("Round 1.pdf", "Round 1 - marking guide.png"; older servers: test-paper.pdf), never the uploader's own. */
   name: string;
   mimeType: string;
   size: number;
