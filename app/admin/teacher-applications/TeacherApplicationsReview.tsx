@@ -22,6 +22,8 @@ import {
 } from "@/lib/api/teacher-registration";
 import type { DirectorySchool } from "@/lib/api/accounts";
 import { ApiError, errorMessage, isApiError } from "@/lib/api/errors";
+import { interpretSaveError } from "@/lib/admin/school-directory";
+import type { DuplicateCandidate } from "@/lib/api/school-directory";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { queryKeys } from "@/lib/query/keys";
@@ -36,6 +38,8 @@ import {
   VERIFY_NOTE_MAX,
   applicationSchoolPlace,
   approvalPayload,
+  approvalCreatesSchool,
+  proposedSchoolDetails,
   isMissingSchoolApplication,
   teacherReviewActions,
   teacherReviewMode,
@@ -319,10 +323,13 @@ function SchoolCell({ app }: { app: TeacherApplication }) {
       </>
     );
   }
+  const details = proposedSchoolDetails(app);
   return (
     <>
-      {app.proposedSchoolName ?? "—"} <span className="text-[11px] text-amber-700">(not listed — verify first)</span>
+      {app.proposedSchoolName ?? "—"}{" "}
+      <span className="text-[11px] text-amber-700">{approvalCreatesSchool(app) ? "(not listed — approving adds it)" : "(not listed — verify first)"}</span>
       <span className="block text-xs text-gray-500">{place || "No place given"}</span>
+      {details.length > 0 && <span className="block text-[11px] text-gray-500">{details.join(" · ")}</span>}
     </>
   );
 }
@@ -371,6 +378,9 @@ function DetailDialog({
             <Row label="School requested (not listed)">
               {a.proposedSchoolName ?? "—"}
               <span className="block text-xs text-gray-600">{[a.schoolSector, a.schoolDistrict, a.schoolProvince].filter(Boolean).join(", ") || "No place given"}</span>
+              {proposedSchoolDetails(a).length > 0 && (
+                <span className="block text-xs text-gray-600" data-testid="proposed-school-details">{proposedSchoolDetails(a).join(" · ")}</span>
+              )}
             </Row>
           )}
           {missing && (
@@ -584,6 +594,10 @@ function ApproveDialog({
   const [pictureLoaded, setPictureLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // One step (owner 2026-11-22): the approval adds the school; schools with the same name nearby are confirmed first.
+  const createsSchool = approvalCreatesSchool(app);
+  const [duplicates, setDuplicates] = useState<DuplicateCandidate[] | null>(null);
+  const [differentSchool, setDifferentSchool] = useState(false);
 
   async function approve() {
     const p = approvalPayload(note);
@@ -594,14 +608,21 @@ function ApproveDialog({
     setBusy(true);
     setError(null);
     try {
-      const body = withPictureDecision(p.body, { shown: pictureReview, loaded: pictureLoaded, keep: keepPicture });
+      const body = withPictureDecision({ ...p.body, ...(duplicates && differentSchool && { confirmPossibleDuplicate: true }) }, { shown: pictureReview, loaded: pictureLoaded, keep: keepPicture });
       const res = await teacherApplicationsAdminApi.approve(app.id, body);
       onApproved(
         `${fullName(app)}: approved. Teacher account @${res.teacher.username} created${res.emailVerificationRequired ? "; they must confirm their e-mail with the activation message before signing in" : ""}. The teacher is notified by e-mail and in the app.`,
       );
       onClose();
     } catch (e) {
-      setError(errorMessage(onError(e)));
+      const dup = createsSchool && isApiError(e) && e.code === "POSSIBLE_DUPLICATE" ? interpretSaveError(e).duplicates : null;
+      if (dup) {
+        setDuplicates(dup);
+        setDifferentSchool(false);
+        setError(null);
+      } else {
+        setError(errorMessage(onError(e)));
+      }
     } finally {
       setBusy(false);
     }
@@ -619,6 +640,33 @@ function ApproveDialog({
             {app.school.code ? ` (code ${app.school.code})` : ""}
             <span className="block text-xs text-gray-600">{applicationSchoolPlace(app)}</span>
           </p>
+        )}
+        {createsSchool && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-sm text-gray-800" data-testid="approve-creates-school">
+            Approving adds this school to the official list, from the applicant&apos;s details:
+            <strong className="block mt-1">{app.proposedSchoolName}</strong>
+            <span className="block text-xs text-gray-600">{applicationSchoolPlace(app)}</span>
+            <span className="block text-xs text-gray-600">{proposedSchoolDetails(app).join(" · ")}</span>
+            <span className="block text-xs text-gray-600 mt-1">If a school with this code was listed meanwhile, that school is used instead.</span>
+          </div>
+        )}
+        {duplicates && (
+          <Alert tone="info">
+            <span className="block">A school with the same name is already listed in this district:</span>
+            <ul className="list-disc pl-5 text-xs">
+              {duplicates.map((c) => (
+                <li key={c.id}>
+                  {c.name}
+                  {c.code ? ` (code ${c.code})` : ""}
+                  {c.district ? `, ${c.district}` : ""}
+                </li>
+              ))}
+            </ul>
+            <label className="mt-2 flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={differentSchool} onChange={(e) => setDifferentSchool(e.target.checked)} data-testid="confirm-different-school" />
+              The applicant&apos;s school is a different school — add it anyway
+            </label>
+          </Alert>
         )}
         {blocked ? (
           <Alert tone="info">{blocked}</Alert>
@@ -643,7 +691,7 @@ function ApproveDialog({
           <button type="button" onClick={onClose} disabled={busy} className="px-5 py-2 text-sm text-gray-600 disabled:opacity-50">
             Cancel
           </button>
-          <button type="button" onClick={approve} disabled={busy || !!blocked} className={btnPrimary}>
+          <button type="button" onClick={approve} disabled={busy || !!blocked || (!!duplicates && !differentSchool)} className={btnPrimary}>
             {busy && <Spinner className="h-3.5 w-3.5 !text-white" />}
             Approve
           </button>

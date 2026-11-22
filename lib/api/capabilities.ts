@@ -143,6 +143,12 @@ export const KNOWN_FEATURES = [
    */
   "homeLocationRules",
   /**
+   * "My school is not listed" (owner, 2026-11-22): the teacher sign-up sends the school's official details (6-digit code,
+   * cell and village optional, ownership, day / boarding); a listed code is refused naming the school (409
+   * SCHOOL_CODE_LISTED); an administrator's approval creates the school from them. Without it: the name only, as before.
+   */
+  "teacherUnlistedSchoolDetails",
+  /**
    * Gender step (owner, 2026-11-20): `genderRequired` on the profile for a student, teacher or coach without a gender;
    * the portal asks it once (PUT /me/gender). An administrator corrects it (PATCH /admin/users/:id `gender`).
    */
