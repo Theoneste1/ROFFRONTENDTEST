@@ -61,7 +61,7 @@ async function submitAndExpect(page: Page, button: string, doneTestId: string) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     await page.getByRole("button", { name: button }).click();
     const outcome = await Promise.race([
-      (doneTestId === "teacher-portal" ? page.waitForURL(/\/teacher(\/|$)/, { timeout: 30_000 }) : page.getByTestId(doneTestId).waitFor({ timeout: 30_000 }))
+      (doneTestId === "teacher-portal" ? page.waitForURL((u) => /^\/teacher(\/|$)/.test(u.pathname), { timeout: 30_000 }) : page.getByTestId(doneTestId).waitFor({ timeout: 30_000 }))
         .then(() => "done" as const, () => null),
       page.getByRole("alert").filter({ hasText: /Too many requests/i }).waitFor({ timeout: 30_000 }).then(() => "limited" as const, () => null),
     ]);
@@ -69,7 +69,7 @@ async function submitAndExpect(page: Page, button: string, doneTestId: string) {
     test.info().setTimeout(test.info().timeout + 70_000);
     await page.waitForTimeout(61_000);
   }
-  if (doneTestId === "teacher-portal") await page.waitForURL(/\/teacher(\/|$)/, { timeout: 30_000 });
+  if (doneTestId === "teacher-portal") await page.waitForURL((u) => /^\/teacher(\/|$)/.test(u.pathname), { timeout: 30_000 });
   else await expect(page.getByTestId(doneTestId)).toBeVisible({ timeout: 30_000 });
 }
 

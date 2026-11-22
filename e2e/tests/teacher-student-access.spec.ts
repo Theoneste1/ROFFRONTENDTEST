@@ -3,8 +3,9 @@
  *  1. the Administrator opens the school's "Teacher & student access" page from the school page;
  *  2. selects a verified student and assigns them to the school's teacher (confirmation summary, then results);
  *  3. selects another verified student and gives the teacher "View student profiles" for that student only;
- *  4. the teacher's My Students shows how each student is seen and what the teacher may do, and the number of
- *     pending students — never their names; the selected student opens, the other does not.
+ *  4. the teacher's My Students shows how each student is seen and what the teacher may do; with teacher self-service
+ *     (owner 2026-11-21, capability testSubmissionLock) every student who registered with the school code appears
+ *     automatically, a pending one included, and there is no separate pending count; the selected student opens.
  * Fixtures (fresh per run, synthetic): a school, the e2e Teacher assigned to it, two verified students, one pending.
  * One sign-in per role (the backend allows 10 sign-ins a minute per address).
  */
@@ -96,10 +97,11 @@ test.describe.serial("Teacher: My Students", () => {
 
   const row = (name: string) => page.getByTestId("teacher-student-row").filter({ hasText: name });
 
-  test("how each student is seen, what the teacher may do, and pending students only as a number", async () => {
+  test("how each student is seen, what the teacher may do; a pending student appears automatically (self-service)", async () => {
     await page.goto("/teacher/dashboard");
-    await expect(page.getByTestId("pending-students")).toContainText("waiting for an administrator to verify");
-    await expect(page.getByTestId("teacher-students")).not.toContainText(names.pending);
+    await expect(page.getByText("Every student who registered with your school code appears here automatically")).toBeVisible();
+    await expect(page.getByTestId("pending-students")).toHaveCount(0);
+    await expect(row(names.pending)).toBeVisible();
     await expect(row(names.s1)).toContainText("Assigned to you");
     await expect(row(names.s1)).toContainText("School");
     await expect(row(names.s1)).toContainText("No access");

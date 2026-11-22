@@ -195,6 +195,12 @@ function AnswerForm({ view, target, onSubmitted }: { view: AnswerView; target: A
   const replacing = !!view.submission;
 
   useEffect(() => { storeKey(storage, clientKey); }, [storage, clientKey]);
+  /** A fresh key for the next version, remembered at once (see submit). */
+  const renewKey = () => {
+    const fresh = newClientKey();
+    storeKey(storage, fresh);
+    setClientKey(fresh);
+  };
 
   // Resume an attempt after a reload: pages already uploaded under the remembered key.
   useEffect(() => {
@@ -274,14 +280,16 @@ function AnswerForm({ view, target, onSubmitted }: { view: AnswerView; target: A
       files.current.clear();
       setItems([]);
       setTyped("");
-      setClientKey(newClientKey());
+      // Stored now, not only by the effect: a submitted answer is locked, the form unmounts with this update and the
+      // effect would never run — the next allowed version would then reuse this key and be taken as a replay.
+      renewKey();
       onSubmitted(next);
     } catch (err) {
       if (isApiError(err) && err.code === "PAGES_INCOMPLETE") {
         const missing = ((err.details as { missing?: number[] } | undefined)?.missing ?? []);
         setItems((s) => s.map((x) => (missing.includes(x.page) ? { ...x, status: files.current.has(x.id) ? "queued" : "failed", attempts: 0, error: "Upload this page again." } : x)));
       }
-      if (isApiError(err) && err.code === "UPLOAD_ALREADY_SUBMITTED") setClientKey(newClientKey());
+      if (isApiError(err) && err.code === "UPLOAD_ALREADY_SUBMITTED") renewKey();
       // Submitted meanwhile by someone else (the student or a teacher): show the locked answer.
       if (isApiError(err) && err.code === "SUBMISSION_LOCKED") void qc.invalidateQueries({ queryKey: queryKeys.tests.answer(target.testId, target.studentId) });
       setError(errorMessage(err));

@@ -143,7 +143,7 @@ test.describe("public sign-up forms", () => {
     await fillPassword(page);
     await page.getByRole("button", { name: "Apply as a teacher" }).click();
     // No Administrator: signed in and taken to the teacher portal.
-    await page.waitForURL(/\/teacher(\/|$)/, { timeout: 60_000 });
+    await page.waitForURL((u) => /^\/teacher(\/|$)/.test(u.pathname), { timeout: 60_000 });
     const row = await withDb(async (c) => ({
       ...(await c.query(`SELECT status::text AS status, position, "yearsOfExperience" AS years FROM "TeacherApplication" WHERE username = $1`, [username])).rows[0],
       account: (await c.query(
