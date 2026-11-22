@@ -1,11 +1,12 @@
 'use client';
 
 import { usePathname } from "next/navigation";
-import { Award, FileQuestion, Users } from "lucide-react";
+import { Award, FileQuestion, Table2, Users } from "lucide-react";
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { TEACHER_NAV, TEACHER_RESULTS, TEACHER_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { TEACHER_NAV, TEACHER_RESULTS, TEACHER_SHARED_REPORTS, TEACHER_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { customReportsNavVisible } from "@/lib/reports/custom-reports";
 import { resultsNavVisible } from "@/lib/test-management/results";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { answerNavVisible } from "@/lib/test-management/submissions";
@@ -22,8 +23,9 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
     ...visibleNav(TEACHER_NAV, knownPermissions),
     ...(answerNavVisible(detection, knownPermissions, "tests.submitForStudents") ? [TEACHER_TESTS] : []),
     ...(resultsNavVisible(detection, knownPermissions, "tests.viewSchoolResults") ? [TEACHER_RESULTS] : []),
+    ...(customReportsNavVisible(detection, knownPermissions, false) ? [TEACHER_SHARED_REPORTS] : []),
   ];
-  const iconOf = (href: string) => (href === TEACHER_TESTS.href ? FileQuestion : href === TEACHER_RESULTS.href ? Award : Users);
+  const iconOf = (href: string) => (href === TEACHER_TESTS.href ? FileQuestion : href === TEACHER_RESULTS.href ? Award : href === TEACHER_SHARED_REPORTS.href ? Table2 : Users);
 
   return (
     <aside
