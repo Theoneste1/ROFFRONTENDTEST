@@ -30,6 +30,7 @@ import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
 import { MetricCard, Notice, SearchInput, TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
 import { AnswerGate, WindowBadge } from "./AnswerWorkspace";
+import StudentName from "@/app/components/students/StudentName";
 
 const WINDOWS: { label: string; value: "" | AnswerWindow }[] = [
   { label: "All", value: "" },
@@ -230,7 +231,7 @@ function StudentsOfTest({ testId }: { testId: string }) {
                 return (
                   <tr key={r.student.id} className="text-xs" data-testid={`student-row-${r.student.username}`}>
                     <td className={td}>
-                      <span className="font-semibold text-gray-900">{personName(r.student)}</span> <span className="text-gray-600">@{r.student.username}</span>
+                      <span className="font-semibold text-gray-900"><StudentName student={r.student} /></span> <span className="text-gray-600">@{r.student.username}</span>
                       <span className="block text-gray-700">{r.student.gradeLevel ?? "—"}{r.student.school && ` · ${r.student.school.name}`}</span>
                     </td>
                     {lockAware && (

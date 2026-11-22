@@ -32,6 +32,7 @@ import LevelName from "./LevelName";
 import { useDivisions } from "@/lib/queries/divisions";
 import { activeDivisions } from "@/lib/divisions/divisions";
 import { inputBad, inputCls, inputOk, labelCls } from "./shared";
+import StudentName from "@/app/components/students/StudentName";
 
 const invalidateResults = (qc: ReturnType<typeof useQueryClient>, testId: string) =>
   qc.invalidateQueries({ queryKey: [...queryKeys.tests.all, "results", testId] });
@@ -293,7 +294,7 @@ export function RankingsPanel({ testId }: { testId: string }) {
               )] : []),
               <tr key={r.submissionId} className="text-sm" data-testid={`ranking-${r.student.id}`}>
                 <td className={`${td} font-bold text-gray-900`} data-testid="rank">{rankText(rows, i)}</td>
-                <td className={`${td} font-semibold text-gray-900`}>{personName(r.student)}</td>
+                <td className={`${td} font-semibold text-gray-900`}><StudentName student={r.student} /></td>
                 <td className={`${td} text-gray-700`}>{r.school?.name ?? "—"}</td>
                 <td className={`${td} text-gray-700`}>{r.student.gradeLevel ?? "—"}</td>
                 <td className={`${td} font-semibold`}>{scoreText(r.totalMarks, list.data.test.maxMarks)}</td>
@@ -426,7 +427,7 @@ export function ResultsReportPanel({ testId }: { testId: string }) {
             <tbody className="divide-y divide-gray-100/80" data-testid="result-rows">
               {list.data.data.length === 0 ? <TableMessage colSpan={6}>No match.</TableMessage> : list.data.data.map((x) => (
                 <tr key={x.id} className="text-sm" data-testid={`result-${x.student.id}`}>
-                  <td className={`${td} font-semibold text-gray-900`}>{personName(x.student)} <span className="block font-mono text-xs font-normal text-gray-600">{x.publicCode}</span></td>
+                  <td className={`${td} font-semibold text-gray-900`}><StudentName student={x.student} /> <span className="block font-mono text-xs font-normal text-gray-600">{x.publicCode}</span></td>
                   <td className={`${td} text-gray-700`}>{x.student.school?.name ?? "—"}</td>
                   <td className={`${td} text-gray-700`}>{x.student.gradeLevel ?? "—"}</td>
                   <td className={`${td} font-semibold`}>{scoreText(x.totalMarks, x.maxMarks)}</td>

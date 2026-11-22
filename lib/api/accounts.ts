@@ -92,7 +92,7 @@ export interface SchoolAffiliation {
   revokedAt: string | null;
   revokeReason: string | null;
   supersededAt: string | null;
-  student: { id: string; username: string; firstName: string; lastName: string; gradeLevel: GradeLevel | null; division: { id: string; name: string } | null };
+  student: { id: string; username: string; firstName: string; lastName: string; gradeLevel: GradeLevel | null; division: { id: string; name: string } | null; avatarUrl?: string | null };
   school: { id: string; code: string | null; name: string; location: string } | null;
 }
 

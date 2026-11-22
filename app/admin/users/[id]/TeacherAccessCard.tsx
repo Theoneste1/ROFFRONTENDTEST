@@ -28,6 +28,7 @@ import { displayedRole } from "@/lib/schools/primary-teacher";
 import TeacherRoleBadge from "@/app/components/teachers/TeacherRoleBadge";
 import { Card, btnPrimary, btnSecondary, linkBtn } from "../../components/adminUi";
 import { SchoolPicker, SelectInput, TextInput } from "../components/userUi";
+import StudentName from "@/app/components/students/StudentName";
 
 
 const ERRORS: Record<string, string> = {
@@ -161,7 +162,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                           <span className="mt-1 flex flex-wrap gap-1">
                             {d.students!.map((s) => (
                               <span key={s.studentId} className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
-                                {personName(s.student)}
+                                <StudentName student={s.student} />
                                 <button type="button" className="text-gray-500 hover:text-red-600" aria-label={`Take ${personName(s.student)} off this permission`} disabled={act.isPending}
                                   onClick={() => act.mutate(() => teachersAdminApi.removeDelegationStudent(teacherId, d.id, s.studentId))}>
                                   ×

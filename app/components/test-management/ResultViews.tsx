@@ -31,6 +31,7 @@ import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedba
 import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame } from "@/app/components/ui/PageFrame";
 import { MetricCard, Notice, SearchInput, TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
+import StudentName from "@/app/components/students/StudentName";
 
 /** The results pages when the backend has no Phase 4 or the user lacks the permission; otherwise the children. */
 export function ResultsGate({ title, permission, children }: { title: string; permission: Permission; children: ReactNode }) {
@@ -220,7 +221,7 @@ function SchoolResultsList({ testId }: { testId: string }) {
         <tbody className="divide-y divide-gray-100/80" data-testid="school-results">
           {d.data.length === 0 ? <TableMessage colSpan={5}>No published result{q ? " matches" : " yet"}.</TableMessage> : d.data.map((r) => (
             <tr key={r.student.id} className="text-sm" data-testid={`school-result-${r.student.id}`}>
-              <td className={`${td} font-semibold text-gray-900`}>{personName(r.student)}</td>
+              <td className={`${td} font-semibold text-gray-900`}><StudentName student={r.student} /></td>
               <td className={`${td} text-gray-700`}>{r.student.gradeLevel ?? "—"}</td>
               <td className={`${td} text-gray-700`}>{r.student.school?.name ?? "—"}</td>
               <td className={`${td} font-semibold`}>{scoreText(r.totalMarks, r.maxMarks)}</td>

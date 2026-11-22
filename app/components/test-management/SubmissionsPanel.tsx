@@ -22,6 +22,7 @@ import FileButton from "@/app/components/ui/FileButton";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills } from "@/app/components/ui/PageFrame";
 import { MetricCard, Modal, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "@/app/admin/components/adminUi";
+import StudentName from "@/app/components/students/StudentName";
 
 export function ExtendedBadge({ label = "Extended" }: { label?: string }) {
   return <span className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-900" data-testid="extended-badge">{label}</span>;
@@ -87,7 +88,7 @@ export default function SubmissionsPanel({ testId }: { testId: string }) {
                 return (
                   <tr key={r.student.id} className="text-xs" data-testid={`tracking-${r.student.username}`}>
                     <td className={td}>
-                      <span className="font-semibold text-gray-900">{personName(r.student)}</span> <span className="text-gray-600">@{r.student.username}</span>
+                      <span className="font-semibold text-gray-900"><StudentName student={r.student} /></span> <span className="text-gray-600">@{r.student.username}</span>
                       <span className="block text-gray-700">{r.student.gradeLevel ?? "—"}{r.student.school && ` · ${r.student.school.name}`}</span>
                     </td>
                     <td className={td}>

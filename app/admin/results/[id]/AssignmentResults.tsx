@@ -11,6 +11,7 @@ import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, SubmissionBadge } from "../../components/adminUi";
 import PublishPanel from "./PublishPanel";
+import StudentName from "@/app/components/students/StudentName";
 
 const TABS: { label: string; value: "" | SubmissionStatus }[] = [
   { label: "All", value: "" },
@@ -134,7 +135,7 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
                 ) : (
                   subs.data.data.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50/60 transition-colors text-xs">
-                      <td className="px-4 sm:px-6 py-3.5 font-bold text-gray-900 whitespace-nowrap">{personName(s.student)}</td>
+                      <td className="px-4 sm:px-6 py-3.5 font-bold text-gray-900 whitespace-nowrap"><StudentName student={s.student} /></td>
                       <td className="px-4 sm:px-6 py-3.5 text-gray-600 font-medium whitespace-nowrap">{s.review?.percentage != null ? `${s.review.percentage}%` : "—"}</td>
                       <td className="px-4 sm:px-6 py-3.5 text-gray-600 font-medium whitespace-nowrap">{personName(s.review?.mentor, "—")}</td>
                       <td className="px-4 sm:px-6 py-3.5 text-gray-600 font-normal max-w-xs truncate" title={s.review?.feedback ?? undefined}>
