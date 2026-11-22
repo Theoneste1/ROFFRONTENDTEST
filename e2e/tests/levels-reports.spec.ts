@@ -113,7 +113,10 @@ test("Users list: per-role columns, a saved layout, sorting by last login", asyn
 
 test("custom report: example, preview, save, share with Teachers (View)", async ({ page }) => {
   await signIn(page, "admin");
-  await page.goto("/admin/custom-reports/new");
+  await page.goto("/admin/reports");
+  await page.getByTestId("open-custom-reports").click();
+  await expect(page).toHaveURL(/\/admin\/custom-reports$/);
+  await page.getByTestId("new-report").click();
   await page.getByTestId("report-templates").getByRole("button", { name: "Never logged in" }).click();
   await page.getByTestId("report-name").fill(reportName);
   await page.getByTestId("report-preview").click();

@@ -40,7 +40,12 @@ function cell(key: string, u: AdminUser): ReactNode {
       return (
         <Link href={`/admin/users/${u.id}`} className="inline-flex items-center gap-2 font-semibold text-gray-800 hover:text-[#00428C] whitespace-nowrap">
           <AvatarBadge user={u} size="xs" />
-          {u.firstName} {u.lastName}
+          <span>
+            {u.firstName} {u.lastName}
+            {u.teacherSchoolRole && <TeacherRoleBadge role={u.teacherSchoolRole} className="ml-2" />}
+            {/* A coach's subjects under the name: shown whichever columns are chosen. */}
+            <CoachSubjectsNote role={u.role} subjects={u.olympiadInterests} other={u.olympiadInterestOther} />
+          </span>
         </Link>
       );
     case "email":
@@ -49,11 +54,9 @@ function cell(key: string, u: AdminUser): ReactNode {
       return (
         <span className="text-gray-600 font-medium">
           {roleLabel(u.role)}
-          {u.teacherSchoolRole && <TeacherRoleBadge role={u.teacherSchoolRole} className="ml-2" />}
           {u.role === "TEACHER" && u.testSubmissionAllowed === false && (
             <span className="ml-2 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-bold text-red-900" title="An administrator turned off test submission for this teacher" data-testid="test-submission-off">Test submission off</span>
           )}
-          <CoachSubjectsNote role={u.role} subjects={u.olympiadInterests} other={u.olympiadInterestOther} />
         </span>
       );
     case "school":

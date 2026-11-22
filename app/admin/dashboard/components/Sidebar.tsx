@@ -27,8 +27,7 @@ import {
 import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, ADMIN_TESTS, ADMIN_CUSTOM_REPORTS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
-import { customReportsNavVisible } from "@/lib/reports/custom-reports";
+import { ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, ADMIN_TESTS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
 import { testsNavVisible } from "@/lib/test-management/rules";
 import { countriesNavVisible } from "@/lib/countries/reference";
 import { teacherApplicationsNavVisible } from "@/lib/admin/teacher-applications";
@@ -60,7 +59,6 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/forms": ClipboardList,
   "/admin/countries": Globe,
   "/admin/tests": FileQuestion,
-  "/admin/custom-reports": BarChart3,
 };
 
 /**
@@ -85,8 +83,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     ...(countriesNavVisible(detection, knownPermissions) ? [ADMIN_COUNTRIES] : []),
     // Tests: the backend feature AND the known tests.view (lib/test-management/rules.ts).
     ...(testsNavVisible(detection, knownPermissions) ? [ADMIN_TESTS] : []),
-    // Custom reports: the backend feature AND the known reports.build.
-    ...(customReportsNavVisible(detection, knownPermissions, true) ? [ADMIN_CUSTOM_REPORTS] : []),
   ];
 
   // Function to check if link is active

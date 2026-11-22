@@ -5,8 +5,9 @@
  *    on that application; an applicant who re-uses the username never sees them, and neither does the Administrator's
  *    expanded view of the NEW application (Coaches page → applications panel → "Details", fed by GET /mentor-requests;
  *    there is no separate detail endpoint).
- * 2. Student profile pictures: only the student, Administrators and teachers who may view the profile. A direct URL is
- *    refused without a token (the API never authenticates by cookie) and refused to a classmate's token.
+ * 2. Student profile pictures: whoever may view the profile (owner 2026-11-22: the student, other active students,
+ *    Administrators, the teachers and coaches of the student). A direct URL is
+ *    refused without a token (the API never authenticates by cookie); a classmate's own token gets it.
  */
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { hashSync } from "bcryptjs";
@@ -116,7 +117,7 @@ test.describe.serial("Student profile pictures: no access just for being signed 
     expect(up.status()).toBe(200);
   });
 
-  test("direct URL: signed out 401; in a classmate's signed-in browser still 401 (no cookie access); with a classmate's token 404", async ({ page, request }) => {
+  test("direct URL: signed out 401; in a classmate's signed-in browser still 401 (no cookie access); with a classmate's token 200 (owner 2026-11-22)", async ({ page, request }) => {
     const url = `/api/v1/users/${studentId}/avatar`;
     expect((await request.get(url)).status()).toBe(401);
     // Signed in as a classmate, then opening the picture URL directly in the browser.
@@ -127,9 +128,12 @@ test.describe.serial("Student profile pictures: no access just for being signed 
     await expect(page).not.toHaveURL(/\/login(\?|$)/, { timeout: 90_000 });
     const direct = await page.goto(url);
     expect(direct?.status()).toBe(401);
-    // With the classmate's own access token: the same answer as "no picture".
+    // With the classmate's own access token: the picture (owner 2026-11-22, Student Profile Overview: the photo is
+    // visible to everyone allowed to view the profile, other active students included; still never cached).
     const token = await apiToken(request, classmate, PASSWORD);
-    expect((await request.get(url, { headers: { Authorization: `Bearer ${token}` } })).status()).toBe(404);
+    const r = await request.get(url, { headers: { Authorization: `Bearer ${token}` } });
+    expect(r.status()).toBe(200);
+    expect(r.headers()["cache-control"]).toBe("private, no-store");
   });
 
   test("the student and an Administrator get the picture, never cached", async ({ request }) => {
