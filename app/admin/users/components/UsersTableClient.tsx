@@ -60,8 +60,15 @@ function cell(key: string, u: AdminUser): ReactNode {
         </span>
       );
     case "school":
-      // The school's name only (owner 2026-11-22).
-      return <span className="text-gray-600">{u.school?.name ?? "—"}</span>;
+      // The school's name only (owner 2026-11-22). A teacher's is their primary school; "+N" when they have more.
+      return (
+        <span className="text-gray-600">
+          {u.school?.name ?? "—"}
+          {u.school && (u.schoolCount ?? 0) > 1 && (
+            <span className="ml-1 text-xs font-semibold text-gray-500" title={`${u.schoolCount} schools`} data-testid="more-schools">+{(u.schoolCount ?? 1) - 1}</span>
+          )}
+        </span>
+      );
     case "grade":
       return <span className="text-gray-600 whitespace-nowrap">{u.gradeLevel ?? "—"}</span>;
     case "olympiadLevel":

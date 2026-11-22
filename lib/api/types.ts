@@ -876,6 +876,8 @@ export interface AdminUser {
    * contact) of at least one school, SECONDARY when only a secondary one, null without an active school.
    */
   teacherSchoolRole?: "PRIMARY" | "SECONDARY" | null;
+  /** TEACHER rows (2026-11-22): how many active schools the teacher has; `school` is the primary (else earliest) one. */
+  schoolCount?: number;
   /**
    * Registration details (backends with studentRegistrationDetails): full values for ONE account
    * (GET /admin/users/:id, users.manage); lists return phones masked ("+250••••••456").

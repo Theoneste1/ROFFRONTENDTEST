@@ -5,14 +5,14 @@ import Reveal from "./Reveal";
 
 const OPTIONS = [
   { href: "/register", label: "Join as a Student", text: "Create your account and start learning", icon: GraduationCap },
-  { href: "/?subject=teacher#contact", label: "Join as a Teacher", text: "Connect your school's students with ROF", icon: Presentation },
+  { href: "/register/teacher", label: "Join as a Teacher", text: "Connect your school's students with ROF", icon: Presentation },
   { href: "/apply", label: "Join as a Coach", text: "Apply to mentor and train our students", icon: Trophy },
 ];
 
 /**
- * Final call to action. Students register (POST /auth/register/student); coaches
- * apply (POST /mentor-requests); school teachers have no accounts yet, so they
- * use the contact form with a prefilled subject.
+ * Final call to action. Students register (POST /auth/register/student); teachers
+ * register (/register/teacher, which offers the contact form while registration is
+ * closed); coaches apply (POST /mentor-requests).
  */
 export default function JoinCta() {
   return (

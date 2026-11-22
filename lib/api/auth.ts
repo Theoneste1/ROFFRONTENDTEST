@@ -198,7 +198,7 @@ export interface MentorApplicationInput {
   yearsOfExperience?: number;
 }
 
-/** `GET /public/statistics`: aggregate counts of active members (teachers: null — not on the platform yet). */
+/** `GET /public/statistics`: aggregate counts of active members. `teachers` is null only from an older backend. */
 export interface PublicStatistics {
   students: number;
   coaches: number;
