@@ -40,7 +40,8 @@ export type TrackingState = "SUBMITTED" | "NOT_SUBMITTED" | "LATE_BLOCKED";
 export type TrackingFilter = TrackingState | "UNDER_EXTENSION";
 export type ExtensionKind = "TEST" | "STUDENT" | "TEACHER";
 export type ExtensionState = "ACTIVE" | "EXPIRED" | "CANCELLED";
-export type TestLevel = "JUNIOR" | "SENIOR";
+/** A division code (Olympiad level). */
+export type TestLevel = string;
 export type OlympiadSubjectCode = "MATHEMATICS" | "PHYSICS" | "COMPUTING";
 export type SubmissionStatus =
   | "SUBMITTED" | "ASSIGNED" | "MARKING_IN_PROGRESS" | "MARKED" | "APPROVED" | "PUBLISHED" | "RETURNED" | "AWAITING_SECOND_MARKING";
@@ -324,7 +325,7 @@ export const testExtensionsApi = {
 };
 
 export const testTrackingApi = {
-  list: (testId: string, f: { status?: TrackingFilter; schoolId?: string; division?: "JUNIOR" | "SENIOR"; q?: string; page?: number; limit?: number } = {}) =>
+  list: (testId: string, f: { status?: TrackingFilter; schoolId?: string; division?: string; q?: string; page?: number; limit?: number } = {}) =>
     api<TrackingPage>(`${A(testId)}/submissions`, { query: { ...f } }),
   get: (testId: string, submissionId: string) => api<StaffSubmissionDetail>(`${A(testId)}/submissions/${enc(submissionId)}`),
   page: (testId: string, submissionId: string, versionId: string, page: number): Promise<DownloadedFile> =>

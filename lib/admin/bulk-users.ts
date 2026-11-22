@@ -49,6 +49,7 @@ export const BULK_ACTIONS: Readonly<Record<BulkAction, ActionMeta>> = {
   unassignTeacher: { label: "Remove from a teacher", permissions: ["users.manageTeachers"], danger: false },
   grantDelegation: { label: "Give a teacher a permission for these students", permissions: ["users.manageTeachers"], danger: false },
   revokeDelegation: { label: "Take a teacher's permission back for these students", permissions: ["users.manageTeachers"], danger: false },
+  setOlympiadLevel: { label: "Set the Olympiad level", permissions: ["students.classifyLevel"], danger: false },
 };
 
 /** Actions on teacher–student links: only on backends with teacherStudentAccess. */
@@ -65,7 +66,7 @@ export function delegationLabel(permission: string): string {
 }
 
 export const BULK_ACTION_ORDER: readonly BulkAction[] = [
-  "message", "changeClassification", "assignRole", "activate", "deactivate", "suspend", "archive", "restore",
+  "message", "changeClassification", "setOlympiadLevel", "assignRole", "activate", "deactivate", "suspend", "archive", "restore",
   "assignTeacher", "unassignTeacher", "grantDelegation", "revokeDelegation",
 ];
 
@@ -82,8 +83,10 @@ export function exportAvailable(detection: BackendDetection | null | undefined, 
  * The actions this administrator may start (every permission the action needs is held). The teacher–student actions
  * also need the backend to offer teacherStudentAccess (`teacherStudentAccess`; false for older backends).
  */
-export function allowedActions(can: (p: Permission) => boolean, teacherStudentAccess = false): BulkAction[] {
-  return BULK_ACTION_ORDER.filter((a) => (teacherStudentAccess || !TEACHER_STUDENT_ACTIONS.includes(a)) && BULK_ACTIONS[a].permissions.every((p) => can(p)));
+export function allowedActions(can: (p: Permission) => boolean, teacherStudentAccess = false, olympiadLevels = false): BulkAction[] {
+  return BULK_ACTION_ORDER.filter(
+    (a) => (teacherStudentAccess || !TEACHER_STUDENT_ACTIONS.includes(a)) && (olympiadLevels || a !== "setOlympiadLevel") && BULK_ACTIONS[a].permissions.every((p) => can(p)),
+  );
 }
 
 /** The backend advertises teacherStudentAccess (string check: the feature may be unknown to this build's list). */
@@ -157,9 +160,10 @@ export interface ParamsDraft {
   body: string;
   teacherId: string;
   permission: string;
+  olympiadLevel: string;
 }
 
-export const EMPTY_PARAMS: ParamsDraft = { role: "", gradeLevel: "", subject: "", body: "", teacherId: "", permission: "" };
+export const EMPTY_PARAMS: ParamsDraft = { role: "", gradeLevel: "", subject: "", body: "", teacherId: "", permission: "", olympiadLevel: "" };
 
 /** The parameters the action uses, or the problem with them (the backend's limits). */
 export function buildParams(action: BulkAction, d: ParamsDraft): { params?: BulkParams; problem?: string } {
@@ -170,6 +174,8 @@ export function buildParams(action: BulkAction, d: ParamsDraft): { params?: Bulk
       return { params: { role: d.role as BulkParams["role"] } };
     case "changeClassification":
       return d.gradeLevel ? { params: { gradeLevel: d.gradeLevel as BulkParams["gradeLevel"] } } : { problem: "Choose the new grade." };
+    case "setOlympiadLevel":
+      return d.olympiadLevel ? { params: { olympiadLevel: d.olympiadLevel } } : { problem: "Choose the Olympiad level, or Automatic." };
     case "message": {
       const subject = d.subject.trim();
       if (subject.length < 2 || subject.length > 200) return { problem: "The subject needs 2–200 characters." };

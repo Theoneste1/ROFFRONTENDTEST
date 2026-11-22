@@ -187,6 +187,16 @@ export const KNOWN_FEATURES = [
    * filters by level (division) and subject. Without it: replacing an answer as before, no filters.
    */
   "testSubmissionLock",
+  /** Olympiad levels (owner 2026-11-21/22): a student's division is their level — set by hand or following the grade (GET / PUT /admin/students/:id/olympiad-level, bulk setOlympiadLevel). */
+  "olympiadLevels",
+  /** Administrator-managed divisions (owner 2026-11-22): create, suggested grades, order, activation, courses offered, bulk coach assignment. */
+  "adminDivisions",
+  /** The Student Profile Overview (owner 2026-11-22): GET /students/:id/overview; the student's picture for whoever may view it. */
+  "studentOverview",
+  /** Custom reports with view / download / edit grants (owner 2026-11-22): /reports. */
+  "customReports",
+  /** Saved table layouts and a sortable Users list (owner 2026-11-22). */
+  "tableLayouts",
   /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
