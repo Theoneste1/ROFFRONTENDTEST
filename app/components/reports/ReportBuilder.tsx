@@ -110,7 +110,7 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
   return (
     <div className="flex flex-col gap-6" data-testid="report-builder">
       {builder && !report && (
-        <section>
+        <section data-testid="report-templates">
           <h2 className="mb-2 text-sm font-bold text-gray-900">Start from an example</h2>
           <div className="flex flex-wrap gap-2">
             {REPORT_TEMPLATES.map((t) => (
