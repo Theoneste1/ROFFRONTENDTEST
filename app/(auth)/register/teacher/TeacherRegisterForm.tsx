@@ -65,6 +65,8 @@ import {
   teacherRegistrationGate,
   teacherPage,
   validateTeacherRegistration,
+  SCHOOL_ACCOMMODATION_OPTIONS,
+  SCHOOL_OWNERSHIP_OPTIONS,
   type TeacherDraft,
   type TeacherField,
 } from "@/lib/accounts/teacher-registration";
@@ -191,6 +193,8 @@ function OpenForm() {
   // Home location (homeLocationRules): Home country (searchable; Rwanda by default — teacher schools are in Rwanda — and
   // kept once chosen) → Rwanda only: province → district → sector (lib/accounts/home-location).
   const homeRules = homeLocationRulesSupported(useBackendCapabilities().detection);
+  // "My school is not listed" with the school's official details (owner 2026-11-22); older backends: the name only.
+  const schoolDetails = hasFeature(useBackendCapabilities().detection, "teacherUnlistedSchoolDetails");
   const homeInRwanda = d.country.trim().toUpperCase() === RWANDA;
   const [gender, setGender] = useState<Gender | "">("");
   const [submitting, setSubmitting] = useState(false);
@@ -228,7 +232,7 @@ function OpenForm() {
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
     if (submitting) return;
-    const e = validateTeacherRegistration(d, homeRules);
+    const e = validateTeacherRegistration(d, homeRules, schoolDetails);
     const ge = genderOn ? validateGender(gender) : undefined;
     if (ge) e.gender = ge;
     const xe = extraOn ? validateTeacherExtra(extra) : {};
@@ -241,7 +245,7 @@ function OpenForm() {
     }
     setSubmitting(true);
     try {
-      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d, homeRules), ...(extraOn && teacherExtraPayload(extra)), ...(genderOn && gender && { gender }) });
+      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d, homeRules, schoolDetails), ...(extraOn && teacherExtraPayload(extra)), ...(genderOn && gender && { gender }) });
       if (pictureOn) setPictureResult(await uploadRegistrationAvatar(result.avatarUploadToken, picture));
       // A listed school: the account exists — sign in and open the teacher dashboard (no Administrator involved).
       if (result.accountCreated && !result.emailVerificationRequired) {
@@ -258,7 +262,8 @@ function OpenForm() {
       setError(err);
       const server = isApiError(err) ? mapServerFieldErrors(err.validationMessages) : {};
       const field = isApiError(err) ? TEACHER_ERROR_FIELDS[err.code] : undefined;
-      if (field && isApiError(err)) server[field] = TEACHER_REGISTER_ERRORS[err.code];
+      // SCHOOL_CODE_LISTED names the listed school: the server's message is shown as given.
+      if (field && isApiError(err)) server[field] = TEACHER_REGISTER_ERRORS[err.code] ?? err.message;
       setErrors(server);
       // A refused field: focus on it. Other refusals: their message above the fields.
       if (errorKeys(server).length) focus.showErrors();
@@ -437,7 +442,76 @@ function OpenForm() {
         error={errors.school}
       />
     ),
-    proposedSchoolName: missing && (
+    proposedSchoolName: missing && (schoolDetails ? (
+      <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50/50 p-4" data-testid="unlisted-school">
+        <p className="text-sm font-semibold text-slate-900">Your school&apos;s details</p>
+        <p className="text-xs text-slate-600">
+          Give your school&apos;s official details. An administrator checks them and adds the school to the official list — nothing is
+          typed again. Your account is created when it is approved.
+        </p>
+        <TextField
+          label="Official school name"
+          name="proposedSchoolName"
+          required
+          maxLength={TEACHER_RULES.schoolNameMax}
+          placeholder="As on official documents"
+          value={d.proposedSchoolName}
+          onChange={(e) => set("proposedSchoolName", e.target.value)}
+          error={errors.proposedSchoolName}
+        />
+        <TextField
+          label="School code"
+          name="proposedSchoolCode"
+          required
+          inputMode="numeric"
+          maxLength={6}
+          placeholder="6 digits"
+          value={d.proposedSchoolCode}
+          onChange={(e) => set("proposedSchoolCode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+          error={errors.proposedSchoolCode}
+          hint="The school's 6-digit code from the Ministry of Education list."
+        />
+        <p className="text-sm text-slate-700" data-testid="unlisted-school-place">
+          Place: {d.schoolSector}, {d.schoolDistrict}, {d.schoolProvince} (chosen above)
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <TextField
+            label="Cell (optional)"
+            name="proposedSchoolCell"
+            maxLength={100}
+            value={d.proposedSchoolCell}
+            onChange={(e) => set("proposedSchoolCell", e.target.value)}
+            error={errors.proposedSchoolCell}
+          />
+          <TextField
+            label="Village (optional)"
+            name="proposedSchoolVillage"
+            maxLength={100}
+            value={d.proposedSchoolVillage}
+            onChange={(e) => set("proposedSchoolVillage", e.target.value)}
+            error={errors.proposedSchoolVillage}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <PlaceSelect
+            label="Ownership"
+            value={d.proposedSchoolOwnership}
+            onChange={(v) => set("proposedSchoolOwnership", v as TeacherDraft["proposedSchoolOwnership"])}
+            options={SCHOOL_OWNERSHIP_OPTIONS}
+            error={errors.proposedSchoolOwnership}
+            testId="unlisted-school-ownership"
+          />
+          <PlaceSelect
+            label="Day or boarding"
+            value={d.proposedSchoolAccommodation}
+            onChange={(v) => set("proposedSchoolAccommodation", v as TeacherDraft["proposedSchoolAccommodation"])}
+            options={SCHOOL_ACCOMMODATION_OPTIONS}
+            error={errors.proposedSchoolAccommodation}
+            testId="unlisted-school-accommodation"
+          />
+        </div>
+      </div>
+    ) : (
       <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
         <TextField
           label="School name"
@@ -453,7 +527,7 @@ function OpenForm() {
           An administrator will review this school before approving your application. Nothing is added to the school directory automatically.
         </p>
       </div>
-    ),
+    )),
     // homeLocationRules: Province → District → Sector of the official list; each step clears the ones after it.
     homeProvince: homeRules && homeInRwanda && homePlace("province"),
     homeDistrict: homeRules ? homeInRwanda && homePlace("district") : locations.isError ? (

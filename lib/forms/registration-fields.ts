@@ -88,7 +88,8 @@ export const TEACHER_PARTS: readonly SignupPart[] = [
   part("schoolDistrict"),
   part("schoolSector"),
   part("school", ["school"], "wide"),
-  part("proposedSchoolName", ["proposedSchoolName"], "wide"),
+  // "My school is not listed": the name and, with teacherUnlistedSchoolDetails, the school's official details in one box.
+  part("proposedSchoolName", ["proposedSchoolName", "proposedSchoolCode", "proposedSchoolCell", "proposedSchoolVillage", "proposedSchoolOwnership", "proposedSchoolAccommodation"], "wide"),
   // Home location (lib/accounts/home-location): Home country (`country`), then (Rwanda only) province → district → sector.
   part("country", ["country"], "row"),
   part("homeProvince", ["homeProvince"]),

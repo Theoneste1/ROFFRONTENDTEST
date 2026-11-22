@@ -60,6 +60,31 @@ export function schoolVerificationNeeded(app: Pick<TeacherApplication, "school" 
 
 export const SCHOOL_NOT_VERIFIED_REASON = "Verify the applicant's school first. Approval is possible once the school is verified.";
 
+type SchoolDetailsApp = Pick<TeacherApplication, "school" | "proposedSchoolName" | "schoolVerifiedAt" | "proposedSchoolCode">;
+
+/**
+ * Owner 2026-11-22: an unlisted-school application with the school's official code is approved in ONE step — the
+ * approval adds the school to the official list from the applicant's details (or uses the school listed with that
+ * code since). Older applications (no code) still need "Verify school" first.
+ */
+export function approvalCreatesSchool(app: SchoolDetailsApp): boolean {
+  return schoolVerificationNeeded(app) && !!app.proposedSchoolCode;
+}
+
+const OWNERSHIP_LABEL: Readonly<Record<string, string>> = { PUBLIC: "Public", GOVERNMENT_AIDED: "Government-aided", PRIVATE: "Private" };
+const ACCOMMODATION_LABEL: Readonly<Record<string, string>> = { DAY: "Day", BOARDING: "Boarding", MIXED: "Day and boarding" };
+
+/** The proposed school's details as shown to the Administrator (code · cell, village · ownership · day / boarding). */
+export function proposedSchoolDetails(app: Pick<TeacherApplication, "proposedSchoolCode" | "proposedSchoolCell" | "proposedSchoolVillage" | "proposedSchoolOwnership" | "proposedSchoolAccommodation">): string[] {
+  const out: string[] = [];
+  if (app.proposedSchoolCode) out.push(`code ${app.proposedSchoolCode}`);
+  const local = [app.proposedSchoolCell, app.proposedSchoolVillage].filter(Boolean).join(", ");
+  if (local) out.push(local);
+  if (app.proposedSchoolOwnership) out.push(OWNERSHIP_LABEL[app.proposedSchoolOwnership] ?? app.proposedSchoolOwnership);
+  if (app.proposedSchoolAccommodation) out.push(ACCOMMODATION_LABEL[app.proposedSchoolAccommodation] ?? app.proposedSchoolAccommodation);
+  return out;
+}
+
 export interface TeacherReviewActions {
   /** "Verify school": a PENDING missing-school application without a verified school. */
   verifySchool: boolean;
@@ -72,8 +97,10 @@ export interface TeacherReviewActions {
  * What the Administrator may do with an application. School verification is a separate step
  * from approval: it never approves the teacher, and approval never chooses a school.
  */
-export function teacherReviewActions(app: Pick<TeacherApplication, "status" | "school" | "proposedSchoolName" | "schoolVerifiedAt">): TeacherReviewActions {
+export function teacherReviewActions(app: Pick<TeacherApplication, "status" | "school" | "proposedSchoolName" | "schoolVerifiedAt"> & { proposedSchoolCode?: string | null }): TeacherReviewActions {
   if (app.status !== "PENDING") return { verifySchool: false, approve: { shown: false }, reject: false };
+  // One step (owner 2026-11-22): approving adds the school from the applicant's details; verifying stays possible.
+  if (approvalCreatesSchool(app)) return { verifySchool: true, approve: { shown: true, enabled: true }, reject: true };
   if (schoolVerificationNeeded(app)) {
     return { verifySchool: true, approve: { shown: true, enabled: false, reason: SCHOOL_NOT_VERIFIED_REASON }, reject: true };
   }
@@ -118,10 +145,13 @@ export const TEACHER_REVIEW_ERRORS: Readonly<Record<string, string>> = {
   UNKNOWN_SCHOOL: "That school is not an active school in Rwanda's official directory. Choose another one.",
   TEACHERS_DISABLED: "Teacher accounts are switched off on this server, so applications can't be approved right now.",
   IDENTITY_TAKEN: "Another account or application now uses this username or e-mail, so the application can't be approved.",
+  SCHOOL_MANAGE_REQUIRED: "Approving this application adds its school to the official list, which needs the right to manage schools. Ask an administrator who manages schools.",
+  SCHOOL_CODE_TAKEN: "Another school took this code a moment ago. The list has been refreshed; approve again to use that school.",
+  UNKNOWN_SCHOOL_LOCATION: "The school's province, district and sector are no longer in the official list. Verify the school instead.",
 };
 
 /** Codes after which the list is stale and should be refreshed. */
-export const REFRESH_AFTER: readonly string[] = ["APPLICATION_ALREADY_DECIDED", "SCHOOL_ALREADY_VERIFIED", "SCHOOL_NOT_VERIFIED", "SCHOOL_MISMATCH"];
+export const REFRESH_AFTER: readonly string[] = ["APPLICATION_ALREADY_DECIDED", "SCHOOL_ALREADY_VERIFIED", "SCHOOL_NOT_VERIFIED", "SCHOOL_MISMATCH", "SCHOOL_CODE_TAKEN"];
 
 /** Where an application's school is (a listed school's own place, else the place given). */
 export function applicationSchoolPlace(app: Pick<TeacherApplication, "school" | "schoolProvince" | "schoolDistrict" | "schoolSector">): string {

@@ -57,7 +57,16 @@ export interface TeacherRegistrationBase {
 }
 export type TeacherRegistrationInput =
   | (TeacherRegistrationBase & { schoolId: string })
-  | (TeacherRegistrationBase & { proposedSchoolName: string; schoolSector: string });
+  | (TeacherRegistrationBase & {
+      proposedSchoolName: string;
+      schoolSector: string;
+      /** The school's official details (capability teacherUnlistedSchoolDetails; owner 2026-11-22). */
+      proposedSchoolCode?: string;
+      proposedSchoolCell?: string;
+      proposedSchoolVillage?: string;
+      proposedSchoolOwnership?: "PUBLIC" | "GOVERNMENT_AIDED" | "PRIVATE";
+      proposedSchoolAccommodation?: "DAY" | "BOARDING" | "MIXED";
+    });
 
 export interface TeacherApplicationSchool {
   id: string;
@@ -101,6 +110,12 @@ export interface TeacherApplication {
   status: TeacherApplicationStatus;
   school: TeacherApplicationSchool | null;
   proposedSchoolName: string | null;
+  /** "My school is not listed" with the school's official details (teacherUnlistedSchoolDetails); null on older applications. */
+  proposedSchoolCode?: string | null;
+  proposedSchoolCell?: string | null;
+  proposedSchoolVillage?: string | null;
+  proposedSchoolOwnership?: "PUBLIC" | "GOVERNMENT_AIDED" | "PRIVATE" | null;
+  proposedSchoolAccommodation?: "DAY" | "BOARDING" | "MIXED" | null;
   schoolProvince: string | null;
   schoolDistrict: string | null;
   schoolSector: string | null;
@@ -159,7 +174,7 @@ export const teacherApplicationsAdminApi = {
   verifySchool: (id: string, input: { schoolId: string; note?: string }) =>
     api<TeacherApplication>(`/admin/teacher-applications/${encodeURIComponent(id)}/school`, { method: "POST", body: input }),
   /** 400 SCHOOL_NOT_VERIFIED (missing school not verified yet) / SCHOOL_MISMATCH; 409 APPLICATION_ALREADY_DECIDED. */
-  approve: (id: string, input: { schoolId?: string; note?: string; approvePicture?: boolean }) =>
+  approve: (id: string, input: { schoolId?: string; note?: string; approvePicture?: boolean; confirmPossibleDuplicate?: boolean }) =>
     api<ApproveTeacherApplicationResult>(`/admin/teacher-applications/${encodeURIComponent(id)}/approve`, { method: "POST", body: input }),
   /** The application's picture (applicationPictureReview), fetched with the session; 404 when there is none. */
   avatar: (id: string) => apiBlob(`/admin/teacher-applications/${encodeURIComponent(id)}/avatar`, {}, "picture"),
