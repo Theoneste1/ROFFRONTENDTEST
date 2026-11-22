@@ -218,7 +218,8 @@ test.describe.serial("publication, results, rankings, withdrawal (G6)", () => {
     await expect(rows).not.toContainText(nameC);
     expect((await t.locator("main").innerText()).toLowerCase()).not.toContain("rank");
     await noSeriousA11y(t);
-    await rows.getByTestId(`school-result-${ids.b}`).getByRole("link").click();
+    // The name opens the student's profile; Details opens the result.
+    await rows.getByTestId(`school-result-${ids.b}`).getByRole("link", { name: /^Details/ }).click();
     await expect(t.getByTestId("result-total")).toHaveText("15 / 20");
     await t.context().close();
   });
