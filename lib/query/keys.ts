@@ -112,6 +112,7 @@ export const queryKeys = {
     teacherSchools: (teacherId: string) => [...queryKeys.accounts.all, "teacher-schools", teacherId] as const,
     delegations: (teacherId: string) => [...queryKeys.accounts.all, "delegations", teacherId] as const,
     teacherTestSubmission: (teacherId: string) => [...queryKeys.accounts.all, "teacher-test-submission", teacherId] as const,
+    teacherHomeworkSubmission: (teacherId: string) => [...queryKeys.accounts.all, "teacher-homework-submission", teacherId] as const,
     teacherStudents: (filters: object) => [...queryKeys.accounts.all, "teacher-students", filters] as const,
     schoolAccess: (schoolId: string) => [...queryKeys.accounts.all, "school-access", schoolId] as const,
     schoolAccessStudents: (schoolId: string, filters: object) => [...queryKeys.accounts.all, "school-access", schoolId, "students", filters] as const,

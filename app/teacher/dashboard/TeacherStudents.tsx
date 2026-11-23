@@ -15,7 +15,7 @@ import type { GradeLevel } from "@/lib/api/types";
 import { useSession } from "@/lib/auth/session";
 import { useTeacherStudents, useTeacherStudentsSummary } from "@/lib/queries/teacher";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
-import { ABILITY_LABEL, abilities, accessBadges, pendingText, teacherStudentAccessSupported } from "@/lib/accounts/teacher-student-access";
+import { ABILITY_LABEL, abilities, accessBadges, homeworkDefaultSupported, pendingText, teacherStudentAccessSupported } from "@/lib/accounts/teacher-student-access";
 import { personName } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
@@ -35,6 +35,8 @@ export default function TeacherStudents() {
   const [access, setAccess] = useState<"" | "SCHOOL" | "ASSIGNED">("");
   const tsa = teacherStudentAccessSupported(useBackendCapabilities().detection);
   const selfService = submissionLockSupported(useBackendCapabilities().detection);
+  // Course homework by default (owner 2026-11-24): open a student to see their homework and hand it in for them.
+  const homework = homeworkDefaultSupported(useBackendCapabilities().detection) && (can("students.viewProgress") || can("submissions.submitOnBehalf"));
   const summary = useTeacherStudentsSummary(tsa);
   const students = useTeacherStudents({ q: q || undefined, gradeLevel: grade || undefined, ...(tsa && access && { access }), page, limit: PAGE_SIZE });
 
@@ -44,7 +46,7 @@ export default function TeacherStudents() {
 
   return (
     <PageFrame title="My students" description={selfService
-      ? "Every student who registered with your school code appears here automatically. Submit their tests from Tests."
+      ? `Every student who registered with your school code appears here automatically. Submit their tests from Tests.${homework ? " Open a student to see their course homework and hand it in for them." : ""}`
       : tsa ? "Verified students of your schools, and students an administrator assigned to you." : "Students of the schools assigned to you by an administrator."}>
       {/* Tests (Phase 4 dashboard: capability testResults, tests.submitForStudents) */}
       <div className="mb-6"><TeacherTestsWidget /></div>
