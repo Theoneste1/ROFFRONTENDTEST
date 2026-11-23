@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSupportInfo } from "@/lib/queries/account";
 import { SITE } from "@/lib/site/content";
 import SocialLinks from "./SocialLinks";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { subscribersSupported } from "@/lib/subscribers/rules";
 
 const QUICK = [
   { href: "#top", label: "Home" },
@@ -24,6 +26,7 @@ const RESOURCES = [
 
 export default function HomeFooter() {
   const info = useSupportInfo().data;
+  const news = subscribersSupported(useBackendCapabilities().detection);
   return (
     <footer className="bg-brand-950 text-blue-100" aria-labelledby="footer-title">
       <h2 id="footer-title" className="sr-only">Footer</h2>
@@ -66,6 +69,7 @@ export default function HomeFooter() {
             {info?.phone && <li><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="hover:text-amber-300">{info.phone}</a></li>}
             {info?.hours && <li>{info.hours}</li>}
             <li><a href="#contact" className="hover:text-amber-300">Send us a message</a></li>
+            {news && <li><a href="#news" className="hover:text-amber-300">Get ROF news by e-mail</a></li>}
           </ul>
         </div>
       </div>

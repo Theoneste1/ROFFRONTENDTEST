@@ -65,7 +65,9 @@ export type Permission =
   // Registration data (owner 2026-11-23): Super Administrators only.
   | "registrationData.manage"
   // Coaches across their programmes (owner 2026-11-23): their programmes' students and published results.
-  | "students.viewProgramme" | "tests.viewProgrammeResults";
+  | "students.viewProgramme" | "tests.viewProgrammeResults"
+  // News subscribers and mailings (capability subscribers, owner 2026-11-23): Administrators and Super Admins.
+  | "subscribers.manage";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
