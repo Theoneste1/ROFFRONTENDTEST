@@ -74,23 +74,23 @@ export default function Hero() {
 
       <div className="mx-auto w-full max-w-7xl px-4 pb-24 pt-28 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-300 ring-1 ring-white/20 backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-300" aria-hidden="true" />
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] -white ring-1 ring-white/20 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden="true" />
             Rwanda Olympiad Foundation
           </p>
           <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Where curious minds become <span className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">Olympiad problem-solvers</span>
+            Where curious minds become <span className="text-white underline decoration-white/40 decoration-4 underline-offset-8">Olympiad problem-solvers</span>
           </h1>
 
           {/* Rotating quote */}
-          <figure className="mt-8 border-l-4 border-amber-400 pl-5" aria-live="polite" aria-atomic="true">
+          <figure className="mt-8 border-l-4 border-white pl-5" aria-live="polite" aria-atomic="true">
             <blockquote key={quote} className="home-quote text-xl font-medium italic leading-relaxed text-blue-50 sm:text-2xl">
               “{HERO_QUOTES[quote]}”
             </blockquote>
           </figure>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-7 py-3.5 font-bold text-brand-950 shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:bg-amber-300">
+            <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 font-bold text-brand-950 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-brand-50">
               <GraduationCap className="h-5 w-5" /> Join as a Student
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
@@ -111,7 +111,7 @@ export default function Hero() {
             key={s.src}
             type="button"
             onClick={() => setIndex(i)}
-            className={`h-2.5 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${i === slide ? "w-7 bg-amber-400" : "w-2.5 bg-white/60 hover:bg-white"}`}
+            className={`h-2.5 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:-white ${i === slide ? "w-7 bg-white" : "w-2.5 bg-white/60 hover:bg-white"}`}
             aria-label={`Show photo ${i + 1} of ${HERO_SLIDES.length}`}
             aria-current={i === slide ? "true" : undefined}
           />
@@ -119,7 +119,7 @@ export default function Hero() {
         <button
           type="button"
           onClick={() => setChoice(rotating ? "pause" : "play")}
-          className="ml-1 rounded-full p-1 text-white hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+          className="ml-1 rounded-full p-1 text-white hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:-white"
           aria-label={rotating ? "Pause the slideshow and quotes" : "Play the slideshow and quotes"}
         >
           {rotating ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}

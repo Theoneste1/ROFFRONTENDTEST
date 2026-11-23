@@ -22,7 +22,7 @@ export default function JoinCta() {
       <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
         <Reveal>
           <h2 id="join-title" className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-            Be Part of Something <span className="text-amber-400">Extraordinary.</span>
+            Be Part of Something <span className="-white">Extraordinary.</span>
           </h2>
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-blue-100 sm:text-xl">
             Whether you are a student passionate about learning, a teacher inspiring young minds, or a coach developing future problem-solvers, there is a place for you in the Rwanda Olympiad Foundation community.
@@ -31,8 +31,8 @@ export default function JoinCta() {
         <div className="mt-12 grid gap-5 sm:grid-cols-3">
           {OPTIONS.map(({ href, label, text, icon: Icon }, i) => (
             <Reveal key={href} delayClass={["", "delay-100", "delay-200"][i]}>
-              <Link href={href} className="group flex h-full flex-col items-center rounded-2xl bg-white/10 p-7 text-center ring-1 ring-white/20 backdrop-blur transition hover:-translate-y-1 hover:bg-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
-                <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-amber-400 text-brand-950 transition group-hover:bg-brand-950 group-hover:text-amber-300">
+              <Link href={href} className="group flex h-full flex-col items-center rounded-2xl bg-white/10 p-7 text-center ring-1 ring-white/20 backdrop-blur transition hover:-translate-y-1 hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:-white">
+                <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-white text-brand transition group-hover:bg-white group-hover:text-brand">
                   <Icon className="h-7 w-7" aria-hidden="true" />
                 </span>
                 <span className="mt-4 text-lg font-extrabold text-white group-hover:text-brand-950">{label}</span>
@@ -43,7 +43,7 @@ export default function JoinCta() {
         </div>
         <p className="mt-10 text-sm text-blue-100/80">
           Already a member?{" "}
-          <Link href="/login" className="font-semibold text-amber-300 hover:underline">
+          <Link href="/login" className="font-semibold -white hover:underline">
             Log in
           </Link>
         </p>

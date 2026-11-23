@@ -18,7 +18,7 @@ export function configuredSocials() {
 export default function SocialLinks({ tone = "dark" }: { tone?: "dark" | "light" }) {
   const links = configuredSocials();
   if (links.length === 0) return null;
-  const cls = tone === "dark" ? "bg-white/10 text-white hover:bg-amber-400 hover:text-brand-950" : "bg-slate-100 text-brand-950 hover:bg-brand hover:text-white";
+  const cls = tone === "dark" ? "bg-white/10 text-white hover:bg-white hover:text-brand" : "bg-slate-100 text-brand-950 hover:bg-brand hover:text-white";
   return (
     <ul className="flex flex-wrap gap-3">
       {links.map((l) => (
