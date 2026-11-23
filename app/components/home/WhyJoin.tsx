@@ -5,9 +5,9 @@ import { AUDIENCES } from "@/lib/site/content";
 import Reveal from "./Reveal";
 
 const ACCENT: Record<string, string> = {
-  students: "from-brand-500 to-blue-700",
-  teachers: "from-emerald-500 to-brand-700",
-  coaches: "from-amber-400 to-amber-600",
+  students: "from-brand-500 to-brand-700",
+  teachers: "from-brand-500 to-brand-700",
+  coaches: "from-brand-500 to-brand-700",
   schools: "from-brand-500 to-brand-700",
 };
 
