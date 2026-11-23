@@ -70,12 +70,20 @@ export const STATUS_BADGE: Record<TestStatus, { label: string; className: string
 };
 
 const PROBLEM_TEXT: Record<string, string> = {
-  NO_PAPER_OR_QUESTIONS: "Add a question paper or at least one question.",
-  QUESTION_MARKS_MISMATCH: "The questions' marks must add up exactly to the test's maximum.",
-  ALREADY_CLOSED: "The closing time has passed: move it later first.",
+  NO_PAPER_OR_QUESTIONS: "The test has no question paper and no questions. Add a paper (Files tab) or at least one question (Questions tab).",
+  QUESTION_MARKS_MISMATCH: "The questions' marks don't add up to the test's maximum. Change the questions' marks or the maximum (Details tab) so they match.",
+  ALREADY_CLOSED: "The closing time has already passed, so students could no longer answer. Open the Details tab, move the closing time later, save, then publish.",
 };
-export function publishProblemText(code: string): string {
-  return PROBLEM_TEXT[code] ?? code;
+/** A refusal to publish (409 TEST_NOT_READY problems) in plain words, with what to do. `closesAt` names the time that passed. */
+export function publishProblemText(code: string, ctx: { closesAt?: string; formatTime?: (iso: string) => string } = {}): string {
+  if (code === "ALREADY_CLOSED" && ctx.closesAt && ctx.formatTime) {
+    return `The closing time (${ctx.formatTime(ctx.closesAt)}) has already passed, so students could no longer answer. Open the Details tab, move the closing time later, save, then publish.`;
+  }
+  return PROBLEM_TEXT[code] ?? "This test isn't ready to be published yet. Check its details, questions and files.";
+}
+/** Problems the page can see before asking the server (the server checks again). */
+export function knownPublishProblems(t: { closesAt: string }, now = new Date()): string[] {
+  return new Date(t.closesAt).getTime() <= now.getTime() ? ["ALREADY_CLOSED"] : [];
 }
 
 // ── Dates (the browser's local time in the form; ISO for the API) ─────────────
