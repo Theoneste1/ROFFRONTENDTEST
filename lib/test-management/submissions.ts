@@ -57,13 +57,13 @@ export function staffTabVisible(detection: BackendDetection | undefined, allowed
 export const WINDOW_BADGE: Record<AnswerWindow, { label: string; className: string }> = {
   UPCOMING: { label: "Not open yet", className: "bg-slate-200 text-slate-800" },
   OPEN: { label: "Open", className: "bg-emerald-100 text-emerald-900" },
-  CLOSED: { label: "Closed", className: "bg-rose-100 text-rose-900" },
+  CLOSED: { label: "Closed", className: "bg-red-100 text-red-900" },
 };
 
 export const TRACKING_BADGE: Record<TrackingState, { label: string; className: string }> = {
   SUBMITTED: { label: "Submitted", className: "bg-emerald-100 text-emerald-900" },
   NOT_SUBMITTED: { label: "Not yet", className: "bg-amber-100 text-amber-900" },
-  LATE_BLOCKED: { label: "Late (blocked)", className: "bg-rose-100 text-rose-900" },
+  LATE_BLOCKED: { label: "Late (blocked)", className: "bg-red-100 text-red-900" },
 };
 
 export const TRACKING_FILTERS: ReadonlyArray<{ label: string; value: "" | TrackingFilter }> = [
@@ -86,7 +86,7 @@ export const EXTENSION_KIND_LABEL: Record<ExtensionKind, string> = { TEST: "Whol
 export const EXTENSION_STATE_BADGE: Record<ExtensionState, { label: string; className: string }> = {
   ACTIVE: { label: "Active", className: "bg-emerald-100 text-emerald-900" },
   EXPIRED: { label: "Expired", className: "bg-slate-200 text-slate-800" },
-  CANCELLED: { label: "Cancelled", className: "bg-rose-100 text-rose-900" },
+  CANCELLED: { label: "Cancelled", className: "bg-red-100 text-red-900" },
 };
 
 // ── What an answer format allows ────────────────────────────────────────────────

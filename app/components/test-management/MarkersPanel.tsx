@@ -65,7 +65,7 @@ export default function MarkersPanel({ subject }: { subject: TestSubject }) {
                     <td className={td}>
                       <span className="font-semibold text-gray-900">{personName(a.coach)}</span>
                       <span className="ml-1 text-gray-600">@{a.coach.username}</span>
-                      {a.coach.interestedInSubject && <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] text-sky-900">interested</span>}
+                      {a.coach.interestedInSubject && <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-[11px] text-brand-900">interested</span>}
                     </td>
                     <td className={`${td} text-gray-700`}>
                       {formatDateTime(a.grantedAt)}{a.grantedBy && ` by ${personName(a.grantedBy)}`}
@@ -145,7 +145,7 @@ function Candidates({ subject, onGranted }: { subject: TestSubject; onGranted: (
               <li key={c.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm" data-testid={`candidate-${c.username}`}>
                 <span>
                   <span className="font-semibold text-slate-900">{personName(c)}</span> <span className="text-slate-600">@{c.username}</span>
-                  {c.interestedInSubject && <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] text-sky-900">interested in {subject.name}</span>}
+                  {c.interestedInSubject && <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-[11px] text-brand-900">interested in {subject.name}</span>}
                   {c.markingRemoved && <span className="mt-0.5 block text-xs text-red-700">Marking taken away: {c.markingRemoved.reason}. Authorise to give it back.</span>}
                 </span>
                 {c.authorizationId && c.mayMark !== false ? (

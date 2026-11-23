@@ -143,7 +143,7 @@ function Grading({
             </div>
             <p className="text-gray-600 mt-1 text-sm">
               Submitted on {formatDateTime(s.submittedAt)}
-              {s.isLate && <span className="text-orange-600 font-semibold"> · late</span>}
+              {s.isLate && <span className="text-amber-600 font-semibold"> · late</span>}
             </p>
           </div>
           {attempt && attempt.attachments.length > 0 && (

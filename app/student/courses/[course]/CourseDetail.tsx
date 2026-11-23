@@ -195,7 +195,7 @@ export default function CourseDetail({ courseId }: { courseId: string }) {
             <h3 className="font-bold text-gray-900">Your progress</h3>
 
             <div className="flex items-center gap-3">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-full font-bold ${completed ? "bg-green-100 text-green-700" : "bg-indigo-100 text-indigo-700"}`}>
+              <div className={`flex h-12 w-12 items-center justify-center rounded-full font-bold ${completed ? "bg-emerald-100 text-emerald-700" : "bg-indigo-100 text-indigo-700"}`}>
                 {completed ? <CheckCircle2 className="h-6 w-6" /> : c.title.charAt(0)}
               </div>
               <div>

@@ -30,12 +30,11 @@ test("label: missing names fall back to the username, then to \"User\"", () => {
   assert.equal(displayName({ username: "rca.coach" }), "rca.coach");
 });
 
-test("tone: one of the ROF tones, the same for the same account every time", () => {
-  const a = { id: "c5f32a97-5593-4fd6-b253-dd9ea75208d9", firstName: "Theoneste" };
-  assert.ok(AVATAR_TONES.includes(avatarTone(a)));
-  assert.equal(avatarTone(a), avatarTone({ ...a, firstName: "Renamed" }), "keyed by id, not by name");
-  const seen = new Set(Array.from({ length: 40 }, (_, i) => avatarTone({ id: `user-${i}` })));
-  assert.ok(seen.size >= 3, "accounts spread over the tones");
+test("tone: the logo's colours only (owner 2026-11-24) — logo blue with white letters, for every account", () => {
+  assert.deepEqual([...AVATAR_TONES], ["bg-brand text-white"]);
+  const seen = new Set(Array.from({ length: 40 }, (_, i) => avatarTone({ id: `user-${i}`, firstName: `N${i}` })));
+  assert.deepEqual([...seen], ["bg-brand text-white"]);
+  assert.equal(avatarTone(null), "bg-brand text-white");
 });
 
 test("picture file: JPEG, PNG or WebP up to 2 MB", () => {

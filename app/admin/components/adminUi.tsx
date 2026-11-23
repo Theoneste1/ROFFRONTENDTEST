@@ -121,14 +121,14 @@ export const ADMIN_ASSIGNMENT_STATUS: Record<AssignmentStatus, { label: string; 
 /** Submission states as the administrator sees them. */
 export const ADMIN_SUBMISSION_STATUS: Record<SubmissionStatus, { label: string; badge: string }> = {
   SUBMITTED: { label: "Awaiting distribution", badge: "bg-slate-100 text-slate-600" },
-  ASSIGNED: { label: "With coach", badge: "bg-purple-50 text-purple-700" },
+  ASSIGNED: { label: "With coach", badge: "bg-brand-50 text-brand-700" },
   IN_REVIEW: { label: "In review", badge: "bg-blue-50 text-blue-700" },
   MARKED: { label: "Marked (not sent)", badge: "bg-indigo-50 text-indigo-700" },
   SUBMITTED_TO_ADMIN: { label: "Awaiting approval", badge: "bg-amber-50 text-amber-700" },
   APPROVED: { label: "Approved", badge: "bg-emerald-50 text-emerald-700" },
-  PUBLISHED: { label: "Published", badge: "bg-green-50 text-green-700" },
+  PUBLISHED: { label: "Published", badge: "bg-emerald-50 text-emerald-700" },
   REJECTED: { label: "Sent back to coach", badge: "bg-red-50 text-red-600" },
-  RESUBMISSION_REQUESTED: { label: "Resubmission requested", badge: "bg-rose-50 text-rose-600" },
+  RESUBMISSION_REQUESTED: { label: "Resubmission requested", badge: "bg-red-50 text-red-600" },
 };
 
 export function AssignmentBadge({ status }: { status: AssignmentStatus }) {

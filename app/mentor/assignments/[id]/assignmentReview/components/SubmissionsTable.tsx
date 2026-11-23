@@ -37,7 +37,7 @@ export default function SubmissionsTable({ assignmentId, maximumMarks, rows }: {
                       <p className="text-xs text-slate-500">
                         {s.student.gradeLevel ?? ""}
                         {s.revisions.length > 1 && ` · attempt ${s.revisions.length}`}
-                        {s.isLate && <span className="text-orange-600"> · late</span>}
+                        {s.isLate && <span className="text-amber-600"> · late</span>}
                       </p>
                     </div>
                   </div>

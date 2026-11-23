@@ -38,7 +38,7 @@ export function accountStatus(u: Pick<AdminUser, "isActive" | "isApproved" | "ac
 const STATUS: Record<AccountStatus, { label: string; badge: string }> = {
   ACTIVE: { label: "Active", badge: "bg-emerald-50 text-emerald-700" },
   AWAITING_SETUP: { label: "Awaiting setup", badge: "bg-amber-50 text-amber-700" },
-  AWAITING_APPROVAL: { label: "Awaiting approval", badge: "bg-orange-50 text-orange-700" },
+  AWAITING_APPROVAL: { label: "Awaiting approval", badge: "bg-amber-50 text-amber-700" },
   SUSPENDED: { label: "Suspended", badge: "bg-gray-100 text-gray-600" },
   DEACTIVATED: { label: "Deactivated", badge: "bg-gray-100 text-gray-600" },
   ARCHIVED: { label: "Archived", badge: "bg-slate-200 text-slate-700" },

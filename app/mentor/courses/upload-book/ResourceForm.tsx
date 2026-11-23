@@ -154,7 +154,7 @@ function Form({
   const err = (k: string) => errors[k] ?? server[k];
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 md:p-8 lg:p-12 text-[#2D3748]">
+    <div className="min-h-screen bg-[#E6EBF2] p-4 md:p-8 lg:p-12 text-slate-800">
       <div className="max-w-6xl mx-auto">
         <button type="button" onClick={() => back()} className="flex items-center text-xs font-semibold text-gray-600 hover:text-gray-900 mb-4 md:mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" />

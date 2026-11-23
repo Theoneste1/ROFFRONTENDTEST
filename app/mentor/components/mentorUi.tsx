@@ -9,7 +9,7 @@ export const ASSIGNMENT_STATUS: Record<AssignmentStatus, { label: string; badge:
   DRAFT: { label: "Draft", badge: "bg-slate-100 text-slate-600" },
   PENDING_APPROVAL: { label: "Pending approval", badge: "bg-amber-100 text-amber-700" },
   REJECTED: { label: "Returned by admin", badge: "bg-red-100 text-red-600" },
-  PUBLISHED: { label: "Published", badge: "bg-green-100 text-green-700" },
+  PUBLISHED: { label: "Published", badge: "bg-emerald-100 text-emerald-700" },
   CLOSED: { label: "Closed", badge: "bg-blue-100 text-blue-700" },
   ARCHIVED: { label: "Archived", badge: "bg-gray-200 text-gray-600" },
 };
@@ -22,14 +22,14 @@ export function AssignmentStatusBadge({ status }: { status: AssignmentStatus }) 
 /** Submission status as the mentor sees it (backend `SubmissionStatus`). */
 export const REVIEW_STATUS: Record<SubmissionStatus, { label: string; badge: string }> = {
   SUBMITTED: { label: "Awaiting distribution", badge: "bg-slate-100 text-slate-600" },
-  ASSIGNED: { label: "Not reviewed", badge: "bg-purple-100 text-purple-700" },
+  ASSIGNED: { label: "Not reviewed", badge: "bg-brand-100 text-brand-700" },
   IN_REVIEW: { label: "In review", badge: "bg-blue-100 text-blue-700" },
   MARKED: { label: "Marked", badge: "bg-indigo-100 text-indigo-700" },
   SUBMITTED_TO_ADMIN: { label: "Awaiting admin approval", badge: "bg-amber-100 text-amber-700" },
   APPROVED: { label: "Approved", badge: "bg-emerald-100 text-emerald-700" },
-  PUBLISHED: { label: "Published", badge: "bg-green-100 text-green-700" },
+  PUBLISHED: { label: "Published", badge: "bg-emerald-100 text-emerald-700" },
   REJECTED: { label: "Sent back by admin", badge: "bg-red-100 text-red-600" },
-  RESUBMISSION_REQUESTED: { label: "Resubmission requested", badge: "bg-rose-100 text-rose-600" },
+  RESUBMISSION_REQUESTED: { label: "Resubmission requested", badge: "bg-red-100 text-red-600" },
 };
 
 export function ReviewStatusBadge({ status }: { status: SubmissionStatus }) {
