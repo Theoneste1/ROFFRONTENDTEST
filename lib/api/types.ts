@@ -61,7 +61,9 @@ export type Permission =
   | "tests.publishResults" | "tests.overridePublication" | "tests.viewResults" | "tests.viewRankings"
   | "tests.viewOwnResults" | "tests.viewSchoolResults"
   // Olympiad levels (Administrators, User Managers; Coaches and Head Coaches for their programmes) and custom reports (owner 2026-11-22).
-  | "students.classifyLevel" | "reports.build";
+  | "students.classifyLevel" | "reports.build"
+  // View as, read only (owner 2026-11-23): Administrators and Super Admins; a Head Coach only by an individual GRANT.
+  | "users.impersonate";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
@@ -104,6 +106,8 @@ export interface SchoolRef {
 
 /** `GET /me` and the `user` of `POST /auth/login`. */
 export interface CurrentUser {
+  /** Present only in a "view as" tab: who is viewing this user's portal (read only). */
+  viewAs?: import("../auth/view-as").ViewAsInfo;
   id: string;
   username: string;
   email: string;

@@ -34,6 +34,8 @@ import { canEditCoachSubjects, coachInterestsSupported } from "@/lib/accounts/co
 import CoachSubjectsCard from "./CoachSubjectsCard";
 import OlympiadLevelCard from "@/app/components/students/OlympiadLevelCard";
 import { AvatarTile } from "@/app/components/account/UserAvatar";
+import ViewAsButton from "./ViewAsButton";
+import { viewAsButtonVisible } from "@/lib/auth/view-as";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -48,7 +50,7 @@ type Confirm = { action: UserAction; title: string; body: ReactNode; label: stri
 
 export default function UserDetail({ userId }: { userId: string }) {
   const router = useRouter();
-  const { user: me, can, permissionOverrides } = useSession();
+  const { user: me, can, permissionOverrides, viewAs } = useSession();
   // Account states (archive instead of delete): only on a backend that advertises them; null while not known yet
   // (loading or UNKNOWN), when neither Delete nor Archive is offered.
   const { detection } = useBackendCapabilities();
@@ -164,6 +166,10 @@ export default function UserDetail({ userId }: { userId: string }) {
           <h2 className="text-base font-bold text-gray-900 mb-1">Actions</h2>
           <p className="text-xs text-gray-600 mb-4">Administrators never see or set another person&apos;s password; send a reset link instead.</p>
           <div className="flex flex-col gap-2">
+            {/* View as, read only (owner 2026-11-23): lower-ranked users only; the backend checks again. */}
+            {viewAsButtonVisible({ featureOn: hasFeature(detection, "viewAs"), canImpersonate: can("users.impersonate"), viewing: viewAs !== null, actor: me, target: u }) && (
+              <ViewAsButton userId={u.id} name={name} />
+            )}
             {/* The backend approves any active account; a coach invited by a Head Coach waits for approval even before activation. */}
             {u.isActive && !u.isApproved && (
               <button

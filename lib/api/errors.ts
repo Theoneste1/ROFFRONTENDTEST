@@ -67,6 +67,11 @@ export function errorMessage(error: unknown, fallback = "Something went wrong. P
       // The request was refused before anything changed, so saying so lets people retry safely.
       case "DATABASE_BUSY":
         return "The server is busy right now. Nothing was changed — please try again in a moment.";
+      // "View as" (read only): the backend's sentence names the viewed user and says what to do.
+      case "VIEW_AS_READ_ONLY":
+        return error.message || "You are viewing the platform as another user. Nothing can be changed in this view. Return to your own account to make changes.";
+      case "VIEW_AS_ENDED":
+        return "This viewing session has ended (it lasts 30 minutes, or your permission changed). Close this tab.";
       default:
         if (error.status === 429) return "Too many requests. Please wait a moment and try again.";
         if (error.status >= 500) return "The server had a problem. Please try again shortly.";
