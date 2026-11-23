@@ -8,6 +8,10 @@
  * delegations to a teacher without an active school, and on your own account.
  * Ending a school or revoking a delegation applies on the teacher's next request.
  *
+ * Backends with teacherHomeworkDefault (owner 2026-11-24): homework progress and handing homework in are every teacher's
+ * defaults (the "Course homework" switch), so only the profile is still offered here; older delegations of the other two
+ * stay listed, marked as adding nothing, so they can be revoked.
+ *
  * Backends with teacherStudentAccess (TS-1…TS-6): a delegation covers all students of the teacher's schools, only the
  * students assigned to the teacher, or only selected students (listed here, removable); a delegation whose listed
  * student left the teacher's scope is flagged for review; the teacher's directly assigned students are listed (assign
@@ -23,7 +27,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { personName } from "@/lib/format";
-import { DELEGATION_LABEL, SCOPE_LABEL, STUDENT_SCOPES, scopeText, teacherStudentAccessSupported, type StudentScope } from "@/lib/accounts/teacher-student-access";
+import { DELEGATION_LABEL, SCOPE_LABEL, STUDENT_SCOPES, delegationNote, homeworkDefaultSupported, offeredDelegations, scopeText, teacherStudentAccessSupported, type StudentScope } from "@/lib/accounts/teacher-student-access";
 import { displayedRole } from "@/lib/schools/primary-teacher";
 import TeacherRoleBadge from "@/app/components/teachers/TeacherRoleBadge";
 import { Card, btnPrimary, btnSecondary, linkBtn } from "../../components/adminUi";
@@ -48,7 +52,10 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
   const qc = useQueryClient();
   const schools = useQuery({ queryKey: queryKeys.accounts.teacherSchools(teacherId), queryFn: () => teachersAdminApi.assignments(teacherId) });
   const delegations = useQuery({ queryKey: queryKeys.accounts.delegations(teacherId), queryFn: () => teachersAdminApi.delegations(teacherId) });
-  const tsa = teacherStudentAccessSupported(useBackendCapabilities().detection);
+  const detection = useBackendCapabilities().detection;
+  const tsa = teacherStudentAccessSupported(detection);
+  const homeworkDefault = homeworkDefaultSupported(detection);
+  const offered = offeredDelegations(TEACHER_DELEGATIONS, detection);
   const studentFilter = { teacherId, isActive: true, limit: 100 };
   const assignedStudents = useQuery({
     queryKey: queryKeys.accounts.teacherStudents(studentFilter), queryFn: () => teachersAdminApi.studentAssignments(studentFilter), enabled: tsa,
@@ -147,13 +154,16 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
             ) : (
               <ul className="divide-y divide-gray-100 border border-gray-100 rounded-lg mb-3" data-testid="teacher-delegations">
                 {activeDelegations.length === 0 ? (
-                  <li className="px-3 py-2 text-xs text-gray-500">None — the teacher sees the student list only.</li>
+                  <li className="px-3 py-2 text-xs text-gray-500">
+                    {homeworkDefault ? "None — the teacher sees the student list and their students' course homework (see Course homework)." : "None — the teacher sees the student list only."}
+                  </li>
                 ) : (
                   activeDelegations.map((d) => (
                     <li key={d.id} className="px-3 py-2 flex items-start justify-between gap-2 text-sm">
                       <span className="min-w-0">
                         {DELEGATION_LABEL[d.permission] ?? d.permission}
                         {tsa && <span className="block text-xs text-gray-600">{scopeText(d.studentScope, d.students?.length)}</span>}
+                        {delegationNote(d.permission, detection) && <span className="block text-xs text-amber-700" data-testid="delegation-default-note">{delegationNote(d.permission, detection)}</span>}
                         <span className="block text-xs text-gray-500">
                           {d.reason} · {d.expiresAt ? `until ${formatDate(d.expiresAt)}` : "no end date"}
                           {d.createdBy ? ` · by @${d.createdBy.username}` : ""}
@@ -196,7 +206,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                   label="Permission"
                   value={grant.permission}
                   onChange={(v) => setGrant((g) => ({ ...g, permission: v as TeacherDelegation }))}
-                  options={[{ label: "Choose a permission", value: "" }, ...TEACHER_DELEGATIONS.filter((p) => !granted.has(p)).map((p) => ({ label: DELEGATION_LABEL[p], value: p }))]}
+                  options={[{ label: "Choose a permission", value: "" }, ...offered.filter((p) => !granted.has(p)).map((p) => ({ label: DELEGATION_LABEL[p], value: p }))]}
                 />
                 {tsa && (
                   <SelectInput

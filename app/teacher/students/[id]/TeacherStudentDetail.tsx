@@ -1,8 +1,10 @@
 "use client";
 
 /**
- * One student of the teacher's schools. Every section needs its own
- * Administrator-granted permission and is requested only when it is held:
+ * One student of the teacher's schools, or assigned to them. Every section needs its own
+ * permission and is requested only when it is held (progress and submit: every teacher's
+ * default on backends with teacherHomeworkDefault, owner 2026-11-24, unless an Administrator
+ * switched course homework off; profile: Administrator-granted):
  * - profile   students.viewProfile   (`GET /teacher/students/:id`)
  * - progress  students.viewProgress  (`GET /teacher/students/:id/progress`): assignments and
  *             attempts — never scores or feedback; each attempt shows who actually sent it
@@ -23,6 +25,8 @@ import { roleLabel } from "@/lib/auth/roles";
 import { useSession } from "@/lib/auth/session";
 import { useNow } from "@/lib/hooks/useNow";
 import { onBehalfEligibility } from "@/lib/teacher/on-behalf";
+import { homeworkDefaultSupported } from "@/lib/accounts/teacher-student-access";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { formatDateTime, personName } from "@/lib/format";
 import { useSubmitOnBehalf, useTeacherStudentProfile, useTeacherStudentProgress } from "@/lib/queries/teacher";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
@@ -35,6 +39,7 @@ export default function TeacherStudentDetail({ studentId }: { studentId: string 
   const mayProfile = can("students.viewProfile");
   const mayProgress = can("students.viewProgress");
   const maySubmit = can("submissions.submitOnBehalf");
+  const homeworkDefault = homeworkDefaultSupported(useBackendCapabilities().detection);
 
   const profile = useTeacherStudentProfile(studentId, mayProfile);
   const progress = useTeacherStudentProgress(studentId, mayProgress);
@@ -52,7 +57,11 @@ export default function TeacherStudentDetail({ studentId }: { studentId: string 
     return (
       <PageFrame title="Student">
         {back}
-        <Notice tone="info">An administrator has not granted you permission to open students&apos; details.</Notice>
+        <Notice tone="info">
+          {homeworkDefault
+            ? "An administrator has turned off course homework for your students on your account, so you can't open students' homework. Ask an administrator if you need it back."
+            : "An administrator has not granted you permission to open students' details."}
+        </Notice>
       </PageFrame>
     );
   }
@@ -61,13 +70,13 @@ export default function TeacherStudentDetail({ studentId }: { studentId: string 
     return (
       <PageFrame title="Student">
         {back}
-        <Notice tone="info">This student is not in one of your schools.</Notice>
+        <Notice tone="info">This student is not one of your students: they are not in one of your schools and not assigned to you.</Notice>
       </PageFrame>
     );
   }
 
   return (
-    <PageFrame title={name} description="A student of your schools.">
+    <PageFrame title={name} description="A student of your schools, or assigned to you.">
       {back}
       <div className="space-y-6">
         {mayProfile && (
@@ -103,7 +112,7 @@ export default function TeacherStudentDetail({ studentId }: { studentId: string 
             <h2 id="progress-h" className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">Assignments</h2>
             {!mayProgress ? (
               <Notice tone="info">
-                You may submit work for this student, but choosing an assignment also needs permission to view the student&apos;s progress. Ask an administrator to grant it.
+                You may hand in work for this student, but choosing an assignment also needs permission to see the student&apos;s homework. Ask an administrator to turn it on.
               </Notice>
             ) : progress.isPending ? (
               <LoadingBlock />

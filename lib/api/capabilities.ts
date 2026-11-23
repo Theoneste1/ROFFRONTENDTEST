@@ -211,6 +211,13 @@ export const KNOWN_FEATURES = [
   /** Teachers submit answers for, and follow the results of, their schools' students AND the students assigned to them (owner 2026-11-23). */
   "teacherAssignedTestStudents",
   /**
+   * Course homework by teachers, by default (owner 2026-11-24): every teacher sees the homework progress of, and hands in
+   * course homework for, the students they see (their schools' and their assigned students) — no delegation needed; an
+   * Administrator switches it off or on again per teacher (GET / PUT /admin/teachers/:id/homework-submission). Without
+   * it: progress and handing in are individual delegations.
+   */
+  "teacherHomeworkDefault",
+  /**
    * Registration data (owner 2026-11-23): Super Administrators (registrationData.manage) list, filter, export and edit every
    * eligible registration field — /admin/registration-data (fields read from the database; saved filters; column layouts).
    */

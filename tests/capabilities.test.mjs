@@ -233,7 +233,7 @@ test("caching: definite answers stay fresh for 5 minutes; UNKNOWN is never fresh
 });
 
 test("accountStates and formAvailability are known features, enabled only when listed", () => {
-  for (const f of ["accountStates", "formAvailability", "bulkUserOperations", "coachOlympiadInterests"]) {
+  for (const f of ["accountStates", "formAvailability", "bulkUserOperations", "coachOlympiadInterests", "teacherHomeworkDefault"]) {
     assert.ok(KNOWN_FEATURES.includes(f), f);
     const on = classifyApiInfo(200, body({ ...BASE, capabilities: { ...NEW_CAPS, features: [...NEW_CAPS.features, f] } }));
     assert.equal(hasFeature(on, f), true, f);
