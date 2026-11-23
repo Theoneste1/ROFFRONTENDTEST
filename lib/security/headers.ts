@@ -7,7 +7,7 @@
  *   scripts or style elements, and `unsafe-eval` only in development (React
  *   needs it there for error overlays; never in production).
  * - `STATIC_SECURITY_HEADERS` are the same for every response and are set in
- *   `next.config.ts` (identical to the values in `netlify.toml`).
+ *   `next.config.ts`.
  *
  * The browser talks to this origin — the API is proxied under `/api`, fonts
  * are self-hosted by next/font, images are local, downloads use `blob:` URLs —

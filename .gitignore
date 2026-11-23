@@ -41,13 +41,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# netlify
-.netlify
-
 # Playwright
 /e2e/report/
 /test-results/
 /playwright/.cache/
 
-# Written at Netlify build time from API_PROXY_TARGET (scripts/netlify-redirects.mjs)
-public/_redirects

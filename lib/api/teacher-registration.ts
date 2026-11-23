@@ -56,7 +56,8 @@ export interface TeacherRegistrationBase {
   yearsOfExperience?: number;
 }
 export type TeacherRegistrationInput =
-  | (TeacherRegistrationBase & { schoolId: string })
+  /** newSchoolCode: a listed school without a code — its code (capability schoolCodeAtRegistration, owner 2026-11-23). */
+  | (TeacherRegistrationBase & { schoolId: string; newSchoolCode?: string })
   | (TeacherRegistrationBase & {
       proposedSchoolName: string;
       schoolSector: string;

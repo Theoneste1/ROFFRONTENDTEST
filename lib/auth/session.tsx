@@ -19,17 +19,27 @@
  *
  * Hiding UI by role or permission is only a courtesy: the backend enforces
  * every rule again on every request.
+ *
+ * "View as" (read only; lib/auth/view-as.ts): a tab whose sessionStorage holds a viewing session runs as the viewed
+ * user with the viewing token — no refresh, no cookie, and the shared sign-in / sign-out markers are never written, so
+ * the administrator's own tabs are unaffected. Signing out there only ends the viewing session; when it ends (401
+ * VIEW_AS_ENDED) the tab shows /view-as?ended=1.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   clearRefreshCooldown,
+  enterViewingMode,
   getAccessToken,
+  isViewingMode,
   onSessionExpired,
+  onViewAsEnded,
   refreshSession,
   refreshUnavailableError,
   setAccessToken,
 } from "@/lib/api/client";
+import { viewAsApi } from "@/lib/api/view-as";
+import { VIEW_AS_ENDED_PATH, VIEW_AS_PATH, clearViewingSession, readViewingSession, type ViewAsInfo } from "@/lib/auth/view-as";
 import { signInThenClearCooldown, type RefreshOutcome } from "@/lib/api/refresh-outcome";
 import { authApi, meApi } from "@/lib/api/auth";
 import { clearSignedOut, confirmSignedOut, isMarkedSignedOut, isSignedOutEvent, markSignedOut, needsServerLogout } from "@/lib/auth/signed-out";
@@ -70,6 +80,10 @@ interface SessionValue {
   error: unknown;
   /** Retry loading the session after an error (restores it if the server was unreachable). */
   retry: () => void;
+  /** In a "view as" tab: who is viewing whom (read only); null in a normal tab. */
+  viewAs: ViewAsInfo | null;
+  /** In a "view as" tab: end the viewing session on the server and forget it in this tab (never the viewer's own session). */
+  endViewing: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -92,7 +106,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("checking");
   const [signedOutByUser, setSignedOutByUser] = useState(false);
+  const [storedViewAs, setStoredViewAs] = useState<ViewAsInfo | null>(null);
   const channel = useRef<BroadcastChannel | null>(null);
+
+  /** End the viewing session (server first, with the viewing token only), then forget it in this tab. */
+  const endViewing = useCallback(async () => {
+    const token = getAccessToken();
+    if (isViewingMode() && token) await viewAsApi.end(token);
+    clearViewingSession();
+  }, []);
+
+  /** The viewing session is over: this tab shows the plain "ended" page (a full load: nothing of it stays in memory). */
+  const showViewingEnded = useCallback(() => {
+    clearViewingSession();
+    queryClient.clear();
+    window.location.replace(VIEW_AS_ENDED_PATH);
+  }, [queryClient]);
 
   const signOutLocally = useCallback(() => {
     setAccessToken(null);
@@ -104,6 +133,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // A "view as" tab: the viewing token from this tab's sessionStorage; no refresh, no markers.
+      const viewing = readViewingSession();
+      if (viewing) {
+        enterViewingMode(viewing.accessToken);
+        if (!cancelled) {
+          setStoredViewAs(viewing.viewAs);
+          setPhase("signed-in");
+        }
+        return;
+      }
+      // The viewing tab before its ticket is exchanged: never restore the administrator's own session there.
+      if (window.location.pathname === VIEW_AS_PATH) {
+        if (!cancelled) setPhase("signed-out");
+        return;
+      }
       if (isMarkedSignedOut()) {
         // Signed out on this device: never restore from the cookie, and make sure
         // the server session is revoked (the earlier logout request may have been lost).
@@ -124,6 +168,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   // The API client reports when a refresh is no longer possible.
   useEffect(() => onSessionExpired(signOutLocally), [signOutLocally]);
+  // ... and, in a viewing tab, when the viewing token is refused (ended, 30 minutes, or the viewer's permission changed).
+  useEffect(() => onViewAsEnded(showViewingEnded), [showViewingEnded]);
 
   // Keep tabs in step: signing out in one tab signs out the others.
   useEffect(() => {
@@ -131,6 +177,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const bc = new BroadcastChannel(CHANNEL);
     channel.current = bc;
     bc.onmessage = async (event: MessageEvent<AuthMessage>) => {
+      if (isViewingMode()) {
+        // The viewer signed out in another tab: their viewing session ends too. A sign-in elsewhere changes nothing here.
+        if (event.data?.type === "logout") void endViewing().then(showViewingEnded);
+        return;
+      }
       if (event.data?.type === "logout") {
         signOutLocally();
       } else if (event.data?.type === "login" && !getAccessToken()) {
@@ -146,20 +197,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       bc.close();
       channel.current = null;
     };
-  }, [signOutLocally]);
+  }, [signOutLocally, endViewing, showViewingEnded]);
 
   // The same through localStorage: another tab wrote the signed-out marker
   // (covers browsers without BroadcastChannel and a missed message).
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (isSignedOutEvent(event)) {
+        if (isViewingMode()) {
+          void endViewing().then(showViewingEnded);
+          return;
+        }
         setSignedOutByUser(true);
         signOutLocally();
       }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, [signOutLocally]);
+  }, [signOutLocally, endViewing, showViewingEnded]);
 
   const signedIn = phase === "signed-in";
 
@@ -194,6 +249,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    // A viewing tab: only the viewing session ends; the viewer's own session and the shared markers are untouched.
+    if (isViewingMode()) {
+      await endViewing();
+      showViewingEnded();
+      return;
+    }
     // First, before any request: from now on nothing restores this session in
     // this browser, even if the logout request below is lost.
     markSignedOut();
@@ -208,23 +269,32 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSignedOutByUser(true);
     signOutLocally();
     channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
-  }, [signOutLocally]);
+  }, [signOutLocally, endViewing, showViewingEnded]);
 
   const logoutEverywhere = useCallback(async () => {
+    if (isViewingMode()) {
+      await endViewing();
+      showViewingEnded();
+      return;
+    }
     // Refreshes first if the access token expired (M1); a failure is shown, nothing changes.
     await authApi.logoutAll();
     confirmSignedOut();
     setSignedOutByUser(true);
     signOutLocally();
     channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
-  }, [signOutLocally]);
+  }, [signOutLocally, endViewing, showViewingEnded]);
 
   const endSession = useCallback(() => {
+    if (isViewingMode()) {
+      showViewingEnded();
+      return;
+    }
     // The server already ended every session (e.g. password changed).
     confirmSignedOut();
     signOutLocally();
     channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
-  }, [signOutLocally]);
+  }, [signOutLocally, showViewingEnded]);
 
   // A deliberate "Try again" may refresh at once (ends the storm-prevention cooldown).
   const retry = useCallback(() => {
@@ -272,8 +342,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       endSession,
       error,
       retry,
+      viewAs: signedIn ? (user?.viewAs ?? storedViewAs) : null,
+      endViewing,
     };
-  }, [phase, signedIn, signedOutByUser, meQuery.data, meQuery.isError, meQuery.error, permissionsQuery.data, permissionsQuery.isError, login, logout, logoutEverywhere, endSession, retry]);
+  }, [phase, signedIn, signedOutByUser, meQuery.data, meQuery.isError, meQuery.error, permissionsQuery.data, permissionsQuery.isError, login, logout, logoutEverywhere, endSession, retry, storedViewAs, endViewing]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
@@ -282,4 +354,12 @@ export function useSession(): SessionValue {
   const ctx = useContext(SessionContext);
   if (!ctx) throw new Error("useSession must be used inside <SessionProvider>");
   return ctx;
+}
+
+/**
+ * "View as" (read only): who is viewing whom in this tab, or null. Use it to disable obvious save / submit buttons as a
+ * courtesy — the backend refuses every change anyway (403 VIEW_AS_READ_ONLY, shown with errorMessage()).
+ */
+export function useViewAs(): ViewAsInfo | null {
+  return useSession().viewAs;
 }

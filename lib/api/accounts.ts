@@ -54,7 +54,8 @@ export type AffiliationStatus = "PENDING" | "VERIFIED" | "REJECTED" | "REVOKED";
 /** Exactly one of the shapes the backend accepts. */
 export type SchoolClaimInput =
   | { schoolCode: string }
-  | { schoolId: string }
+  /** newSchoolCode: registration only — a school without a code, its code (capability schoolCodeAtRegistration). */
+  | { schoolId: string; newSchoolCode?: string }
   | { schoolName: string; schoolProvince: string; schoolDistrict: string; schoolSector: string }
   | { country: string; schoolName: string };
 

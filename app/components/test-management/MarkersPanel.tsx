@@ -146,9 +146,12 @@ function Candidates({ subject, onGranted }: { subject: TestSubject; onGranted: (
                 <span>
                   <span className="font-semibold text-slate-900">{personName(c)}</span> <span className="text-slate-600">@{c.username}</span>
                   {c.interestedInSubject && <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] text-sky-900">interested in {subject.name}</span>}
+                  {c.markingRemoved && <span className="mt-0.5 block text-xs text-red-700">Marking taken away: {c.markingRemoved.reason}. Authorise to give it back.</span>}
                 </span>
-                {c.authorizationId ? (
+                {c.authorizationId && c.mayMark !== false ? (
                   <span className="text-xs font-semibold text-emerald-800">Authorised</span>
+                ) : c.mayMark && c.programmeMember ? (
+                  <span className="text-xs font-semibold text-emerald-800" title="Every coach of the programme marks its tests unless that was taken away">Marks by default (programme member)</span>
                 ) : (
                   <button type="button" className={btnPrimary} disabled={grant.isPending} onClick={() => { setError(null); grant.mutate(c.id); }} aria-label={`Authorise ${personName(c)}`}>
                     Authorise

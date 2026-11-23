@@ -149,8 +149,12 @@ test.describe("the sign-in page", () => {
     await page.locator('input[name="password"]').fill("Wrong-6-Password!");
     const answer = page.waitForResponse((r) => r.url().includes("/auth/login") && r.request().method() === "POST", { timeout: 30_000 });
     await page.getByRole("button", { name: "Sign in" }).click();
-    expect((await answer).status()).toBe(429);
-    await expect(page.getByTestId("login-form").getByRole("alert")).toHaveText("Too many requests. Please wait a moment and try again.");
+    const res = await answer;
+    expect(res.status()).toBe(429);
+    // Plain words with the server's own wait (details.retryAfter, seconds; a sign-in lock can last up to an hour).
+    const retryAfter = (await res.json()).details?.retryAfter as number | undefined;
+    const wait = !retryAfter || retryAfter <= 60 ? "a minute" : retryAfter >= 3300 ? "about an hour" : `${Math.ceil(retryAfter / 60)} minutes`;
+    await expect(page.getByTestId("login-form").getByRole("alert")).toHaveText(`Too many attempts in a short time. Wait ${wait}, then try again.`);
     await expect(page).toHaveURL(/\/login$/);
     expect(await fits(page), "with the rate-limit message").toEqual([]);
   });

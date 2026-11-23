@@ -152,7 +152,8 @@ test.describe.serial("Head Coach → coach A (blind) → second marking by coach
     await row.getByRole("link", { name: code }).click();
     await page.waitForURL(new RegExp(`/mentor/marking/${code}$`));
     await expect(page.getByRole("heading", { name: `Submission ${code}` })).toBeVisible();
-    await expect(page.getByTestId("marking-guide")).toContainText("marking-guide.pdf");
+    // Named after the test's title (owner 2026-11-22); an older backend: marking-guide.pdf.
+    await expect(page.getByTestId("marking-guide")).toContainText(/(- marking guide|marking-guide)\.pdf/);
     // Blind: nothing on the page names the student, the school or the original file.
     const text = (await page.locator("main").innerText());
     for (const leak of [markedName, markedStudent, "E2E Marking School", "IMG_2001", "Kamali", "xtend"]) expect([leak, text.includes(leak)]).toEqual([leak, false]);

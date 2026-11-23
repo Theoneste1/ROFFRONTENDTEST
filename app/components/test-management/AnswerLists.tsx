@@ -24,7 +24,8 @@ import { ANSWER_FORMAT_LABEL } from "@/lib/test-management/rules";
 import { useDivisions } from "@/lib/queries/divisions";
 import { activeDivisions, divisionOptionLabel } from "@/lib/divisions/divisions";
 import LevelName from "./LevelName";
-import { SUBMISSION_STATUS_LABEL, SUBMITTER_LABEL, TESTS_SUBMIT, TESTS_SUBMIT_FOR_STUDENTS, TRACKING_BADGE, answerActionLabel, submissionLockSupported } from "@/lib/test-management/submissions";
+import { SUBMISSION_STATUS_LABEL, SUBMITTER_LABEL, TESTS_SUBMIT, TESTS_SUBMIT_FOR_STUDENTS, TRACKING_BADGE, answerActionLabel, submissionLockSupported, teacherStudentsText } from "@/lib/test-management/submissions";
+import { hasFeature } from "@/lib/api/capabilities";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
@@ -119,8 +120,9 @@ function TeacherList() {
   const [page, setPage] = useState(1);
   const filters = { window: win || undefined, page, limit: 20 };
   const list = useQuery({ queryKey: queryKeys.tests.teacher(filters), queryFn: () => teacherTestsApi.list(filters), placeholderData: keepPreviousData });
+  const whose = teacherStudentsText(useBackendCapabilities().detection);
   return (
-    <PageFrame title="Tests" description="Published tests. You can submit and replace answers for the verified students of your schools, until their deadline.">
+    <PageFrame title="Tests" description={`Published tests. You can submit answers for ${whose}, until their deadline.`}>
       <div className="mb-4"><FilterPills label="Tests" options={WINDOWS} value={win} onChange={(v) => { setWin(v); setPage(1); }} /></div>
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load the tests" onRetry={() => list.refetch()} /> : (
         <>
@@ -170,7 +172,9 @@ export function TeacherTestStudents({ testId }: { testId: string }) {
 }
 
 function StudentsOfTest({ testId }: { testId: string }) {
-  const lockAware = submissionLockSupported(useBackendCapabilities().detection);
+  const { detection } = useBackendCapabilities();
+  const lockAware = submissionLockSupported(detection);
+  const assigned = hasFeature(detection, "teacherAssignedTestStudents");
   const [status, setStatus] = useState<"" | TrackingState>("");
   const [level, setLevel] = useState<"" | TestLevel>("");
   const divisions = useDivisions();
@@ -194,7 +198,7 @@ function StudentsOfTest({ testId }: { testId: string }) {
   const c = list.data?.counts;
   return (
     <PageFrame title="Students for this test" description={lockAware
-      ? "The students who registered with your school code, in the test's level. Open a student to submit their answer; once submitted it is locked."
+      ? `The students who registered with your school code${assigned ? " and the students assigned to you" : ""}, in the test's level. Open a student to submit their answer; once submitted it is locked.`
       : "Verified students of your schools in the test's division. Open a student to submit or replace their answer."}>
       {back}
       {c && (

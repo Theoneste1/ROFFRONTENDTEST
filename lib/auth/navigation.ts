@@ -77,6 +77,13 @@ export const ADMIN_COUNTRIES: NavItem = { href: "/admin/countries", label: "Coun
  * items above: a backend advertising `testManagement` and the known tests.view (lib/test-management/rules.ts →
  * testsNavVisible). Never part of the frozen ADMIN_NAV.
  */
+/**
+ * Registration data (owner 2026-11-23): every eligible registration field — list, filter, export, edit. Super Administrators
+ * only; separately gated like the items above: a backend advertising `registrationData` and the known
+ * registrationData.manage (lib/admin/registration-data.ts → registrationDataNavVisible).
+ */
+export const ADMIN_REGISTRATION_DATA: NavItem = { href: "/admin/registration-data", label: "Registration Data", permission: "registrationData.manage" };
+
 export const ADMIN_TESTS: NavItem = { href: "/admin/tests", label: "Tests", permission: "tests.view" };
 
 /**
@@ -115,6 +122,13 @@ export const TEACHER_TESTS: NavItem = { href: "/teacher/tests", label: "Tests", 
 export const MENTOR_MARKING: NavItem = { href: "/mentor/marking", label: "Marking", permission: "tests.mark" };
 
 /**
+ * Coaches across their programmes (owner 2026-11-23): the programme's students and its published test results. Separately
+ * gated: a backend advertising `coachProgrammeAccess` and the known permission (lib/coaches/coach-access.ts coachNavVisible).
+ */
+export const MENTOR_STUDENTS: NavItem = { href: "/mentor/students", label: "Students", permission: "students.viewProgramme" };
+export const MENTOR_RESULTS: NavItem = { href: "/mentor/results", label: "Results", permission: "tests.viewProgrammeResults" };
+
+/**
  * Test Management Phase 4 (capability `testResults`): students' own published results and teachers' school results
  * (menu items, gated by lib/test-management/results.ts → resultsNavVisible; never part of the frozen menus). The
  * reporting overview for Administrators and Head Coaches is not a menu item (the Administrators' menu is full): it is
@@ -124,6 +138,12 @@ export const STUDENT_RESULTS: NavItem = { href: "/student/results", label: "My r
 export const TEACHER_RESULTS: NavItem = { href: "/teacher/results", label: "Results", permission: "tests.viewSchoolResults" };
 export const ADMIN_TEST_REPORTS: NavItem = { href: "/admin/test-reports", label: "Test reports", permission: "tests.viewResults" };
 export const MENTOR_TEST_REPORTS: NavItem = { href: "/mentor/test-reports", label: "Test reports", permission: "tests.viewResults" };
+
+/**
+ * Subscribers (news mailing list and mailings; capability `subscribers`, owner 2026-11-23). Separately gated like the items
+ * above: the backend feature AND the known subscribers.manage (lib/subscribers/rules.ts → subscribersNavVisible).
+ */
+export const ADMIN_SUBSCRIBERS: NavItem = { href: "/admin/subscribers", label: "Subscribers", permission: "subscribers.manage" };
 
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };

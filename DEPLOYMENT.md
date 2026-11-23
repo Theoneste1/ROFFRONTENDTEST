@@ -1,84 +1,63 @@
-# Deploying the ROF LMS frontend to Netlify
+# Deploying the ROF LMS frontend (Vercel)
 
-The frontend is a Next.js 16 app. Netlify builds it and runs it with its built-in Next.js runtime: there is no plugin to install.
+The frontend is a Next.js 16 app hosted on **Vercel** only (owner decision 2026-11-24: Netlify is no longer used).
+Production address: **`https://lms.rwandaolympiadfoundation.org`** (Vercel project, its own domain).
+Production backend: **`https://rofbackendtest.onrender.com`** (ROFBACKENDTEST on Render).
 
-Production backend: **`https://rofbackendtest.onrender.com`** (ROFBACKENDTEST on Render). It is set in `netlify.toml`, so no Netlify variable is needed.
+## 1. How the browser reaches the backend
 
-How the browser reaches the API:
+- **Every `/api/*` request** goes to the frontend's own domain; `next.config.ts` rewrites it to the backend
+  (`API_PROXY_TARGET`). The browser therefore talks to one origin: no CORS for normal calls, and the backend's
+  `SameSite=Strict` refresh cookie is sent.
+- **File uploads only** go straight to the backend (`NEXT_PUBLIC_API_UPLOAD_ORIGIN`), because a hosting proxy limits
+  request bodies (a few MB) and time, while the backend accepts files up to 50 MB.
 
-- **Every `/api/*` request** goes to the Netlify site, and Netlify's CDN proxies it to the backend (`[[redirects]]` in `netlify.toml`; locally, the rewrite in `next.config.ts`). The frontend and the API share one origin, so the backend's `SameSite=Strict` refresh cookie works.
-- **File uploads only** go straight to the backend (`NEXT_PUBLIC_API_UPLOAD_ORIGIN`), because Netlify's proxy limits request bodies (about 8 MB) and time (about 26 s), while the backend accepts files up to 50 MB. Uploads carry the access token, never cookies; the backend allows them through `CORS_ORIGINS`.
+## 2. Vercel project settings (owner)
 
-## 1. Before you start
+1. The Vercel project is connected to the `ROFFRONTENDTEST` repository; production builds from **`main`**. Every pull
+   request gets a **preview** deployment automatically (this replaces the former Netlify staging and preview sites).
+2. **Environment Variables** (Project → Settings → Environment Variables). They are public addresses, not secrets, and
+   are read at build time, so redeploy after changing them:
 
-You need:
-
-1. **The backend (ROFBACKENDTEST) running publicly over HTTPS**: `https://rofbackendtest.onrender.com`, check `/health`. Netlify only hosts the frontend; it cannot reach `localhost`.
-2. The frontend in a Git repository that Netlify can read (GitHub, GitLab or Bitbucket), or the Netlify CLI for manual deploys.
-3. The build passing locally: `npm ci && npm run typecheck && npm run lint && npm test && npm run build` (CI runs the same on every pull request).
-
-## 2. Create the site
-
-1. In Netlify, choose **Add new site → Import an existing project** and pick the repository.
-2. The build settings are read from `netlify.toml`:
-
-   | Setting | Value |
-   |---|---|
-   | Build command | `npm run build` |
-   | Publish directory | `.next` |
-   | Node.js | 22 (`NODE_VERSION`); Next.js 16 needs 20.9 or newer |
-
-3. **Set this site's backend in the Netlify dashboard** (Site configuration → Environment variables), then deploy. The values are public addresses, not secrets, read at build time (after a change, redeploy):
-
-   | Variable | Production site | Staging site |
+   | Variable | Production | Preview |
    |---|---|---|
-   | `API_PROXY_TARGET` | `https://rofbackendtest.onrender.com` | `https://rof-backend-staging.onrender.com` |
-   | `NEXT_PUBLIC_API_UPLOAD_ORIGIN` | the same address | the same address |
+   | `API_PROXY_TARGET` | `https://rofbackendtest.onrender.com` | the staging backend's address (or the production one if there is no staging backend) |
+   | `NEXT_PUBLIC_API_UPLOAD_ORIGIN` | `https://rofbackendtest.onrender.com` | the same backend as `API_PROXY_TARGET` |
+   | `NEXT_PUBLIC_SITE_URL` | `https://lms.rwandaolympiadfoundation.org` (optional; the default) | — |
 
-   The backend address is deliberately **not** in `netlify.toml`: the production and staging sites build the same repository and each must reach its own backend (2026-11-20: with the address in the file, the staging site used the production backend). The build first runs `scripts/netlify-redirects.mjs`, which writes the `/api/*` proxy rule (`public/_redirects`) from `API_PROXY_TARGET`, and **stops with a clear error** if a variable is missing, not https, local, or the two name different backends. Check after a deploy: `https://<site>/api/v1` must list the features of that site's backend (staging and production differ).
+   A Vercel build stops with a clear message if `API_PROXY_TARGET` is missing or points at `localhost`
+   (`next.config.ts`).
+3. **Domain:** `lms.rwandaolympiadfoundation.org` is attached to the project (DNS → Vercel). Vercel issues and renews
+   the HTTPS certificate.
+4. Search engines index the **production** deployment only: previews answer `noindex` and a robots file that disallows
+   everything (`lib/site/seo.ts`, based on Vercel's `VERCEL_ENV`).
 
-4. Deploy. Note the site address, for example `https://roflms.netlify.app`, or your custom domain.
+No other secrets are needed by the frontend. Never put passwords, tokens or admin credentials in Vercel variables or in
+the repository.
 
-No other secrets are needed by the frontend. Do not put passwords, tokens or admin credentials in Netlify variables, `netlify.toml` or the repository.
-
-## 3. Backend settings (on the backend server, by the owner)
-
-The frontend's address must be known to the backend. Set these in the **backend's** environment and restart it:
+## 3. Backend settings (on Render, by the owner)
 
 | Backend variable | Value | Why |
 |---|---|---|
-| `NODE_ENV` | `production` | Makes the refresh cookie `Secure` (HTTPS only) and enables the production checks |
-| `APP_URL` | `https://roflms.netlify.app` | The links in activation, password-reset and notification e-mails point here |
-| `CORS_ORIGINS` | `https://roflms.netlify.app` | **Must be exactly this site's address** (scheme + host, no trailing slash; several separated by commas, e.g. with a custom domain). File uploads go straight to the backend and are refused by the browser if this is wrong |
-| `TRUST_PROXY` | **`1`** (Render's default in `render.yaml`). **Never `2` or higher.** | With `1` the backend trusts only Render's own proxy, so requests that reach Render directly (file uploads, direct calls) are rate-limited by the visitor's real address. A higher value makes the backend believe the `X-Forwarded-For` header, which any caller can forge to pick their own rate-limit key and get around the sign-in and refresh limits. **Known limitation:** requests through the Netlify proxy reach the backend from Netlify's outgoing addresses, so visitors who use the site share rate-limit keys and a whole class can be throttled (see §5). Do not work around this by raising `TRUST_PROXY` or the rate limits |
-| `RESEND_API_KEY`, `EMAIL_FROM` | Resend key; `Rwanda Olympiad Foundation <info@rwandaolympiadfoundation.org>` (no quotes) | Required in production. Without them, invitations and reset e-mails are not delivered (backend `docs/EMAIL.md`) |
+| `NODE_ENV` | `production` | Makes the refresh cookie `Secure` and enables the production checks |
+| `APP_URL` | `https://lms.rwandaolympiadfoundation.org` | The links in activation, password-reset and notification e-mails point here |
+| `CORS_ORIGINS` | `https://lms.rwandaolympiadfoundation.org` | **Exactly the site's address** (scheme + host, no trailing slash; several separated by commas). Uploads go straight to the backend and are refused by the browser if this is wrong. Remove any old `*.netlify.app` address |
+| `TRUST_PROXY` | **`1`** (Render's default in `render.yaml`). **Never `2` or higher.** | Only Render's own proxy is trusted, so rate limits use the visitor's real address |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Resend key; `Rwanda Olympiad Foundation <info@rwandaolympiadfoundation.org>` | Required in production for invitation, activation and reset e-mails (backend `docs/EMAIL.md`) |
 
 ## 4. Check the deployed site
 
-1. Open the site: `/` shows the public homepage with live community numbers (`/api/v1/public/statistics` → 200 JSON); `/login` shows the sign-in page.
-2. Sign in with a demo account. The browser's Network tab should show `/api/v1/auth/login` → 200 on the **Netlify** domain, not the backend's.
-3. Reload the page: you stay signed in, which means the refresh cookie works.
-4. Download a file (a course resource): it opens or saves.
-5. As a coach, upload a resource larger than 8 MB: a progress box shows the percentage, then "saving the files…", and the upload succeeds. In the Network tab, the upload request goes to `rofbackendtest.onrender.com` (all other calls stay on the Netlify domain). A CORS error here means the backend's `CORS_ORIGINS` doesn't match this site's address.
-6. Sign out: you return to `/login`, and a reload keeps you signed out.
-7. Open an activation or reset link from a backend e-mail: it should point to the Netlify site, which confirms `APP_URL` is right.
+1. Open `/`: the public homepage with live community numbers (`/api/v1/public/statistics` → 200); `/login` shows the sign-in page.
+2. Sign in with a test account: the Network tab shows `/api/v1/auth/login` → 200 on `lms.rwandaolympiadfoundation.org`, not on the backend's domain.
+3. Reload: you stay signed in (the refresh cookie works).
+4. Download a course resource: it opens or saves.
+5. As a coach, upload a resource larger than 8 MB: it succeeds, and in the Network tab the upload goes to `rofbackendtest.onrender.com`. A CORS error means `CORS_ORIGINS` is wrong.
+6. Sign out: you return to `/login` and a reload keeps you signed out.
+7. Open an activation or reset link from an e-mail: it points to `lms.rwandaolympiadfoundation.org` (`APP_URL` is right).
+8. Open a preview deployment's `/robots.txt`: it disallows everything; production's lists the public pages.
 
-## 5. Known limits on Netlify
+## 5. Known limits
 
-- **Large uploads and downloads.** Netlify's proxy limits request bodies (about 8 MB) and time (about 26 s); its serverless functions have stricter limits still. That is why API calls use the CDN proxy rule (not the Next.js function) and uploads go straight to the backend. If you change the backend address, change `API_PROXY_TARGET` and `NEXT_PUBLIC_API_UPLOAD_ORIGIN` together in the site's environment variables and redeploy (the proxy rule follows `API_PROXY_TARGET`).
-- **Shared rate limits behind the proxy.** The backend limits requests per client address (all API calls; sign-in and session refresh more tightly). Calls made through the `/api` proxy arrive from Netlify's outgoing addresses, not the visitor's, so many visitors share the same limits: a class signing in together can get "Too many requests" (429) answers. Measured on 2026-11-12: direct requests were counted per visitor, proxied requests per Netlify address. Keep `TRUST_PROXY` at `1` (§3) and do not raise the limits as a workaround. The fix is separate backend work, not part of this frontend: the backend must first verify that a request really came through this site's Netlify proxy (Netlify's signed proxy requests) before it trusts the visitor address Netlify reports, and it must limit signed-in traffic per user and session rather than per address. It must be verified on a non-production (staging) environment before it is turned on in production. A custom API domain (e.g. `api.<your-domain>`, called directly by the browser) would remove the proxy from API calls altogether.
-- **Render free plan wakes slowly.** After about 15 idle minutes the backend sleeps and the next request takes about a minute — longer than Netlify's proxy waits. The first request after a quiet period can therefore fail with a 502/504; a reload a minute later works. An uptime monitor pinging `/health` every 5–10 minutes, or Render's paid plan, avoids this.
-- **Next.js 16 support.** Netlify's Next.js runtime is Netlify's own integration, not a Next.js-verified adapter (see the Next.js deployment docs). If a build fails because of the runtime, check Netlify's Next.js documentation for the supported versions.
-- **Previews.** Deploy previews (`https://deploy-preview-N--roflms.netlify.app`) talk to the same production backend (the values in `netlify.toml` apply to every context). Sign-in and browsing work there, but **file uploads fail with a CORS error** because the preview address is not in the backend's `CORS_ORIGINS`; test uploads on the production site. The backend's `APP_URL` can only point to one site, so e-mail links always open production.
-
-## 6. Deploying from the command line (optional)
-
-```bash
-npm install -g netlify-cli
-netlify login
-netlify link            # choose the site
-netlify deploy --build  # preview deploy
-netlify deploy --build --prod
-```
-
-The CLI uses the same `netlify.toml` and the site's environment variables.
+- **Large uploads.** Kept off the proxy (point 1). If `NEXT_PUBLIC_API_UPLOAD_ORIGIN` is empty, large uploads fail through the proxy.
+- **Shared rate limits behind the proxy.** Calls made through the proxy reach the backend from Vercel's addresses; the backend's per-address limits are sized for that (backend `docs/SIGN-IN-RATE-LIMIT-PROPOSAL.md`).
+- **A sleeping backend.** On a Render plan that sleeps, the first request after idle time takes about a minute; the frontend retries and says so in plain words. An always-on Render plan avoids it.

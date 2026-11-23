@@ -186,6 +186,14 @@ test.describe("public sign-up forms", () => {
     await page.locator('input[name="email"]').fill(`${username}@e2e.local`);
     await fillPassword(page);
     await submitAndExpect(page, "Apply as a coach", "apply-done");
+    // The confirmation (owner 2026-11-22): pending review by the Head Coach or an administrator; no need to send it again.
+    await expect(page.getByTestId("apply-done-title")).toHaveText("Thank you for submitting your application!");
+    await expect(page.getByTestId("apply-done-message").locator("p")).toHaveText([
+      "Your application has been received and is awaiting review by the ROF Head Coach or an administrator. Please wait for the " +
+        "review process to be completed. We will get back to you with an update.",
+      "There is no need to submit the application again.",
+    ]);
+    await expect(page.getByTestId("apply-done").getByRole("link", { name: "Back to the homepage" })).toBeVisible();
     const row = await withDb(async (c) => (await c.query(
       `SELECT status::text AS status, "yearsOfExperience" AS years, occupation, expertise, "relevantExperience" AS experience,
               "olympiadInterests"::text AS interests, "olympiadInterestOther" AS other FROM "MentorRequest" WHERE username = $1`, [username])).rows[0]);

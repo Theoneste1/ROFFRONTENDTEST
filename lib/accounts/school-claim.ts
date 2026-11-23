@@ -15,6 +15,7 @@
  */
 import type { DirectorySchool, SchoolClaimInput } from "../api/accounts";
 import { isCountryCode } from "../schools/countries";
+import { cleanSchoolCode, schoolCodeProblem } from "../schools/school-code";
 
 export type SchoolClaimDraft =
   | {
@@ -24,16 +25,26 @@ export type SchoolClaimDraft =
       district?: string;
       sector?: string;
       school: (Pick<DirectorySchool, "code" | "name"> & Partial<Pick<DirectorySchool, "location" | "district" | "sector">> & { id?: string; place?: string }) | null;
+      /** A school without an official code (registration, owner 2026-11-23): the code the student types for it. */
+      newCode?: string;
     }
   | { mode: "notListed"; name: string; province: string; district: string; sector: string }
   | { mode: "abroad"; country: string; name: string };
 
-export type SchoolClaimField = "school" | "schoolName" | "province" | "district" | "sector" | "country";
+export type SchoolClaimField = "school" | "schoolName" | "province" | "district" | "sector" | "country" | "newSchoolCode";
+
+/** Registration on a backend with schoolCodeAtRegistration: a school without a code asks for it. */
+export interface SchoolClaimOptions { askCodeForCodeless?: boolean }
+
+/** True when this draft needs the code of its (code-less) school typed. */
+export function needsSchoolCode(d: SchoolClaimDraft, opts: SchoolClaimOptions = {}): boolean {
+  return !!opts.askCodeForCodeless && d.mode === "directory" && !!d.school && d.school.code === null;
+}
 
 export const SCHOOL_CLAIM_RULES = { nameMin: 2, nameMax: 200, placeMax: 100, codePattern: /^\d{6}$/, countryPattern: /^[A-Z]{2}$/ };
 
 /** Field errors, or an empty object when the draft can be sent. */
-export function validateSchoolClaim(d: SchoolClaimDraft): Partial<Record<SchoolClaimField, string>> {
+export function validateSchoolClaim(d: SchoolClaimDraft, opts: SchoolClaimOptions = {}): Partial<Record<SchoolClaimField, string>> {
   const e: Partial<Record<SchoolClaimField, string>> = {};
   const nameOk = (n: string) => n.trim().length >= SCHOOL_CLAIM_RULES.nameMin && n.trim().length <= SCHOOL_CLAIM_RULES.nameMax;
   if (d.mode === "directory") {
@@ -42,6 +53,10 @@ export function validateSchoolClaim(d: SchoolClaimDraft): Partial<Record<SchoolC
     else if (d.district !== undefined && !d.district) e.district = "Choose the district.";
     else if (d.sector !== undefined && !d.sector) e.sector = "Choose the sector.";
     else if (!d.school || !directoryReference(d.school)) e.school = "Choose your school from the list, or “My school is not listed”.";
+    else if (needsSchoolCode(d, opts)) {
+      const problem = schoolCodeProblem(d.newCode ?? "", d.province);
+      if (problem) e.newSchoolCode = problem;
+    }
   } else if (d.mode === "notListed") {
     if (!nameOk(d.name)) e.schoolName = "Enter your school's name (2–200 characters).";
     if (!d.province) e.province = "Choose the province.";
@@ -68,8 +83,11 @@ export function hasNoOfficialCode(s: { code: string | null }): boolean {
 }
 
 /** The request fields for a valid draft (call validateSchoolClaim first). */
-export function schoolClaimPayload(d: SchoolClaimDraft): SchoolClaimInput {
-  if (d.mode === "directory") return directoryReference(d.school!)!;
+export function schoolClaimPayload(d: SchoolClaimDraft, opts: SchoolClaimOptions = {}): SchoolClaimInput {
+  if (d.mode === "directory") {
+    const ref = directoryReference(d.school!)!;
+    return needsSchoolCode(d, opts) && "schoolId" in ref ? { ...ref, newSchoolCode: cleanSchoolCode(d.newCode ?? "") } : ref;
+  }
   if (d.mode === "notListed") {
     return { schoolName: d.name.trim(), schoolProvince: d.province, schoolDistrict: d.district, schoolSector: d.sector };
   }
@@ -92,6 +110,7 @@ export function sameClaimedSchool(d: SchoolClaimDraft, current: { school: { id?:
 export const SCHOOL_CLAIM_SERVER_FIELDS: Readonly<Record<string, SchoolClaimField>> = {
   schoolCode: "school",
   schoolId: "school",
+  newSchoolCode: "newSchoolCode",
   schoolName: "schoolName",
   schoolProvince: "province",
   schoolDistrict: "district",

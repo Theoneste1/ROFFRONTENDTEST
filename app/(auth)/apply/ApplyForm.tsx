@@ -236,10 +236,17 @@ function CoachApplication() {
     return (
       <div className="space-y-5" data-testid="apply-done">
         <AuthHeading title="Application received" />
-        <Alert tone="success">Thank you for applying to join ROF LMS as a {role.toLowerCase()}.</Alert>
-        <p className="text-sm text-slate-700">
-          An administrator will review your application. You will receive an e-mail at <strong>{v.email.trim()}</strong> with the decision. Once approved, sign in with the username and password you chose.
-        </p>
+        {/* Owner 2026-11-22: shown at once after a successful submission, so coaches know it is pending and do not send it again. */}
+        <Alert tone="success">
+          <span className="block font-semibold" data-testid="apply-done-title">Thank you for submitting your application!</span>
+        </Alert>
+        <div className="space-y-3 text-sm text-slate-700" data-testid="apply-done-message">
+          <p>
+            Your application has been received and is awaiting review by the ROF Head Coach or an administrator. Please wait for the
+            review process to be completed. We will get back to you with an update.
+          </p>
+          <p className="font-semibold text-slate-900">There is no need to submit the application again.</p>
+        </div>
         {pictureOutcomeText(pictureResult) && (
           <p className="text-sm text-slate-700" data-testid="picture-outcome">{pictureOutcomeText(pictureResult)}</p>
         )}
