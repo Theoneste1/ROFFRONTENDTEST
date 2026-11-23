@@ -110,4 +110,23 @@ test.describe.serial("Primary teacher", () => {
     await expect(admin.getByTestId("school-primary-teacher")).toContainText("No primary teacher");
     await expect(row(first.firstName).getByTestId("teacher-role-badge")).toHaveText("Secondary");
   });
+
+  test("from the teacher's own admin page: Make primary (confirmed) makes the secondary teacher the school's primary (owner 2026-11-24)", async () => {
+    await admin.goto(`/admin/users/${firstId}`);
+    const item = admin.getByTestId("teacher-schools").locator("li", { hasText: school });
+    await expect(item.getByTestId("teacher-role-badge")).toHaveText("Secondary");
+    await item.getByRole("button", { name: "Make primary" }).click();
+    const dialog = admin.getByRole("dialog");
+    await expect(dialog).toContainText("Make this teacher the primary teacher?");
+    await expect(dialog).toContainText(`This teacher becomes the primary teacher (main contact) of ${school}.`);
+    await dialog.getByRole("button", { name: "Make primary" }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(item.getByTestId("teacher-role-badge")).toHaveText("Primary");
+    await expect(item.getByRole("button", { name: "Make primary" })).toHaveCount(0);   // already primary: no button
+    const role = await withDb(async (c) => (await c.query(
+      `SELECT role::text FROM "TeacherSchoolAssignment" WHERE "schoolId" = $1 AND "teacherId" = $2 AND "isActive"`, [schoolId, firstId])).rows[0].role);
+    expect(role).toBe("PRIMARY");
+    await openTeachersTab();
+    await expect(admin.getByTestId("school-primary-teacher")).toContainText(first.firstName);
+  });
 });
