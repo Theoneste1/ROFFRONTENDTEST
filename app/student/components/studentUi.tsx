@@ -7,8 +7,8 @@ import type { CourseCode, StudentDisplayStatus } from "@/lib/api/types";
 /** Badge colours per backend `displayStatus` (same palette as the original badges). */
 const STATUS_BADGE: Record<StudentDisplayStatus, string> = {
   "Not Started": "bg-gray-100 text-gray-600",
-  Submitted: "bg-green-100 text-green-600",
-  "Pending Review": "bg-orange-100 text-orange-500",
+  Submitted: "bg-emerald-100 text-emerald-600",
+  "Pending Review": "bg-amber-100 text-amber-500",
   "Resubmission Requested": "bg-red-100 text-red-500",
   Reviewed: "bg-blue-100 text-blue-600",
 };
@@ -33,21 +33,21 @@ export const COURSE_STYLE: Record<CourseCode, { symbol: string; chip: string; bu
   },
   NUMBER_THEORY: {
     symbol: "#",
-    chip: "bg-teal-50 text-teal-700",
+    chip: "bg-brand-50 text-brand-700",
     button: "bg-[#003B46] hover:bg-[#005662]",
-    banner: "from-teal-300 via-cyan-400 to-blue-300",
+    banner: "from-brand-300 via-brand-400 to-blue-300",
   },
   COMBINATORICS: {
     symbol: "☍",
-    chip: "bg-purple-50 text-purple-600",
-    button: "bg-[#6c2bd9] hover:bg-[#5b21b6]",
-    banner: "from-purple-300 via-indigo-400 to-blue-300",
+    chip: "bg-brand-50 text-brand-600",
+    button: "bg-brand hover:bg-brand-dark",
+    banner: "from-brand-300 via-indigo-400 to-blue-300",
   },
   GEOMETRY: {
     symbol: "△",
     chip: "bg-red-50 text-red-600",
     button: "bg-red-600 hover:bg-red-700",
-    banner: "from-rose-300 via-red-300 to-orange-200",
+    banner: "from-red-300 via-red-300 to-amber-200",
   },
 };
 

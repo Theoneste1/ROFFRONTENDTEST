@@ -64,8 +64,8 @@ export const QUEUE_FILTERS: ReadonlyArray<{ label: string; value: "" | QueueStat
 
 export const MARKING_STATUS_BADGE: Record<MarkingStatus, { label: string; className: string }> = {
   DRAFT: { label: "Draft", className: "bg-slate-200 text-slate-800" },
-  SUBMITTED: { label: "Submitted", className: "bg-sky-100 text-sky-900" },
-  RETURNED: { label: "Returned", className: "bg-rose-100 text-rose-900" },
+  SUBMITTED: { label: "Submitted", className: "bg-brand-100 text-brand-900" },
+  RETURNED: { label: "Returned", className: "bg-red-100 text-red-900" },
   APPROVED: { label: "Approved", className: "bg-emerald-100 text-emerald-900" },
 };
 
@@ -73,11 +73,11 @@ export const STATUS_BADGE: Record<SubmissionStatus, string> = {
   SUBMITTED: "bg-slate-200 text-slate-800",
   ASSIGNED: "bg-indigo-100 text-indigo-900",
   MARKING_IN_PROGRESS: "bg-amber-100 text-amber-900",
-  MARKED: "bg-sky-100 text-sky-900",
+  MARKED: "bg-brand-100 text-brand-900",
   APPROVED: "bg-emerald-100 text-emerald-900",
   PUBLISHED: "bg-emerald-200 text-emerald-950",
-  RETURNED: "bg-rose-100 text-rose-900",
-  AWAITING_SECOND_MARKING: "bg-violet-100 text-violet-900",
+  RETURNED: "bg-red-100 text-red-900",
+  AWAITING_SECOND_MARKING: "bg-brand-100 text-brand-900",
 };
 
 /** The review list's status filter (Published belongs to Phase 4). */

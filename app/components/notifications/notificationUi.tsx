@@ -20,11 +20,11 @@ type Meta = { label: string; icon: typeof Bell; tone: string };
 
 export const CATEGORY_META: Record<NotificationCategory, Meta> = {
   ASSIGNMENTS: { label: CATEGORY_LABELS.ASSIGNMENTS, icon: FileText, tone: "bg-indigo-50 text-indigo-600" },
-  SUBMISSIONS: { label: CATEGORY_LABELS.SUBMISSIONS, icon: CheckCircle2, tone: "bg-green-50 text-green-600" },
-  REVIEWS: { label: CATEGORY_LABELS.REVIEWS, icon: ClipboardCheck, tone: "bg-orange-50 text-orange-600" },
+  SUBMISSIONS: { label: CATEGORY_LABELS.SUBMISSIONS, icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600" },
+  REVIEWS: { label: CATEGORY_LABELS.REVIEWS, icon: ClipboardCheck, tone: "bg-amber-50 text-amber-600" },
   RESULTS: { label: CATEGORY_LABELS.RESULTS, icon: Trophy, tone: "bg-blue-50 text-blue-600" },
-  RESOURCES: { label: CATEGORY_LABELS.RESOURCES, icon: BookOpen, tone: "bg-teal-50 text-teal-700" },
-  DISCUSSIONS: { label: CATEGORY_LABELS.DISCUSSIONS, icon: MessageSquare, tone: "bg-purple-50 text-purple-600" },
+  RESOURCES: { label: CATEGORY_LABELS.RESOURCES, icon: BookOpen, tone: "bg-brand-50 text-brand-700" },
+  DISCUSSIONS: { label: CATEGORY_LABELS.DISCUSSIONS, icon: MessageSquare, tone: "bg-brand-50 text-brand-600" },
   ACCOUNT: { label: CATEGORY_LABELS.ACCOUNT, icon: Bell, tone: "bg-slate-100 text-slate-600" },
 };
 

@@ -248,7 +248,7 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
           }}
         />
       )}
-      {topicNotice && <p className="px-1 text-xs text-green-700">{topicNotice}</p>}
+      {topicNotice && <p className="px-1 text-xs text-emerald-700">{topicNotice}</p>}
 
       {/* Comment bar */}
       {canPost && (
@@ -465,7 +465,7 @@ function CommentCard({
       )}
 
       {busyError && <p className="mt-2 text-xs text-red-600">{errorMessage(busyError)}</p>}
-      {notice && <p className="mt-2 text-xs text-green-700">{notice}</p>}
+      {notice && <p className="mt-2 text-xs text-emerald-700">{notice}</p>}
 
       {reporting && (
         <ReportForm

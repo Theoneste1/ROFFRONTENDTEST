@@ -145,7 +145,7 @@ export default function MentorStudents() {
                                 <p className="text-sm font-medium text-gray-600">Active Today</p>
                                 <p className="text-2xl font-bold text-gray-900 mt-1">48</p>
                             </div>
-                            <TrendingUp className="w-8 h-8 text-green-500" />
+                            <TrendingUp className="w-8 h-8 text-emerald-500" />
                         </div>
                     </div>
                     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/80">
@@ -274,7 +274,7 @@ export default function MentorStudents() {
                             <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                                 <div className="flex items-center gap-2">
                                     <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${student.trend === 'up'
-                                            ? 'bg-green-100 text-green-700'
+                                            ? 'bg-emerald-100 text-emerald-700'
                                             : 'bg-red-100 text-red-700'
                                         }`}>
                                         {student.trend === 'up' ? (

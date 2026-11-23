@@ -44,7 +44,7 @@ export default function SubmissionHistoryCard({ submissionId, query }: { submiss
                     </span>
                     <span className="text-xs text-gray-600">
                       {formatDateTime(rev.submittedAt)}
-                      {rev.isLate && <span className="ml-2 font-semibold text-orange-600">Late</span>}
+                      {rev.isLate && <span className="ml-2 font-semibold text-amber-600">Late</span>}
                     </span>
                   </button>
                   {open && (

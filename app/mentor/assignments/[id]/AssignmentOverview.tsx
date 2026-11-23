@@ -180,8 +180,8 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
         {/* Statistics */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Stat icon={<Users className="w-5 h-5 text-blue-600" />} tone="bg-blue-100" value={totalStudents ?? "—"} label="Students in division" />
-          <Stat icon={<CheckCircle2 className="w-5 h-5 text-green-600" />} tone="bg-green-100" value={a._count?.submissions ?? stats?.submissions ?? 0} label="Submitted" />
-          <Stat icon={<AlertCircle className="w-5 h-5 text-purple-600" />} tone="bg-purple-100" value={reviewCounts.toReview} label="To review (you)" />
+          <Stat icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />} tone="bg-emerald-100" value={a._count?.submissions ?? stats?.submissions ?? 0} label="Submitted" />
+          <Stat icon={<AlertCircle className="w-5 h-5 text-brand-600" />} tone="bg-brand-100" value={reviewCounts.toReview} label="To review (you)" />
           <Stat icon={<FileText className="w-5 h-5 text-amber-700" />} tone="bg-amber-100" value={reviewCounts.done} label="Reviewed (you)" />
           <Stat
             icon={<BarChart3 className="w-5 h-5 text-indigo-600" />}

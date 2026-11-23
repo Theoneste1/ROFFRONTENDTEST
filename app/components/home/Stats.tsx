@@ -14,11 +14,11 @@ import { usePublicStatistics } from "@/lib/queries/account";
 import Reveal, { useInView } from "./Reveal";
 
 const CARDS = [
-  { key: "students", label: "Students", text: "Active learners preparing for Olympiads", icon: GraduationCap, tone: "from-sky-400 to-blue-600" },
-  { key: "teachers", label: "Teachers", text: "Teachers from the schools we work with", icon: Presentation, tone: "from-emerald-400 to-teal-600" },
-  { key: "coaches", label: "Coaches", text: "Coaches mentoring and training our students", icon: Trophy, tone: "from-amber-300 to-orange-500" },
-  { key: "schools", label: "Schools", text: "Schools with students on the platform", icon: School, tone: "from-fuchsia-400 to-purple-600" },
-  { key: "members", label: "Community members", text: "All active members of the platform", icon: UsersRound, tone: "from-rose-400 to-pink-600" },
+  { key: "students", label: "Students", text: "Active learners preparing for Olympiads", icon: GraduationCap, tone: "from-brand-400 to-blue-600" },
+  { key: "teachers", label: "Teachers", text: "Teachers from the schools we work with", icon: Presentation, tone: "from-emerald-400 to-brand-600" },
+  { key: "coaches", label: "Coaches", text: "Coaches mentoring and training our students", icon: Trophy, tone: "from-amber-300 to-amber-500" },
+  { key: "schools", label: "Schools", text: "Schools with students on the platform", icon: School, tone: "from-brand-400 to-brand-600" },
+  { key: "members", label: "Community members", text: "All active members of the platform", icon: UsersRound, tone: "from-red-400 to-brand-600" },
 ] as const;
 
 function Counter({ value, run }: { value: number; run: boolean }) {
@@ -50,7 +50,7 @@ export default function Stats() {
   return (
     <section id="impact" className="relative overflow-hidden bg-gradient-to-b from-brand-950 to-brand py-20 sm:py-28" aria-labelledby="impact-title">
       <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-amber-400/10 blur-3xl" aria-hidden="true" />
-      <div className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-sky-400/10 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute -bottom-32 -left-24 h-96 w-96 rounded-full bg-brand-400/10 blur-3xl" aria-hidden="true" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">ROF LMS in numbers</p>
