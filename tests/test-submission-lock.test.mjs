@@ -33,3 +33,11 @@ test("the resubmission / revocation reason: 3–500 characters after trimming", 
   assert.ok(resubmissionReasonProblem("x".repeat(501)));
   assert.equal(TESTS_AUTHORIZE_RESUBMISSION, "tests.authorizeResubmission");
 });
+
+test("teachers: whose answers and results — assigned students too on a backend that does it (owner 2026-11-23)", async () => {
+  const { teacherStudentsText } = await import("../lib/test-management/submissions.ts");
+  const det = (features) => ({ state: "NEW", features });
+  assert.equal(teacherStudentsText(det(["teacherAssignedTestStudents"])), "the students of your schools and the students assigned to you");
+  assert.equal(teacherStudentsText(det([])), "the students of your schools");
+  assert.equal(teacherStudentsText(null), "the students of your schools");
+});

@@ -203,6 +203,8 @@ export const KNOWN_FEATURES = [
   "customReports",
   /** Saved table layouts and a sortable Users list (owner 2026-11-22). */
   "tableLayouts",
+  /** Teachers submit answers for, and follow the results of, their schools' students AND the students assigned to them (owner 2026-11-23). */
+  "teacherAssignedTestStudents",
   /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.

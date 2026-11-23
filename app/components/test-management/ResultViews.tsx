@@ -26,7 +26,7 @@ import { formatDateTime, personName } from "@/lib/format";
 import {
   TESTS_VIEW_OWN_RESULTS, TESTS_VIEW_RESULTS, TESTS_VIEW_SCHOOL_RESULTS, resultsPageMode, resultsTabVisible, scoreText, statText, testPageOf,
 } from "@/lib/test-management/results";
-import { SUBMISSION_STATUS_LABEL } from "@/lib/test-management/submissions";
+import { SUBMISSION_STATUS_LABEL, teacherStudentsText } from "@/lib/test-management/submissions";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame } from "@/app/components/ui/PageFrame";
@@ -174,8 +174,9 @@ function SchoolTestsList() {
   const [page, setPage] = useState(1);
   const f = { page, limit: 20 };
   const list = useQuery({ queryKey: queryKeys.tests.schoolResultTests(f), queryFn: () => schoolResultsApi.tests(f), placeholderData: keepPreviousData });
+  const whose = teacherStudentsText(useBackendCapabilities().detection);
   return (
-    <PageFrame title="Results" description="Published test results of the students of your school.">
+    <PageFrame title="Results" description={`Published test results of ${whose}.`}>
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load the results" onRetry={() => list.refetch()} /> : list.data.data.length === 0 ? (
         <EmptyState title="No published results" description="When results of your students are published, the test appears here." />
       ) : (
@@ -206,6 +207,7 @@ function SchoolResultsList({ testId }: { testId: string }) {
   const [page, setPage] = useState(1);
   const f = { ...(q && { q }), page, limit: 25 };
   const list = useQuery({ queryKey: queryKeys.tests.schoolResults(testId, f), queryFn: () => schoolResultsApi.results(testId, f), placeholderData: keepPreviousData, retry: (n, e) => !(isApiError(e) && e.status === 404) && n < 2 });
+  const whose = teacherStudentsText(useBackendCapabilities().detection);
   const back = <Link href="/teacher/results" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> All results</Link>;
   if (list.isPending) return <PageFrame title="Results"><LoadingBlock /></PageFrame>;
   if (list.isError) {
@@ -213,7 +215,7 @@ function SchoolResultsList({ testId }: { testId: string }) {
   }
   const d = list.data;
   return (
-    <PageFrame title={d.test.title} description={`${d.test.subject.name} · published results of your school's students, by name`}>
+    <PageFrame title={d.test.title} description={`${d.test.subject.name} · published results of ${whose}, by name`}>
       {back}
       <div className="mb-4"><SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Student name or username" label="Search students" /></div>
       <TableCard footer={<Pagination page={d.meta.page} totalPages={d.meta.totalPages} total={d.meta.total} onPage={setPage} />}>
