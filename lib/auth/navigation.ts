@@ -115,6 +115,13 @@ export const TEACHER_TESTS: NavItem = { href: "/teacher/tests", label: "Tests", 
 export const MENTOR_MARKING: NavItem = { href: "/mentor/marking", label: "Marking", permission: "tests.mark" };
 
 /**
+ * Coaches across their programmes (owner 2026-11-23): the programme's students and its published test results. Separately
+ * gated: a backend advertising `coachProgrammeAccess` and the known permission (lib/coaches/coach-access.ts coachNavVisible).
+ */
+export const MENTOR_STUDENTS: NavItem = { href: "/mentor/students", label: "Students", permission: "students.viewProgramme" };
+export const MENTOR_RESULTS: NavItem = { href: "/mentor/results", label: "Results", permission: "tests.viewProgrammeResults" };
+
+/**
  * Test Management Phase 4 (capability `testResults`): students' own published results and teachers' school results
  * (menu items, gated by lib/test-management/results.ts → resultsNavVisible; never part of the frozen menus). The
  * reporting overview for Administrators and Head Coaches is not a menu item (the Administrators' menu is full): it is

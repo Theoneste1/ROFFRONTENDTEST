@@ -256,6 +256,14 @@ export const schoolResultsApi = {
   dashboard: () => api<TeacherDashboard>("/teacher/test-dashboard"),
 };
 
+/** Coaches (owner 2026-11-23): the published results of their programmes' tests, every level (no ranks, codes or markers). */
+export const coachResultsApi = {
+  tests: (f: { page?: number; limit?: number } = {}) => api<Page<SchoolTestRow>>("/coach/test-results", { query: { ...f } }),
+  results: (testId: string, f: { schoolId?: string; q?: string; page?: number; limit?: number } = {}) =>
+    api<SchoolResultsPage>(`/coach/test-results/${enc(testId)}`, { query: { ...f } }),
+  get: (testId: string, studentId: string) => api<PublishedResult>(`/coach/test-results/${enc(testId)}/students/${enc(studentId)}`),
+};
+
 export const coachDashboardApi = {
   dashboard: () => api<CoachDashboard>("/marking/dashboard"),
 };

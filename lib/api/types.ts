@@ -61,7 +61,9 @@ export type Permission =
   | "tests.publishResults" | "tests.overridePublication" | "tests.viewResults" | "tests.viewRankings"
   | "tests.viewOwnResults" | "tests.viewSchoolResults"
   // Olympiad levels (Administrators, User Managers; Coaches and Head Coaches for their programmes) and custom reports (owner 2026-11-22).
-  | "students.classifyLevel" | "reports.build";
+  | "students.classifyLevel" | "reports.build"
+  // Coaches across their programmes (owner 2026-11-23): their programmes' students and published results.
+  | "students.viewProgramme" | "tests.viewProgrammeResults";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
