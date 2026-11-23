@@ -175,6 +175,12 @@ function audienceOf(audience: ResultAudience) {
     : { api: schoolResultsApi, base: "/teacher/results", permission: TESTS_VIEW_SCHOOL_RESULTS, whose: "the students of your school" };
 }
 
+/** Whose results: a teacher's wording follows the backend (their schools' students, and assigned students where supported). */
+function useWhose(audience: ResultAudience): string {
+  const detection = useBackendCapabilities().detection;
+  return audience === "coach" ? audienceOf(audience).whose : teacherStudentsText(detection);
+}
+
 export function SchoolResultTests({ audience = "teacher" }: { audience?: ResultAudience }) {
   return <ResultsGate title="Results" permission={audienceOf(audience).permission}><SchoolTestsList audience={audience} /></ResultsGate>;
 }
@@ -182,14 +188,11 @@ export function SchoolResultTests({ audience = "teacher" }: { audience?: ResultA
 function SchoolTestsList({ audience }: { audience: ResultAudience }) {
   const [page, setPage] = useState(1);
   const f = { page, limit: 20 };
-  const list = useQuery({ queryKey: queryKeys.tests.schoolResultTests(f), queryFn: () => schoolResultsApi.tests(f), placeholderData: keepPreviousData });
-  const whose = teacherStudentsText(useBackendCapabilities().detection);
-  return (
-    <PageFrame title="Results" description={`Published test results of ${whose}.`}>
   const a = audienceOf(audience);
   const list = useQuery({ queryKey: queryKeys.tests.schoolResultTests({ ...f, audience }), queryFn: () => a.api.tests(f), placeholderData: keepPreviousData });
+  const whose = useWhose(audience);
   return (
-    <PageFrame title="Results" description={`Published test results of ${a.whose}.`}>
+    <PageFrame title="Results" description={`Published test results of ${whose}.`}>
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load the results" onRetry={() => list.refetch()} /> : list.data.data.length === 0 ? (
         <EmptyState title="No published results" description="When results of your students are published, the test appears here." />
       ) : (
@@ -219,10 +222,8 @@ function SchoolResultsList({ testId, audience }: { testId: string; audience: Res
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const f = { ...(q && { q }), page, limit: 25 };
-  const list = useQuery({ queryKey: queryKeys.tests.schoolResults(testId, f), queryFn: () => schoolResultsApi.results(testId, f), placeholderData: keepPreviousData, retry: (n, e) => !(isApiError(e) && e.status === 404) && n < 2 });
-  const whose = teacherStudentsText(useBackendCapabilities().detection);
-  const back = <Link href="/teacher/results" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> All results</Link>;
   const a = audienceOf(audience);
+  const whose = useWhose(audience);
   const list = useQuery({ queryKey: queryKeys.tests.schoolResults(testId, { ...f, audience }), queryFn: () => a.api.results(testId, f), placeholderData: keepPreviousData, retry: (n, e) => !(isApiError(e) && e.status === 404) && n < 2 });
   const back = <Link href={a.base} className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> All results</Link>;
   if (list.isPending) return <PageFrame title="Results"><LoadingBlock /></PageFrame>;
@@ -232,7 +233,6 @@ function SchoolResultsList({ testId, audience }: { testId: string; audience: Res
   const d = list.data;
   return (
     <PageFrame title={d.test.title} description={`${d.test.subject.name} · published results of ${whose}, by name`}>
-    <PageFrame title={d.test.title} description={`${d.test.subject.name} · published results of ${a.whose}, by name`}>
       {back}
       <div className="mb-4"><SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Student name or username" label="Search students" /></div>
       <TableCard footer={<Pagination page={d.meta.page} totalPages={d.meta.totalPages} total={d.meta.total} onPage={setPage} />}>

@@ -63,7 +63,7 @@ export type Permission =
   // Olympiad levels (Administrators, User Managers; Coaches and Head Coaches for their programmes) and custom reports (owner 2026-11-22).
   | "students.classifyLevel" | "reports.build"
   // Registration data (owner 2026-11-23): Super Administrators only.
-  | "registrationData.manage";
+  | "registrationData.manage"
   // Coaches across their programmes (owner 2026-11-23): their programmes' students and published results.
   | "students.viewProgramme" | "tests.viewProgrammeResults";
 
