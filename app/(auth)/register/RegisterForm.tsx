@@ -49,6 +49,8 @@ import { Button, TextField } from "@/app/components/ui/form";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import SchoolClaimFields, { emptyDraft, type SchoolClaimPiece } from "@/app/components/account/SchoolClaimFields";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { hasFeature } from "@/lib/api/capabilities";
+import { isNewSchoolCodeError } from "@/lib/schools/school-code";
 import OptionalAvatarField from "@/app/components/applications/OptionalAvatarField";
 import { pictureOutcomeText, registrationAvatarProblem, registrationAvatarSupported, uploadRegistrationAvatar, type PictureOutcome } from "@/lib/accounts/registration-avatar";
 import { usePublicForm } from "@/lib/queries/forms";
@@ -165,6 +167,8 @@ export default function RegisterForm() {
     setRulesOn(studentDetailsSupported(caps.detection) && homeLocationRulesSupported(caps.detection));
   }
   const directory = schoolMode === "directory";
+  // A school without a code asks for its code (capability schoolCodeAtRegistration, owner 2026-11-23).
+  const codeAsked = hasFeature(useBackendCapabilities().detection, "schoolCodeAtRegistration");
   const [claim, setClaim] = useState<SchoolClaimDraft>(() => emptyDraft("directory"));
   const [claimErrors, setClaimErrors] = useState<Partial<Record<SchoolClaimField, string>>>({});
   const homeInRwanda = rulesOn ? homeIsRwanda(home) : details.homeCountry === RWANDA;
@@ -237,7 +241,7 @@ export default function RegisterForm() {
     ev.preventDefault();
     if (submitting || schoolMode === null) return;
     const e = validate();
-    const ce = directory ? validateSchoolClaim(claim) : {};
+    const ce = directory ? validateSchoolClaim(claim, { askCodeForCodeless: codeAsked }) : {};
     const de = !detailsOn ? {} : rulesOn ? { ...validateStudentPersonal(details), ...validateHome(home) } : validateStudentDetails(details);
     setErrors(e);
     setClaimErrors(ce);
@@ -256,7 +260,7 @@ export default function RegisterForm() {
         email: v.email.trim(),
         password,
         gradeLevel: v.gradeLevel as GradeLevel,
-        ...(directory ? schoolClaimPayload(claim) : { schoolName: v.schoolName.trim(), schoolLocation: v.schoolLocation.trim() }),
+        ...(directory ? schoolClaimPayload(claim, { askCodeForCodeless: codeAsked }) : { schoolName: v.schoolName.trim(), schoolLocation: v.schoolLocation.trim() }),
         ...(!detailsOn
           ? { homeLocation: v.homeLocation.trim() }
           : rulesOn
@@ -283,6 +287,8 @@ export default function RegisterForm() {
       if (directory) {
         const server = fieldErrors(err, CLAIM_SERVER_FIELDS);
         sce = Object.fromEntries(Object.entries(server).map(([k, m]) => [SCHOOL_CLAIM_SERVER_FIELDS[k], m]));
+        // A typed code refused (missing, of another province, another school's): the server's message, by the field.
+        if (isApiError(err) && isNewSchoolCodeError(err)) sce.newSchoolCode = err.message;
         setClaimErrors(sce);
       }
       // A refused field: focus on it. Other refusals: their message above the fields.
@@ -383,7 +389,7 @@ export default function RegisterForm() {
   const coded = isApiError(error) && error.code ? STUDENT_DETAILS_ERRORS[error.code] : undefined;
   const known = isApiError(error) && error.code ? REGISTER_ERRORS[error.code] : undefined;
   const fieldErr =
-    !!coded || Object.keys(fieldErrors(error, [...(directory ? [...FIELDS, ...CLAIM_SERVER_FIELDS] : FIELDS), ...(detailsOn ? STUDENT_DETAILS_SERVER_FIELDS : [])])).length > 0;
+    !!coded || (isApiError(error) && isNewSchoolCodeError(error)) || Object.keys(fieldErrors(error, [...(directory ? [...FIELDS, ...CLAIM_SERVER_FIELDS] : FIELDS), ...(detailsOn ? STUDENT_DETAILS_SERVER_FIELDS : [])])).length > 0;
 
   const claimPiece = (only: SchoolClaimPiece) => (
     <SchoolClaimFields
@@ -398,6 +404,7 @@ export default function RegisterForm() {
       errors={claimErrors}
       countryOptions={countryList.supported ? countries : undefined}
       labelPrefix="School "
+      askCodeForCodeless={codeAsked}
     />
   );
   // Province → District → Sector of the official list; each step clears the ones after it.

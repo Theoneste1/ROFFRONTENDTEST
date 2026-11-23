@@ -18,6 +18,7 @@ import type { OlympiadSubject, TeacherRegistrationInput } from "../api/teacher-r
 import { normalisePhone, PHONE_HINT } from "./phone";
 import { RWANDA as DEFAULT_COUNTRY } from "../schools/countries";
 import { otherInterestField, validateInterestsWithOther } from "./olympiad-interests";
+import { cleanSchoolCode, schoolCodeProblem } from "../schools/school-code";
 
 // ─── Subjects ───────────────────────────────────────────────────────────────
 
@@ -150,6 +151,8 @@ export interface TeacherDraft {
   /** The chosen listed school (its code and sector are shown, never sent). */
   school: Pick<DirectorySchool, "id" | "name" | "code" | "sector" | "district"> | null;
   proposedSchoolName: string;
+  /** A listed school without a code (owner 2026-11-23): its code, typed by the applicant. */
+  newSchoolCode: string;
   /**
    * "My school is not listed" (owner 2026-11-22; capability teacherUnlistedSchoolDetails): the school's official details,
    * so an administrator's approval creates it with nothing typed again. Code, ownership and day / boarding required.
@@ -183,6 +186,7 @@ export const emptyTeacherDraft = (): TeacherDraft => ({
   schoolMode: "listed",
   school: null,
   proposedSchoolName: "",
+  newSchoolCode: "",
   ...NO_SCHOOL_DETAILS,
   schoolSector: "",
   homeProvince: "",
@@ -266,6 +270,7 @@ export type TeacherField =
   | "school"
   | "proposedSchoolName"
   | "proposedSchoolCode"
+  | "newSchoolCode"
   | "proposedSchoolCell"
   | "proposedSchoolVillage"
   | "proposedSchoolOwnership"
@@ -292,7 +297,7 @@ const PASSWORD_HINT = "At least 8 characters, with at least one letter and one n
 const strongPassword = (p: string) => p.length >= TEACHER_RULES.passwordMin && p.length <= TEACHER_RULES.passwordMax && /[a-zA-Z]/.test(p) && /[0-9]/.test(p);
 
 /** Field errors, or an empty object when the draft can be sent. */
-export function validateTeacherRegistration(d: TeacherDraft, homeRules = false, schoolDetails = false): Partial<Record<TeacherField, string>> {
+export function validateTeacherRegistration(d: TeacherDraft, homeRules = false, schoolDetails = false, askCode = false): Partial<Record<TeacherField, string>> {
   const e: Partial<Record<TeacherField, string>> = {};
   const first = d.firstName.trim();
   const last = d.lastName.trim();
@@ -312,6 +317,10 @@ export function validateTeacherRegistration(d: TeacherDraft, homeRules = false, 
   if (!d.schoolSector) e.schoolSector = "Choose your school's sector.";
   if (d.schoolMode === "listed") {
     if (!d.school) e.school = "Choose your school, or “My school is not listed”.";
+    else if (askCode && d.school.code === null) {
+      const problem = schoolCodeProblem(d.newSchoolCode, d.schoolProvince);
+      if (problem) e.newSchoolCode = problem;
+    }
   } else {
     const n = d.proposedSchoolName.trim().length;
     if (n < TEACHER_RULES.schoolNameMin || n > TEACHER_RULES.schoolNameMax) e.proposedSchoolName = "Enter your school's name (2–200 characters).";
@@ -337,7 +346,7 @@ export function validateTeacherRegistration(d: TeacherDraft, homeRules = false, 
 }
 
 /** The request body for a valid draft (call validateTeacherRegistration first). */
-export function buildTeacherPayload(d: TeacherDraft, homeRules = false, schoolDetails = false): TeacherRegistrationInput {
+export function buildTeacherPayload(d: TeacherDraft, homeRules = false, schoolDetails = false, askCode = false): TeacherRegistrationInput {
   const country = d.country.trim().toUpperCase();
   // homeLocationRules: the place only for Rwanda (all three); older backends: district and sector as before.
   const home = !homeRules
@@ -360,7 +369,9 @@ export function buildTeacherPayload(d: TeacherDraft, homeRules = false, schoolDe
     schoolDistrict: d.schoolDistrict,
     ...home,
   };
-  if (d.schoolMode === "listed") return { ...base, schoolId: d.school!.id };
+  if (d.schoolMode === "listed") {
+    return { ...base, schoolId: d.school!.id, ...(askCode && d.school!.code === null && { newSchoolCode: cleanSchoolCode(d.newSchoolCode) }) };
+  }
   const missing = { ...base, proposedSchoolName: d.proposedSchoolName.trim(), schoolSector: d.schoolSector };
   if (!schoolDetails) return missing;
   const cell = d.proposedSchoolCell.trim().replace(/\s+/g, " ");
@@ -426,6 +437,7 @@ export const TEACHER_SERVER_FIELDS: Readonly<Record<string, TeacherField>> = {
   schoolId: "school",
   proposedSchoolName: "proposedSchoolName",
   proposedSchoolCode: "proposedSchoolCode",
+  newSchoolCode: "newSchoolCode",
   proposedSchoolCell: "proposedSchoolCell",
   proposedSchoolVillage: "proposedSchoolVillage",
   proposedSchoolOwnership: "proposedSchoolOwnership",
