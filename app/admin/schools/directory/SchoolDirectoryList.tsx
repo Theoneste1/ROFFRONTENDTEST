@@ -22,10 +22,11 @@ import { hasFeature } from "@/lib/api/capabilities";
 import type { DirectorySchoolRecord, SchoolSource } from "@/lib/api/school-directory";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
-import { invalidateAfterSchoolChange, useDirectorySchools, useSchoolLocations, useSyncAccess } from "@/lib/queries/school-directory";
+import { invalidateAfterSchoolChange, useDirectorySchools, useSchoolLocations, useSchoolReferenceData, useSyncAccess } from "@/lib/queries/school-directory";
 import { formatNumber } from "@/lib/format";
 import {
-  RWANDA, SOURCE_LABEL, ariaSort, initialListState, isFiltered, listFilters, listStateFromParams, listStateToParams, nextSort, orDash,
+  ACCOMMODATION_LABEL, ACCOMMODATION_OPTIONS, CONTACT_SEARCH_MIN, EDUCATION_LEVEL_LABEL, OWNERSHIP_LABEL, OWNERSHIP_OPTIONS,
+  PROGRAMME_CATEGORY_LABEL, RWANDA, SOURCE_LABEL, cleanPlace, ariaSort, initialListState, isFiltered, listFilters, listStateFromParams, listStateToParams, nextSort, orDash,
   type ListState, type SchoolSort,
 } from "@/lib/admin/school-directory";
 import { NO_PRIMARY_TEACHER } from "@/lib/schools/primary-teacher";
@@ -49,7 +50,10 @@ export default function SchoolDirectoryList() {
   const qc = useQueryClient();
   const detection = useBackendCapabilities().detection;
   const sortable = hasFeature(detection, "schoolsTable");
-  const filters = listFilters(state, { sortable });
+  // Every field of the NESA file (owner 2026-11-23): ownership, cell, village, contacts, programme category.
+  const allFields = hasFeature(detection, "schoolListFilters");
+  const filters = listFilters(state, { sortable, allFields });
+  const filtered = isFiltered(state, { allFields });
   const schools = useDirectorySchools(filters);
   const locations = useSchoolLocations();
   const { can } = useSession();
@@ -65,7 +69,10 @@ export default function SchoolDirectoryList() {
   // Any change but a page change goes back to page 1; the sort is kept with every filter.
   const update = (patch: Partial<ListState>) => go({ ...state, ...patch, page: patch.page ?? 1 });
   const sortBy = (column: SchoolSort) => update(nextSort(state, column));
-  const open = (id: string) => router.push(`/admin/schools/${id}`);
+  // Filtered by a contact (owner 2026-11-23: "I should find the school contact"): a school opens on its Contacts tab.
+  const contactsTab = state.contact.trim() !== "" || state.email !== "any" || state.phone !== "any";
+  const schoolHref = (id: string) => `/admin/schools/${id}${contactsTab ? "?tab=contacts" : ""}`;
+  const open = (id: string) => router.push(schoolHref(id));
   // A row opens the school's page (its links and buttons keep their own action).
   const rowClick = (e: MouseEvent<HTMLTableRowElement>, id: string) => {
     if ((e.target as HTMLElement).closest("a,button")) return;
@@ -108,6 +115,17 @@ export default function SchoolDirectoryList() {
   const districts = provinces.find((p) => p.province === state.province)?.districts ?? [];
   const sectors = districts.find((d) => d.district === state.district)?.sectors ?? [];
   const refresh = () => invalidateAfterSchoolChange(qc);
+  const reference = useSchoolReferenceData();
+  // The programmes of the chosen category (all programmes when none is chosen), by name.
+  const programmes = (reference.data?.programmes ?? [])
+    .filter((p) => !state.programmeCategory || p.category === state.programmeCategory)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const presence = (any: string, withLabel: string, withoutLabel: string) => [
+    { label: any, value: "any" }, { label: withLabel, value: "with" }, { label: withoutLabel, value: "without" },
+  ];
+  const contactTooShort = state.contact.trim().length > 0 && state.contact.trim().length < CONTACT_SEARCH_MIN;
+  // Remounts the cell / village / contact boxes on "Clear filters", like the search box.
+  const textKey = `${searchKey}`;
   // Bulk actions (capability bulkOperationsGeneric): tick schools, or act on every school matching the filters.
   const bulk = useRecordBulk("SCHOOL", {
     pageIds: schools.data?.data.map((s) => s.id) ?? [],
@@ -218,7 +236,74 @@ export default function SchoolDirectoryList() {
           )}
         </div>
       )}
-      {isFiltered(state) && (
+      <div className="flex flex-wrap items-center gap-3 mb-6" data-testid="school-more-filters">
+        <SelectFilter
+          label="Level"
+          value={state.level}
+          onChange={(level) => update({ level })}
+          options={[{ label: "Any", value: "" }, ...Object.entries(EDUCATION_LEVEL_LABEL).map(([value, label]) => ({ label, value }))]}
+        />
+        {allFields && (
+          <SelectFilter
+            label="Programme type"
+            value={state.programmeCategory}
+            // A new type clears a programme of another type.
+            onChange={(v) => update({ programmeCategory: v as ListState["programmeCategory"], programme: "" })}
+            options={[{ label: "Any", value: "" }, ...Object.entries(PROGRAMME_CATEGORY_LABEL).map(([value, label]) => ({ label, value }))]}
+          />
+        )}
+        {programmes.length > 0 && (
+          <SelectFilter
+            label="Combination / trade"
+            value={state.programme}
+            onChange={(programme) => update({ programme })}
+            options={[{ label: "Any", value: "" }, ...programmes.map((p) => ({ label: p.code ? `${p.name} (${p.code})` : p.name, value: p.id }))]}
+          />
+        )}
+        <SelectFilter
+          label="Day / boarding"
+          value={state.accommodation}
+          onChange={(v) => update({ accommodation: v as ListState["accommodation"] })}
+          options={[{ label: "Any", value: "" }, ...ACCOMMODATION_OPTIONS.map((a) => ({ label: ACCOMMODATION_LABEL[a], value: a }))]}
+        />
+        {allFields && (
+          <>
+            <SelectFilter
+              label="Ownership"
+              value={state.ownership}
+              onChange={(v) => update({ ownership: v as ListState["ownership"] })}
+              options={[{ label: "Any", value: "" }, ...OWNERSHIP_OPTIONS.map((o) => ({ label: OWNERSHIP_LABEL[o], value: o }))]}
+            />
+            <SelectFilter label="E-mail" value={state.email} onChange={(v) => update({ email: v as ListState["email"] })} options={presence("Any", "Has an e-mail", "No e-mail")} />
+            <SelectFilter label="Phone" value={state.phone} onChange={(v) => update({ phone: v as ListState["phone"] })} options={presence("Any", "Has a phone", "No phone")} />
+          </>
+        )}
+        <SelectFilter
+          label="Source data"
+          value={state.issues}
+          onChange={(v) => update({ issues: v as ListState["issues"] })}
+          options={presence("Any", "With problems", "Without problems")}
+        />
+      </div>
+      {allFields && (
+        <div className="flex flex-wrap items-start gap-3 mb-6" data-testid="school-text-filters">
+          {showPlaces && (
+            <>
+              <SearchInput key={`cell-${textKey}`} value={state.cell} onChange={(cell) => update({ cell: cleanPlace(cell) })} placeholder="Cell…" label="Filter by cell" />
+              <SearchInput key={`village-${textKey}`} value={state.village} onChange={(village) => update({ village: cleanPlace(village) })} placeholder="Village…" label="Filter by village" />
+            </>
+          )}
+          <div className="flex-1 min-w-[min(200px,100%)] max-w-xs">
+            <SearchInput key={`contact-${textKey}`} value={state.contact} onChange={(contact) => update({ contact })} placeholder="E-mail or phone…" label="Find a school by its e-mail or phone" />
+            {contactTooShort && (
+              <p className="text-xs text-gray-600 mt-1" data-testid="contact-too-short">
+                Type at least {CONTACT_SEARCH_MIN} characters of the e-mail or phone number.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      {filtered && (
         <button
           type="button"
           className={`${linkBtn} mb-4`}
@@ -235,7 +320,7 @@ export default function SchoolDirectoryList() {
       {schools.data && (
         <p className="text-xs text-gray-600 mb-2" data-testid="school-count">
           {formatNumber(schools.data.meta.total)} school{schools.data.meta.total === 1 ? "" : "s"}
-          {isFiltered(state) ? " match the filters" : ""}
+          {filtered ? " match the filters" : ""}
         </p>
       )}
 
@@ -280,7 +365,7 @@ export default function SchoolDirectoryList() {
             {schools.isPending ? (
               <TableMessage colSpan={cols}>Loading schools…</TableMessage>
             ) : schools.data.data.length === 0 ? (
-              <TableMessage colSpan={cols}>{isFiltered(state) ? "No schools match the filters." : "No schools yet."}</TableMessage>
+              <TableMessage colSpan={cols}>{filtered ? "No schools match the filters." : "No schools yet."}</TableMessage>
             ) : (
               schools.data.data.map((s) => (
                 <tr
@@ -330,7 +415,7 @@ export default function SchoolDirectoryList() {
                   </td>
                   <td className={`${td} whitespace-nowrap`}>
                     <span className="flex items-center gap-3">
-                      <Link href={`/admin/schools/${s.id}`} className={linkBtn} aria-label={`View ${s.name}`}>
+                      <Link href={schoolHref(s.id)} className={linkBtn} aria-label={`View ${s.name}`}>
                         View
                       </Link>
                       <button type="button" className={linkBtn} onClick={() => setDialog({ kind: "edit", school: s })} aria-label={`Edit ${s.name}`}>

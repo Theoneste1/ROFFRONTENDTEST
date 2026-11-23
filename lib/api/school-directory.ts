@@ -139,6 +139,22 @@ export interface DirectoryListFilters {
   isActive?: boolean;
   source?: SchoolSource;
   hasCode?: boolean;
+  /** Offers this education level (PPR, PR, OL, AL, PE). */
+  level?: string;
+  /** Offers this programme (its id). */
+  programme?: string;
+  accommodation?: SchoolAccommodation;
+  /** true: its source records report data problems. */
+  hasSourceIssues?: boolean;
+  /** Backends with schoolListFilters (2026-11-23). */
+  ownership?: SchoolOwnership;
+  cell?: string;
+  village?: string;
+  /** An active e-mail or phone containing this text (3–100 characters). */
+  contact?: string;
+  hasEmail?: boolean;
+  hasPhone?: boolean;
+  programmeCategory?: ProgrammeCategory;
   /** Backends with schoolsTable: name (default) or verifiedStudents; asc (default) or desc. */
   sort?: "name" | "verifiedStudents";
   order?: "asc" | "desc";

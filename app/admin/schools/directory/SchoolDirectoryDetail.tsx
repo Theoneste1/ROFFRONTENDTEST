@@ -8,6 +8,7 @@
  */
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { isApiError } from "@/lib/api/errors";
@@ -41,7 +42,9 @@ const CLAIM_BADGE: Record<SchoolClaimStatus, string> = {
 export default function SchoolDirectoryDetail({ schoolId }: { schoolId: string }) {
   const valid = isUuid(schoolId);
   const school = useDirectorySchool(schoolId, valid);
-  const [tab, setTab] = useState<Tab>("students");
+  // ?tab=contacts (the schools list links there when it is filtered by a contact): opens on that tab.
+  const asked = useSearchParams().get("tab") as Tab | null;
+  const [tab, setTab] = useState<Tab>(asked && asked in TAB_LABEL ? asked : "students");
   const { can } = useSession();
   const [dialog, setDialog] = useState<"edit" | "active" | null>(null);
   const [verifying, setVerifying] = useState(false);
