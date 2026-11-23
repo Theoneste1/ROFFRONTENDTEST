@@ -68,7 +68,7 @@ export const YEAR_ERRORS: Readonly<Record<string, string>> = {
 //
 // Starting a year is ONE request whose backend transaction may run up to 120 s
 // (academic-years.service.ts: `$transaction(…, { timeout: 120_000 })`), while the
-// Netlify proxy gives up after ~26 s and Next's local proxy after 30 s. A lost
+// hosting proxy may give up sooner and Next's local proxy after 30 s. A lost
 // response therefore says nothing about the outcome: the backend may still be
 // working, and a second request would queue behind the first and run again.
 //

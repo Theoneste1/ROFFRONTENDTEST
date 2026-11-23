@@ -1,7 +1,7 @@
 name: Frontend CI
 
 # Lint, route types, type-check, unit tests and the production build with the
-# same settings as Netlify (netlify.toml): a broken build is caught on the PR.
+# same settings as the Vercel build: a broken build is caught on the PR.
 
 # develop is the integration branch (feature PRs target it); main is the
 # production release branch. CI checks both, on pushes and on PRs into them.
@@ -30,7 +30,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22        # same as NODE_VERSION in netlify.toml
+          node-version: 22        # same Node major as the Vercel project
           cache: npm
 
       - name: Install dependencies
@@ -50,11 +50,11 @@ jobs:
       - name: Unit tests
         run: npm test
 
-      # NETLIFY=true runs next.config.ts's hosted-build check, exactly as on Netlify.
-      - name: Production build (Netlify settings)
+      # VERCEL=1 runs next.config.ts's hosted-build check, exactly as on Vercel.
+      - name: Production build (Vercel settings)
         run: npm run build
         env:
-          NETLIFY: "true"
+          VERCEL: "1"
           NEXT_TELEMETRY_DISABLED: "1"
           API_PROXY_TARGET: https://rofbackendtest.onrender.com
           NEXT_PUBLIC_API_UPLOAD_ORIGIN: https://rofbackendtest.onrender.com
