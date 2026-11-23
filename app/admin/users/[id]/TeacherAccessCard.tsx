@@ -24,9 +24,9 @@ import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { personName } from "@/lib/format";
 import { DELEGATION_LABEL, SCOPE_LABEL, STUDENT_SCOPES, scopeText, teacherStudentAccessSupported, type StudentScope } from "@/lib/accounts/teacher-student-access";
-import { displayedRole } from "@/lib/schools/primary-teacher";
+import { canMakePrimary, displayedRole, makePrimaryText, primaryTeacherSupported } from "@/lib/schools/primary-teacher";
 import TeacherRoleBadge from "@/app/components/teachers/TeacherRoleBadge";
-import { Card, btnPrimary, btnSecondary, linkBtn } from "../../components/adminUi";
+import { Card, ConfirmDialog, btnPrimary, btnSecondary, linkBtn } from "../../components/adminUi";
 import { SchoolPicker, SelectInput, TextInput } from "../components/userUi";
 import StudentName from "@/app/components/students/StudentName";
 
@@ -48,7 +48,11 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
   const qc = useQueryClient();
   const schools = useQuery({ queryKey: queryKeys.accounts.teacherSchools(teacherId), queryFn: () => teachersAdminApi.assignments(teacherId) });
   const delegations = useQuery({ queryKey: queryKeys.accounts.delegations(teacherId), queryFn: () => teachersAdminApi.delegations(teacherId) });
-  const tsa = teacherStudentAccessSupported(useBackendCapabilities().detection);
+  const detection = useBackendCapabilities().detection;
+  const tsa = teacherStudentAccessSupported(detection);
+  // Primary teacher (owner 2026-11-24): also from the teacher's own page, not only from the school's Teachers tab.
+  const primaryOn = primaryTeacherSupported(detection);
+  const [choosing, setChoosing] = useState<{ id: string; schoolName: string } | null>(null);
   const studentFilter = { teacherId, isActive: true, limit: 100 };
   const assignedStudents = useQuery({
     queryKey: queryKeys.accounts.teacherStudents(studentFilter), queryFn: () => teachersAdminApi.studentAssignments(studentFilter), enabled: tsa,
@@ -57,6 +61,7 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
     void qc.invalidateQueries({ queryKey: queryKeys.accounts.teacherSchools(teacherId) });
     void qc.invalidateQueries({ queryKey: queryKeys.accounts.delegations(teacherId) });
     void qc.invalidateQueries({ queryKey: queryKeys.accounts.all });
+    void qc.invalidateQueries({ queryKey: queryKeys.schoolDirectory.all });
   };
   const [error, setError] = useState<string | null>(null);
   const act = useMutation({ mutationFn: (fn: () => Promise<unknown>) => fn(), onSuccess: () => { setError(null); refresh(); }, onError: (e) => setError(message(e)) });
@@ -119,9 +124,17 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
                         {/* Primary teacher (owner decision 2026-11-19): the school's main contact; the same rights either way. */}
                         {displayedRole(a) && <TeacherRoleBadge role={displayedRole(a)!} className="ml-2 align-middle" />}
                       </span>
-                      <button type="button" className={linkBtn} disabled={act.isPending} onClick={() => act.mutate(() => teachersAdminApi.endAssignment(a.id))}>
-                        End
-                      </button>
+                      <span className="flex items-center gap-3">
+                        {primaryOn && canMakePrimary(a, true) && (
+                          <button type="button" className={linkBtn} disabled={act.isPending} onClick={() => setChoosing({ id: a.id, schoolName: a.school.name })}
+                            data-testid={`make-primary-${a.id}`}>
+                            Make primary
+                          </button>
+                        )}
+                        <button type="button" className={linkBtn} disabled={act.isPending} onClick={() => act.mutate(() => teachersAdminApi.endAssignment(a.id))}>
+                          End
+                        </button>
+                      </span>
                     </li>
                   ))
                 )}
@@ -269,6 +282,15 @@ export default function TeacherAccessCard({ teacherId }: { teacherId: string }) 
           </section>
         )}
       </div>
+    {choosing && (
+        <ConfirmDialog
+          title="Make this teacher the primary teacher?"
+          body={`${makePrimaryText("This teacher", null, choosing.schoolName)} If the school already has a primary teacher, that teacher becomes a secondary teacher.`}
+          confirmLabel="Make primary"
+          onClose={() => setChoosing(null)}
+          onConfirm={() => teachersAdminApi.makePrimary(choosing.id).then(() => { setChoosing(null); setError(null); refresh(); })}
+        />
+      )}
     </Card>
   );
 }
