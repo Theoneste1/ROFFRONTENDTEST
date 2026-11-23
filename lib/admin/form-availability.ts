@@ -197,6 +197,26 @@ export function messagesChange(current: Parameters<typeof messagesDraft>[0], d: 
   return Object.keys(body).length ? body : null;
 }
 
+// ─── E-mail activation per sign-up form (owner 2026-11-23) ────────────────────
+
+/** null: the form has no activation switch (the contact form, or a backend without formEmailVerification). */
+export function activationSummary(f: Pick<AdminFormView, "requireEmailVerification">): string | null {
+  if (f.requireEmailVerification === undefined) return null;
+  return f.requireEmailVerification
+    ? "Required: people who sign up must open the link in their e-mail before they can sign in."
+    : "Not required: people who sign up can sign in at once.";
+}
+
+/** What the switch button says. */
+export const activationAction = (on: boolean) => (on ? "Stop requiring e-mail activation" : "Require e-mail activation");
+
+/** The confirmation after a change. */
+export function activationSaved(f: Pick<AdminFormView, "label" | "requireEmailVerification">): string {
+  return f.requireEmailVerification
+    ? `${f.label}: e-mail activation is now required for new sign-ups.`
+    : `${f.label}: e-mail activation is no longer required. New sign-ups can sign in at once; anyone still waiting for an activation link can be activated by an administrator.`;
+}
+
 // ─── History ───────────────────────────────────────────────────────────────
 
 const FIELD_LABELS: Readonly<Record<string, string>> = {
@@ -207,6 +227,7 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   instructions: "Instructions",
   contactEmail: "Contact e-mail",
   supportUrl: "Support link",
+  requireEmailVerification: "E-mail activation",
 };
 
 const MODE_LABELS: Readonly<Record<string, string>> = { OPEN: "Open", CLOSED: "Closed", SCHEDULED: "Scheduled" };
@@ -214,6 +235,7 @@ const MODE_LABELS: Readonly<Record<string, string>> = { OPEN: "Open", CLOSED: "C
 function describeValue(field: string, v: unknown): string {
   if (v === null || v === undefined || v === "") return field === "closedMessage" ? "built-in message" : "none";
   if (field === "mode" && typeof v === "string") return MODE_LABELS[v] ?? v;
+  if (field === "requireEmailVerification") return v === true ? "required" : "not required";
   if ((field === "opensAt" || field === "closesAt") && typeof v === "string") return kigaliTime(v) ?? v;
   const s = String(v);
   return s.length > 80 ? `${s.slice(0, 77)}…` : s;
@@ -238,6 +260,7 @@ export function formsErrorMessage(e: { status?: number; code?: string; message?:
   if (!e) return null;
   if (e.code === "INVALID_FORM_SCHEDULE") return `The schedule was refused: ${e.message ?? "check the opening and closing times."}`;
   if (e.code === "NO_CHANGES") return "Nothing changed.";
+  if (e.code === "NOT_A_SIGN_UP_FORM") return "E-mail activation can be set only on the student, teacher and coach sign-up forms.";
   if (e.code === "FORM_NOT_FOUND" || e.status === 404) return "This server does not know this form.";
   if (e.status === 403) return "You don't have permission to change this form.";
   return null;

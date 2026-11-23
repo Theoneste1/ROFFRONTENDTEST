@@ -167,6 +167,11 @@ export const KNOWN_FEATURES = [
    */
   "formAvailability",
   /**
+   * E-mail activation per sign-up form (owner 2026-11-23): the student, teacher and coach forms each carry
+   * `requireEmailVerification` (off by default), changed on the Forms page. Without it: no switch shown.
+   */
+  "formEmailVerification",
+  /**
    * Bulk user operations: `/admin/users/bulk` — preview an action on chosen accounts or on every account matching the
    * list filters, confirm it (bound to exactly the previewed accounts), follow its progress and per-account results,
    * cancel it; `POST /admin/users/bulk/export` (users.export) downloads the selection as CSV. Without it: none of this.
