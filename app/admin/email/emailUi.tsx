@@ -15,6 +15,7 @@ export const DELIVERY_STATUS: Record<EmailDeliveryStatus, { label: string; badge
   PENDING: { label: "Pending", badge: "bg-slate-100 text-slate-600" },
   SENT: { label: "Sent", badge: "bg-emerald-50 text-emerald-700" },
   FAILED: { label: "Failed", badge: "bg-red-50 text-red-600" },
+  DISCARDED: { label: "Not sent (link no longer valid)", badge: "bg-amber-50 text-amber-700" },
 };
 
 export function JobStatusBadge({ status }: { status: EmailJobStatus }) {

@@ -11,6 +11,8 @@ import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, Notice, RequirePermission, TableCard, TableMessage, linkBtn, td, th } from "../../components/adminUi";
 import { failedDeliveryUnavailable, retryOutcome } from "@/lib/admin-ops/failed-deliveries";
+import { NOT_SENT_STATUSES, emailBudgetSupported, notSentStatus } from "@/lib/admin-ops/email-budget";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 const KINDS: { value: "" | DeliveryKind; label: string }[] = [
   { value: "", label: "All e-mails" },
@@ -33,13 +35,19 @@ function FailedDeliveries() {
   const params = useSearchParams();
   const page = Math.max(1, Number(params.get("page")) || 1);
   const kind = (params.get("kind") ?? "") as "" | DeliveryKind;
-  const list = useFailedDeliveries({ page, limit: 20, ...(kind && { kind }) });
+  // With the e-mail budget (capability emailBudget): also the e-mails not sent because their link was no longer valid.
+  const budget = emailBudgetSupported(useBackendCapabilities().detection);
+  const status = budget ? notSentStatus(params.get("status")) : "FAILED";
+  const discarded = status === "DISCARDED";
+  const list = useFailedDeliveries({ page, limit: 20, ...(kind && { kind }), ...(discarded && { status }) });
   const retry = useRetryDelivery();
   const [message, setMessage] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
 
-  const go = (next: { page?: number; kind?: string }) => {
+  const go = (next: { page?: number; kind?: string; status?: string }) => {
     const q = new URLSearchParams();
     const k = next.kind ?? kind;
+    const s0 = next.status ?? status;
+    if (s0 === "DISCARDED") q.set("status", s0);
     if (k) q.set("kind", k);
     if ((next.page ?? 1) > 1) q.set("page", String(next.page));
     const s = q.toString();
@@ -59,7 +67,11 @@ function FailedDeliveries() {
   return (
     <AdminPage
       title="Failed e-mails"
-      description="E-mails that could not be delivered: account e-mails (invitations, activation and password-reset links, notices) and bulk e-mails."
+      description={
+        discarded
+          ? "E-mails not sent on purpose: their one-time link (password reset, invitation, e-mail confirmation) was no longer valid when they could be sent. The person can ask for a new link."
+          : "E-mails that could not be delivered: account e-mails (invitations, activation and password-reset links, notices) and bulk e-mails."
+      }
       actions={
         <Link href="/admin/email" className={linkBtn}>
           Bulk e-mail jobs
@@ -70,6 +82,21 @@ function FailedDeliveries() {
         <Notice tone={message.tone} onClose={() => setMessage(null)}>
           {message.text}
         </Notice>
+      )}
+      {budget && (
+        <div className="flex flex-wrap gap-2 mb-3" role="group" aria-label="Why it was not sent">
+          {NOT_SENT_STATUSES.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              aria-pressed={status === s.value}
+              onClick={() => go({ status: s.value, page: 1 })}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${status === s.value ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"}`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
       )}
       <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label="Kind of e-mail">
         {KINDS.map((k) => (
@@ -104,7 +131,7 @@ function FailedDeliveries() {
               <th className={th}>Subject</th>
               <th className={th}>Kind</th>
               <th className={th}>Attempts</th>
-              <th className={th}>Error</th>
+              <th className={th}>{discarded ? "Why it was not sent" : "Error"}</th>
               <th className={th}>Last attempt</th>
               <th className={th}>
                 <span className="sr-only">Actions</span>
@@ -113,9 +140,9 @@ function FailedDeliveries() {
           </thead>
           <tbody className="divide-y divide-gray-100/80" data-testid="failed-deliveries">
             {list.isPending ? (
-              <TableMessage colSpan={7}>Loading failed e-mails…</TableMessage>
+              <TableMessage colSpan={7}>{discarded ? "Loading e-mails not sent…" : "Loading failed e-mails…"}</TableMessage>
             ) : list.data.data.length === 0 ? (
-              <TableMessage colSpan={7}>No failed e-mails.</TableMessage>
+              <TableMessage colSpan={7}>{discarded ? "No e-mails were dropped." : "No failed e-mails."}</TableMessage>
             ) : (
               list.data.data.map((d) => (
                 <tr key={d.id} className="hover:bg-gray-50/60 text-xs" data-testid="failed-delivery-row">
@@ -133,12 +160,15 @@ function FailedDeliveries() {
                     )}
                   </td>
                   <td className={td}>{d.attempts}</td>
-                  <td className={`${td} text-red-600 max-w-[260px] break-words`}>{d.errorMessage ?? "—"}</td>
+                  <td className={`${td} ${discarded ? "text-amber-700" : "text-red-600"} max-w-[260px] break-words`}>{d.errorMessage ?? "—"}</td>
                   <td className={`${td} text-gray-600 whitespace-nowrap`}>{d.attemptedAt ? formatDateTime(d.attemptedAt) : "—"}</td>
                   <td className={td}>
-                    <button type="button" className={linkBtn} disabled={retry.isPending} onClick={() => void onRetry(d.id, d.recipientEmail)}>
-                      Retry
-                    </button>
+                    {/* A dropped e-mail's link is no longer valid: a new link is sent from the user's page instead. */}
+                    {!discarded && (
+                      <button type="button" className={linkBtn} disabled={retry.isPending} onClick={() => void onRetry(d.id, d.recipientEmail)}>
+                        Retry
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

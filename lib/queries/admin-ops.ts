@@ -49,13 +49,26 @@ export function useEmailDeliveries(id: string, params: { status?: EmailDeliveryS
   });
 }
 
-/** Failed deliveries of every kind (no retries on error: older backends answer 404). */
-export function useFailedDeliveries(params: { kind?: DeliveryKind; page?: number; limit?: number }) {
+/** Failed (or, with the e-mail budget, DISCARDED) deliveries of every kind (no retries on error: older backends answer 404). */
+export function useFailedDeliveries(params: { kind?: DeliveryKind; page?: number; limit?: number; status?: "FAILED" | "DISCARDED" }) {
   return useQuery({
     queryKey: [...queryKeys.admin.emailAll, "failed", params],
-    queryFn: () => emailApi.allDeliveries({ ...params, status: "FAILED" }),
+    queryFn: () => emailApi.allDeliveries({ ...params, status: params.status ?? "FAILED" }),
     placeholderData: keepPreviousData,
     retry: false,
+  });
+}
+
+/** The sending budget (capability emailBudget), refreshed every minute while the page is open. */
+export function useEmailUsage(enabled = true) {
+  return useQuery({ queryKey: [...queryKeys.admin.emailAll, "usage"], queryFn: emailApi.usage, enabled, refetchInterval: 60_000, retry: false });
+}
+
+export function useRecoverQuotaFailures() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => emailApi.recoverQuotaFailures(),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.admin.emailAll }),
   });
 }
 

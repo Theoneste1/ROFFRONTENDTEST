@@ -142,7 +142,8 @@ export function emailErrorMessage(error: unknown): string | null {
 }
 
 export type EmailJobStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "PARTIAL_FAILURE" | "FAILED";
-export type EmailDeliveryStatus = "PENDING" | "SENT" | "FAILED";
+/** DISCARDED (capability emailBudget): never sent on purpose — its one-time link was no longer valid; errorMessage says why. */
+export type EmailDeliveryStatus = "PENDING" | "SENT" | "FAILED" | "DISCARDED";
 
 /** Whether the job is still being worked on (the page polls until it is not). */
 export function isJobRunning(status: EmailJobStatus): boolean {

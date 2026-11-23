@@ -10,6 +10,7 @@
 import { api } from "./client";
 import type { Page, Role } from "./types";
 import type { EmailDeliveryStatus, EmailJobStatus, EmailRole, SendEmailPayload } from "../admin-ops/email";
+import type { EmailPriority, EmailUsage, RecoverResult } from "../admin-ops/email-budget";
 import type { ActivityQuery, ActivityType } from "../admin-ops/activity";
 import type { CreateOverridePayload, OverrideEffect, OverrideRow, PermissionCatalogue } from "../admin-ops/overrides";
 
@@ -83,6 +84,9 @@ export interface EmailDeliveryRow {
   errorMessage: string | null;
   attemptedAt: string | null;
   createdAt: string;
+  /** Backends with the e-mail budget (capability emailBudget): sending priority and what the e-mail is (null on old rows). */
+  priority?: EmailPriority | null;
+  emailKind?: string | null;
 }
 export type DeliveryKind = "TRANSACTIONAL" | "BULK";
 
@@ -91,6 +95,10 @@ export const emailApi = {
   allDeliveries: (params: { status?: EmailDeliveryStatus; kind?: DeliveryKind; page?: number; limit?: number } = {}) =>
     api<Page<EmailDeliveryRow>>("/admin/email/deliveries", { query: { ...params } }),
   retryDelivery: (id: string) => api<{ message: string; deliveryId: string }>(`/admin/email/deliveries/${id}/retry`, { method: "POST" }),
+  /** The sending budget (Resend Free plan; capability emailBudget). */
+  usage: () => api<EmailUsage>("/admin/email/usage"),
+  /** Queue again the e-mails that failed only because of the provider's limit (409 NOTHING_TO_RECOVER when none). */
+  recoverQuotaFailures: () => api<RecoverResult>("/admin/email/usage/recover", { method: "POST" }),
   users: (filters: EmailUserFilters = {}) => api<Page<EmailUser>>("/admin/email/users", { query: { ...filters } }),
   send: (payload: SendEmailPayload) => api<SendEmailResult>("/admin/email/send", { method: "POST", body: payload }),
   jobs: (params: { page?: number; limit?: number } = {}) => api<Page<EmailJob>>("/admin/email/jobs", { query: params }),

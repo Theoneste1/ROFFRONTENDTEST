@@ -12,6 +12,8 @@ import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { AdminPage, Notice, RequirePermission, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../components/adminUi";
 import { JobStatusBadge } from "./emailUi";
+import SendingTodayPanel from "./SendingTodayPanel";
+import { emailBudgetSupported } from "@/lib/admin-ops/email-budget";
 
 /** Bulk e-mail jobs (`GET /admin/email/jobs`), newest first, with their progress counters. */
 export default function EmailJobsClient() {
@@ -32,6 +34,8 @@ function EmailJobs() {
   const { can } = useSession();
   // The news mailing list (owner 2026-11-23) lives next to bulk e-mail: the Administrators' side menu is full.
   const subscribers = subscribersSupported(detection) && can(SUBSCRIBERS_PERMISSION);
+  // The Resend Free plan budget (owner 2026-11-24): how much may still be sent, and what waits.
+  const budget = emailBudgetSupported(detection);
 
   return (
     <AdminPage
@@ -50,6 +54,7 @@ function EmailJobs() {
         </>
       }
     >
+      {budget && <SendingTodayPanel />}
       <Notice tone="info">
         Failed deliveries of a bulk e-mail are listed in its job and can be retried there. Failed account e-mails (invitations, password resets, notices) are on the{" "}
         <Link href="/admin/email/failed" className={linkBtn}>

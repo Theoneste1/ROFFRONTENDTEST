@@ -236,6 +236,12 @@ export const KNOWN_FEATURES = [
    */
   "viewAs",
   /**
+   * E-mail within the Resend Free plan (owner 2026-11-24): GET /admin/email/usage (email.bulkSend) — e-mails used in the
+   * last 24 hours / 30 days against the budget, the next free slot, what is waiting (urgent first), failed and dropped
+   * e-mails; POST /admin/email/usage/recover; deliveries may be DISCARDED (link no longer valid). Without it: no panel.
+   */
+  "emailBudget",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */
