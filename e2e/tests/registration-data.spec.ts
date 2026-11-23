@@ -12,7 +12,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { createSchool, createStudent, withDb } from "../support/db";
-import { navigateViaSidebar, signIn } from "../support/session";
+import { signIn } from "../support/session";
 
 const run = Date.now().toString(36);
 const first = [`Rdala${run}`, `Rdbeni${run}`, `Rdcyusa${run}`];
@@ -40,7 +40,11 @@ test("Administrators do not have it: no menu entry, and the page says what it ne
 
 test("columns from every registration field, saved per category; AND / OR filter; sort", async ({ page }) => {
   await signIn(page, "superAdmin");
-  await navigateViaSidebar(page, "/admin/registration-data");
+  // From the menu, as a person does: "More", then "Registration Data".
+  const nav = page.getByTestId("sidebar-nav").first();
+  await nav.getByTestId("sidebar-more-toggle").click();
+  await nav.locator('a[href="/admin/registration-data"]').click();
+  await page.waitForURL((u) => u.pathname === "/admin/registration-data");
   await expect(page.getByRole("heading", { name: "Registration data" })).toBeVisible();
   await expect(page.getByTestId("registration-row").first()).toBeVisible();
 
@@ -148,7 +152,7 @@ test("edit a record: a wrong phone is refused next to the field; then saved, wit
 
   await form.getByTestId("field-user.phone").locator("input").fill("+250 788 444 555");
   await page.getByTestId("save-record").click();
-  await expect(form.getByText(/Saved\. 2 fields changed/)).toBeVisible();
+  await expect(page.getByText(/Saved\. 2 fields changed/)).toBeVisible();
   const saved = await withDb(async (c) => (await c.query(`SELECT "firstName", phone FROM "User" WHERE id = $1`, [ids[1]])).rows[0]);
   expect(saved).toEqual({ firstName: `Benjamin${run}`, phone: "+250788444555" });
   const audit = await withDb(async (c) => (await c.query(

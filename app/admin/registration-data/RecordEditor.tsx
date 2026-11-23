@@ -21,16 +21,19 @@ const PRIVILEGED = ["ADMIN", "SUPER_ADMIN"];
 
 export function RecordEditor({ id, onClose }: { id: string; onClose: () => void }) {
   const q = useRegistrationRecord(id);
+  // Kept here: the form starts again from the saved record (new version), and the confirmation must stay visible.
+  const [saved, setSaved] = useState<string | null>(null);
   return (
     <Modal title={q.data ? `Registration record — ${q.data.name}` : "Registration record"} onClose={onClose} wide>
       {q.isLoading && <LoadingBlock />}
       {q.error && <Alert tone="error">{errorMessage(q.error)}</Alert>}
-      {q.data && <RecordForm key={q.data.version} record={q.data} onClose={onClose} />}
+      {saved && <div className="mb-3"><Alert tone="success">{saved}</Alert></div>}
+      {q.data && <RecordForm key={q.data.version} record={q.data} onClose={onClose} onSaved={setSaved} />}
     </Modal>
   );
 }
 
-function RecordForm({ record, onClose }: { record: RegistrationRecord; onClose: () => void }) {
+function RecordForm({ record, onClose, onSaved }: { record: RegistrationRecord; onClose: () => void; onSaved: (text: string | null) => void }) {
   const save = useUpdateRegistrationRecord(record.id);
   const [edited, setEdited] = useState<Record<string, unknown>>({});
   const [school, setSchool] = useState<SchoolRef | null>(null);
@@ -47,6 +50,7 @@ function RecordForm({ record, onClose }: { record: RegistrationRecord; onClose: 
   async function submit() {
     setProblems([]);
     setMessage(null);
+    onSaved(null);
     if (!Object.keys(changes).length) {
       setMessage({ tone: "info", text: "Nothing was changed. Edit at least one field, then save." });
       return;
@@ -58,7 +62,7 @@ function RecordForm({ record, onClose }: { record: RegistrationRecord; onClose: 
     try {
       await save.mutateAsync({ changes, version: record.version, currentPassword: needsPassword ? currentPassword : undefined });
       setEdited({});
-      setMessage({ tone: "success", text: `Saved. ${Object.keys(changes).length} field${Object.keys(changes).length === 1 ? "" : "s"} changed; the change is in the audit log.` });
+      onSaved(`Saved. ${Object.keys(changes).length} field${Object.keys(changes).length === 1 ? "" : "s"} changed; the change is in the audit log.`);
     } catch (err) {
       const details = isApiError(err) ? (err.details as { problems?: Array<{ field: string; message: string }> } | undefined) : undefined;
       if (details?.problems?.length) setProblems(details.problems);
