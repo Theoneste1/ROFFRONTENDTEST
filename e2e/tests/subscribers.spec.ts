@@ -64,6 +64,10 @@ test("a visitor subscribes on the home page; an Administrator sees them; the uns
   const adminContext = await browser.newContext();
   const admin = await adminContext.newPage();
   await signIn(admin, "admin");
+  // Reached from the E-mail page (the side menu is full).
+  await admin.goto("/admin/email");
+  await admin.getByTestId("subscribers-link").click();
+  await expect(admin).toHaveURL(/\/admin\/subscribers/);
   await admin.goto(`/admin/subscribers?q=${encodeURIComponent(EMAIL)}`);
   const adminRow = admin.locator(`[data-testid="subscriber-row"][data-email="${EMAIL}"]`);
   await expect(adminRow).toBeVisible({ timeout: 30_000 });

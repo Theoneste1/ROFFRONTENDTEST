@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { MailPlus } from "lucide-react";
+import { MailPlus, Newspaper } from "lucide-react";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
+import { useSession } from "@/lib/auth/session";
+import { subscribersSupported, SUBSCRIBERS_PERMISSION } from "@/lib/subscribers/rules";
 import { useEmailJobs } from "@/lib/queries/admin-ops";
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { AdminPage, Notice, RequirePermission, TableCard, TableMessage, btnPrimary, linkBtn, td, th } from "../components/adminUi";
+import { AdminPage, Notice, RequirePermission, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../components/adminUi";
 import { JobStatusBadge } from "./emailUi";
 
 /** Bulk e-mail jobs (`GET /admin/email/jobs`), newest first, with their progress counters. */
@@ -25,15 +28,26 @@ function EmailJobs() {
   const params = useSearchParams();
   const page = Math.max(1, Number(params.get("page")) || 1);
   const jobs = useEmailJobs({ page, limit: 20 });
+  const detection = useBackendCapabilities().detection;
+  const { can } = useSession();
+  // The news mailing list (owner 2026-11-23) lives next to bulk e-mail: the Administrators' side menu is full.
+  const subscribers = subscribersSupported(detection) && can(SUBSCRIBERS_PERMISSION);
 
   return (
     <AdminPage
       title="E-mail"
       description="Bulk e-mails sent to users of the platform, with delivery progress per recipient."
       actions={
-        <Link href="/admin/email/new" className={btnPrimary}>
-          <MailPlus className="h-3.5 w-3.5" aria-hidden="true" /> New e-mail
-        </Link>
+        <>
+          {subscribers && (
+            <Link href="/admin/subscribers" className={btnSecondary} data-testid="subscribers-link">
+              <Newspaper className="h-3.5 w-3.5" aria-hidden="true" /> Subscribers
+            </Link>
+          )}
+          <Link href="/admin/email/new" className={btnPrimary}>
+            <MailPlus className="h-3.5 w-3.5" aria-hidden="true" /> New e-mail
+          </Link>
+        </>
       }
     >
       <Notice tone="info">
