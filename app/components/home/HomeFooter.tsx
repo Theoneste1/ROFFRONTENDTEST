@@ -7,6 +7,8 @@ import { SITE } from "@/lib/site/content";
 import SocialLinks from "./SocialLinks";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { subscribersSupported } from "@/lib/subscribers/rules";
+import { useEffect, useState } from "react";
+import { SubscribeDialog } from "./Subscribe";
 
 const QUICK = [
   { href: "#top", label: "Home" },
@@ -27,6 +29,20 @@ const RESOURCES = [
 export default function HomeFooter() {
   const info = useSupportInfo().data;
   const news = subscribersSupported(useBackendCapabilities().detection);
+  // "Get ROF news" opens in a dialog (owner 2026-11-24); an address ending in #news opens it on arrival.
+  const [newsOpen, setNewsOpen] = useState(false);
+  useEffect(() => {
+    if (!news) return;
+    const openFromHash = () => {
+      if (window.location.hash === "#news") setNewsOpen(true);
+    };
+    const first = window.setTimeout(openFromHash, 0);
+    window.addEventListener("hashchange", openFromHash);
+    return () => {
+      window.clearTimeout(first);
+      window.removeEventListener("hashchange", openFromHash);
+    };
+  }, [news]);
   return (
     <footer className="bg-brand-950 text-blue-100" aria-labelledby="footer-title">
       <h2 id="footer-title" className="sr-only">Footer</h2>
@@ -69,7 +85,13 @@ export default function HomeFooter() {
             {info?.phone && <li><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="hover:text-amber-300">{info.phone}</a></li>}
             {info?.hours && <li>{info.hours}</li>}
             <li><a href="#contact" className="hover:text-amber-300">Send us a message</a></li>
-            {news && <li><a href="#news" className="hover:text-amber-300">Get ROF news by e-mail</a></li>}
+            {news && (
+              <li>
+                <a href="#news" onClick={(e) => { e.preventDefault(); setNewsOpen(true); }} className="hover:text-amber-300" data-testid="footer-news-link">
+                  Get ROF news by e-mail
+                </a>
+              </li>
+            )}
           </ul>
         </div>
       </div>
@@ -78,6 +100,7 @@ export default function HomeFooter() {
           © {new Date().getFullYear()} {SITE.organisation}. All rights reserved.
         </p>
       </div>
+      {newsOpen && <SubscribeDialog onClose={() => { setNewsOpen(false); if (window.location.hash === "#news") history.replaceState(null, "", window.location.pathname + window.location.search); }} />}
     </footer>
   );
 }

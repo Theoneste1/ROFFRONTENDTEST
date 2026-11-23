@@ -1,6 +1,6 @@
 /**
  * ROF news subscribers in the browser (owner 2026-11-23; capability `subscribers`):
- *  - a visitor subscribes from the home page's "Get ROF news" box;
+ *  - a visitor opens "Get ROF news by e-mail" in the home page footer and subscribes in the dialog (owner 2026-11-24);
  *  - an Administrator finds them on the Subscribers screen;
  *  - the visitor opens the unsubscribe link from their welcome e-mail and unsubscribes; the Administrator sees it;
  *  - an Administrator composes an update for an audience, sees the number of recipients, sends it (queued for exactly the
@@ -41,15 +41,22 @@ test.afterAll(async () => {
 });
 
 test("a visitor subscribes on the home page; an Administrator sees them; the unsubscribe link works; the Administrator sees that", async ({ page, browser }) => {
-  // 1. Subscribe from the home page.
+  // 1. Subscribe from the footer link's dialog (no section on the home page any more).
   await page.goto("/");
-  const form = page.getByTestId("subscribe-form");
-  await form.scrollIntoViewIfNeeded({ timeout: 60_000 });
+  await expect(page.getByTestId("subscribe-form")).toHaveCount(0);
+  const newsLink = page.getByTestId("footer-news-link");
+  await newsLink.scrollIntoViewIfNeeded({ timeout: 60_000 });
+  await newsLink.click();
+  const dialog = page.getByRole("dialog", { name: "Get ROF news" });
+  await expect(dialog).toBeVisible();
+  const form = dialog.getByTestId("subscribe-form");
   await form.locator("#news-name").fill("Grace Newsreader");
   await form.locator("#news-email").fill(EMAIL.toUpperCase());
   await form.getByLabel("Physics").check();
   await form.getByRole("button", { name: "Subscribe" }).click();
   await expect(form.getByText(`You will receive Rwanda Olympiad Foundation news at ${EMAIL.toUpperCase()}`)).toBeVisible({ timeout: 30_000 });
+  await dialog.getByRole("button", { name: "Close" }).last().click();
+  await expect(dialog).toHaveCount(0);
 
   const row = await withDb(async (c) => (await c.query(`SELECT id, status, interests::text[] AS interests, source, "fullName" FROM "Subscriber" WHERE email = $1`, [EMAIL])).rows[0]);
   expect(row).toMatchObject({ status: "ACTIVE", interests: ["PHYSICS"], source: "WEBSITE", fullName: "Grace Newsreader" });
@@ -85,6 +92,10 @@ test("a visitor subscribes on the home page; an Administrator sees them; the uns
   await page.getByRole("button", { name: "Unsubscribe" }).click();
   await expect(page.getByTestId("unsubscribed")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("link", { name: "Subscribe again" })).toHaveAttribute("href", "/#news");
+  // "Subscribe again" opens the same dialog on the home page.
+  await page.getByRole("link", { name: "Subscribe again" }).click();
+  await expect(page.getByRole("dialog", { name: "Get ROF news" })).toBeVisible({ timeout: 60_000 });
+  await page.keyboard.press("Escape");
   expect(await withDb(async (c) => (await c.query(`SELECT status, "unsubscribeReason" FROM "Subscriber" WHERE id = $1`, [row.id])).rows[0]))
     .toEqual({ status: "UNSUBSCRIBED", unsubscribeReason: "Testing the link" });
 
