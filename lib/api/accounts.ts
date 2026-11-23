@@ -224,20 +224,29 @@ export interface SchoolAccessStudentFilters {
 
 export const DELEGATION_RULES = { reasonMin: 3, reasonMax: 500 };
 
-/** testSubmissionLock: whether a teacher may submit tests for their students (on by default), and the revocation. */
-export interface TeacherTestSubmissionState {
+/** One of a teacher's default rights (on by default) and the Administrator's revocation, if any: test submission, course homework. */
+export interface TeacherSwitchState {
   userId: string;
   allowed: boolean;
   revokedAt: string | null;
   reason: string | null;
   revokedBy: PersonRef | null;
 }
+/** testSubmissionLock: whether a teacher may submit tests for their students (on by default), and the revocation. */
+export type TeacherTestSubmissionState = TeacherSwitchState;
+/** teacherHomeworkDefault: whether a teacher may see their students' homework and hand it in for them (on by default). */
+export type TeacherHomeworkSubmissionState = TeacherSwitchState;
+export type TeacherSwitchChange = { allowed: true } | { allowed: false; reason: string };
 
 export const teachersAdminApi = {
   /** testSubmissionLock (users.manageTeachers). */
   testSubmission: (teacherId: string) => api<TeacherTestSubmissionState>(`/admin/teachers/${encodeURIComponent(teacherId)}/test-submission`),
-  setTestSubmission: (teacherId: string, body: { allowed: true } | { allowed: false; reason: string }) =>
+  setTestSubmission: (teacherId: string, body: TeacherSwitchChange) =>
     api<TeacherTestSubmissionState>(`/admin/teachers/${encodeURIComponent(teacherId)}/test-submission`, { method: "PUT", body }),
+  /** teacherHomeworkDefault (users.manageTeachers): course homework for their students — progress and handing in. */
+  homeworkSubmission: (teacherId: string) => api<TeacherHomeworkSubmissionState>(`/admin/teachers/${encodeURIComponent(teacherId)}/homework-submission`),
+  setHomeworkSubmission: (teacherId: string, body: TeacherSwitchChange) =>
+    api<TeacherHomeworkSubmissionState>(`/admin/teachers/${encodeURIComponent(teacherId)}/homework-submission`, { method: "PUT", body }),
   assignments: (teacherId: string) =>
     api<Page<TeacherSchoolAssignment>>("/admin/teacher-assignments", { query: { teacherId, limit: 100 } }),
   /** A school's Teacher assignments (INT-07): names only, never contact details. */

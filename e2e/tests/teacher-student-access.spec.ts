@@ -104,7 +104,10 @@ test.describe.serial("Teacher: My Students", () => {
     await expect(row(names.pending)).toBeVisible();
     await expect(row(names.s1)).toContainText("Assigned to you");
     await expect(row(names.s1)).toContainText("School");
-    await expect(row(names.s1)).toContainText("No access");
+    // Changed on purpose — owner decision 2026-11-24 (teacherHomeworkDefault): every teacher sees their students' course
+    // homework and hands it in for them, so a student without any granted permission still opens (was "No access").
+    await expect(row(names.s1)).toContainText("Progress");
+    await expect(row(names.s1)).toContainText("Submit for");
     await expect(row(names.s2)).toContainText("Profile");
     await row(names.s2).getByRole("link", { name: /Open/ }).click();
     await expect(page).toHaveURL(/\/teacher\/students\//);

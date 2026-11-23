@@ -2,8 +2,36 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  abilities, accessBadges, assignReasonProblem, itemText, outcomeSummary, pendingText, problemLines, scopeText, teacherStudentAccessSupported,
+  abilities, accessBadges, assignReasonProblem, delegationNote, homeworkDefaultSupported, itemText, offeredDelegations, outcomeSummary, pendingText, problemLines, scopeText,
+  teacherStudentAccessSupported,
 } from "../lib/accounts/teacher-student-access.ts";
+import { TEACHER_DELEGATIONS } from "../lib/api/accounts.ts";
+
+const NEW = (features) => ({ state: "NEW", schemaVersion: 1, roles: [], features });
+
+test("course homework by default (owner 2026-11-24): only on backends with teacherHomeworkDefault", () => {
+  assert.equal(homeworkDefaultSupported(NEW(["teacherHomeworkDefault"])), true);
+  assert.equal(homeworkDefaultSupported(NEW(["teacherStudentAccess"])), false);
+  assert.equal(homeworkDefaultSupported({ state: "LEGACY" }), false);
+  assert.equal(homeworkDefaultSupported(undefined), false);
+  assert.equal(homeworkDefaultSupported(null), false);
+});
+
+test("the delegation picker stops offering progress and handing in once they are teacher defaults; older backends keep all three", () => {
+  assert.deepEqual(offeredDelegations(TEACHER_DELEGATIONS, NEW(["teacherHomeworkDefault"])), ["students.viewProfile"]);
+  assert.deepEqual(offeredDelegations(TEACHER_DELEGATIONS, NEW([])), ["students.viewProfile", "students.viewProgress", "submissions.submitOnBehalf"]);
+  assert.deepEqual(offeredDelegations(TEACHER_DELEGATIONS, { state: "LEGACY" }), [...TEACHER_DELEGATIONS]);
+  assert.deepEqual(offeredDelegations(TEACHER_DELEGATIONS, undefined), [...TEACHER_DELEGATIONS]);
+});
+
+test("an existing progress / hand-in delegation stays listed with a plain note so it can be revoked; the profile one has no note", () => {
+  const on = NEW(["teacherHomeworkDefault"]);
+  for (const p of ["students.viewProgress", "submissions.submitOnBehalf"]) {
+    assert.equal(delegationNote(p, on), "Every teacher has this now (course homework). This older permission adds nothing and can be revoked.");
+    assert.equal(delegationNote(p, NEW([])), null);
+  }
+  assert.equal(delegationNote("students.viewProfile", on), null);
+});
 
 test("offered only by backends with teacherStudentAccess", () => {
   assert.equal(teacherStudentAccessSupported({ state: "NEW", schemaVersion: 1, roles: [], features: ["teacherStudentAccess"] }), true);

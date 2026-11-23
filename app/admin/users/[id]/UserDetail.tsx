@@ -17,6 +17,8 @@ import { AccountStatusBadge, UserForm } from "../components/userUi";
 import ProgrammeHeadsCard from "./ProgrammeHeadsCard";
 import TeacherAccessCard from "./TeacherAccessCard";
 import TeacherTestSubmissionCard from "./TeacherTestSubmissionCard";
+import TeacherHomeworkSubmissionCard from "./TeacherHomeworkSubmissionCard";
+import { homeworkDefaultSupported } from "@/lib/accounts/teacher-student-access";
 import { submissionLockSupported } from "@/lib/test-management/submissions";
 import { interestsWithOtherText } from "@/lib/accounts/olympiad-interests";
 import PermissionOverridesCard from "./PermissionOverridesCard";
@@ -289,6 +291,8 @@ export default function UserDetail({ userId }: { userId: string }) {
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
         {/* A teacher's test submission for students: one switch, the account untouched (testSubmissionLock). */}
         {u.role === "TEACHER" && can("users.manageTeachers") && submissionLockSupported(detection) && !isMe && <TeacherTestSubmissionCard teacherId={u.id} />}
+        {/* Course homework for their students: on by default, one switch beside the test one (teacherHomeworkDefault). */}
+        {u.role === "TEACHER" && can("users.manageTeachers") && homeworkDefaultSupported(detection) && !isMe && <TeacherHomeworkSubmissionCard teacherId={u.id} />}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
         {/* A coach's access across their programmes (coachProgrammeAccess): Administrators hold users.manageCoaches (not in their
             frozen /me/permissions list, so the role is checked too); the backend enforces every change. */}

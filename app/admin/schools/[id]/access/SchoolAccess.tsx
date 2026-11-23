@@ -26,7 +26,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import {
-  DELEGATION_LABEL, MAX_STUDENTS_PER_REQUEST, assignReasonProblem, grantSelected, outcomeSummary, problemLines, scopeText,
+  DELEGATION_LABEL, MAX_STUDENTS_PER_REQUEST, assignReasonProblem, grantSelected, offeredDelegations, outcomeSummary, problemLines, scopeText,
   teacherStudentAccessSupported, type ItemResult,
 } from "@/lib/accounts/teacher-student-access";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
@@ -315,6 +315,10 @@ function ActionDialog({ action, schoolTeachers, students, onClose, onDone }: {
     enabled: action === "assign" && otherSearch.trim().length >= 2,
   });
   const [permission, setPermission] = useState<TeacherDelegation | "">("");
+  // Course homework by default (owner 2026-11-24, teacherHomeworkDefault): progress and handing in are every teacher's
+  // rights, so only the profile is still given; taking back still lists all three (older permissions can be removed).
+  const detection = useBackendCapabilities().detection;
+  const choices = action === "grant" ? offeredDelegations(TEACHER_DELEGATIONS, detection) : [...TEACHER_DELEGATIONS];
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<"form" | "confirm">("form");
@@ -405,7 +409,7 @@ function ActionDialog({ action, schoolTeachers, students, onClose, onDone }: {
           )}
           {action !== "assign" && (
             <SelectInput label="Permission" value={permission} onChange={(v) => setPermission(v as TeacherDelegation)}
-              options={[{ label: "Choose a permission", value: "" }, ...TEACHER_DELEGATIONS.map((p) => ({ label: DELEGATION_LABEL[p], value: p }))]} />
+              options={[{ label: "Choose a permission", value: "" }, ...choices.map((p) => ({ label: DELEGATION_LABEL[p], value: p }))]} />
           )}
           {action !== "revoke" && (
             <TextInput label={reasonNeeded || action === "grant" ? "Reason" : "Reason (optional)"} required={reasonNeeded || action === "grant"} value={reason} onChange={setReason} maxLength={500}

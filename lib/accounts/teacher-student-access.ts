@@ -116,6 +116,33 @@ export function assignReasonProblem(reason: string, required: boolean): string |
 /** Most students one request may name (the backend's limit). */
 export const MAX_STUDENTS_PER_REQUEST = 200;
 
+/**
+ * Course homework by teachers, by default (owner 2026-11-24, capability teacherHomeworkDefault): seeing a student's
+ * homework progress and handing homework in for them are every teacher's defaults, switched off per teacher by an
+ * Administrator — no longer delegations to offer.
+ */
+export const HOMEWORK_DEFAULT_PERMISSIONS = ["students.viewProgress", "submissions.submitOnBehalf"] as const;
+
+export function homeworkDefaultSupported(d: BackendDetection | null | undefined): boolean {
+  return !!d && d.state === "NEW" && d.features.includes("teacherHomeworkDefault");
+}
+
+/**
+ * The delegations an Administrator may still give: all three on an older backend; only the profile once course homework
+ * is a default. Existing delegations stay listed (and revocable) either way.
+ */
+export function offeredDelegations<P extends string>(all: readonly P[], d: BackendDetection | null | undefined): P[] {
+  if (!homeworkDefaultSupported(d)) return [...all];
+  return all.filter((p) => !(HOMEWORK_DEFAULT_PERMISSIONS as readonly string[]).includes(p));
+}
+
+/** A delegation that adds nothing any more (its permission is a teacher default): said beside it, so it can be revoked. */
+export function delegationNote(permission: string, d: BackendDetection | null | undefined): string | null {
+  return homeworkDefaultSupported(d) && (HOMEWORK_DEFAULT_PERMISSIONS as readonly string[]).includes(permission)
+    ? "Every teacher has this now (course homework). This older permission adds nothing and can be revoked."
+    : null;
+}
+
 /** The three teacher delegations, in the administrators' words. */
 export const DELEGATION_LABEL: Record<string, string> = {
   "students.viewProfile": "View student profiles",

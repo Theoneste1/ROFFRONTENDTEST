@@ -1,14 +1,16 @@
 /**
  * Teacher endpoints (`/teacher/students`, backend src/teachers/*). Every route
  * is limited by the backend to STUDENT accounts of the schools an
- * Administrator assigned to the teacher (any other student → 404).
+ * Administrator assigned to the teacher, and the students assigned to them
+ * (any other student → 404).
  *
  * - list       students.viewScoped (Teacher default): name, username, grade, division, school
  * - profile    students.viewProfile (Administrator-granted): + account and enrolment status
- * - progress   students.viewProgress (Administrator-granted): assignments and submission
+ * - progress   students.viewProgress (Teacher default on backends with teacherHomeworkDefault,
+ *              owner 2026-11-24; Administrator-granted before): assignments and submission
  *              history — never scores, feedback or reviews
- * - submit     submissions.submitOnBehalf (Administrator-granted): the student stays the
- *              owner; the teacher is recorded as the submitter
+ * - submit     submissions.submitOnBehalf (the same): the student stays the owner; the teacher
+ *              is recorded as the submitter. An Administrator switches both off per teacher.
  *
  * Never returned: e-mail, phone, home location, grades, marks, feedback.
  */
