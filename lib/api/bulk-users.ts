@@ -20,7 +20,9 @@ export type BulkAction =
   // Teacher–student access (backends with teacherStudentAccess): the selected students and one teacher.
   | "assignTeacher" | "unassignTeacher" | "grantDelegation" | "revokeDelegation"
   // Olympiad levels (backends with olympiadLevels): a division code, or AUTOMATIC (follow the grade).
-  | "setOlympiadLevel";
+  | "setOlympiadLevel"
+  // Activate now (backends with adminActivateNow): accounts awaiting setup, with their own password.
+  | "activateNow";
 
 /** The filters of GET /admin/users (JSON booleans). */
 export interface BulkFilter {
@@ -65,6 +67,8 @@ export interface BulkPreview {
   params: BulkParams;
   selection: BulkSelection;
   total: number;
+  /** How many of them the action will change, when the server can tell in advance (activateNow). */
+  willApply?: number;
   sample: BulkAccount[];
   warnings: { code: string; count: number; message: string }[];
   consequences: string[];
