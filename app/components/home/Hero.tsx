@@ -94,7 +94,7 @@ export default function Hero() {
               <GraduationCap className="h-5 w-5" /> Join as a Student
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <Link href="/?subject=teacher#contact" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 font-bold text-brand-950 transition hover:-translate-y-0.5 hover:bg-blue-50">
+            <Link href="/register/teacher" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 font-bold text-brand-950 transition hover:-translate-y-0.5 hover:bg-blue-50">
               <Users className="h-5 w-5" /> Join as a Teacher
             </Link>
             <Link href="/login?next=%2Fstudent%2Fcourses" className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-semibold text-white ring-1 ring-white/50 transition hover:bg-white/10">

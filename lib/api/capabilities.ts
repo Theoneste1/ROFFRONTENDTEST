@@ -143,6 +143,12 @@ export const KNOWN_FEATURES = [
    */
   "homeLocationRules",
   /**
+   * "My school is not listed" (owner, 2026-11-22): the teacher sign-up sends the school's official details (6-digit code,
+   * cell and village optional, ownership, day / boarding); a listed code is refused naming the school (409
+   * SCHOOL_CODE_LISTED); an administrator's approval creates the school from them. Without it: the name only, as before.
+   */
+  "teacherUnlistedSchoolDetails",
+  /**
    * Gender step (owner, 2026-11-20): `genderRequired` on the profile for a student, teacher or coach without a gender;
    * the portal asks it once (PUT /me/gender). An administrator corrects it (PATCH /admin/users/:id `gender`).
    */
@@ -160,6 +166,11 @@ export const KNOWN_FEATURES = [
    * Without it: the fixed closed texts.
    */
   "formAvailability",
+  /**
+   * E-mail activation per sign-up form (owner 2026-11-23): the student, teacher and coach forms each carry
+   * `requireEmailVerification` (off by default), changed on the Forms page. Without it: no switch shown.
+   */
+  "formEmailVerification",
   /**
    * Bulk user operations: `/admin/users/bulk` — preview an action on chosen accounts or on every account matching the
    * list filters, confirm it (bound to exactly the previewed accounts), follow its progress and per-account results,
@@ -197,6 +208,33 @@ export const KNOWN_FEATURES = [
   "customReports",
   /** Saved table layouts and a sortable Users list (owner 2026-11-22). */
   "tableLayouts",
+  /** Teachers submit answers for, and follow the results of, their schools' students AND the students assigned to them (owner 2026-11-23). */
+  "teacherAssignedTestStudents",
+  /**
+   * Registration data (owner 2026-11-23): Super Administrators (registrationData.manage) list, filter, export and edit every
+   * eligible registration field — /admin/registration-data (fields read from the database; saved filters; column layouts).
+   */
+  "registrationData",
+  /** A school without a code chosen at registration: its code is asked (newSchoolCode) and becomes the school's (owner 2026-11-23). */
+  "schoolCodeAtRegistration",
+  /**
+   * Coaches across their programmes (owner 2026-11-23): every Coach sees the students, opens the courses, marks the tests and
+   * sees the published results of each programme they belong to, at every level; an Administrator or the programme's Head
+   * Coach takes any part away per programme (/admin/coaches/:id/programme-access).
+   */
+  "coachProgrammeAccess",
+  /**
+   * News subscribers (owner 2026-11-23): the public "Get ROF news" box (POST /public/subscribe), the /unsubscribe page
+   * (POST /public/unsubscribe) and the administrators' Subscribers screen (/admin/subscribers, subscribers.manage: list,
+   * export, add, import, edit, mailings). Without it: none of these.
+   */
+  "subscribers",
+  /**
+   * View as, read only (owner 2026-11-23): POST /admin/users/:id/view-as (users.impersonate; lower roles only) → a
+   * single-use ticket the new tab exchanges (POST /auth/view-as/exchange) for a 30-minute viewing token; every change
+   * answers 403 VIEW_AS_READ_ONLY; 401 VIEW_AS_ENDED when it stops; POST /auth/view-as/end. Without it: no button.
+   */
+  "viewAs",
   /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
@@ -213,6 +251,11 @@ export const KNOWN_FEATURES = [
    * `primaryTeacher` per school. Without it: name order only, no sort controls.
    */
   "schoolsTable",
+  /**
+   * School list filters on every field of the NESA file (owner, 2026-11-23): ownership, cell, village, a contact (e-mail
+   * or phone), with or without an e-mail or phone, programme category. Without it: those filters are not offered.
+   */
+  "schoolListFilters",
   /**
    * Test Management, Phase 1 (owner-approved plan 2026-11-19): `/admin/tests` (tests, questions with the sum rule, the
    * paper and the marking guide; tests.view / tests.manage) and `/admin/test-markers` (marker authorisations per coach
@@ -249,7 +292,7 @@ export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 
 export const CAPABILITIES_SCHEMA_VERSION = 1;
 export const API_INFO_NAME = "ROF LMS API";
-/** Longer than Netlify's 26-second proxy limit; a sleeping Render backend can take about a minute to wake. */
+/** Longer than a hosting proxy's time limit; a sleeping Render backend can take about a minute to wake. */
 export const DETECTION_TIMEOUT_MS = 30_000;
 
 export type BackendDetection =
@@ -359,8 +402,8 @@ export function isNewBackend(detection: BackendDetection | null | undefined): bo
  * Caching (shared, one request for the whole app): a definite answer is kept
  * for 5 minutes (a deployment can change it); UNKNOWN is never considered
  * fresh and is retried while something uses it — soon at first (a sleeping
- * Render backend answers within about a minute; Netlify's proxy gives up after
- * ~26 s with a 502/504), then every 30 seconds.
+ * Render backend answers within about a minute; the hosting proxy may give up
+ * earlier with a 502/504), then every 30 seconds.
  */
 export const DEFINITE_STALE_MS = 5 * 60_000;
 export const UNKNOWN_RETRY_MS = 30_000;

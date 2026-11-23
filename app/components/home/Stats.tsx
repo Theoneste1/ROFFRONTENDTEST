@@ -4,8 +4,8 @@
  * "ROF LMS in numbers", from `GET /public/statistics` (active members only;
  * see the backend's PublicSiteService for the definitions).
  * - Loading: pulsing placeholders. Error: "—" and a note. Never invented numbers.
- * - Teachers: school teachers do not have accounts yet, so the API returns
- *   null and the card says so.
+ * - Teachers: active teacher accounts. An older backend returned null: the card
+ *   then shows "—".
  * - Counters animate once the section scrolls into view.
  */
 import { useEffect, useState } from "react";
@@ -77,9 +77,6 @@ export default function Stats() {
                 </p>
                 <h3 className="mt-1 text-base font-bold text-white">{label}</h3>
                 <p className="mt-1 text-sm leading-relaxed text-blue-100/80">{text}</p>
-                {key === "teachers" && stats && stats.teachers === null && (
-                  <p className="mt-2 text-xs text-amber-200/90">Teachers are not yet registered on the platform.</p>
-                )}
               </Reveal>
             );
           })}

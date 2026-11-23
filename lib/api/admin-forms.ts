@@ -3,7 +3,7 @@
  *
  *   GET   /admin/forms                         forms.view                every form: mode, schedule, messages, state
  *   GET   /admin/forms/:key/history?limit=     forms.view                the form's changes, newest first (audit rows)
- *   PATCH /admin/forms/:key/availability       forms.manageAvailability  { mode?, opensAt?, closesAt? } (null removes a date)
+ *   PATCH /admin/forms/:key/availability       forms.manageAvailability  { mode?, opensAt?, closesAt?, requireEmailVerification? }
  *   PATCH /admin/forms/:key/messages           forms.editMessages        { closedMessage?, instructions?, contactEmail?, supportUrl? }
  *
  * Omitted fields are unchanged. 400 INVALID_FORM_SCHEDULE (SCHEDULED without opensAt, closesAt not after opensAt),
@@ -23,6 +23,11 @@ export interface AdminFormView extends PublicFormView {
   /** TEACHER_REGISTRATION only: the form also needs the Teacher role enabled on the server. */
   requiresTeacherRole?: boolean;
   teacherRoleEnabled?: boolean;
+  /**
+   * Sign-up forms only (backends with formEmailVerification): people who sign up with this form must confirm their
+   * e-mail (activation link) before they can sign in. Off by default. Absent on the contact form and older backends.
+   */
+  requireEmailVerification?: boolean;
   /** "1970-01-01T00:00:00.000Z" while the form has never been changed. */
   updatedAt: string;
   updatedBy: { id: string; username: string; firstName: string; lastName: string } | null;
@@ -48,6 +53,8 @@ export interface AvailabilityChange {
   mode?: FormMode;
   opensAt?: string | null;
   closesAt?: string | null;
+  /** Sign-up forms only: 400 NOT_A_SIGN_UP_FORM otherwise. */
+  requireEmailVerification?: boolean;
 }
 
 export interface MessagesChange {

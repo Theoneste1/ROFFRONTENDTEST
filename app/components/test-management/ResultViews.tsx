@@ -16,7 +16,7 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { coachDashboardApi, myResultsApi, schoolResultsApi, testResultsApi, type PublishedResult } from "@/lib/api/test-results";
+import { coachDashboardApi, coachResultsApi, myResultsApi, schoolResultsApi, testResultsApi, type PublishedResult } from "@/lib/api/test-results";
 import { isApiError } from "@/lib/api/errors";
 import type { Permission } from "@/lib/api/types";
 import { useSession } from "@/lib/auth/session";
@@ -24,9 +24,9 @@ import { queryKeys } from "@/lib/query/keys";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { formatDateTime, personName } from "@/lib/format";
 import {
-  TESTS_VIEW_OWN_RESULTS, TESTS_VIEW_RESULTS, TESTS_VIEW_SCHOOL_RESULTS, resultsPageMode, resultsTabVisible, scoreText, statText, testPageOf,
+  TESTS_VIEW_OWN_RESULTS, TESTS_VIEW_PROGRAMME_RESULTS, TESTS_VIEW_RESULTS, TESTS_VIEW_SCHOOL_RESULTS, resultsPageMode, resultsTabVisible, scoreText, statText, testPageOf,
 } from "@/lib/test-management/results";
-import { SUBMISSION_STATUS_LABEL } from "@/lib/test-management/submissions";
+import { SUBMISSION_STATUS_LABEL, teacherStudentsText } from "@/lib/test-management/submissions";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame } from "@/app/components/ui/PageFrame";
@@ -164,18 +164,35 @@ function MyResultView({ testId }: { testId: string }) {
   );
 }
 
-// ── Teacher ────────────────────────────────────────────────────────────────────
+// ── Teacher (their schools' students) and Coach (their programmes, owner 2026-11-23) ─────────────────
 
-export function SchoolResultTests() {
-  return <ResultsGate title="Results" permission={TESTS_VIEW_SCHOOL_RESULTS}><SchoolTestsList /></ResultsGate>;
+/** Who is looking: a teacher (their schools' students) or a coach (every student of their programmes, every level). */
+export type ResultAudience = "teacher" | "coach";
+
+function audienceOf(audience: ResultAudience) {
+  return audience === "coach"
+    ? { api: coachResultsApi, base: "/mentor/results", permission: TESTS_VIEW_PROGRAMME_RESULTS, whose: "the students of your programmes, every level" }
+    : { api: schoolResultsApi, base: "/teacher/results", permission: TESTS_VIEW_SCHOOL_RESULTS, whose: "the students of your school" };
 }
 
-function SchoolTestsList() {
+/** Whose results: a teacher's wording follows the backend (their schools' students, and assigned students where supported). */
+function useWhose(audience: ResultAudience): string {
+  const detection = useBackendCapabilities().detection;
+  return audience === "coach" ? audienceOf(audience).whose : teacherStudentsText(detection);
+}
+
+export function SchoolResultTests({ audience = "teacher" }: { audience?: ResultAudience }) {
+  return <ResultsGate title="Results" permission={audienceOf(audience).permission}><SchoolTestsList audience={audience} /></ResultsGate>;
+}
+
+function SchoolTestsList({ audience }: { audience: ResultAudience }) {
   const [page, setPage] = useState(1);
   const f = { page, limit: 20 };
-  const list = useQuery({ queryKey: queryKeys.tests.schoolResultTests(f), queryFn: () => schoolResultsApi.tests(f), placeholderData: keepPreviousData });
+  const a = audienceOf(audience);
+  const list = useQuery({ queryKey: queryKeys.tests.schoolResultTests({ ...f, audience }), queryFn: () => a.api.tests(f), placeholderData: keepPreviousData });
+  const whose = useWhose(audience);
   return (
-    <PageFrame title="Results" description="Published test results of the students of your school.">
+    <PageFrame title="Results" description={`Published test results of ${whose}.`}>
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load the results" onRetry={() => list.refetch()} /> : list.data.data.length === 0 ? (
         <EmptyState title="No published results" description="When results of your students are published, the test appears here." />
       ) : (
@@ -184,7 +201,7 @@ function SchoolTestsList() {
           <tbody className="divide-y divide-gray-100/80" data-testid="school-result-tests">
             {list.data.data.map((t) => (
               <tr key={t.test.id} className="text-sm">
-                <td className={td}><Link href={`/teacher/results/${t.test.id}`} className="font-semibold text-indigo-700 hover:underline" data-testid={`school-test-${t.test.id}`}>{t.test.title}</Link></td>
+                <td className={td}><Link href={`${a.base}/${t.test.id}`} className="font-semibold text-indigo-700 hover:underline" data-testid={`school-test-${t.test.id}`}>{t.test.title}</Link></td>
                 <td className={`${td} text-gray-700`}>{t.test.subject.name}</td>
                 <td className={td}>{t.publishedResults}</td>
                 <td className={`${td} whitespace-nowrap text-gray-700`}>{t.lastPublishedAt ? formatDateTime(t.lastPublishedAt) : "—"}</td>
@@ -197,23 +214,25 @@ function SchoolTestsList() {
   );
 }
 
-export function SchoolResults({ testId }: { testId: string }) {
-  return <ResultsGate title="Results" permission={TESTS_VIEW_SCHOOL_RESULTS}><SchoolResultsList testId={testId} /></ResultsGate>;
+export function SchoolResults({ testId, audience = "teacher" }: { testId: string; audience?: ResultAudience }) {
+  return <ResultsGate title="Results" permission={audienceOf(audience).permission}><SchoolResultsList testId={testId} audience={audience} /></ResultsGate>;
 }
 
-function SchoolResultsList({ testId }: { testId: string }) {
+function SchoolResultsList({ testId, audience }: { testId: string; audience: ResultAudience }) {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const f = { ...(q && { q }), page, limit: 25 };
-  const list = useQuery({ queryKey: queryKeys.tests.schoolResults(testId, f), queryFn: () => schoolResultsApi.results(testId, f), placeholderData: keepPreviousData, retry: (n, e) => !(isApiError(e) && e.status === 404) && n < 2 });
-  const back = <Link href="/teacher/results" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> All results</Link>;
+  const a = audienceOf(audience);
+  const whose = useWhose(audience);
+  const list = useQuery({ queryKey: queryKeys.tests.schoolResults(testId, { ...f, audience }), queryFn: () => a.api.results(testId, f), placeholderData: keepPreviousData, retry: (n, e) => !(isApiError(e) && e.status === 404) && n < 2 });
+  const back = <Link href={a.base} className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-700 hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" /> All results</Link>;
   if (list.isPending) return <PageFrame title="Results"><LoadingBlock /></PageFrame>;
   if (list.isError) {
-    return <PageFrame title="Results">{isApiError(list.error) && list.error.status === 404 ? <NotPublished back="/teacher/results" backLabel="Back to results" /> : <ErrorState error={list.error} title="Couldn't load the results" onRetry={() => list.refetch()} />}</PageFrame>;
+    return <PageFrame title="Results">{isApiError(list.error) && list.error.status === 404 ? <NotPublished back={a.base} backLabel="Back to results" /> : <ErrorState error={list.error} title="Couldn't load the results" onRetry={() => list.refetch()} />}</PageFrame>;
   }
   const d = list.data;
   return (
-    <PageFrame title={d.test.title} description={`${d.test.subject.name} · published results of your school's students, by name`}>
+    <PageFrame title={d.test.title} description={`${d.test.subject.name} · published results of ${whose}, by name`}>
       {back}
       <div className="mb-4"><SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Student name or username" label="Search students" /></div>
       <TableCard footer={<Pagination page={d.meta.page} totalPages={d.meta.totalPages} total={d.meta.total} onPage={setPage} />}>
@@ -225,7 +244,7 @@ function SchoolResultsList({ testId }: { testId: string }) {
               <td className={`${td} text-gray-700`}>{r.student.gradeLevel ?? "—"}</td>
               <td className={`${td} text-gray-700`}>{r.student.school?.name ?? "—"}</td>
               <td className={`${td} font-semibold`}>{scoreText(r.totalMarks, r.maxMarks)}</td>
-              <td className={td}><Link href={`/teacher/results/${testId}/students/${r.student.id}`} className="font-medium text-indigo-700 hover:underline">Details<span className="sr-only"> for {personName(r.student)}</span></Link></td>
+              <td className={td}><Link href={`${a.base}/${testId}/students/${r.student.id}`} className="font-medium text-indigo-700 hover:underline">Details<span className="sr-only"> for {personName(r.student)}</span></Link></td>
             </tr>
           ))}
         </tbody>
@@ -234,13 +253,14 @@ function SchoolResultsList({ testId }: { testId: string }) {
   );
 }
 
-export function SchoolResult({ testId, studentId }: { testId: string; studentId: string }) {
-  return <ResultsGate title="Result" permission={TESTS_VIEW_SCHOOL_RESULTS}><SchoolResultView testId={testId} studentId={studentId} /></ResultsGate>;
+export function SchoolResult({ testId, studentId, audience = "teacher" }: { testId: string; studentId: string; audience?: ResultAudience }) {
+  return <ResultsGate title="Result" permission={audienceOf(audience).permission}><SchoolResultView testId={testId} studentId={studentId} audience={audience} /></ResultsGate>;
 }
 
-function SchoolResultView({ testId, studentId }: { testId: string; studentId: string }) {
-  const r = useQuery({ queryKey: queryKeys.tests.schoolResult(testId, studentId), queryFn: () => schoolResultsApi.get(testId, studentId), retry: (n, e) => !(isApiError(e) && e.status === 404) && n < 2 });
-  const backHref = `/teacher/results/${testId}`;
+function SchoolResultView({ testId, studentId, audience }: { testId: string; studentId: string; audience: ResultAudience }) {
+  const a = audienceOf(audience);
+  const r = useQuery({ queryKey: [...queryKeys.tests.schoolResult(testId, studentId), audience], queryFn: () => a.api.get(testId, studentId), retry: (n, e) => !(isApiError(e) && e.status === 404) && n < 2 });
+  const backHref = `${a.base}/${testId}`;
   if (r.isPending) return <PageFrame title="Result"><LoadingBlock /></PageFrame>;
   if (r.isError) {
     return <PageFrame title="Result">{isApiError(r.error) && r.error.status === 404 ? <NotPublished back={backHref} backLabel="Back to the test's results" /> : <ErrorState error={r.error} title="Couldn't load the result" onRetry={() => r.refetch()} />}</PageFrame>;

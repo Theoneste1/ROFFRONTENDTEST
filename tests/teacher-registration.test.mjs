@@ -37,8 +37,10 @@ import {
   SCHOOL_NOT_VERIFIED_REASON,
   TEACHER_REVIEW_ERRORS,
   applicationSchoolPlace,
+  approvalCreatesSchool,
   approvalPayload,
   isMissingSchoolApplication,
+  proposedSchoolDetails,
   rejectionReasonProblem,
   schoolVerificationNeeded,
   teacherApplicationsNavVisible,
@@ -300,6 +302,49 @@ test("payload, missing school: proposed name + province + district + sector, no 
   assert.ok(!("schoolId" in p));
 });
 
+// ─── "My school is not listed" with the school's official details (owner 2026-11-22) ───
+
+const DETAILS = { proposedSchoolCode: "220999", proposedSchoolCell: "", proposedSchoolVillage: "", proposedSchoolOwnership: "PRIVATE", proposedSchoolAccommodation: "DAY" };
+const missingDraft = (extra = {}) => filled({ schoolMode: "missing", school: null, proposedSchoolName: "GS Nouvelle", schoolSector: "Tumba", ...DETAILS, ...extra });
+
+test("not listed, with details: code (6 digits, the province's first digit), ownership and day / boarding required; cell and village optional", () => {
+  assert.deepEqual(validateTeacherRegistration(missingDraft(), false, true), {});
+  const empty = validateTeacherRegistration(missingDraft({ proposedSchoolCode: "", proposedSchoolOwnership: "", proposedSchoolAccommodation: "" }), false, true);
+  assert.deepEqual(Object.keys(empty).sort(), ["proposedSchoolAccommodation", "proposedSchoolCode", "proposedSchoolOwnership"]);
+  assert.ok(validateTeacherRegistration(missingDraft({ proposedSchoolCode: "22099" }), false, true).proposedSchoolCode);
+  assert.ok(validateTeacherRegistration(missingDraft({ proposedSchoolCode: "22099a" }), false, true).proposedSchoolCode);
+  assert.match(validateTeacherRegistration(missingDraft({ proposedSchoolCode: "120999" }), false, true).proposedSchoolCode, /Southern Province starts with 2/);
+  assert.ok(validateTeacherRegistration(missingDraft({ proposedSchoolCell: "x".repeat(101) }), false, true).proposedSchoolCell);
+  // An older backend (no capability): the name only, the details are not asked for.
+  assert.deepEqual(validateTeacherRegistration(missingDraft({ proposedSchoolCode: "", proposedSchoolOwnership: "" })), {});
+});
+
+test("not listed, with details: payload carries code, trimmed cell / village (omitted when empty), ownership, day / boarding", () => {
+  const p = buildTeacherPayload(missingDraft({ proposedSchoolCell: "  Rugarama  ", proposedSchoolVillage: "" }), false, true);
+  assert.equal(p.proposedSchoolCode, "220999");
+  assert.equal(p.proposedSchoolCell, "Rugarama");
+  assert.ok(!("proposedSchoolVillage" in p));
+  assert.equal(p.proposedSchoolOwnership, "PRIVATE");
+  assert.equal(p.proposedSchoolAccommodation, "DAY");
+  const legacy = buildTeacherPayload(missingDraft());
+  for (const k of Object.keys(DETAILS)) assert.ok(!(k in legacy), `older backend: no ${k}`);
+});
+
+test("not listed, with details: a new place or a listed school clears the details; switching to missing keeps nothing stale", () => {
+  const d = missingDraft();
+  for (const next of [setSchoolSector(d, "Ngoma"), setSchoolDistrict(d, "Nyanza"), setSchoolProvince(d, "Kigali City"), setSchoolMode(d, "listed")]) {
+    for (const k of Object.keys(DETAILS)) assert.equal(next[k], "", k);
+  }
+  assert.equal(setSchoolMode(d, "missing"), d);
+});
+
+test("not listed, with details: server codes land on the code field", () => {
+  assert.equal(TEACHER_ERROR_FIELDS.INVALID_SCHOOL_CODE, "proposedSchoolCode");
+  assert.equal(TEACHER_ERROR_FIELDS.SCHOOL_CODE_LISTED, "proposedSchoolCode");
+  assert.ok(TEACHER_REGISTER_ERRORS.INVALID_SCHOOL_CODE);
+  assert.equal(TEACHER_REGISTER_ERRORS.SCHOOL_CODE_LISTED, undefined, "the server's message (naming the listed school) is shown as given");
+});
+
 // ─── Errors ─────────────────────────────────────────────────────────────────
 
 test("errors: every documented code has a message; field codes point at a form field", () => {
@@ -393,6 +438,18 @@ test("review actions: verify school is a separate step; approve disabled (with r
   for (const status of ["APPROVED", "REJECTED"]) {
     assert.deepEqual(teacherReviewActions({ ...missingApp, status }), { verifySchool: false, approve: { shown: false }, reject: false }, status);
   }
+});
+
+test("review actions, not listed with a code: ONE step — approve enabled (it adds the school), verify still possible", () => {
+  const withCode = { ...missingApp, proposedSchoolCode: "220999", proposedSchoolOwnership: "PRIVATE", proposedSchoolAccommodation: "DAY" };
+  assert.equal(approvalCreatesSchool(withCode), true);
+  assert.equal(approvalCreatesSchool(missingApp), false, "older applications (no code): verify first");
+  assert.equal(approvalCreatesSchool({ ...withCode, ...verified, proposedSchoolCode: "220999" }), false, "already verified: nothing to add");
+  assert.deepEqual(teacherReviewActions(withCode), { verifySchool: true, approve: { shown: true, enabled: true }, reject: true });
+  assert.deepEqual(proposedSchoolDetails({ ...withCode, proposedSchoolCell: "Rugarama", proposedSchoolVillage: "Kabeza" }), ["code 220999", "Rugarama, Kabeza", "Private", "Day"]);
+  assert.deepEqual(proposedSchoolDetails(missingApp), []);
+  assert.ok(TEACHER_REVIEW_ERRORS.SCHOOL_MANAGE_REQUIRED && TEACHER_REVIEW_ERRORS.SCHOOL_CODE_TAKEN);
+  assert.ok(REFRESH_AFTER.includes("SCHOOL_CODE_TAKEN"));
 });
 
 test("approval payload: never a school; optional trimmed note ≤ 500", () => {

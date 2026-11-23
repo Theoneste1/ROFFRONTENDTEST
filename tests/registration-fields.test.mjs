@@ -51,9 +51,12 @@ test("Teacher: every error of its rules and of the server has a field", () => {
   const own = [
     ...Object.keys(validateTeacherRegistration(emptyTeacherDraft())),
     ...Object.keys(validateTeacherRegistration({ ...emptyTeacherDraft(), schoolMode: "missing" })),
+    // "My school is not listed" with the official details (teacherUnlistedSchoolDetails): code, ownership, day / boarding.
+    ...Object.keys(validateTeacherRegistration({ ...emptyTeacherDraft(), schoolMode: "missing", proposedSchoolCell: "x".repeat(101), proposedSchoolVillage: "x".repeat(101) }, false, true)),
     ...Object.keys(validateTeacherExtra(emptyTeacherExtra())),
   ];
   assert.ok(own.includes("interests") && own.includes("proposedSchoolName") && own.includes("position"));
+  for (const k of ["proposedSchoolCode", "proposedSchoolCell", "proposedSchoolVillage", "proposedSchoolOwnership", "proposedSchoolAccommodation"]) assert.ok(own.includes(k), k);
   const server = [...Object.values(TEACHER_ERROR_FIELDS), ...Object.values(TEACHER_SERVER_FIELDS)];
   assertCovered(TEACHER_PARTS, [...own, ...server, "picture", "password", "confirm"], "teacher");
   assert.deepEqual(ids(TEACHER_PARTS).slice(0, 3), ["firstName", "lastName", "gender"]);

@@ -80,9 +80,9 @@ export const AUDIENCES: Audience[] = [
       "Encourage your students to register and practise with our courses and past papers",
       "Work alongside ROF coaches who mentor and train your students",
       "Hear about Olympiad programmes, competitions and training for teachers",
-      "Teacher accounts are not available yet: contact us and we will get in touch",
+      "Register with your school to follow your students' tests and published results",
     ],
-    cta: { label: "Join as a Teacher", href: "/?subject=teacher#contact" },
+    cta: { label: "Join as a Teacher", href: "/register/teacher" },
   },
   {
     id: "coaches",

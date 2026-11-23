@@ -5,8 +5,8 @@
  * when a support e-mail is configured, an e-mail notice is queued to ROF. The
  * page says the message was *received*; it never claims an e-mail was
  * delivered. A hidden honeypot field catches bots. Contact details come from
- * `GET /support`. `?subject=teacher` (the "Join as a Teacher" buttons)
- * prefills the subject, because school teachers have no accounts yet.
+ * `GET /support`. `?subject=teacher` (links from the teacher registration and
+ * coach application pages) prefills the subject.
  */
 import { useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";

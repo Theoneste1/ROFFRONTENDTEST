@@ -118,8 +118,11 @@ test.describe.serial("Administrator: a test from the wizard to its marker", () =
     await page.getByRole("button", { name: "Move question 1 down" }).click();
     await expect(page.getByTestId("question-1")).toContainText("square root of 2");
     await page.getByTestId("tab-files").click();
-    await expect(page.getByTestId("file-paper")).toContainText("test-paper.pdf");
-    await expect(page.getByTestId("file-marking-guide")).toContainText("marking-guide.pdf");
+    // Named after the test's title (owner 2026-11-22; a backend before that: test-paper / marking-guide) — never the
+    // uploader's own file name.
+    // mathsTitle has letters, digits and spaces only: it can go into the pattern as it is.
+    await expect(page.getByTestId("file-paper")).toContainText(new RegExp(`(${mathsTitle}|test-paper)\.pdf`));
+    await expect(page.getByTestId("file-marking-guide")).toContainText(new RegExp(`(${mathsTitle} - marking guide|marking-guide)\.pdf`));
     await expect(page.getByText("my-secret-name.pdf")).toHaveCount(0);
   });
 

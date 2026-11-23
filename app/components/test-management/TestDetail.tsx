@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowLeft, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import { testsApi, type TestDetail as Test, type TestFileKind, type TestQuestion } from "@/lib/api/tests";
-import { errorMessage, isApiError } from "@/lib/api/errors";
+import { UserFacingError, errorMessage, isApiError } from "@/lib/api/errors";
 import { useSession } from "@/lib/auth/session";
 import { actionAllowed } from "@/lib/auth/navigation";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
@@ -29,7 +29,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime, formatFileSize, hasAcceptedExtension, personName } from "@/lib/format";
 import {
   ANSWER_FORMAT_LABEL, TESTS_MANAGE, TESTS_MANAGE_MARKERS, TEST_FILE_ACCEPT, TEST_FILE_MAX_BYTES, detailsChange,
-  detailsDraftOf, detailsProblems, moveItem, parseMarks, publishProblemText, questionBody, questionProblems, questionSum, sumText,
+  detailsDraftOf, detailsProblems, moveItem, parseMarks, publishProblemText, knownPublishProblems, questionBody, questionProblems, questionSum, sumText,
   type DetailsDraft, type DetailsField, type QuestionDraft,
 } from "@/lib/test-management/rules";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
@@ -160,14 +160,25 @@ function Detail({ id, base, initialTab }: { id: string; base: string; initialTab
       {confirm === "publish" && (
         <ConfirmDialog
           title="Publish this test?"
-          body={<>Students of its division will see it in My tests, and their teachers can submit for them, from the time it opens. {t.questionCount > 0 && sumText(t.maxMarks, t.questionCount ? [t.questionMarksTotal] : [])}</>}
+          body={
+            <>
+              Students of its division will see it in My tests, and their teachers can submit for them, from the time it opens.{" "}
+              {t.questionCount > 0 && sumText(t.maxMarks, t.questionCount ? [t.questionMarksTotal] : [])}
+              {knownPublishProblems(t).map((p) => (
+                <span key={p} className="mt-3 block rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900" data-testid="publish-warning">
+                  {publishProblemText(p, { closesAt: t.closesAt, formatTime: formatDateTime })}
+                </span>
+              ))}
+            </>
+          }
           confirmLabel="Publish"
           onConfirm={async () => {
             try {
               await apply(await testsApi.publish(id), "The test is published.");
             } catch (e) {
               const problems = isApiError(e) && e.code === "TEST_NOT_READY" ? ((e.details as { problems?: string[] } | undefined)?.problems ?? []) : [];
-              if (problems.length) throw new Error(problems.map(publishProblemText).join(" "));
+              // Shown as written (a plain Error would read "Something went wrong").
+              if (problems.length) throw new UserFacingError(problems.map((p) => publishProblemText(p, { closesAt: t.closesAt, formatTime: formatDateTime })).join(" "));
               throw e;
             }
           }}

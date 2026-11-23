@@ -61,7 +61,15 @@ export type Permission =
   | "tests.publishResults" | "tests.overridePublication" | "tests.viewResults" | "tests.viewRankings"
   | "tests.viewOwnResults" | "tests.viewSchoolResults"
   // Olympiad levels (Administrators, User Managers; Coaches and Head Coaches for their programmes) and custom reports (owner 2026-11-22).
-  | "students.classifyLevel" | "reports.build";
+  | "students.classifyLevel" | "reports.build"
+  // Registration data (owner 2026-11-23): Super Administrators only.
+  | "registrationData.manage"
+  // Coaches across their programmes (owner 2026-11-23): their programmes' students and published results.
+  | "students.viewProgramme" | "tests.viewProgrammeResults"
+  // News subscribers and mailings (capability subscribers, owner 2026-11-23): Administrators and Super Admins.
+  | "subscribers.manage"
+  // View as, read only (owner 2026-11-23): Administrators and Super Admins; a Head Coach only by an individual GRANT.
+  | "users.impersonate";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
@@ -104,6 +112,8 @@ export interface SchoolRef {
 
 /** `GET /me` and the `user` of `POST /auth/login`. */
 export interface CurrentUser {
+  /** Present only in a "view as" tab: who is viewing this user's portal (read only). */
+  viewAs?: import("../auth/view-as").ViewAsInfo;
   id: string;
   username: string;
   email: string;
@@ -876,6 +886,8 @@ export interface AdminUser {
    * contact) of at least one school, SECONDARY when only a secondary one, null without an active school.
    */
   teacherSchoolRole?: "PRIMARY" | "SECONDARY" | null;
+  /** TEACHER rows (2026-11-22): how many active schools the teacher has; `school` is the primary (else earliest) one. */
+  schoolCount?: number;
   /**
    * Registration details (backends with studentRegistrationDetails): full values for ONE account
    * (GET /admin/users/:id, users.manage); lists return phones masked ("+250••••••456").

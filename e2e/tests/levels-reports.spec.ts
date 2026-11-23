@@ -128,10 +128,11 @@ test("custom report: example, preview, save, share with Teachers (View)", async 
   await page.getByTestId("share-report").click();
   await page.getByTestId("share-role").selectOption("TEACHER");
   await page.getByTestId("share-save").click();
-  const grant = await withDb(async (c) => (await c.query(
+  // The grant is saved by the request the click starts: wait for it to land rather than reading the database at once.
+  const grant = () => withDb(async (c) => (await c.query(
     `SELECT g."canView", g."canDownload", g."canEdit" FROM "CustomReportGrant" g JOIN "CustomReport" r ON r.id = g."reportId" WHERE r.name = $1 AND g.grantee = 'role:TEACHER'`, [reportName],
   )).rows[0]);
-  expect(grant).toEqual({ canView: true, canDownload: false, canEdit: false });
+  await expect.poll(grant, { timeout: 10_000 }).toEqual({ canView: true, canDownload: false, canEdit: false });
 });
 
 test("the teacher opens the shared report: rows, but no export and no sharing", async ({ page }) => {

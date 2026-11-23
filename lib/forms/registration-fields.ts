@@ -54,7 +54,8 @@ export const STUDENT_PARTS: readonly SignupPart[] = [
   part("schoolProvince", ["province"]),
   part("schoolDistrict", ["district"]),
   part("schoolSector", ["sector"]),
-  part("school", ["school"], "wide"),
+  // The school, and (owner 2026-11-23) the code of a school without one, shown under it.
+  part("school", ["school", "newSchoolCode"], "wide"),
   part("schoolName"),
   part("schoolLocation"),
   part("schoolNote", [], "wide"),
@@ -88,7 +89,10 @@ export const TEACHER_PARTS: readonly SignupPart[] = [
   part("schoolDistrict"),
   part("schoolSector"),
   part("school", ["school"], "wide"),
-  part("proposedSchoolName", ["proposedSchoolName"], "wide"),
+  // A listed school without a code (owner 2026-11-23): its code.
+  part("newSchoolCode", ["newSchoolCode"], "row"),
+  // "My school is not listed": the name and, with teacherUnlistedSchoolDetails, the school's official details in one box.
+  part("proposedSchoolName", ["proposedSchoolName", "proposedSchoolCode", "proposedSchoolCell", "proposedSchoolVillage", "proposedSchoolOwnership", "proposedSchoolAccommodation"], "wide"),
   // Home location (lib/accounts/home-location): Home country (`country`), then (Rwanda only) province → district → sector.
   part("country", ["country"], "row"),
   part("homeProvince", ["homeProvince"]),

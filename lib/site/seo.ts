@@ -9,8 +9,8 @@ const trim = (u: string) => u.replace(/\/+$/, "");
 /** The public address of the platform (its own domain); NEXT_PUBLIC_SITE_URL overrides it. Links and the sitemap use it. */
 export const SITE_URL = trim(process.env.NEXT_PUBLIC_SITE_URL || "https://lms.rwandaolympiadfoundation.org");
 
-/** Every address of the production site (its own domain and Netlify's address of the same site). */
-export const PRODUCTION_URLS: readonly string[] = [...new Set([SITE_URL, "https://lms.rwandaolympiadfoundation.org", "https://roflms.netlify.app"])];
+/** The production site's address (its own domain). */
+export const PRODUCTION_URLS: readonly string[] = [...new Set([SITE_URL, "https://lms.rwandaolympiadfoundation.org"])];
 
 /** The browser tab and search result title of the home page. */
 export const SITE_TITLE = `${SITE.name} · ${SITE.organisation}`;
@@ -31,9 +31,9 @@ export const PUBLIC_PAGES = ["/", "/login", "/register", "/register/teacher", "/
 export const PRIVATE_PREFIXES = ["/admin", "/student", "/mentor", "/teacher", "/assignments", "/courses", "/discussions", "/results", "/api"] as const;
 
 /**
- * Indexed only on the production site: a copy elsewhere (staging, a preview) is never listed. Netlify sets URL to the
- * site's main address when building (its own domain or its Netlify address); locally it is unset.
+ * Indexed only on the production site: a preview or any other copy is never listed. The site is hosted on Vercel, which
+ * sets VERCEL_ENV to "production", "preview" or "development" for every build; outside Vercel (local runs) it is unset.
  */
-export function indexingAllowed(deployUrl: string | undefined = process.env.URL): boolean {
-  return !deployUrl || PRODUCTION_URLS.includes(trim(deployUrl));
+export function indexingAllowed(vercelEnv: string | undefined = process.env.VERCEL_ENV): boolean {
+  return vercelEnv === undefined || vercelEnv === "" || vercelEnv === "production";
 }

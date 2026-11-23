@@ -247,6 +247,11 @@ export function submissionLockSupported(detection: BackendDetection | null | und
   return hasFeature(detection, "testSubmissionLock");
 }
 
+/** Whose answers a teacher submits and whose results they see (owner 2026-11-23: assigned students too, on a backend that does it). */
+export function teacherStudentsText(detection: BackendDetection | null | undefined): string {
+  return hasFeature(detection, "teacherAssignedTestStudents") ? "the students of your schools and the students assigned to you" : "the students of your schools";
+}
+
 /** The resubmission reason an Administrator gives (3–500 characters, as the backend checks). */
 export function resubmissionReasonProblem(reason: string): string | undefined {
   const r = reason.trim();

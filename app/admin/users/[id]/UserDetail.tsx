@@ -32,8 +32,12 @@ import DateOfBirthCard from "./DateOfBirthCard";
 import { canCorrectDateOfBirth } from "@/lib/accounts/date-of-birth-correction";
 import { canEditCoachSubjects, coachInterestsSupported } from "@/lib/accounts/coach-application";
 import CoachSubjectsCard from "./CoachSubjectsCard";
+import CoachAccessPanel from "@/app/components/coaches/CoachAccessPanel";
+import { coachProgrammeAccessSupported } from "@/lib/coaches/coach-access";
 import OlympiadLevelCard from "@/app/components/students/OlympiadLevelCard";
 import { AvatarTile } from "@/app/components/account/UserAvatar";
+import ViewAsButton from "./ViewAsButton";
+import { viewAsButtonVisible } from "@/lib/auth/view-as";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -48,7 +52,7 @@ type Confirm = { action: UserAction; title: string; body: ReactNode; label: stri
 
 export default function UserDetail({ userId }: { userId: string }) {
   const router = useRouter();
-  const { user: me, can, permissionOverrides } = useSession();
+  const { user: me, can, permissionOverrides, viewAs } = useSession();
   // Account states (archive instead of delete): only on a backend that advertises them; null while not known yet
   // (loading or UNKNOWN), when neither Delete nor Archive is offered.
   const { detection } = useBackendCapabilities();
@@ -164,6 +168,10 @@ export default function UserDetail({ userId }: { userId: string }) {
           <h2 className="text-base font-bold text-gray-900 mb-1">Actions</h2>
           <p className="text-xs text-gray-600 mb-4">Administrators never see or set another person&apos;s password; send a reset link instead.</p>
           <div className="flex flex-col gap-2">
+            {/* View as, read only (owner 2026-11-23): lower-ranked users only; the backend checks again. */}
+            {viewAsButtonVisible({ featureOn: hasFeature(detection, "viewAs"), canImpersonate: can("users.impersonate"), viewing: viewAs !== null, actor: me, target: u }) && (
+              <ViewAsButton userId={u.id} name={name} />
+            )}
             {/* The backend approves any active account; a coach invited by a Head Coach waits for approval even before activation. */}
             {u.isActive && !u.isApproved && (
               <button
@@ -282,6 +290,14 @@ export default function UserDetail({ userId }: { userId: string }) {
         {/* A teacher's test submission for students: one switch, the account untouched (testSubmissionLock). */}
         {u.role === "TEACHER" && can("users.manageTeachers") && submissionLockSupported(detection) && !isMe && <TeacherTestSubmissionCard teacherId={u.id} />}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
+        {/* A coach's access across their programmes (coachProgrammeAccess): Administrators hold users.manageCoaches (not in their
+            frozen /me/permissions list, so the role is checked too); the backend enforces every change. */}
+        {u.role === "MENTOR" && coachProgrammeAccessSupported(detection) && (me?.role === "ADMIN" || me?.role === "SUPER_ADMIN" || can("users.manageCoaches")) && (
+          <Card className="lg:col-span-3 p-6">
+            <h2 className="mb-3 text-base font-bold text-gray-900">Programme access</h2>
+            <CoachAccessPanel coachId={u.id} />
+          </Card>
+        )}
         {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}
         {/* Super Administrators: effective permissions (permissions.view) and overrides (permissions.manageOverrides). */}
         {(can("permissions.view") || can("permissions.manageOverrides")) && <PermissionOverridesCard user={u} />}

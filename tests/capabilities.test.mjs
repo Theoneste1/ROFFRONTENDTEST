@@ -96,7 +96,7 @@ const UNKNOWN_CASES = [
   ["503", 503, ""],
   ["no body", 200, null],
   ["empty body", 200, ""],
-  ["HTML (Netlify 404 page)", 200, "<!doctype html><title>Page not found</title>"],
+  ["HTML (a hosting 404 page)", 200, "<!doctype html><title>Page not found</title>"],
   ["malformed JSON", 200, '{"name":"ROF LMS API",'],
   ["JSON array", 200, "[]"],
   ["JSON string", 200, '"ROF LMS API"'],

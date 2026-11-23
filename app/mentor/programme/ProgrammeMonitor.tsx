@@ -28,6 +28,9 @@
 import { useState } from "react";
 import CoachInvite from "./CoachInvite";
 import CoachCourseAccess from "./CoachCourseAccess";
+import CoachPermissions from "./CoachPermissions";
+import { coachProgrammeAccessSupported } from "@/lib/coaches/coach-access";
+import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import ProgrammeActivity from "./ProgrammeActivity";
 import ProgrammeCourses from "./ProgrammeCourses";
 import ProgrammeOverview from "./ProgrammeOverview";
@@ -43,13 +46,15 @@ import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
 import { Notice, SelectFilter, TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
 
-type Tab = "overview" | "students" | "coaches" | "access" | "courses" | "progress" | "activity" | "log";
+type Tab = "overview" | "students" | "coaches" | "access" | "permissions" | "courses" | "progress" | "activity" | "log";
 /** Each view and the permissions (any of them) its routes need. */
 const TABS: { value: Tab; label: string; anyOf: Permission[] }[] = [
   { value: "overview", label: "Overview", anyOf: ["reports.view", "activity.view"] },
   { value: "students", label: "Students", anyOf: ["programmes.manageMembers"] },
   { value: "coaches", label: "Coaches", anyOf: ["programmes.manageMembers"] },
   { value: "access", label: "Course access", anyOf: ["mentorAssignments.manage"] },
+  // Owner 2026-11-23: what each coach may do across the programme (shown on a backend with coachProgrammeAccess).
+  { value: "permissions", label: "Coach permissions", anyOf: ["users.manageCoaches"] },
   { value: "courses", label: "Courses", anyOf: ["reports.view"] },
   { value: "progress", label: "Student progress", anyOf: ["reports.view"] },
   { value: "activity", label: "Coach activity", anyOf: ["coaches.monitor"] },
@@ -68,7 +73,8 @@ const PAGE_SIZE = 20;
 export default function ProgrammeMonitor() {
   const { can, role } = useSession();
   const headed = useHeadedProgrammes();
-  const tabs = TABS.filter((t) => t.anyOf.some((p) => can(p)));
+  const { detection } = useBackendCapabilities();
+  const tabs = TABS.filter((t) => t.anyOf.some((p) => can(p)) && (t.value !== "permissions" || coachProgrammeAccessSupported(detection)));
   const [tab, setTab] = useState<Tab | null>(null);
   const [programmeId, setProgrammeId] = useState<string | null>(null);
   const active = tab && tabs.some((t) => t.value === tab) ? tab : tabs[0]?.value ?? null;
@@ -132,6 +138,7 @@ export default function ProgrammeMonitor() {
       )}
       {active === "overview" && <ProgrammeOverview showDashboard={can("reports.view")} showActivity={can("activity.view")} />}
       {active === "access" && <CoachCourseAccess key={selected.id} programmeId={selected.id} />}
+      {active === "permissions" && <CoachPermissions key={selected.id} programmeId={selected.id} />}
       {active === "courses" && <ProgrammeCourses />}
       {active === "progress" && <StudentProgress />}
       {active === "activity" && <CoachActivity />}

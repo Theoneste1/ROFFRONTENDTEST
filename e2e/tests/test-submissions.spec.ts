@@ -130,8 +130,10 @@ test.describe.serial("Student: answer page by page, replace, see every version",
     await expect(page.getByText("Your answer was submitted: version 1.")).toBeVisible({ timeout: 30_000 });
     const v1 = page.getByTestId("version-1");
     await expect(v1).toContainText("Current");
-    await expect(v1.getByText("page-1.png")).toBeVisible();
-    await expect(v1.getByText("page-2.png")).toBeVisible();
+    // The sheet is named after the student and the test (owner 2026-11-23): "<full name> - <test title> - page N.png";
+    // an older backend: page-N.png. The title has letters, digits and spaces only: safe in the pattern as it is.
+    await expect(v1.getByText(new RegExp(`^(.+ - ${title} - page 1|page-1)\\.png$`))).toBeVisible();
+    await expect(v1.getByText(new RegExp(`^(.+ - ${title} - page 2|page-2)\\.png$`))).toBeVisible();
     await expect(page.getByText("IMG_1001 Aline.png")).toHaveCount(0);
     await page.unroute(/\/uploads\/[0-9a-f-]+\/pages\/2$/);
   });
@@ -237,7 +239,8 @@ test.describe.serial("Administrator: an extension for the student; the Submissio
     await row.getByRole("button", { name: /Versions of/ }).click();
     const detail = page.getByTestId("submission-detail");
     await expect(detail.getByTestId("staff-version-2")).toContainText("@e2e.student (student)");
-    await expect(detail.getByTestId("staff-version-1")).toContainText("page-2.png");
+    // Staff see the sheet under the student's name and the test's title (owner 2026-11-23); an older backend: page-2.png.
+    await expect(detail.getByTestId("staff-version-1")).toContainText(new RegExp(`(Student E2E - ${title} - page 2|page-2)\\.png`));
     await page.getByRole("button", { name: "Close" }).click();
     await page.getByLabel("Search students").fill(classmate);
     await expect(page.getByTestId(`tracking-${classmate}`)).toContainText("Not yet");

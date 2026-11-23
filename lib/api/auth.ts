@@ -16,7 +16,7 @@ import type {
 import type { FormKey, PublicFormView } from "../forms/closed-form";
 
 /**
- * Sign-in after a sleeping backend: Netlify's proxy answers 502/504 (or the request fails) while
+ * Sign-in after a sleeping backend: the hosting proxy (Vercel) answers 502/504 (or the request fails) while
  * Render starts (~30 s). Those answers mean the request never reached a running server, so it is
  * retried a few times with a short wait; any real answer (401, 403, 429, …) is returned at once.
  */
@@ -198,7 +198,7 @@ export interface MentorApplicationInput {
   yearsOfExperience?: number;
 }
 
-/** `GET /public/statistics`: aggregate counts of active members (teachers: null — not on the platform yet). */
+/** `GET /public/statistics`: aggregate counts of active members. `teachers` is null only from an older backend. */
 export interface PublicStatistics {
   students: number;
   coaches: number;

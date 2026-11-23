@@ -12,6 +12,7 @@ import type {
   DirectoryListFilters,
   DirectorySchoolRecord,
   DuplicateCandidate,
+  ProgrammeCategory,
   SchoolAccommodation,
   SchoolAuditEntry,
   SchoolClaimStatus,
@@ -398,6 +399,19 @@ export interface ListState {
   status: "all" | "active" | "inactive";
   source: SchoolSource | "";
   code: "any" | "with" | "without";
+  /** Offerings and details (directory data). */
+  level: string;
+  programmeCategory: ProgrammeCategory | "";
+  programme: string;
+  accommodation: SchoolAccommodation | "";
+  issues: Presence;
+  /** Backends with schoolListFilters (2026-11-23). */
+  ownership: SchoolOwnership | "";
+  cell: string;
+  village: string;
+  contact: string;
+  email: Presence;
+  phone: Presence;
   page: number;
   /** Schools table (backends with schoolsTable): by name (default) or by verified students. */
   sort?: SchoolSort;
@@ -408,7 +422,22 @@ export type SchoolSort = "name" | "verifiedStudents";
 export type SortOrder = "asc" | "desc";
 export const SCHOOL_SORTS: readonly SchoolSort[] = ["name", "verifiedStudents"];
 
-export const initialListState = (): ListState => ({ q: "", countryCode: "", province: "", district: "", sector: "", status: "all", source: "", code: "any", page: 1 });
+export type Presence = "any" | "with" | "without";
+
+export const initialListState = (): ListState => ({
+  q: "", countryCode: "", province: "", district: "", sector: "", status: "all", source: "", code: "any",
+  level: "", programmeCategory: "", programme: "", accommodation: "", issues: "any",
+  ownership: "", cell: "", village: "", contact: "", email: "any", phone: "any", page: 1,
+});
+
+/** A contact search is sent from this many characters (the backend's minimum). */
+export const CONTACT_SEARCH_MIN = 3;
+export const PROGRAMME_CATEGORY_LABEL: Record<ProgrammeCategory, string> = {
+  A_LEVEL_COMBINATION: "A-level combination", TVET_TRADE: "TVET trade", OTHER: "Other programme",
+};
+export const EDUCATION_LEVEL_LABEL: Record<string, string> = {
+  PPR: "Pre-primary", PR: "Primary", OL: "O-level", AL: "A-level", PE: "Professional / TVET",
+};
 
 export const LIST_PAGE_SIZE = 20;
 
@@ -416,7 +445,7 @@ export const LIST_PAGE_SIZE = 20;
  * The request for a list state: empty filters are left out; places only for Rwanda. The sort is sent only to backends
  * that support it (`sortable`: schoolsTable) and only when it is not the default (name, ascending).
  */
-export function listFilters(s: ListState, opts: { sortable?: boolean } = {}): DirectoryListFilters {
+export function listFilters(s: ListState, opts: { sortable?: boolean; allFields?: boolean } = {}): DirectoryListFilters {
   const out: DirectoryListFilters = { page: Math.max(1, Math.floor(s.page) || 1), limit: LIST_PAGE_SIZE };
   const q = s.q.trim().slice(0, 100);
   if (q) out.q = q;
@@ -430,6 +459,22 @@ export function listFilters(s: ListState, opts: { sortable?: boolean } = {}): Di
   if (s.status !== "all") out.isActive = s.status === "active";
   if (s.source) out.source = s.source;
   if (s.code !== "any") out.hasCode = s.code === "with";
+  if (s.level) out.level = s.level;
+  if (s.programme) out.programme = s.programme;
+  if (s.accommodation) out.accommodation = s.accommodation;
+  if (s.issues !== "any") out.hasSourceIssues = s.issues === "with";
+  if (opts.allFields) {
+    if (s.ownership) out.ownership = s.ownership;
+    if (s.programmeCategory) out.programmeCategory = s.programmeCategory;
+    const cell = cleanPlace(s.cell).slice(0, 100);
+    if (cell) out.cell = cell;
+    const village = cleanPlace(s.village).slice(0, 100);
+    if (village) out.village = village;
+    const contact = s.contact.trim().slice(0, 100);
+    if (contact.length >= CONTACT_SEARCH_MIN) out.contact = contact;
+    if (s.email !== "any") out.hasEmail = s.email === "with";
+    if (s.phone !== "any") out.hasPhone = s.phone === "with";
+  }
   if (opts.sortable) {
     const sort = s.sort ?? "name";
     const order = s.order ?? "asc";
@@ -440,8 +485,8 @@ export function listFilters(s: ListState, opts: { sortable?: boolean } = {}): Di
 }
 
 /** True when any filter (other than the page and the sort) narrows the list. */
-export function isFiltered(s: ListState): boolean {
-  return Object.keys(listFilters(s)).some((k) => k !== "page" && k !== "limit");
+export function isFiltered(s: ListState, opts: { allFields?: boolean } = {}): boolean {
+  return Object.keys(listFilters(s, opts)).some((k) => k !== "page" && k !== "limit");
 }
 
 // ─── List state in the URL (schools table) ───────────────────────────────────
@@ -449,6 +494,8 @@ export function isFiltered(s: ListState): boolean {
 const STATUSES: readonly ListState["status"][] = ["all", "active", "inactive"];
 const CODES: readonly ListState["code"][] = ["any", "with", "without"];
 const SOURCES: readonly SchoolSource[] = ["OFFICIAL_LIST", "ADMIN", "LEGACY"];
+const CATEGORIES = Object.keys(PROGRAMME_CATEGORY_LABEL) as ProgrammeCategory[];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** The list state a URL describes (unknown or invalid values fall back to the defaults). */
 export function listStateFromParams(p: { get(name: string): string | null }): ListState {
@@ -465,6 +512,22 @@ export function listStateFromParams(p: { get(name: string): string | null }): Li
   if (SOURCES.includes(source)) s.source = source;
   const code = str("code") as ListState["code"];
   if (CODES.includes(code)) s.code = code;
+  const level = str("level").toUpperCase();
+  if (level in EDUCATION_LEVEL_LABEL) s.level = level;
+  const category = str("programmeCategory") as ProgrammeCategory;
+  if (CATEGORIES.includes(category)) s.programmeCategory = category;
+  if (UUID.test(str("programme"))) s.programme = str("programme");
+  const accommodation = str("accommodation") as SchoolAccommodation;
+  if (ACCOMMODATION_OPTIONS.includes(accommodation)) s.accommodation = accommodation;
+  const ownership = str("ownership") as SchoolOwnership;
+  if (OWNERSHIP_OPTIONS.includes(ownership)) s.ownership = ownership;
+  s.cell = str("cell").slice(0, 100);
+  s.village = str("village").slice(0, 100);
+  s.contact = str("contact").slice(0, 100);
+  const presence = (k: string) => (CODES.includes(str(k) as Presence) ? (str(k) as Presence) : "any");
+  s.email = presence("email");
+  s.phone = presence("phone");
+  s.issues = presence("issues");
   s.page = Math.max(1, Math.floor(Number(str("page"))) || 1);
   const sort = str("sort") as SchoolSort;
   if (SCHOOL_SORTS.includes(sort)) s.sort = sort;
@@ -486,6 +549,17 @@ export function listStateToParams(s: ListState): string {
   put("status", s.status, "all");
   put("source", s.source);
   put("code", s.code, "any");
+  put("level", s.level);
+  put("programmeCategory", s.programmeCategory);
+  put("programme", s.programme);
+  put("accommodation", s.accommodation);
+  put("issues", s.issues, "any");
+  put("ownership", s.ownership);
+  put("cell", s.cell.trim());
+  put("village", s.village.trim());
+  put("contact", s.contact.trim());
+  put("email", s.email, "any");
+  put("phone", s.phone, "any");
   put("sort", s.sort ?? "name", "name");
   put("order", s.order ?? "asc", "asc");
   if (s.page > 1) p.set("page", String(s.page));

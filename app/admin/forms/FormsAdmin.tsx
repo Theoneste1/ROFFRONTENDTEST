@@ -20,6 +20,9 @@ import {
   FORM_MODE_OPTIONS,
   FORM_STATE_META,
   MESSAGE_LIMITS,
+  activationAction,
+  activationSaved,
+  activationSummary,
   availabilityChange,
   availabilityDraft,
   availabilityProblems,
@@ -93,6 +96,7 @@ export default function FormsAdmin() {
           {list.data.map((f) => {
             const meta = FORM_STATE_META[f.state];
             const roleNote = teacherRoleNote(f);
+            const activation = activationSummary(f);
             return (
               <Card key={f.key} className="p-5 flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
@@ -121,6 +125,12 @@ export default function FormsAdmin() {
                       {[f.contactEmail, f.supportUrl].filter(Boolean).join(" · ")}
                     </p>
                   )}
+                  {activation && (
+                    <p data-testid={`activation-${f.key}`}>
+                      <span className="font-semibold text-gray-600">E-mail activation: </span>
+                      {activation}
+                    </p>
+                  )}
                   <p className="text-gray-500">
                     {neverChanged(f) ? "Never changed (initial setting)." : `Last changed ${formatDateTime(f.updatedAt)}${f.updatedBy ? ` by ${personName(f.updatedBy)}` : ""}.`}
                   </p>
@@ -130,6 +140,9 @@ export default function FormsAdmin() {
                     <button type="button" className={linkBtn} onClick={() => setDialog({ kind: "availability", form: f })}>
                       Change availability
                     </button>
+                  )}
+                  {mayManage && activation && (
+                    <ActivationSwitch form={f} onSaved={(saved) => setNotice({ tone: "success", text: activationSaved(saved) })} onError={(text) => setNotice({ tone: "error", text })} />
                   )}
                   {mayEditMessages && (
                     <button type="button" className={linkBtn} onClick={() => setDialog({ kind: "messages", form: f })}>
@@ -167,6 +180,26 @@ export default function FormsAdmin() {
       )}
       {dialog?.kind === "history" && <HistoryDialog form={dialog.form} onClose={() => setDialog(null)} />}
     </AdminPage>
+  );
+}
+
+/** Turns e-mail activation on or off for one sign-up form (forms.manageAvailability). */
+function ActivationSwitch({ form, onSaved, onError }: { form: AdminFormView; onSaved: (f: AdminFormView) => void; onError: (text: string) => void }) {
+  const qc = useQueryClient();
+  const friendly = useFriendlyError();
+  const on = form.requireEmailVerification === true;
+  const save = useMutation({
+    mutationFn: () => adminFormsApi.updateAvailability(form.key, { requireEmailVerification: !on }),
+    onSuccess: async (saved) => {
+      await qc.invalidateQueries({ queryKey: queryKeys.adminForms.all });
+      onSaved(saved);
+    },
+    onError: (e) => onError(friendly(e)),
+  });
+  return (
+    <button type="button" className={linkBtn} onClick={() => save.mutate()} disabled={save.isPending} data-testid={`activation-toggle-${form.key}`}>
+      {save.isPending ? "Saving…" : activationAction(on)}
+    </button>
   );
 }
 

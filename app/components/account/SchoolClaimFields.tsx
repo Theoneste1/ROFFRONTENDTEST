@@ -46,6 +46,7 @@ export default function SchoolClaimFields({
   countryOptions,
   only,
   labelPrefix = "",
+  askCodeForCodeless = false,
 }: {
   value: SchoolClaimDraft;
   onChange: (d: SchoolClaimDraft) => void;
@@ -58,6 +59,8 @@ export default function SchoolClaimFields({
   only?: SchoolClaimPiece;
   /** Before the labels of the country, province, district and sector (e.g. "School ": "School country", "School province"). */
   labelPrefix?: string;
+  /** Registration (capability schoolCodeAtRegistration): a chosen school without a code asks for its code. */
+  askCodeForCodeless?: boolean;
 }) {
   const country = value.mode === "abroad" ? value.country : RWANDA;
   const place = placeOf(value);
@@ -71,7 +74,12 @@ export default function SchoolClaimFields({
       case "sector":
         return abroad ? null : <PlaceSelects only={only} labelPrefix={labelPrefix} value={place} onChange={(p) => onChange({ mode: "directory", ...p, school: null })} errors={{ province: errors.province, district: errors.district, sector: errors.sector }} />;
       case "school":
-        return !abroad && placeComplete(place) ? <SchoolSelect place={place} value={value} onChange={onChange} errors={errors} /> : null;
+        return !abroad && placeComplete(place) ? (
+          <div className="space-y-3">
+            <SchoolSelect place={place} value={value} onChange={onChange} errors={errors} />
+            {askCodeForCodeless && <CodelessSchoolCode value={value} onChange={onChange} errors={errors} />}
+          </div>
+        ) : null;
       case "name":
         return value.mode === "abroad" ? (value.country ? <AbroadName value={value} onChange={onChange} errors={errors} /> : null) : value.mode === "notListed" ? <NotListedName place={place} value={value} onChange={onChange} errors={errors} /> : null;
       case "note":
@@ -99,6 +107,7 @@ export default function SchoolClaimFields({
           {placeComplete(place) && (
             <div className="space-y-3">
               <SchoolSelect place={place} value={value} onChange={onChange} errors={errors} />
+              {askCodeForCodeless && <CodelessSchoolCode value={value} onChange={onChange} errors={errors} />}
               {value.mode === "notListed" && <NotListedName place={place} value={value} onChange={onChange} errors={errors} />}
             </div>
           )}
@@ -106,6 +115,26 @@ export default function SchoolClaimFields({
       )}
       <SchoolNote />
     </fieldset>
+  );
+}
+
+/** A chosen school without a code: its code, required (owner 2026-11-23). */
+function CodelessSchoolCode({ value, onChange, errors }: { value: SchoolClaimDraft; onChange: (d: SchoolClaimDraft) => void; errors: Partial<Record<SchoolClaimField, string>> }) {
+  if (value.mode !== "directory" || !value.school || value.school.code !== null) return null;
+  return (
+    <TextField
+      label="School code"
+      name="newSchoolCode"
+      required
+      inputMode="numeric"
+      maxLength={7}
+      placeholder="6 digits"
+      value={value.newCode ?? ""}
+      onChange={(e) => onChange({ ...value, newCode: e.target.value.replace(/[^\d ]/g, "").slice(0, 7) })}
+      error={errors.newSchoolCode}
+      hint={`${value.school.name} has no code in our list yet. Enter its official 6-digit school code (the school's office has it).`}
+      data-testid="new-school-code"
+    />
   );
 }
 

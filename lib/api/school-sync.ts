@@ -41,6 +41,8 @@ export type SyncConflictState = "OPEN" | "PROPOSED" | "RESOLVED";
 
 type UserRef = { id: string; username: string } | null;
 
+export type SyncMode = "FULL" | "NEW_ONLY";
+
 export interface SyncRun {
   id: string;
   datasetKey: string;
@@ -50,6 +52,8 @@ export interface SyncRun {
   fileSha256: string;
   format: string;
   rowCount: number;
+  /** FULL: every difference with a matched school is proposed. NEW_ONLY: existing schools are left untouched. */
+  mode?: SyncMode;
   sourceSummary: unknown;
   reconciliation: {
     summaryAvailable: boolean;
@@ -59,6 +63,8 @@ export interface SyncRun {
   } | null;
   counts: {
     sourceRows: number;
+    /** total found = existing + new + needs attention (a repeated row counts with its school). */
+    summary?: { totalFound: number; existing: number; new: number; needsAttention: number; newSchools: number; repeatedRows: number };
     outcomes: Partial<Record<SyncItemOutcome, number>>;
     changes: Partial<Record<SyncChangeKind, number>>;
     unchanged: number;
@@ -225,10 +231,10 @@ export interface SyncApplyResult {
 const R = "/admin/school-sync/runs";
 
 export const schoolSyncApi = {
-  createRun: (file: File, dataset: SyncDatasetKey, label?: string) => {
+  createRun: (file: File, dataset: SyncDatasetKey, label?: string, mode: SyncMode = "NEW_ONLY") => {
     const form = new FormData();
     form.append("file", file);
-    return api<SyncRun>(R, { method: "POST", body: form, query: { dataset, label } });
+    return api<SyncRun>(R, { method: "POST", body: form, query: { dataset, label, mode } });
   },
   runs: (params: { page?: number; limit?: number; status?: SyncRunStatus } = {}) => api<Page<SyncRun>>(R, { query: { ...params } }),
   run: (id: string) => api<SyncRun>(`${R}/${id}`),

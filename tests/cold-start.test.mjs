@@ -1,4 +1,4 @@
-// Cold start (Render ~33 s wake-up behind Netlify's ~26 s proxy): detection retries soon, registration
+// Cold start (Render ~33 s wake-up behind the hosting proxy): detection retries soon, registration
 // waits quietly while the server wakes, sign-in retries gateway failures only. Plus rank display rules.
 import { test } from "node:test";
 import assert from "node:assert/strict";

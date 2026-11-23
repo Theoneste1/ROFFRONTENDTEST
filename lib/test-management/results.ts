@@ -14,6 +14,8 @@ export const TESTS_VIEW_RESULTS: Permission = "tests.viewResults";
 export const TESTS_VIEW_RANKINGS: Permission = "tests.viewRankings";
 export const TESTS_VIEW_OWN_RESULTS: Permission = "tests.viewOwnResults";
 export const TESTS_VIEW_SCHOOL_RESULTS: Permission = "tests.viewSchoolResults";
+/** Coaches (owner 2026-11-23): the published results of their programmes' tests. */
+export const TESTS_VIEW_PROGRAMME_RESULTS: Permission = "tests.viewProgrammeResults";
 
 /** The backend's limits for the override reason. */
 export const OVERRIDE_REASON_MIN = 10;
