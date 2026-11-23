@@ -85,6 +85,7 @@ against an older backend; merge and deploy the backend first. The capabilities a
 | `studentOverview` | Student profile pages `/<portal>/profiles/:id`; names in lists open them | `GET /students/:id/overview` |
 | `customReports` | Reports → Custom reports (builders); Shared reports (coaches, Head Coaches, teachers) | `/reports…` (reports.build to build; grants decide the rest) |
 | `tableLayouts` | Users list: columns per role tab, saved layouts, sortable headers | `/me/table-layouts/:table`, `/admin/table-layouts/:table`; `GET /admin/users?sort=&order=` |
+| `subscribers` | Home page "Get ROF news" box and footer link; `/unsubscribe` page; Administration → Subscribers (list, import, export, mailings) | `POST /public/subscribe`, `POST /public/unsubscribe`; `/admin/subscribers…` (subscribers.manage) |
 
 ## Test results (2026-11-07)
 
