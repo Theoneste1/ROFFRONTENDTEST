@@ -97,7 +97,7 @@ function SubmissionStatusCard({ assignment: a, submission, onShowResults }: { as
         <>
           <div className="flex items-center justify-between gap-2">
             <StatusBadge status={a.displayStatus} />
-            {a.submission.isLate && <span className="text-[11px] font-semibold text-amber-600">Submitted late</span>}
+            {a.submission.isLate && <span className="text-[11px] font-semibold text-orange-600">Submitted late</span>}
           </div>
           <dl className="text-xs space-y-1.5">
             <div className="flex justify-between gap-2">

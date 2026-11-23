@@ -153,8 +153,8 @@ export default function SubmissionActions({
           <div ref={successRef} className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4">
             <div className="flex items-start justify-between mb-4 gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
-                  <CheckCircle className="w-6 h-6 text-emerald-600" />
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">{successMessage.title}</h3>

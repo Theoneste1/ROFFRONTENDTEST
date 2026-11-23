@@ -26,7 +26,7 @@ const CATEGORY_BADGE: Partial<Record<AuditCategory, string>> = {
   RESULTS: "bg-emerald-50 text-emerald-700",
   ASSIGNMENTS: "bg-indigo-50 text-indigo-700",
   REVIEWS: "bg-blue-50 text-blue-700",
-  USERS: "bg-brand-50 text-brand-700",
+  USERS: "bg-purple-50 text-purple-700",
   SECURITY: "bg-red-50 text-red-600",
   SETTINGS: "bg-amber-50 text-amber-700",
 };

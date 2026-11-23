@@ -47,7 +47,7 @@ export function MarkingGate({ title, children }: { title: string; children: Reac
 }
 
 export function QueueBadge({ state, returned }: { state: QueueState; returned?: boolean }) {
-  const b = returned ? { label: "Returned for correction", className: "bg-red-100 text-red-900" } : QUEUE_BADGE[state];
+  const b = returned ? { label: "Returned for correction", className: "bg-rose-100 text-rose-900" } : QUEUE_BADGE[state];
   return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold ${b.className}`} data-testid="queue-badge">{b.label}</span>;
 }
 

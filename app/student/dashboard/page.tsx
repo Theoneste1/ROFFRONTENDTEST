@@ -219,7 +219,7 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
           <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
             {divisionName ? `${divisionName} Division Ranking` : "Division Ranking"}
           </span>
-          <Trophy className="w-10 h-10 text-brand-200 stroke-[1.2]" />
+          <Trophy className="w-10 h-10 text-purple-200 stroke-[1.2]" />
         </div>
         {rank.isPending ? (
           <div className="py-6">
@@ -277,11 +277,11 @@ function CalendarSection() {
 
 const ALERT_ICON: Record<NotificationCategory, { icon: typeof Bell; tone: string }> = {
   ASSIGNMENTS: { icon: FileText, tone: "bg-indigo-50 text-indigo-600" },
-  SUBMISSIONS: { icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-600" },
-  REVIEWS: { icon: CheckCircle2, tone: "bg-amber-50 text-amber-600" },
+  SUBMISSIONS: { icon: CheckCircle2, tone: "bg-green-50 text-green-600" },
+  REVIEWS: { icon: CheckCircle2, tone: "bg-orange-50 text-orange-600" },
   RESULTS: { icon: CheckCircle2, tone: "bg-blue-50 text-blue-600" },
-  RESOURCES: { icon: BookOpen, tone: "bg-brand-50 text-brand-700" },
-  DISCUSSIONS: { icon: MessageSquare, tone: "bg-brand-50 text-brand-600" },
+  RESOURCES: { icon: BookOpen, tone: "bg-teal-50 text-teal-700" },
+  DISCUSSIONS: { icon: MessageSquare, tone: "bg-purple-50 text-purple-600" },
   ACCOUNT: { icon: Bell, tone: "bg-slate-100 text-slate-600" },
 };
 

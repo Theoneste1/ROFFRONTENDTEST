@@ -39,7 +39,7 @@ function stateOf(r: CourseResource): "published" | "draft" | "archived" {
 }
 
 const STATE_BADGE = {
-  published: "bg-emerald-100 text-emerald-700",
+  published: "bg-green-100 text-green-700",
   draft: "bg-slate-100 text-slate-600",
   archived: "bg-gray-200 text-gray-600",
 };

@@ -67,7 +67,7 @@ export default function MentorDashboard() {
       value: loading ? '…' : String(total(publishedQ)),
       change: `${dueThisWeek} due this week · ${pendingApproval} awaiting approval`,
       icon: <FileText className="w-6 h-6" />,
-      color: 'bg-brand-500',
+      color: 'bg-purple-500',
     },
     {
       title: 'Reviews To Do',
@@ -137,7 +137,7 @@ export default function MentorDashboard() {
             ) : (
               <div className="space-y-4">
                 {notifications.data.data.map((n) => {
-                  const tone = n.category === 'REVIEWS' ? 'bg-blue-100 text-blue-600' : n.category === 'ASSIGNMENTS' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-700';
+                  const tone = n.category === 'REVIEWS' ? 'bg-blue-100 text-blue-600' : n.category === 'ASSIGNMENTS' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-700';
                   const Icon = n.category === 'REVIEWS' ? FileText : n.category === 'ASSIGNMENTS' ? CheckCircle2 : AlertCircle;
                   return (
                     <NotificationLink key={n.id} notification={n} className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
@@ -195,8 +195,8 @@ export default function MentorDashboard() {
               <FileText className="w-5 h-5 text-blue-600" />
               <span className="text-sm font-semibold text-gray-700">Create Assignment</span>
             </Link>
-            <Link href="/mentor/courses" className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-brand-500 hover:bg-brand-50 transition-colors">
-              <BookOpen className="w-5 h-5 text-brand-600" />
+            <Link href="/mentor/courses" className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-colors">
+              <BookOpen className="w-5 h-5 text-purple-600" />
               <span className="text-sm font-semibold text-gray-700">Course Resources</span>
             </Link>
             <Link href="/mentor/reviews" className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">

@@ -170,7 +170,7 @@ export function PublishingPanel({ testId }: { testId: string }) {
                     <td className={`${td} whitespace-nowrap text-gray-700`}>{formatDateTime(x.createdAt)}</td>
                     <td className={`${td} text-gray-700`}>{x.publishedBy ? personName(x.publishedBy) : x.actorRole}</td>
                     <td className={td}>{x.publishedCount}</td>
-                    <td className={`${td} text-gray-800`}>{x.override ? <><span className="font-semibold text-red-800">Yes</span><span className="block text-xs text-gray-700">“{x.overrideReason}”</span></> : "No"}</td>
+                    <td className={`${td} text-gray-800`}>{x.override ? <><span className="font-semibold text-rose-800">Yes</span><span className="block text-xs text-gray-700">“{x.overrideReason}”</span></> : "No"}</td>
                     <td className={td}>{x.withdrawn}</td>
                   </tr>
                 ))}

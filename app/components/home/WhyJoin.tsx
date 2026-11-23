@@ -5,10 +5,10 @@ import { AUDIENCES } from "@/lib/site/content";
 import Reveal from "./Reveal";
 
 const ACCENT: Record<string, string> = {
-  students: "from-brand-500 to-blue-700",
-  teachers: "from-emerald-500 to-brand-700",
-  coaches: "from-amber-400 to-amber-600",
-  schools: "from-brand-500 to-brand-700",
+  students: "from-sky-500 to-blue-700",
+  teachers: "from-emerald-500 to-teal-700",
+  coaches: "from-amber-400 to-orange-600",
+  schools: "from-fuchsia-500 to-purple-700",
 };
 
 /** "Why join": one card per audience, describing features the LMS actually has. */

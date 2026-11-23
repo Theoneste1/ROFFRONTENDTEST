@@ -80,7 +80,7 @@ const TONE: Record<Tone, { box: string; icon: ReactNode }> = {
     icon: <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />,
   },
   success: {
-    box: "bg-emerald-50 border-emerald-200 text-emerald-800",
+    box: "bg-green-50 border-green-200 text-green-800",
     icon: <CheckCircle2 className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />,
   },
   info: {

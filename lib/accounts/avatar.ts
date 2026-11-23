@@ -61,11 +61,14 @@ export function displayName(p: AvatarPerson | null | undefined): string {
   return full || (p?.username ?? "").trim() || "User";
 }
 
-/**
- * The generated avatar uses the logo's colours only (owner 2026-11-24): logo blue #00428C with white letters, the same
- * for every account (white on #00428C is about 9.6:1, WCAG AAA for large text).
- */
-export const AVATAR_TONES = ["bg-brand text-white"] as const;
+/** ROF navy and amber tones for the generated avatar (text colour readable on each, WCAG AA). */
+export const AVATAR_TONES = [
+  "bg-brand-950 text-amber-300",
+  "bg-brand text-white",
+  "bg-amber-400 text-brand-950",
+  "bg-brand text-white",
+  "bg-amber-200 text-brand-950",
+] as const;
 
 /** A stable tone for the account (by id, else username, else name). */
 export function avatarTone(p: AvatarPerson | null | undefined): string {

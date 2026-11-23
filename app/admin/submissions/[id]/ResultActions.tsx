@@ -39,7 +39,7 @@ export default function ResultActions({ submission, onDone }: { submission: Admi
               <li key={p.reviewId}>
                 Cycle {p.cycle}: {p.score} / {submission.assignment.maximumMarks} ({p.percentage}%) · published {formatDateTime(p.publishedAt)} by {personName(p.publishedBy, "—")}
                 {p.withdrawn && (
-                  <span className="block text-red-600">
+                  <span className="block text-rose-600">
                     Withdrawn {formatDateTime(p.withdrawn.at)} by {personName(p.withdrawn.by, "—")}: {p.withdrawn.note}
                   </span>
                 )}

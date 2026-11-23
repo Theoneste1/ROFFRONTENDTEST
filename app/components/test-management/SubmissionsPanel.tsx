@@ -25,7 +25,7 @@ import { MetricCard, Modal, SearchInput, SelectFilter, TableCard, TableMessage, 
 import StudentName from "@/app/components/students/StudentName";
 
 export function ExtendedBadge({ label = "Extended" }: { label?: string }) {
-  return <span className="inline-flex rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-bold text-brand-900" data-testid="extended-badge">{label}</span>;
+  return <span className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-900" data-testid="extended-badge">{label}</span>;
 }
 
 export default function SubmissionsPanel({ testId }: { testId: string }) {

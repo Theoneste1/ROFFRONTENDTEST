@@ -99,7 +99,7 @@ function ReportsTab() {
                     <span className="block text-gray-600 break-words">{excerpt(r.contentSnapshot)}</span>
                   </td>
                   <td className={td}>
-                    <Badge className="bg-red-50 text-red-600">{REASON_LABEL[r.reason] ?? r.reason}</Badge>
+                    <Badge className="bg-rose-50 text-rose-600">{REASON_LABEL[r.reason] ?? r.reason}</Badge>
                   </td>
                   <td className={`${td} text-gray-600 whitespace-nowrap`}>{personName(r.reporter, "—")}</td>
                   <td className={`${td} text-gray-600 whitespace-nowrap`}>{formatDateTime(r.createdAt)}</td>

@@ -76,9 +76,9 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
   const engagement = [
     { label: "Total Students", value: total ?? "—", dot: "bg-blue-600", text: "text-blue-600" },
     { label: "Submitted", value: submitted, dot: "bg-emerald-500", text: "text-emerald-600" },
-    { label: "Not Reviewed", value: counts.open, dot: "bg-brand-600", text: "text-brand-600" },
+    { label: "Not Reviewed", value: counts.open, dot: "bg-purple-600", text: "text-purple-600" },
     { label: "Reviewed", value: counts.done, dot: "bg-amber-500", text: "text-amber-500" },
-    { label: "Not Submitted", value: total !== undefined ? Math.max(total - submitted, 0) : "—", dot: "bg-red-500", text: "text-red-500" },
+    { label: "Not Submitted", value: total !== undefined ? Math.max(total - submitted, 0) : "—", dot: "bg-rose-500", text: "text-rose-500" },
   ];
   const editable = a.status === "DRAFT" || a.status === "REJECTED";
 
