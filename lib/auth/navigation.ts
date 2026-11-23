@@ -77,6 +77,13 @@ export const ADMIN_COUNTRIES: NavItem = { href: "/admin/countries", label: "Coun
  * items above: a backend advertising `testManagement` and the known tests.view (lib/test-management/rules.ts →
  * testsNavVisible). Never part of the frozen ADMIN_NAV.
  */
+/**
+ * Registration data (owner 2026-11-23): every eligible registration field — list, filter, export, edit. Super Administrators
+ * only; separately gated like the items above: a backend advertising `registrationData` and the known
+ * registrationData.manage (lib/admin/registration-data.ts → registrationDataNavVisible).
+ */
+export const ADMIN_REGISTRATION_DATA: NavItem = { href: "/admin/registration-data", label: "Registration Data", permission: "registrationData.manage" };
+
 export const ADMIN_TESTS: NavItem = { href: "/admin/tests", label: "Tests", permission: "tests.view" };
 
 /**

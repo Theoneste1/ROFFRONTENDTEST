@@ -206,6 +206,11 @@ export const KNOWN_FEATURES = [
   /** Teachers submit answers for, and follow the results of, their schools' students AND the students assigned to them (owner 2026-11-23). */
   "teacherAssignedTestStudents",
   /**
+   * Registration data (owner 2026-11-23): Super Administrators (registrationData.manage) list, filter, export and edit every
+   * eligible registration field — /admin/registration-data (fields read from the database; saved filters; column layouts).
+   */
+  "registrationData",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */
