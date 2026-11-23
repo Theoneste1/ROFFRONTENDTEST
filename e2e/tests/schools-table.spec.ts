@@ -119,6 +119,21 @@ test.describe.serial("Schools table", () => {
     await expect(page.getByLabel("Sector")).toHaveValue("Tumba");
   });
 
+  test("two filters changed back to back (without waiting for the list) both apply — the second never undoes the first (2026-11-24)", async () => {
+    await search();
+    await page.getByLabel("Status").selectOption("inactive");
+    await page.getByLabel("Status").selectOption("all");
+    await page.getByLabel("Province").selectOption("Southern Province");
+    await expect(page).toHaveURL(/province=Southern/);
+    await expect(page).not.toHaveURL(/status=inactive/);
+    await expect(page.getByLabel("Status")).toHaveValue("all");
+    await page.getByLabel("District").selectOption("Huye");
+    await page.getByLabel("Status").selectOption("active");
+    await expect(page).toHaveURL(/district=Huye/);
+    await expect(page).toHaveURL(/status=active/);
+    await expect(page.getByTestId("school-count")).toHaveText("24 schools match the filters");
+  });
+
   test("sort by number of students (server-side, desc then asc) and by name; kept with the filters and pagination", async () => {
     await search();
     await page.getByTestId("sort-verifiedStudents").click();
