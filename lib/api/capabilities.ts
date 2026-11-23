@@ -235,6 +235,11 @@ export const KNOWN_FEATURES = [
    */
   "schoolsTable",
   /**
+   * School list filters on every field of the NESA file (owner, 2026-11-23): ownership, cell, village, a contact (e-mail
+   * or phone), with or without an e-mail or phone, programme category. Without it: those filters are not offered.
+   */
+  "schoolListFilters",
+  /**
    * Test Management, Phase 1 (owner-approved plan 2026-11-19): `/admin/tests` (tests, questions with the sum rule, the
    * paper and the marking guide; tests.view / tests.manage) and `/admin/test-markers` (marker authorisations per coach
    * and subject; tests.manageMarkers). Administrators: every subject; Head Coaches: the subjects they head (coach portal).
