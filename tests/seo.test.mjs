@@ -6,15 +6,12 @@ import { PRODUCTION_URLS, SITE_URL, indexingAllowed } from "../lib/site/seo.ts";
 
 test("the address is the platform's own domain", () => {
   assert.equal(SITE_URL, "https://lms.rwandaolympiadfoundation.org");
-  assert.ok(PRODUCTION_URLS.includes("https://roflms.netlify.app"));
+  assert.deepEqual(PRODUCTION_URLS, ["https://lms.rwandaolympiadfoundation.org"]);
 });
 
-test("indexed on the production site (either of its addresses) and locally; never on staging or previews", () => {
-  assert.equal(indexingAllowed("https://lms.rwandaolympiadfoundation.org"), true);
-  assert.equal(indexingAllowed("https://lms.rwandaolympiadfoundation.org/"), true);
-  assert.equal(indexingAllowed("https://roflms.netlify.app"), true);
-  assert.equal(indexingAllowed(undefined), true);
-  assert.equal(indexingAllowed("https://rof-lms-staging.netlify.app"), false);
-  assert.equal(indexingAllowed("https://deploy-preview-61--roflms.netlify.app"), false);
-  assert.equal(indexingAllowed("https://testroflms.netlify.app"), false);
+test("indexed on Vercel's production deployment and locally; never on a Vercel preview or development build", () => {
+  assert.equal(indexingAllowed("production"), true);
+  assert.equal(indexingAllowed(undefined), true);   // local runs
+  assert.equal(indexingAllowed("preview"), false);   // every pull request's preview
+  assert.equal(indexingAllowed("development"), false);
 });

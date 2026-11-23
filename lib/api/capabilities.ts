@@ -255,7 +255,7 @@ export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 
 export const CAPABILITIES_SCHEMA_VERSION = 1;
 export const API_INFO_NAME = "ROF LMS API";
-/** Longer than Netlify's 26-second proxy limit; a sleeping Render backend can take about a minute to wake. */
+/** Longer than a hosting proxy's time limit; a sleeping Render backend can take about a minute to wake. */
 export const DETECTION_TIMEOUT_MS = 30_000;
 
 export type BackendDetection =
@@ -365,8 +365,8 @@ export function isNewBackend(detection: BackendDetection | null | undefined): bo
  * Caching (shared, one request for the whole app): a definite answer is kept
  * for 5 minutes (a deployment can change it); UNKNOWN is never considered
  * fresh and is retried while something uses it — soon at first (a sleeping
- * Render backend answers within about a minute; Netlify's proxy gives up after
- * ~26 s with a 502/504), then every 30 seconds.
+ * Render backend answers within about a minute; the hosting proxy may give up
+ * earlier with a 502/504), then every 30 seconds.
  */
 export const DEFINITE_STALE_MS = 5 * 60_000;
 export const UNKNOWN_RETRY_MS = 30_000;
