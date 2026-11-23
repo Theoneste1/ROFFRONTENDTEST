@@ -203,6 +203,8 @@ export const KNOWN_FEATURES = [
   "customReports",
   /** Saved table layouts and a sortable Users list (owner 2026-11-22). */
   "tableLayouts",
+  /** A school without a code chosen at registration: its code is asked (newSchoolCode) and becomes the school's (owner 2026-11-23). */
+  "schoolCodeAtRegistration",
   /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.

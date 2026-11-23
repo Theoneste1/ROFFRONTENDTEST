@@ -81,6 +81,7 @@ import { AuthHeading, JoinSwitch, SignInInstead } from "@/app/components/auth/Au
 import { CascadeSelect, PlaceSelects, SectorSchoolSelect } from "@/app/components/schools/SchoolCascade";
 import { countryName, RWANDA } from "@/lib/schools/countries";
 import type { Place } from "@/lib/schools/school-cascade";
+import { isNewSchoolCodeError } from "@/lib/schools/school-code";
 
 const primaryLink = "inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand-dark";
 
@@ -195,6 +196,8 @@ function OpenForm() {
   const homeRules = homeLocationRulesSupported(useBackendCapabilities().detection);
   // "My school is not listed" with the school's official details (owner 2026-11-22); older backends: the name only.
   const schoolDetails = hasFeature(useBackendCapabilities().detection, "teacherUnlistedSchoolDetails");
+  // A listed school without a code asks for its code (capability schoolCodeAtRegistration, owner 2026-11-23).
+  const codeAsked = hasFeature(useBackendCapabilities().detection, "schoolCodeAtRegistration");
   const homeInRwanda = d.country.trim().toUpperCase() === RWANDA;
   const [gender, setGender] = useState<Gender | "">("");
   const [submitting, setSubmitting] = useState(false);
@@ -221,6 +224,7 @@ function OpenForm() {
     if (part === "homeProvince") return homeRules && homeInRwanda;
     if (part === "homeDistrict" || part === "homeSector") return !homeRules || homeInRwanda;
     if (part === "proposedSchoolName") return missing;
+    if (part === "newSchoolCode") return codeAsked && !missing && !!d.school && d.school.code === null;
     return true;
   });
   const focus = useSignupFocus();
@@ -232,7 +236,7 @@ function OpenForm() {
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
     if (submitting) return;
-    const e = validateTeacherRegistration(d, homeRules, schoolDetails);
+    const e = validateTeacherRegistration(d, homeRules, schoolDetails, codeAsked);
     const ge = genderOn ? validateGender(gender) : undefined;
     if (ge) e.gender = ge;
     const xe = extraOn ? validateTeacherExtra(extra) : {};
@@ -245,7 +249,7 @@ function OpenForm() {
     }
     setSubmitting(true);
     try {
-      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d, homeRules, schoolDetails), ...(extraOn && teacherExtraPayload(extra)), ...(genderOn && gender && { gender }) });
+      const result = await teacherRegistrationApi.register({ ...buildTeacherPayload(d, homeRules, schoolDetails, codeAsked), ...(extraOn && teacherExtraPayload(extra)), ...(genderOn && gender && { gender }) });
       if (pictureOn) setPictureResult(await uploadRegistrationAvatar(result.avatarUploadToken, picture));
       // A listed school: the account exists — sign in and open the teacher dashboard (no Administrator involved).
       if (result.accountCreated && !result.emailVerificationRequired) {
@@ -261,9 +265,10 @@ function OpenForm() {
     } catch (err) {
       setError(err);
       const server = isApiError(err) ? mapServerFieldErrors(err.validationMessages) : {};
-      const field = isApiError(err) ? TEACHER_ERROR_FIELDS[err.code] : undefined;
+      // A typed code of a code-less school refused: by its field, the server's message (it names the other school).
+      const field = isApiError(err) ? (isNewSchoolCodeError(err) ? "newSchoolCode" : TEACHER_ERROR_FIELDS[err.code]) : undefined;
       // SCHOOL_CODE_LISTED names the listed school: the server's message is shown as given.
-      if (field && isApiError(err)) server[field] = TEACHER_REGISTER_ERRORS[err.code] ?? err.message;
+      if (field && isApiError(err)) server[field] = field === "newSchoolCode" ? err.message : TEACHER_REGISTER_ERRORS[err.code] ?? err.message;
       setErrors(server);
       // A refused field: focus on it. Other refusals: their message above the fields.
       if (errorKeys(server).length) focus.showErrors();
@@ -440,6 +445,21 @@ function OpenForm() {
         onChange={(school) => update((s) => ({ ...setSchoolMode(s, "listed"), school }))}
         notListed={{ selected: missing, onSelect: () => update((s) => setSchoolMode(s, "missing")) }}
         error={errors.school}
+      />
+    ),
+    newSchoolCode: codeAsked && !missing && d.school && d.school.code === null && (
+      <TextField
+        label="School code"
+        name="newSchoolCode"
+        required
+        inputMode="numeric"
+        maxLength={7}
+        placeholder="6 digits"
+        value={d.newSchoolCode}
+        onChange={(e) => set("newSchoolCode", e.target.value.replace(/[^\d ]/g, "").slice(0, 7))}
+        error={errors.newSchoolCode}
+        hint={`${d.school.name} has no code in our list yet. Enter its official 6-digit school code (the school's office has it).`}
+        data-testid="new-school-code"
       />
     ),
     proposedSchoolName: missing && (schoolDetails ? (
