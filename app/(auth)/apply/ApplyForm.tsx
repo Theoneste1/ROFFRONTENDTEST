@@ -54,7 +54,7 @@ import { coachParts } from "@/lib/forms/registration-fields";
 import GenderField from "@/app/components/account/GenderField";
 import { genderSupported, validateGender, type Gender } from "@/lib/accounts/gender";
 
-const USERNAME = /^[a-z0-9._-]{3,30}$/;
+import { USERNAME_HINT, usernameProblem } from "@/lib/accounts/username";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const FIELDS = ["firstName", "lastName", "username", "email", "password", "gender"] as const;
 type F = (typeof FIELDS)[number] | "confirm";
@@ -177,7 +177,8 @@ function CoachApplication() {
     if (v.lastName.trim().length < 2) e.lastName = "Enter your last name (at least 2 characters).";
     const ge = genderOn ? validateGender(gender) : undefined;
     if (ge) e.gender = ge;
-    if (!USERNAME.test(v.username)) e.username = "3–30 characters: lowercase letters, digits, “.”, “_” or “-”.";
+    const usernameError = usernameProblem(v.username);
+    if (usernameError) e.username = usernameError;
     if (!EMAIL.test(v.email.trim())) e.email = "Enter a valid e-mail address.";
     const p = validateNewPassword(password, confirm);
     if (p.password) e.password = p.password;
@@ -375,7 +376,7 @@ function CoachApplication() {
         }}
       />
     ),
-    username: <TextField label="Username" placeholder="e.g. theoneste.nsanza" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    username: <TextField label="Username" placeholder="e.g. theoneste.nsanza" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint={USERNAME_HINT} />,
     email: <TextField label="E-mail" placeholder="e.g. theoneste.nsanza@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} hint="We'll e-mail you the decision on your application." />,
     password: <NewPasswordFields only="password" {...passwordProps} />,
     confirm: <NewPasswordFields only="confirm" {...passwordProps} />,

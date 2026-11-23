@@ -83,6 +83,7 @@ import { countryName, RWANDA } from "@/lib/schools/countries";
 import type { Place } from "@/lib/schools/school-cascade";
 import { isNewSchoolCodeError } from "@/lib/schools/school-code";
 
+import { USERNAME_HINT } from "@/lib/accounts/username";
 const primaryLink = "inline-flex w-full items-center justify-center rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand-dark";
 
 const SUBTITLE = "Apply for a teacher account. An administrator reviews every application before the account is created.";
@@ -574,7 +575,7 @@ function OpenForm() {
         error={errors.homeSector}
       />
     ),
-    username: <TextField label="Username" placeholder="e.g. theoneste.nsanza" name="username" autoComplete="username" required maxLength={30} value={d.username} onChange={(e) => set("username", e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    username: <TextField label="Username" placeholder="e.g. theoneste.nsanza" name="username" autoComplete="username" required maxLength={30} value={d.username} onChange={(e) => set("username", e.target.value.toLowerCase())} error={errors.username} hint={USERNAME_HINT} />,
     password: <NewPasswordFields only="password" {...passwordProps} />,
     confirm: <NewPasswordFields only="confirm" {...passwordProps} />,
   };
