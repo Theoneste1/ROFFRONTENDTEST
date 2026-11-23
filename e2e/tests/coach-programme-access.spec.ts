@@ -10,11 +10,12 @@
 import { hashSync } from "bcryptjs";
 import { expect, test } from "@playwright/test";
 import { PASSWORD } from "../support/accounts";
-import { createSchool, createStudent, idOf, withDb } from "../support/db";
+import { createSchool, createStudent, withDb } from "../support/db";
 import { signIn, signInWith } from "../support/session";
 
 const run = Date.now().toString(36);
 const coachUser = `e2e.cp.${run}`;
+const headUser = `e2e.cph.${run}`;   // a Head Coach of its own: the shared e2e.head heads Physics in other specs
 const studentUser = `e2e.cps.${run}`;
 const studentName = `Kevine${run}`;
 let coachId: string;
@@ -25,16 +26,17 @@ test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => {
   await withDb(async (c) => {
     maths = (await c.query(`SELECT id FROM "Discipline" WHERE code = 'MATHEMATICS'`)).rows[0].id;
-    coachId = (await c.query<{ id: string }>(
+    const account = async (username: string, firstName: string, role: "MENTOR" | "HEAD_COACH") => (await c.query<{ id: string }>(
       `INSERT INTO "User" (id, username, "firstName", "lastName", email, role, "passwordHash", "activatedAt", "isApproved", "updatedAt", gender)
-       VALUES (gen_random_uuid()::text, $1, 'Coachie', $2, $3, 'MENTOR', $4, now(), true, now(), 'FEMALE') RETURNING id`,
-      [coachUser, run, `${coachUser}@e2e.local`, hashSync(PASSWORD, 4)],
+       VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5::"Role", $6, now(), true, now(), 'FEMALE') RETURNING id`,
+      [username, firstName, run, `${username}@e2e.local`, role, hashSync(PASSWORD, 4)],
     )).rows[0].id;
+    coachId = await account(coachUser, "Coachie", "MENTOR");
+    const head = await account(headUser, "Heady", "HEAD_COACH");
     const school = await createSchool(c, `E2E Coach School ${run}`);
     const studentId = await createStudent(c, studentUser, studentName, school, "VERIFIED");
     // A Senior student (grade S5: the database places them at the grade's level): the coach sees every level.
     await c.query(`UPDATE "User" SET "gradeLevel" = 'S5', phone = '+250788777000' WHERE id = $1`, [studentId]);
-    const head = await idOf(c, "e2e.head");
     for (const userId of [coachId, studentId, head]) {
       await c.query(
         `INSERT INTO "ProgrammeMembership" (id, "userId", "disciplineId", source) VALUES (gen_random_uuid()::text, $1, $2, 'MANUAL')
@@ -60,7 +62,7 @@ test("a programme coach has Students and Results; Students lists every level, wi
 });
 
 test("the Head Coach turns seeing the students off for that coach, with a reason; the coach's page is then empty", async ({ page, browser }) => {
-  await signIn(page, "headCoach");
+  await signInWith(page, headUser, PASSWORD);
   await page.goto("/mentor/programme");
   await page.getByRole("button", { name: "Coach permissions" }).click();
   await page.getByTestId("coach-permissions").getByLabel("Coach").selectOption(coachId);
