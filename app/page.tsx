@@ -7,6 +7,7 @@ import Stats from "@/app/components/home/Stats";
 import WhyJoin from "@/app/components/home/WhyJoin";
 import Partners from "@/app/components/home/Partners";
 import Contact from "@/app/components/home/Contact";
+import Subscribe from "@/app/components/home/Subscribe";
 import JoinCta from "@/app/components/home/JoinCta";
 import HomeFooter from "@/app/components/home/HomeFooter";
 import { SITE } from "@/lib/site/content";
@@ -33,6 +34,7 @@ export default function HomePage() {
         <Stats />
         <WhyJoin />
         <Partners />
+        <Subscribe />
         <Suspense>
           <Contact />
         </Suspense>

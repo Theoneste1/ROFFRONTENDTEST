@@ -204,6 +204,12 @@ export const KNOWN_FEATURES = [
   /** Saved table layouts and a sortable Users list (owner 2026-11-22). */
   "tableLayouts",
   /**
+   * News subscribers (owner 2026-11-23): the public "Get ROF news" box (POST /public/subscribe), the /unsubscribe page
+   * (POST /public/unsubscribe) and the administrators' Subscribers screen (/admin/subscribers, subscribers.manage: list,
+   * export, add, import, edit, mailings). Without it: none of these.
+   */
+  "subscribers",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */

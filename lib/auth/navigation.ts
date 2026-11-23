@@ -125,6 +125,12 @@ export const TEACHER_RESULTS: NavItem = { href: "/teacher/results", label: "Resu
 export const ADMIN_TEST_REPORTS: NavItem = { href: "/admin/test-reports", label: "Test reports", permission: "tests.viewResults" };
 export const MENTOR_TEST_REPORTS: NavItem = { href: "/mentor/test-reports", label: "Test reports", permission: "tests.viewResults" };
 
+/**
+ * Subscribers (news mailing list and mailings; capability `subscribers`, owner 2026-11-23). Separately gated like the items
+ * above: the backend feature AND the known subscribers.manage (lib/subscribers/rules.ts → subscribersNavVisible).
+ */
+export const ADMIN_SUBSCRIBERS: NavItem = { href: "/admin/subscribers", label: "Subscribers", permission: "subscribers.manage" };
+
 /** The administrators' "Settings" link (platform settings). */
 export const ADMIN_SETTINGS: NavItem = { href: "/admin/settings", label: "Settings", permission: "settings.manage" };
 
