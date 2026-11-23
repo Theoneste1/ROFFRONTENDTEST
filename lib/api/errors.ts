@@ -116,6 +116,11 @@ export function errorMessage(error: unknown, fallback = UNEXPECTED_ERROR): strin
     // Every pooled database connection stayed busy (503, Retry-After: 2): refused before anything changed.
     case "DATABASE_BUSY":
       return "The server is busy right now. Nothing was changed — please try again in a moment.";
+    // "View as" (read only): the backend's sentence names the viewed user and says what to do.
+    case "VIEW_AS_READ_ONLY":
+      return error.message || "You are viewing the platform as another user. Nothing can be changed in this view. Return to your own account to make changes.";
+    case "VIEW_AS_ENDED":
+      return "This viewing session has ended (it lasts 30 minutes, or your permission changed). Close this tab.";
     case "INTERNAL_ERROR":
       return `Something went wrong on our side and this could not be completed. Please try again in a moment. If it keeps happening, contact the Rwanda Olympiad Foundation team${ref ? ` and give them the reference ${error.requestId}` : ""}.`;
   }

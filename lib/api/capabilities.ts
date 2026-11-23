@@ -230,6 +230,12 @@ export const KNOWN_FEATURES = [
    */
   "subscribers",
   /**
+   * View as, read only (owner 2026-11-23): POST /admin/users/:id/view-as (users.impersonate; lower roles only) → a
+   * single-use ticket the new tab exchanges (POST /auth/view-as/exchange) for a 30-minute viewing token; every change
+   * answers 403 VIEW_AS_READ_ONLY; 401 VIEW_AS_ENDED when it stops; POST /auth/view-as/end. Without it: no button.
+   */
+  "viewAs",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */

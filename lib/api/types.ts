@@ -67,7 +67,9 @@ export type Permission =
   // Coaches across their programmes (owner 2026-11-23): their programmes' students and published results.
   | "students.viewProgramme" | "tests.viewProgrammeResults"
   // News subscribers and mailings (capability subscribers, owner 2026-11-23): Administrators and Super Admins.
-  | "subscribers.manage";
+  | "subscribers.manage"
+  // View as, read only (owner 2026-11-23): Administrators and Super Admins; a Head Coach only by an individual GRANT.
+  | "users.impersonate";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 
@@ -110,6 +112,8 @@ export interface SchoolRef {
 
 /** `GET /me` and the `user` of `POST /auth/login`. */
 export interface CurrentUser {
+  /** Present only in a "view as" tab: who is viewing this user's portal (read only). */
+  viewAs?: import("../auth/view-as").ViewAsInfo;
   id: string;
   username: string;
   email: string;

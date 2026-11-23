@@ -40,7 +40,33 @@ export function getAccessToken(): string | null {
 }
 
 export function setAccessToken(token: string | null): void {
+  if (viewing) return; // a viewing tab keeps its viewing token (never replaced by a sign-in / sign-out elsewhere)
   accessToken = token;
+}
+
+// ─── "View as" (read only) ──────────────────────────────────────────────────
+//
+// A viewing tab (lib/auth/view-as.ts) sends its viewing token as the bearer, never calls /auth/refresh, never sends
+// cookies and never touches the shared refresh cooldown. Any 401 means the viewing session ended.
+
+let viewing = false;
+type ViewEndedListener = () => void;
+const viewEndedListeners = new Set<ViewEndedListener>();
+
+/** Put this tab into viewing mode for the rest of its life (until reload). */
+export function enterViewingMode(token: string): void {
+  viewing = true;
+  accessToken = token;
+}
+
+export function isViewingMode(): boolean {
+  return viewing;
+}
+
+/** Called once the viewing token is refused (401 VIEW_AS_ENDED). Returns an unsubscribe. */
+export function onViewAsEnded(listener: ViewEndedListener): () => void {
+  viewEndedListeners.add(listener);
+  return () => viewEndedListeners.delete(listener);
 }
 
 type ExpiredListener = () => void;
@@ -129,6 +155,8 @@ const refresher = createRefresher({ run: runRefresh, lock: withCrossTabLock, sha
  * Concurrent callers share one request, serialised across tabs.
  */
 export function refreshSession(): Promise<RefreshOutcome> {
+  // A viewing tab has no session to refresh: its token works until it ends.
+  if (viewing) return Promise.resolve(accessToken ? "ok" : "rejected");
   return refresher.refresh();
 }
 
@@ -206,16 +234,17 @@ async function send(path: string, opts: RequestOptions): Promise<Response> {
   }
 
   // Uploads go straight to the backend when configured (see upload-origin.ts);
-  // no cookies are sent across origins.
+  // no cookies are sent across origins. A viewing tab never sends cookies.
   const direct = body instanceof FormData && UPLOAD_ORIGIN !== "";
   const url = direct ? `${UPLOAD_ORIGIN}${buildUrl(path, query)}` : buildUrl(path, query);
+  const cookies = !direct && !viewing;
 
   if (body instanceof FormData && typeof XMLHttpRequest !== "undefined") {
-    return sendMultipart(url, init.method ?? "POST", headers, body, !direct, init.signal ?? undefined);
+    return sendMultipart(url, init.method ?? "POST", headers, body, cookies, init.signal ?? undefined);
   }
 
   try {
-    return await fetch(url, { ...init, headers, body: payload, credentials: direct ? "omit" : "include" });
+    return await fetch(url, { ...init, headers, body: payload, credentials: cookies ? "include" : "omit" });
   } catch {
     throw new ApiError(0, "NETWORK_ERROR", "Cannot reach the server.");
   }
@@ -303,6 +332,12 @@ async function toError(res: Response): Promise<ApiError> {
  * `SESSION_REFRESH_UNAVAILABLE` and keeps the session.
  */
 async function sendWithRefresh(path: string, opts: RequestOptions): Promise<Response> {
+  if (viewing) {
+    // Never refresh: a 401 means the viewing session ended (30 minutes, closed, or the viewer's permission changed).
+    const res = await send(path, opts);
+    if (res.status === 401) viewEndedListeners.forEach((l) => l());
+    return res;
+  }
   if (!refreshesOnUnauthorized(opts)) return send(path, opts);
   // Uploads: refresh first when the token is missing or about to expire, so a
   // large body is not sent with a dead token (rejected with 401, then sent
