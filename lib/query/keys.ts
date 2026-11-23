@@ -278,6 +278,14 @@ export const queryKeys = {
     grants: (id: string) => ["custom-reports", "grants", id] as const,
   },
   tableLayout: (table: string) => ["table-layout", table] as const,
+  registrationData: {
+    all: ["registration-data"] as const,
+    fields: (category: string) => ["registration-data", "fields", category] as const,
+    query: (q: unknown, page: number, limit: number) => ["registration-data", "query", q, page, limit] as const,
+    record: (id: string) => ["registration-data", "record", id] as const,
+    savedFilters: (category: string) => ["registration-data", "saved-filters", category] as const,
+    layout: (category: string) => ["registration-data", "layout", category] as const,
+  },
   admin: {
     all: ["admin"] as const,
     dashboard: (filters: ReportFilters = {}) => [...queryKeys.admin.all, "dashboard", filters] as const,

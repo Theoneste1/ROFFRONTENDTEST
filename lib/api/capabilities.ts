@@ -204,6 +204,11 @@ export const KNOWN_FEATURES = [
   /** Saved table layouts and a sortable Users list (owner 2026-11-22). */
   "tableLayouts",
   /**
+   * Registration data (owner 2026-11-23): Super Administrators (registrationData.manage) list, filter, export and edit every
+   * eligible registration field — /admin/registration-data (fields read from the database; saved filters; column layouts).
+   */
+  "registrationData",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */
