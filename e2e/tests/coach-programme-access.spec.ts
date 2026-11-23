@@ -32,9 +32,8 @@ test.beforeAll(async () => {
     )).rows[0].id;
     const school = await createSchool(c, `E2E Coach School ${run}`);
     const studentId = await createStudent(c, studentUser, studentName, school, "VERIFIED");
-    // A Senior student: the coach sees every level.
-    const senior = (await c.query(`SELECT id FROM "Division" WHERE code = 'SENIOR' LIMIT 1`)).rows[0].id;
-    await c.query(`UPDATE "User" SET "gradeLevel" = 'S5', "divisionId" = $2, "divisionManual" = true, phone = '+250788777000' WHERE id = $1`, [studentId, senior]);
+    // A Senior student (grade S5: the database places them at the grade's level): the coach sees every level.
+    await c.query(`UPDATE "User" SET "gradeLevel" = 'S5', phone = '+250788777000' WHERE id = $1`, [studentId]);
     const head = await idOf(c, "e2e.head");
     for (const userId of [coachId, studentId, head]) {
       await c.query(
