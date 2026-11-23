@@ -131,6 +131,12 @@ export interface MarkerCandidate extends TestPerson {
   interestedInSubject: boolean;
   /** The coach's active authorisation for this subject, or null. */
   authorizationId: string | null;
+  /** Owner 2026-11-23 (coachProgrammeAccess): a member of the subject's programme marks by default. */
+  programmeMember?: boolean;
+  /** Marking taken away from this coach in this subject (with the reason); authorising gives it back. */
+  markingRemoved?: { id: string; reason: string } | null;
+  /** Whether the coach may mark this subject now. */
+  mayMark?: boolean;
 }
 
 export type MarkerState = "active" | "revoked" | "all";

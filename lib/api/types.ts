@@ -64,6 +64,8 @@ export type Permission =
   | "students.classifyLevel" | "reports.build"
   // Registration data (owner 2026-11-23): Super Administrators only.
   | "registrationData.manage";
+  // Coaches across their programmes (owner 2026-11-23): their programmes' students and published results.
+  | "students.viewProgramme" | "tests.viewProgrammeResults";
 
 // ─── Common shapes ──────────────────────────────────────────────────────────
 

@@ -32,6 +32,8 @@ import DateOfBirthCard from "./DateOfBirthCard";
 import { canCorrectDateOfBirth } from "@/lib/accounts/date-of-birth-correction";
 import { canEditCoachSubjects, coachInterestsSupported } from "@/lib/accounts/coach-application";
 import CoachSubjectsCard from "./CoachSubjectsCard";
+import CoachAccessPanel from "@/app/components/coaches/CoachAccessPanel";
+import { coachProgrammeAccessSupported } from "@/lib/coaches/coach-access";
 import OlympiadLevelCard from "@/app/components/students/OlympiadLevelCard";
 import { AvatarTile } from "@/app/components/account/UserAvatar";
 
@@ -282,6 +284,14 @@ export default function UserDetail({ userId }: { userId: string }) {
         {/* A teacher's test submission for students: one switch, the account untouched (testSubmissionLock). */}
         {u.role === "TEACHER" && can("users.manageTeachers") && submissionLockSupported(detection) && !isMe && <TeacherTestSubmissionCard teacherId={u.id} />}
         {u.role === "TEACHER" && can("users.manageTeachers") && <TeacherAccessCard teacherId={u.id} />}
+        {/* A coach's access across their programmes (coachProgrammeAccess): Administrators hold users.manageCoaches (not in their
+            frozen /me/permissions list, so the role is checked too); the backend enforces every change. */}
+        {u.role === "MENTOR" && coachProgrammeAccessSupported(detection) && (me?.role === "ADMIN" || me?.role === "SUPER_ADMIN" || can("users.manageCoaches")) && (
+          <Card className="lg:col-span-3 p-6">
+            <h2 className="mb-3 text-base font-bold text-gray-900">Programme access</h2>
+            <CoachAccessPanel coachId={u.id} />
+          </Card>
+        )}
         {u.role === "HEAD_COACH" && can("programmes.manageHeads") && <ProgrammeHeadsCard userId={u.id} name={name} />}
         {/* Super Administrators: effective permissions (permissions.view) and overrides (permissions.manageOverrides). */}
         {(can("permissions.view") || can("permissions.manageOverrides")) && <PermissionOverridesCard user={u} />}

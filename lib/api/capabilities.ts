@@ -213,6 +213,12 @@ export const KNOWN_FEATURES = [
   /** A school without a code chosen at registration: its code is asked (newSchoolCode) and becomes the school's (owner 2026-11-23). */
   "schoolCodeAtRegistration",
   /**
+   * Coaches across their programmes (owner 2026-11-23): every Coach sees the students, opens the courses, marks the tests and
+   * sees the published results of each programme they belong to, at every level; an Administrator or the programme's Head
+   * Coach takes any part away per programme (/admin/coaches/:id/programme-access).
+   */
+  "coachProgrammeAccess",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */
