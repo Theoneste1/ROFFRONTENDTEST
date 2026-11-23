@@ -106,7 +106,7 @@ export default function Contact() {
     `w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 ${bad ? "border-red-400 focus:ring-red-200" : "border-slate-300 focus:border-brand focus:ring-blue-200"}`;
 
   return (
-    <section id="contact" className="bg-gradient-to-br from-blue-50 via-white to-brand-50 py-20 sm:py-28" aria-labelledby="contact-title">
+    <section id="contact" className="bg-gradient-to-br from-blue-50 via-white to-amber-50/60 py-20 sm:py-28" aria-labelledby="contact-title">
       <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-5 lg:px-8">
         <Reveal className="lg:col-span-2">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand">Contact us</p>

@@ -42,7 +42,7 @@ export default function HomeNav() {
   return (
     <header className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${solid ? "bg-brand-950/95 shadow-lg backdrop-blur" : "bg-transparent"}`}>
       <nav className="mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" aria-label="Main">
-        <Link href="/" aria-label="ROF LMS home page" data-testid="rof-logo-link" className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:-white">
+        <Link href="/" aria-label="ROF LMS home page" data-testid="rof-logo-link" className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
           <Image src="/logo.png" alt="" width={44} height={44} className="h-10 w-10 md:h-11 md:w-11 rounded-full" priority />
           <span className="leading-tight text-white">
             <span className="block text-lg font-extrabold tracking-tight">ROF LMS</span>
@@ -53,7 +53,7 @@ export default function HomeNav() {
         <ul className="hidden lg:flex items-center gap-8 text-sm font-medium text-blue-50">
           {LINKS.map((l) => (
             <li key={l.href}>
-              <a href={l.href} className="rounded hover:-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:-white">
+              <a href={l.href} className="rounded hover:text-amber-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
                 {l.label}
               </a>
             </li>
@@ -62,7 +62,7 @@ export default function HomeNav() {
 
         <div className="hidden lg:flex items-center gap-3">
           {signedIn ? (
-            <Link href={portalHome(session.role!)} className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-brand-950 hover:bg-brand-50 transition-colors">
+            <Link href={portalHome(session.role!)} className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-brand-950 hover:bg-amber-300 transition-colors">
               My dashboard
             </Link>
           ) : (
@@ -70,7 +70,7 @@ export default function HomeNav() {
               <Link href="/login" className="rounded-full px-5 py-2.5 text-sm font-semibold text-white ring-1 ring-white/40 hover:bg-white/10 transition-colors">
                 Log in
               </Link>
-              <a href="#join" className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-brand-950 hover:bg-brand-50 transition-colors">
+              <a href="#join" className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-brand-950 hover:bg-amber-300 transition-colors">
                 Join the community
               </a>
             </>
@@ -79,7 +79,7 @@ export default function HomeNav() {
 
         <button
           type="button"
-          className="lg:hidden rounded-lg p-2 text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:-white"
+          className="lg:hidden rounded-lg p-2 text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           aria-controls="home-mobile-menu"
@@ -102,7 +102,7 @@ export default function HomeNav() {
           </ul>
           <div className="mt-4 grid gap-3">
             {signedIn ? (
-              <Link href={portalHome(session.role!)} className="rounded-full bg-white px-5 py-3 text-center font-bold text-brand-950">
+              <Link href={portalHome(session.role!)} className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-brand-950">
                 My dashboard
               </Link>
             ) : (
@@ -110,7 +110,7 @@ export default function HomeNav() {
                 <Link href="/login" className="rounded-full px-5 py-3 text-center font-semibold text-white ring-1 ring-white/40">
                   Log in
                 </Link>
-                <a href="#join" onClick={() => setOpen(false)} className="rounded-full bg-white px-5 py-3 text-center font-bold text-brand-950">
+                <a href="#join" onClick={() => setOpen(false)} className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-brand-950">
                   Join the community
                 </a>
               </>

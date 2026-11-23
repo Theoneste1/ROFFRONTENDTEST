@@ -46,9 +46,9 @@ export default function HomeFooter() {
           <h3 className="text-sm font-bold uppercase tracking-wider text-white">Quick links</h3>
           <ul className="mt-4 space-y-2 text-sm">
             {QUICK.map((l) => (
-              <li key={l.href}><a href={l.href} className="hover:-white">{l.label}</a></li>
+              <li key={l.href}><a href={l.href} className="hover:text-amber-300">{l.label}</a></li>
             ))}
-            <li><Link href="/login" className="hover:-white">Log in</Link></li>
+            <li><Link href="/login" className="hover:text-amber-300">Log in</Link></li>
           </ul>
         </nav>
 
@@ -56,7 +56,7 @@ export default function HomeFooter() {
           <h3 className="text-sm font-bold uppercase tracking-wider text-white">Learning resources</h3>
           <ul className="mt-4 space-y-2 text-sm">
             {RESOURCES.map((l) => (
-              <li key={l.href}><Link href={l.href} className="hover:-white">{l.label}</Link></li>
+              <li key={l.href}><Link href={l.href} className="hover:text-amber-300">{l.label}</Link></li>
             ))}
           </ul>
         </nav>
@@ -65,11 +65,11 @@ export default function HomeFooter() {
           <h3 className="text-sm font-bold uppercase tracking-wider text-white">Contact</h3>
           <ul className="mt-4 space-y-2 text-sm">
             <li className="text-white">{SITE.organisation}</li>
-            {info?.email && <li><a href={`mailto:${info.email}`} className="hover:-white">{info.email}</a></li>}
-            {info?.phone && <li><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="hover:-white">{info.phone}</a></li>}
+            {info?.email && <li><a href={`mailto:${info.email}`} className="hover:text-amber-300">{info.email}</a></li>}
+            {info?.phone && <li><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="hover:text-amber-300">{info.phone}</a></li>}
             {info?.hours && <li>{info.hours}</li>}
-            <li><a href="#contact" className="hover:text-white hover:underline">Send us a message</a></li>
-            {news && <li><a href="#news" className="hover:text-white hover:underline">Get ROF news by e-mail</a></li>}
+            <li><a href="#contact" className="hover:text-amber-300">Send us a message</a></li>
+            {news && <li><a href="#news" className="hover:text-amber-300">Get ROF news by e-mail</a></li>}
           </ul>
         </div>
       </div>

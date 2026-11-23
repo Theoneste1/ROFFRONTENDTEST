@@ -120,7 +120,7 @@ export default function ProfileMenu() {
         <AvatarBadge user={user} size="md" />
         <span className="hidden min-w-0 flex-col items-start text-left lg:flex">
           <span className="max-w-[12rem] truncate text-sm font-semibold text-slate-900" data-testid="profile-menu-name">{label}</span>
-          <span className="text-xs font-medium text-brand" data-testid="profile-menu-title">{title}</span>
+          <span className="text-xs font-medium text-amber-800" data-testid="profile-menu-title">{title}</span>
         </span>
         <ChevronDown className={`hidden h-4 w-4 text-slate-600 transition-transform lg:block ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
@@ -139,7 +139,7 @@ export default function ProfileMenu() {
             <AvatarBadge user={user} size="lg" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{displayName(user)}</p>
-              <p className="text-xs font-medium text-white/80" data-testid="profile-menu-heading-title">{title}</p>
+              <p className="text-xs font-medium text-amber-300" data-testid="profile-menu-heading-title">{title}</p>
             </div>
           </div>
           <div className="mt-2 flex flex-col gap-0.5" role="none">
