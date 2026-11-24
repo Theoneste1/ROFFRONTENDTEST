@@ -9,7 +9,6 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { subscribersSupported } from "@/lib/subscribers/rules";
 import { useEffect, useState } from "react";
 import { SubscribeDialog } from "./Subscribe";
-import { serif } from "./fonts";
 import { Building2, Clock, Mail, MailPlus, Phone, Send } from "lucide-react";
 
 /** The contact column: one row per detail, an amber icon before it. */
@@ -59,7 +58,7 @@ export default function HomeFooter() {
               <Image src="/logo.png" alt="" width={112} height={112} className="h-full w-full rounded-full object-cover" />
             </span>
             <span className="leading-tight">
-              <span className={`${serif.className} block text-[1.5rem] font-medium text-white`}>ROF LMS</span>
+              <span className="block font-serif text-[1.5rem] font-medium text-white">ROF LMS</span>
               <span className="block text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-blue-100/70">{SITE.organisation}</span>
             </span>
           </div>
