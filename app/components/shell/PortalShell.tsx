@@ -84,8 +84,8 @@ export default function PortalShell({
   const toggle = () => (isDesktop ? setRailOpen((o) => !o) : setDrawerOpen((o) => !o));
 
   return (
-    <div className="min-h-screen w-full bg-[#e2e8f0] overflow-x-clip flex flex-col">
-      <header className="sticky top-0 z-30 w-full flex-shrink-0 shadow-[0_1px_0_rgba(148,163,184,0.55)] bg-[#e2e8f0]/95 backdrop-blur supports-[backdrop-filter]:bg-[#e2e8f0]/85" data-testid="portal-topbar">
+    <div className="min-h-screen w-full bg-canvas overflow-x-clip flex flex-col">
+      <header className="sticky top-0 z-30 w-full flex-shrink-0 border-b border-line bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90" data-testid="portal-topbar">
         <PortalNavbar
           onMenuClick={toggle}
           menuButtonRef={menuButtonRef}
@@ -100,7 +100,7 @@ export default function PortalShell({
             id={SIDEBAR_ID}
             // Exactly the visible height: the sidebar shows what fits and puts the rest under "More" (SidebarNav), so it
             // never scrolls; not clipped, so the "More" panel can open beside it.
-            className="sticky top-20 z-20 h-[calc(100dvh-5rem)] flex-shrink-0 self-start overflow-visible bg-brand-950 [&>aside]:h-full"
+            className="sticky top-20 z-20 h-[calc(100dvh-5rem)] flex-shrink-0 self-start overflow-visible bg-brand [&>aside]:h-full"
             data-testid="portal-sidebar"
           >
             {renderSidebar(railOpen)}
@@ -120,7 +120,7 @@ export default function PortalShell({
               aria-label="Main menu"
               inert={!drawerOpen}
               // Opening shows the drawer at once (so focus can move in); closing hides it after the slide.
-              className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto bg-brand-950 shadow-2xl duration-300 ease-in-out [&>aside]:h-auto [&>aside]:min-h-full [&>aside]:w-full ${
+              className={`fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] overflow-y-auto bg-brand shadow-2xl duration-300 ease-in-out [&>aside]:h-auto [&>aside]:min-h-full [&>aside]:w-full ${
                 drawerOpen ? "translate-x-0 visible transition-transform" : "-translate-x-full invisible transition-[transform,visibility]"
               }`}
             >

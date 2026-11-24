@@ -279,7 +279,7 @@ function MarksForm({ s }: { s: MarkerSubmission }) {
   }
   const field = (key: string) => (errors[key] ? inputBad : inputOk);
   return (
-    <section aria-labelledby={`${ids}-h`} className="rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+    <section aria-labelledby={`${ids}-h`} className="rounded-2xl border border-line bg-white p-4 sm:p-5 lg:sticky lg:top-24 lg:self-start">
       <form onSubmit={onSave} noValidate className="space-y-4" data-testid="marks-form">
         <div className="flex items-start justify-between gap-2">
           <h2 id={`${ids}-h`} className="text-base font-bold text-slate-900">Marks</h2>
@@ -328,7 +328,10 @@ function MarksForm({ s }: { s: MarkerSubmission }) {
           <textarea id={`${ids}-comment`} rows={3} maxLength={2000} className={`${inputCls} ${field("comment")}`} value={d.comment} disabled={disabled}
             onChange={(e) => setD((x) => ({ ...x, comment: e.target.value }))} />
         </div>
-        <p className="text-sm font-semibold text-slate-900" data-testid="running-total" aria-live="polite">Total: {marksText(total, s.test.maxMarks)}</p>
+        <p className="flex items-baseline justify-between gap-3 border-t border-line pt-3 text-slate-900" data-testid="running-total" aria-live="polite">
+          <span className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-muted">Total:</span>{" "}
+          <span className="stat-number text-[1.75rem] leading-none text-brand">{marksText(total, s.test.maxMarks)}</span>
+        </p>
         {s.canEdit && (
           <div className="flex flex-wrap justify-end gap-3">
             <button type="submit" className={btnSecondary} disabled={save.isPending} data-testid="save-draft">{save.isPending ? "Saving…" : "Save draft"}</button>

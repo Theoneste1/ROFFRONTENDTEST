@@ -43,7 +43,7 @@ export default function RoleGate({ role, children }: { role: Role; children: Rea
 
   if (session.status === "error") {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#e2e8f0] p-4">
+      <div className="min-h-screen w-full flex items-center justify-center bg-canvas p-4">
         <div className="max-w-md w-full">
           <ErrorState error={session.error} title="Couldn't load your account" onRetry={session.retry} />
         </div>

@@ -17,7 +17,7 @@ export default function GenderField({
   return (
     <fieldset aria-describedby={error ? "gender-error" : undefined} data-testid="gender-field">
       <legend className="mb-2 block text-sm font-semibold text-slate-700">
-        {label} <span className="text-red-500">*</span>
+        {label} <span className="text-amber-600">*</span>
       </legend>
       <div className="grid grid-cols-2 gap-3 rounded-lg focus:outline-none" role="radiogroup" aria-label={label} aria-required="true" aria-invalid={error ? true : undefined} tabIndex={error ? -1 : undefined}>
         {GENDER_OPTIONS.map((o) => {

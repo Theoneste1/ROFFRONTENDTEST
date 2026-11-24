@@ -4,73 +4,138 @@
    as WIDE_LAYOUT_QUERY in lib/forms/wizard.ts): two columns above 640px, one column on phones. */
 @custom-variant wizard-wide (@media (width > 640px));
 
+/* ─── Academic Prestige design system (DESIGN.md) ──────────────────────────────────────────────────────────────────
+   One set of tokens for the whole platform: midnight navy, formal royal blue and academic amber on white and a cool
+   slate canvas; hairline borders instead of heavy shadows; conservative corners; Newsreader for titles and key figures,
+   Plus Jakarta Sans for text, labels and data. Pages use Tailwind utilities; redefining the scales here restyles every
+   page consistently. Colour roles:
+     brand / blue / indigo  navy → royal tonal scale (800 = #061B40 primary, 600 = #0D3B82 royal, 700 = #0A2B66 core)
+     gray                   slate neutrals (line #E2E8F0, canvas #F8FAFC, muted #64748B, ink #0F172A)
+     amber / yellow         academic amber (600 = #D97706 rich, 500 = #F59E0B vibrant, 400 = #FBBF24 highlight)
+     purple, violet, fuchsia, pink, sky, cyan, teal → the navy scale (no extra hues)
+     green / emerald, red / rose: status meanings only (success, error). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
-/* The colour of the ROF logo (#00428C), the one blue of the whole site: bg-brand, text-brand, ring-brand… (dark: hover;
-   deep: shading; light: tinted backgrounds) and a tonal scale brand-50 … brand-950 around it (700 = #00428C).
-   White on brand and brand on white are WCAG AA (about 9.6:1). */
 @theme {
-  --color-brand: #00428c;
-  --color-brand-dark: #003470;
-  --color-brand-deep: #002a5c;
-  --color-brand-light: #e6eef7;
-  --color-brand-50: #eef4fb;
-  --color-brand-100: #d9e6f4;
-  --color-brand-200: #b3cde9;
-  --color-brand-300: #82acd9;
-  --color-brand-400: #4d86c4;
-  --color-brand-500: #1f63ad;
-  --color-brand-600: #0b519e;
-  --color-brand-700: #00428c;
-  --color-brand-800: #003672;
-  --color-brand-900: #002b5c;
-  --color-brand-950: #001d3d;
-  /* Every blue of the site is the logo blue: the blue and indigo scales are the same tonal scale (700 = #00428C). */
-  --color-blue-50: #eef4fb;
-  --color-blue-100: #d9e6f4;
-  --color-blue-200: #b3cde9;
-  --color-blue-300: #82acd9;
-  --color-blue-400: #4d86c4;
-  --color-blue-500: #1f63ad;
-  --color-blue-600: #0b519e;
-  --color-blue-700: #00428c;
-  --color-blue-800: #003672;
-  --color-blue-900: #002b5c;
-  --color-blue-950: #001d3d;
-  --color-indigo-50: #eef4fb;
-  --color-indigo-100: #d9e6f4;
-  --color-indigo-200: #b3cde9;
-  --color-indigo-300: #82acd9;
-  --color-indigo-400: #4d86c4;
-  --color-indigo-500: #1f63ad;
-  --color-indigo-600: #0b519e;
-  --color-indigo-700: #00428c;
-  --color-indigo-800: #003672;
-  --color-indigo-900: #002b5c;
-  --color-indigo-950: #001d3d;
+  /* Navy / royal scale: the institution's colour. bg-brand = primary navy; brand-dark = the royal hover tone. */
+  --color-brand: #061b40;
+  --color-brand-dark: #0d3b82;
+  --color-brand-deep: #0a2b66;
+  --color-brand-light: #eff4ff;
+  --color-brand-50: #eff4ff;
+  --color-brand-100: #dce9ff;
+  --color-brand-200: #b5c6f4;
+  --color-brand-300: #8da6db;
+  --color-brand-400: #5a7bc0;
+  --color-brand-500: #385ca5;
+  --color-brand-600: #0d3b82;
+  --color-brand-700: #0a2b66;
+  --color-brand-800: #08214d;
+  --color-brand-900: #061b40;
+  --color-brand-950: #04132e;
+  --color-blue-50: #eff4ff;
+  --color-blue-100: #dce9ff;
+  --color-blue-200: #b5c6f4;
+  --color-blue-300: #8da6db;
+  --color-blue-400: #5a7bc0;
+  --color-blue-500: #385ca5;
+  --color-blue-600: #0d3b82;
+  --color-blue-700: #0a2b66;
+  --color-blue-800: #08214d;
+  --color-blue-900: #061b40;
+  --color-blue-950: #04132e;
+  --color-indigo-50: #eff4ff;
+  --color-indigo-100: #dce9ff;
+  --color-indigo-200: #b5c6f4;
+  --color-indigo-300: #8da6db;
+  --color-indigo-400: #5a7bc0;
+  --color-indigo-500: #385ca5;
+  --color-indigo-600: #0d3b82;
+  --color-indigo-700: #0a2b66;
+  --color-indigo-800: #08214d;
+  --color-indigo-900: #061b40;
+  --color-indigo-950: #04132e;
+  /* Extra hues collapse onto the navy scale (restraint: no decorative colours). */
+  --color-purple-50: #eff4ff; --color-purple-100: #dce9ff; --color-purple-200: #b5c6f4; --color-purple-300: #8da6db;
+  --color-purple-400: #5a7bc0; --color-purple-500: #385ca5; --color-purple-600: #0d3b82; --color-purple-700: #0a2b66;
+  --color-purple-800: #061b40; --color-purple-900: #04132e;
+  --color-violet-50: #eff4ff; --color-violet-100: #dce9ff; --color-violet-200: #b5c6f4; --color-violet-300: #8da6db;
+  --color-violet-400: #5a7bc0; --color-violet-500: #385ca5; --color-violet-600: #0d3b82; --color-violet-700: #0a2b66;
+  --color-violet-800: #061b40; --color-violet-900: #04132e;
+  --color-fuchsia-50: #eff4ff; --color-fuchsia-100: #dce9ff; --color-fuchsia-500: #385ca5; --color-fuchsia-600: #0d3b82; --color-fuchsia-700: #0a2b66;
+  --color-pink-50: #eff4ff; --color-pink-100: #dce9ff; --color-pink-500: #385ca5; --color-pink-600: #0d3b82; --color-pink-700: #0a2b66;
+  --color-sky-50: #eff4ff; --color-sky-100: #dce9ff; --color-sky-200: #b5c6f4; --color-sky-500: #385ca5; --color-sky-600: #0d3b82; --color-sky-700: #0a2b66; --color-sky-800: #061b40;
+  --color-cyan-50: #eff4ff; --color-cyan-100: #dce9ff; --color-cyan-500: #385ca5; --color-cyan-600: #0d3b82; --color-cyan-700: #0a2b66; --color-cyan-800: #061b40;
+  --color-teal-50: #eff4ff; --color-teal-100: #dce9ff; --color-teal-500: #385ca5; --color-teal-600: #0d3b82; --color-teal-700: #0a2b66; --color-teal-800: #061b40;
+  /* Slate neutrals for every gray. */
+  --color-gray-50: #f8fafc;
+  --color-gray-100: #f1f5f9;
+  --color-gray-200: #e2e8f0;
+  --color-gray-300: #cbd5e1;
+  --color-gray-400: #94a3b8;
+  --color-gray-500: #64748b;
+  --color-gray-600: #475569;
+  --color-gray-700: #334155;
+  --color-gray-800: #1e293b;
+  --color-gray-900: #0f172a;
+  --color-gray-950: #020617;
+  /* Academic amber (yellow and amber are one scale). */
+  --color-yellow-50: #fffbeb;
+  --color-yellow-100: #fef3c7;
+  --color-yellow-200: #fde68a;
+  --color-yellow-300: #fcd34d;
+  --color-yellow-400: #fbbf24;
+  --color-yellow-500: #f59e0b;
+  --color-yellow-600: #d97706;
+  --color-yellow-700: #b45309;
+  --color-yellow-800: #92400e;
+  --color-yellow-900: #78350f;
+  /* Named roles from the design system. */
+  --color-canvas: #f8fafc;
+  --color-line: #e2e8f0;
+  --color-muted: #64748b;
+  --color-ink: #0f172a;
+  --color-accent: #d97706;
+  --color-accent-vibrant: #f59e0b;
+  --color-accent-highlight: #fbbf24;
+  --color-navy-deep: #061b40;
+  --color-navy-core: #0a2b66;
+  --color-royal: #0d3b82;
+  /* Conservative corners: 4 px for controls and small blocks, 8 px for containers. rounded-full stays for avatars and tags. */
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.5rem;
+  --radius-4xl: 0.5rem;
+  /* Hairlines, not floating cards: resting surfaces carry almost no shadow; menus and dialogs keep a soft, low one. */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 1px 2px 0 rgb(6 27 64 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(6 27 64 / 0.06);
+  --shadow-lg: 0 10px 24px -6px rgb(6 27 64 / 0.10);
+  --shadow-xl: 0 16px 36px -8px rgb(6 27 64 / 0.14);
+  --shadow-2xl: 0 24px 48px -12px rgb(6 27 64 / 0.18);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, "Segoe UI", Arial, sans-serif;
+  --font-serif: var(--font-newsreader), "Newsreader", Georgia, "Times New Roman", serif;
+  --font-display: var(--font-newsreader), "Newsreader", Georgia, serif;
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 html, body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   /* No sideways scrolling. "clip" (not "hidden") so html/body do not become scroll containers:
      the portals' top bar and sidebar stick while the page scrolls. "hidden" stays as the fallback
      for browsers without "clip". */
@@ -78,6 +143,52 @@ html, body {
   overflow-x: clip;
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Titles: Newsreader at calibrated editorial weights (unlayered, so it wins over font-bold on headings everywhere). */
+h1, h2 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  font-optical-sizing: auto;
+}
+h1 { letter-spacing: -0.02em; }
+/* Section eyebrow (label-caps): small uppercase label above a heading. */
+.eyebrow {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+/* Key figures (stat-counter): Newsreader numbers. */
+.stat-number {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+/* Tables: figures aligned. */
+td { font-variant-numeric: tabular-nums; }
+
+/* Keyboard focus: one clear royal outline everywhere. */
+:where(a, button, [role="button"], [role="tab"], summary, input[type="checkbox"], input[type="radio"]):focus-visible {
+  outline: 2px solid var(--color-royal);
+  outline-offset: 2px;
+}
+::selection { background: #dce9ff; color: #061b40; }
+
+/* Reduced motion: no animations or transitions for people who ask for it. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 *, *::before, *::after {

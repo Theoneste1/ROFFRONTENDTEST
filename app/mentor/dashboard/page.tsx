@@ -91,7 +91,7 @@ export default function MentorDashboard() {
     .slice(0, 4);
 
   return (
-    <div className="min-h-screen p-4 md:p-10 font-sans text-slate-800 bg-[#E6EBF2]">
+    <div className="min-h-screen p-4 md:p-10 font-sans text-slate-800 bg-canvas">
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
@@ -104,17 +104,16 @@ export default function MentorDashboard() {
 
         {scopes.isError && <ErrorState error={scopes.error} title="Couldn't load your courses" onRetry={() => scopes.refetch()} />}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat) => (
-            <div key={stat.title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200/80">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                  <p className="text-xs text-gray-600 mt-2">{stat.change}</p>
-                </div>
-                <div className={`${stat.color} text-white p-3 rounded-xl`}>{stat.icon}</div>
+        {/* Statistics bar (Academic Prestige): one hairline band, figures separated by vertical rules, no boxed cards. */}
+        <div className="grid grid-cols-1 overflow-hidden rounded-lg border border-line bg-white sm:grid-cols-2 lg:grid-cols-4" data-testid="coach-stats">
+          {stats.map((stat, i) => (
+            <div key={stat.title} className={`flex items-start justify-between gap-3 px-5 py-4 ${i > 0 ? "border-t border-line sm:border-t-0 sm:border-l" : ""} ${i === 2 ? "sm:border-l-0 lg:border-l sm:border-t lg:border-t-0" : ""} ${i === 3 ? "sm:border-t lg:border-t-0" : ""}`}>
+              <div className="flex-1 min-w-0">
+                <p className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-muted">{stat.title}</p>
+                <p className="stat-number mt-1.5 text-[2rem] leading-[2.5rem] text-brand">{stat.value}</p>
+                <p className="mt-1 text-xs leading-snug text-muted">{stat.change}</p>
               </div>
+              <div className="text-brand-400 [&_svg]:h-5 [&_svg]:w-5" aria-hidden="true">{stat.icon}</div>
             </div>
           ))}
         </div>
@@ -137,7 +136,7 @@ export default function MentorDashboard() {
             ) : (
               <div className="space-y-4">
                 {notifications.data.data.map((n) => {
-                  const tone = n.category === 'REVIEWS' ? 'bg-blue-100 text-blue-600' : n.category === 'ASSIGNMENTS' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-700';
+                  const tone = n.category === 'REVIEWS' || n.category === 'SUBMISSIONS' ? 'bg-amber-50 text-amber-700' : 'bg-brand-50 text-brand';
                   const Icon = n.category === 'REVIEWS' ? FileText : n.category === 'ASSIGNMENTS' ? CheckCircle2 : AlertCircle;
                   return (
                     <NotificationLink key={n.id} notification={n} className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
@@ -199,7 +198,7 @@ export default function MentorDashboard() {
               <BookOpen className="w-5 h-5 text-purple-600" />
               <span className="text-sm font-semibold text-gray-700">Course Resources</span>
             </Link>
-            <Link href="/mentor/reviews" className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
+            <Link href="/mentor/reviews" className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-brand-600 hover:bg-brand-50 transition-colors">
               <Award className="w-5 h-5 text-emerald-600" />
               <span className="text-sm font-semibold text-gray-700">Grade Submissions{toReview > 0 && ` (${toReview})`}</span>
             </Link>

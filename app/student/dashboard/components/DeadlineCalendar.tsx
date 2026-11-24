@@ -62,7 +62,7 @@ export default function DeadlineCalendar({ assignments, cursor: controlled, onCu
   const visible = cells.slice(0, cells[35].getMonth() !== cursor.getMonth() ? 35 : 42);
 
   return (
-    <div className="bg-[#f3f4f9] p-6 rounded-3xl border border-slate-100 shadow-sm relative">
+    <div className="bg-canvas p-6 rounded-3xl border border-slate-100 shadow-sm relative">
       <div className="flex items-center justify-between mb-6">
         <button
           type="button"

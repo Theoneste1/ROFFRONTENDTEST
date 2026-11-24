@@ -45,7 +45,7 @@ export default function AssignmentDetail({ assignmentId }: { assignmentId: strin
     // 404 = "not found or not available to you" (the API never reveals which).
     const notFound = isApiError(assignment.error) && (assignment.error.status === 404 || assignment.error.status === 400);
     return (
-      <div className="min-h-screen p-4 md:p-8 bg-[#E6EBF2]">
+      <div className="min-h-screen p-4 md:p-8 bg-canvas">
         <div className="max-w-7xl mx-auto space-y-6">
           <Link href="/student/assignments" className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900">
             <ArrowLeft className="w-4 h-4" /> Back to assignments
@@ -67,7 +67,7 @@ export default function AssignmentDetail({ assignmentId }: { assignmentId: strin
   const a = assignment.data;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 bg-[#E6EBF2]">
+    <div className="min-h-screen p-4 md:p-8 bg-canvas">
       <div className="max-w-7xl mx-auto">
         <button
           type="button"

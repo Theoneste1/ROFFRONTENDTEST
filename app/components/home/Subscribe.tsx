@@ -91,7 +91,7 @@ export function SubscribeForm({ onClose }: { onClose?: () => void }) {
               </div>
               <div>
                 <label htmlFor="news-email" className="mb-2 block text-sm font-semibold text-slate-700">
-                  E-mail address <span className="text-red-500">*</span>
+                  E-mail address <span className="text-amber-600">*</span>
                 </label>
                 <input id="news-email" name="email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)}
                   aria-invalid={problems.email ? true : undefined} aria-describedby={problems.email ? "news-email-error" : undefined} className={input(problems.email)} />
@@ -130,7 +130,7 @@ export function SubscribeForm({ onClose }: { onClose?: () => void }) {
             <div className="mt-6 flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-600">We use your address only to send ROF news. You can unsubscribe at any time.</p>
               {done && onClose ? (
-                <button type="button" onClick={onClose} className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-950 px-8 py-3.5 font-bold text-white transition hover:bg-brand">
+                <button type="button" onClick={onClose} className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-950 px-8 py-3.5 font-bold text-white transition hover:bg-brand">
                   Close
                 </button>
               ) : (

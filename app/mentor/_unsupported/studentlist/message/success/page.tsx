@@ -38,7 +38,7 @@ export default function MessageSentSuccess() {
         </p>
 
         {/* Info Card */}
-        <div className="mt-8 w-full max-w-md rounded-xl border border-slate-200/60 bg-[#F2F4FA] p-5 text-left shadow-sm">
+        <div className="mt-8 w-full max-w-md rounded-xl border border-slate-200/60 bg-canvas p-5 text-left shadow-sm">
           <div className="grid grid-cols-[80px_1fr] gap-y-3 text-sm">
             <span className="font-medium text-slate-600">To:</span>
             <span className="font-semibold text-slate-900">{recipientLabel}</span>

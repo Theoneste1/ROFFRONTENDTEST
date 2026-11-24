@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
  */
 export default function PublicCard({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen w-full bg-[#e2e8f0] flex flex-col">
+    <div className="min-h-screen w-full bg-canvas flex flex-col">
       <main className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           {/* Brand block, same as the portal navbars */}

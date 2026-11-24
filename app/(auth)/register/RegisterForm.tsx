@@ -519,7 +519,7 @@ export default function RegisterForm() {
     gradeLevel: (
       <div>
         <label htmlFor="gradeLevel" className="block text-sm font-semibold text-slate-700 mb-2">
-          Grade <span className="text-red-500">*</span>
+          Grade <span className="text-amber-600">*</span>
         </label>
         <select
           id="gradeLevel"

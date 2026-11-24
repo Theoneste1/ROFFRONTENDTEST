@@ -50,12 +50,12 @@ export default function StudentDashboard() {
 
           <div className="relative z-10 mt-6 flex gap-10">
             <div>
-              <p className="text-2xl font-black">{formatNumber(user?.problemsSolved)}</p>
-              <p className="text-[10px] font-bold tracking-widest text-blue-200/70 uppercase">Problems Solved</p>
+              <p className="stat-number text-[2rem] leading-none">{formatNumber(user?.problemsSolved)}</p>
+              <p className="mt-1 text-[0.6875rem] font-bold tracking-[0.08em] text-brand-200 uppercase">Problems Solved</p>
             </div>
             <div>
-              <p className="text-2xl font-black">{formatNumber(user?.points)}</p>
-              <p className="text-[10px] font-bold tracking-widest text-blue-200/70 uppercase">Points</p>
+              <p className="stat-number text-[2rem] leading-none">{formatNumber(user?.points)}</p>
+              <p className="mt-1 text-[0.6875rem] font-bold tracking-[0.08em] text-brand-200 uppercase">Points</p>
             </div>
           </div>
         </div>
@@ -81,7 +81,7 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
       <h3 className="text-xl font-bold text-slate-800">{title}</h3>
       <Link
         href={href}
-        className="text-xs font-semibold text-slate-600 bg-white/80 border border-slate-200 px-4 py-1.5 rounded-full flex items-center gap-1 hover:bg-white shadow-sm transition-colors"
+        className="text-xs font-semibold text-slate-600 bg-white/80 border border-slate-200 px-4 py-1.5 rounded-md flex items-center gap-1 hover:bg-white shadow-sm transition-colors"
       >
         View All <ChevronRight className="w-3.5 h-3.5" />
       </Link>
@@ -238,7 +238,7 @@ function RankingCard({ divisionName }: { divisionName?: string }) {
           </>
         ) : (
           <>
-            <h2 className="text-5xl font-black text-brand-900 mt-2">
+            <h2 className="stat-number text-[2.75rem] leading-none text-brand mt-2">
               {rankLabel(rank.data.rank)}
               <span className="text-base font-bold text-slate-500 ml-2">of {formatNumber(rank.data.outOf)}</span>
             </h2>

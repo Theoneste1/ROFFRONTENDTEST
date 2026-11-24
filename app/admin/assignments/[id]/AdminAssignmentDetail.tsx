@@ -107,7 +107,7 @@ function ReopenDialog({ a, onClose, onDone }: { a: MentorAssignment; onClose: ()
         <p className="text-sm text-gray-600">Students can submit again. Current deadline: {formatDateTime(a.deadline)}.</p>
         <div>
           <label htmlFor="reopen-deadline" className="block text-xs font-semibold text-gray-600 mb-1">
-            New deadline {needsDeadline ? <span className="text-red-500">*</span> : <span className="font-normal text-gray-500">(optional)</span>}
+            New deadline {needsDeadline ? <span className="text-amber-600">*</span> : <span className="font-normal text-gray-500">(optional)</span>}
           </label>
           <input id="reopen-deadline" type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
         </div>

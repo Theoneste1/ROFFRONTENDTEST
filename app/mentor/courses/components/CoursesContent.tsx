@@ -56,7 +56,7 @@ export default function CoursesContent() {
   const sc = parseScopeKey(scopeKey(scope))!;
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 lg:p-10 font-sans text-slate-800">
+    <div className="min-h-screen bg-canvas p-4 lg:p-10 font-sans text-slate-800">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{scope.course.title}</h1>

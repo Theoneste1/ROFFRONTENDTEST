@@ -317,7 +317,7 @@ export function RecordBulkDialog({
           ))}
           <div>
             <label htmlFor="bulk-record-reason" className={labelCls}>
-              Reason{preview.requiresReason ? <span className="text-red-500"> *</span> : " (optional)"}
+              Reason{preview.requiresReason ? <span className="text-amber-600"> *</span> : " (optional)"}
             </label>
             <textarea
               id="bulk-record-reason"
@@ -331,7 +331,7 @@ export function RecordBulkDialog({
           {preview.requiresStepUp && (
             <div>
               <label htmlFor="bulk-record-password" className={labelCls}>
-                Your current password <span className="text-red-500">*</span>
+                Your current password <span className="text-amber-600">*</span>
               </label>
               <input
                 id="bulk-record-password"

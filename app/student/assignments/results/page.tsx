@@ -40,7 +40,7 @@ export default function ResultsPage() {
   const dirty = courseSel !== applied.courseId || arrangeSel !== applied.arrange;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 bg-[#E6EBF2]">
+    <div className="min-h-screen p-4 md:p-8 bg-canvas">
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Results</h1>

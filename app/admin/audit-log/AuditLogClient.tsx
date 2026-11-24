@@ -114,11 +114,11 @@ export default function AuditLogClient() {
         <SelectFilter label="Role" value={actorRole} onChange={(v) => setParam("actorRole", v)} options={[{ label: "Any", value: "" }, { label: "Administrator", value: "ADMIN" }, { label: "Coach", value: "MENTOR" }, { label: "Student", value: "STUDENT" }]} />
         <label className="flex items-center gap-2 text-xs text-gray-600">
           <span className="font-semibold">From</span>
-          <input type="date" value={from} onChange={(e) => setParam("from", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
+          <input type="date" value={from} onChange={(e) => setParam("from", e.target.value)} className="bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs" />
         </label>
         <label className="flex items-center gap-2 text-xs text-gray-600">
           <span className="font-semibold">To</span>
-          <input type="date" value={to} onChange={(e) => setParam("to", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
+          <input type="date" value={to} onChange={(e) => setParam("to", e.target.value)} className="bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs" />
         </label>
       </div>
       <div className="flex flex-wrap items-center gap-3 mb-6">

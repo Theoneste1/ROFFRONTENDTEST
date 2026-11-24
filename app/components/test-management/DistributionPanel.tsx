@@ -297,7 +297,7 @@ export function CoachDialog({ o, title, confirmLabel, reasonRequired, kinds, exc
           {errors.coach && <p id={`${ids}-coach-e`} className="mt-1 text-xs text-red-700">{errors.coach}</p>}
         </div>
         <div>
-          <label htmlFor={`${ids}-reason`} className={labelCls}>Reason {reasonRequired ? <span className="text-red-700">*</span> : <span className="font-normal text-slate-600">(optional)</span>}</label>
+          <label htmlFor={`${ids}-reason`} className={labelCls}>Reason {reasonRequired ? <span className="text-amber-600">*</span> : <span className="font-normal text-slate-600">(optional)</span>}</label>
           <textarea id={`${ids}-reason`} rows={3} maxLength={500} className={`${inputCls} ${errors.reason ? inputBad : inputOk}`} value={reason}
             onChange={(e) => setReason(e.target.value)} aria-invalid={!!errors.reason} aria-describedby={errors.reason ? `${ids}-reason-e` : undefined} data-testid="coach-reason" />
           {errors.reason && <p id={`${ids}-reason-e`} className="mt-1 text-xs text-red-700">{errors.reason}</p>}

@@ -82,7 +82,7 @@ export default function NewMessage() {
         {/* Subject Input */}
         <div className="mb-6">
           <label className="mb-1.5 block text-sm font-semibold text-gray-700">
-            Subject <span className="text-red-500">*</span>
+            Subject <span className="text-amber-600">*</span>
           </label>
           <input
             type="text"
@@ -96,12 +96,12 @@ export default function NewMessage() {
         {/* Message Editor */}
         <div className="mb-6">
           <label className="mb-1.5 block text-sm font-semibold text-gray-700">
-            Message <span className="text-red-500">*</span>
+            Message <span className="text-amber-600">*</span>
           </label>
 
           <div className="overflow-hidden rounded-xl border border-gray-300 shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
             {/* Rich Text Toolbar */}
-            <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-[#F1F4F9] px-3 py-2 text-gray-600">
+            <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-canvas px-3 py-2 text-gray-600">
               <div className="relative mr-2">
                 <button
                   type="button"

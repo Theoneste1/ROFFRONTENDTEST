@@ -14,11 +14,11 @@ const ACCENT: Record<string, string> = {
 /** "Why join": one card per audience, describing features the LMS actually has. */
 export default function WhyJoin() {
   return (
-    <section id="why-join" className="bg-gradient-to-b from-slate-50 to-blue-50/60 py-20 sm:py-28" aria-labelledby="why-title">
+    <section id="why-join" className="bg-canvas py-20 sm:py-28" aria-labelledby="why-title">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand">Why join</p>
-          <h2 id="why-title" className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Why join the ROF LMS community?</h2>
+          <h2 id="why-title" className="mt-3 text-[1.75rem] leading-[2.25rem] text-brand sm:text-[2rem] sm:leading-[2.5rem]">Why join the ROF LMS community?</h2>
           <p className="mt-4 text-lg text-slate-600">One platform for everyone who believes young people can solve hard problems.</p>
         </Reveal>
 
@@ -45,7 +45,7 @@ export default function WhyJoin() {
                       {a.cta.label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </a>
                   ) : (
-                    <Link href={a.cta.href} className="inline-flex items-center gap-2 rounded-full bg-brand-950 px-6 py-3 font-semibold text-white transition hover:bg-brand">
+                    <Link href={a.cta.href} className="inline-flex items-center gap-2 rounded-md bg-brand-950 px-6 py-3 font-semibold text-white transition hover:bg-brand">
                       {a.cta.label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   )}

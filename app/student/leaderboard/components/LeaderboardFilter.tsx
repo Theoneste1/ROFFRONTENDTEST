@@ -12,7 +12,7 @@ export default function LeaderboardFilter({ value, onChange }: { value: Leaderbo
       onClick={() => onChange(v)}
       aria-pressed={value === v}
       className={`px-5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
-        value === v ? 'bg-[#0f172a] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+        value === v ? 'bg-ink text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
       }`}
     >
       {label}

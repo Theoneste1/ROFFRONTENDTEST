@@ -17,7 +17,7 @@ export default function StudentName({ student }: { student: { id: string; firstN
   const href = on ? studentProfileHref(user?.role, student.id) : null;
   const name = personName(student);
   return href ? (
-    <Link href={href} className="hover:text-[#00428C] hover:underline" data-testid="student-link">
+    <Link href={href} className="hover:text-brand hover:underline" data-testid="student-link">
       {name}
     </Link>
   ) : (

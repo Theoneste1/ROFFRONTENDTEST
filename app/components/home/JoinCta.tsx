@@ -21,7 +21,7 @@ export default function JoinCta() {
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-brand-950 via-brand-950/90 to-brand/80" aria-hidden="true" />
       <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
         <Reveal>
-          <h2 id="join-title" className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+          <h2 id="join-title" className="text-[2rem] leading-[2.5rem] text-white sm:text-[2.75rem] sm:leading-[3.25rem]">
             Be Part of Something <span className="text-amber-400">Extraordinary.</span>
           </h2>
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-blue-100 sm:text-xl">

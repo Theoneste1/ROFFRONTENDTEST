@@ -245,7 +245,7 @@ function AvailabilityDialog({ form, onClose, onSaved }: { form: AdminFormView; o
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="form-opens" className={labelCls}>
-              Opening time (Kigali){draft.mode === "SCHEDULED" && <span className="text-red-500"> *</span>}
+              Opening time (Kigali){draft.mode === "SCHEDULED" && <span className="text-amber-600"> *</span>}
             </label>
             <input id="form-opens" type="datetime-local" className={inputCls} value={draft.opensAt} onChange={(e) => set("opensAt")(e.target.value)} disabled={draft.mode !== "SCHEDULED"} />
             {draft.mode !== "SCHEDULED" && <p className="mt-1 text-xs text-slate-500">Used only by a scheduled form (kept).</p>}

@@ -86,7 +86,7 @@ export default function SearchableSelect({
   return (
     <div className="relative">
       <label htmlFor={id} className="mb-2 block text-sm font-semibold text-slate-700">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-amber-600">*</span>}
       </label>
       <div className="relative">
         <input

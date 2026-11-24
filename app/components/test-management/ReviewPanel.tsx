@@ -386,7 +386,7 @@ function DecisionDialog({ d, testId, decision, markers, submitted, onClose, onDo
         )}
         {spec.text && (
           <div>
-            <label htmlFor={`${ids}-text`} className={labelCls}>{spec.text.label} <span className="text-red-700">*</span></label>
+            <label htmlFor={`${ids}-text`} className={labelCls}>{spec.text.label} <span className="text-amber-600">*</span></label>
             <textarea id={`${ids}-text`} rows={3} maxLength={spec.text.max} className={`${inputCls} ${errors.text ? inputBad : inputOk}`} value={text}
               onChange={(e) => setText(e.target.value)} aria-invalid={!!errors.text} aria-describedby={errors.text ? `${ids}-text-e` : undefined} data-testid="decision-text" />
             {errors.text && <p id={`${ids}-text-e`} className="mt-1 text-xs text-red-700">{errors.text}</p>}

@@ -106,11 +106,11 @@ export default function Contact() {
     `w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 ${bad ? "border-red-400 focus:ring-red-200" : "border-slate-300 focus:border-brand focus:ring-blue-200"}`;
 
   return (
-    <section id="contact" className="bg-gradient-to-br from-blue-50 via-white to-amber-50/60 py-20 sm:py-28" aria-labelledby="contact-title">
+    <section id="contact" className="border-y border-line bg-white py-20 sm:py-28" aria-labelledby="contact-title">
       <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-5 lg:px-8">
         <Reveal className="lg:col-span-2">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-brand">Contact us</p>
-          <h2 id="contact-title" className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Let&apos;s talk</h2>
+          <h2 id="contact-title" className="mt-3 text-[1.75rem] leading-[2.25rem] text-brand sm:text-[2rem] sm:leading-[2.5rem]">Let&apos;s talk</h2>
           <p className="mt-4 text-lg text-slate-600">
             Questions about the platform, Olympiad programmes or getting your school involved? Write to the {SITE.organisation}.
           </p>
@@ -162,7 +162,7 @@ export default function Contact() {
               {(["name", "email"] as const).map((k) => (
                 <div key={k}>
                   <label htmlFor={`contact-${k}`} className="mb-2 block text-sm font-semibold text-slate-700">
-                    {k === "name" ? "Full name" : "E-mail address"} <span className="text-red-500">*</span>
+                    {k === "name" ? "Full name" : "E-mail address"} <span className="text-amber-600">*</span>
                   </label>
                   <input
                     id={`contact-${k}`}
@@ -182,12 +182,12 @@ export default function Contact() {
               ))}
             </div>
             <div className="mt-5">
-              <label htmlFor="contact-subject" className="mb-2 block text-sm font-semibold text-slate-700">Subject <span className="text-red-500">*</span></label>
+              <label htmlFor="contact-subject" className="mb-2 block text-sm font-semibold text-slate-700">Subject <span className="text-amber-600">*</span></label>
               <input id="contact-subject" name="subject" required maxLength={150} value={form.subject} onChange={(e) => set("subject")(e.target.value)} aria-invalid={errors.subject ? true : undefined} aria-describedby={errors.subject ? "contact-subject-error" : undefined} className={input(errors.subject)} />
               {errors.subject && <p id="contact-subject-error" className="mt-1.5 text-sm text-red-600">{errors.subject}</p>}
             </div>
             <div className="mt-5">
-              <label htmlFor="contact-message" className="mb-2 block text-sm font-semibold text-slate-700">Message <span className="text-red-500">*</span></label>
+              <label htmlFor="contact-message" className="mb-2 block text-sm font-semibold text-slate-700">Message <span className="text-amber-600">*</span></label>
               <textarea id="contact-message" name="message" required rows={6} maxLength={5000} value={form.message} onChange={(e) => set("message")(e.target.value)} aria-invalid={errors.message ? true : undefined} aria-describedby={errors.message ? "contact-message-error" : undefined} className={`${input(errors.message)} resize-y`} />
               {errors.message && <p id="contact-message-error" className="mt-1.5 text-sm text-red-600">{errors.message}</p>}
             </div>

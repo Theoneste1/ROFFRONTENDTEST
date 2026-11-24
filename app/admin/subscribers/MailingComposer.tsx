@@ -61,13 +61,13 @@ export default function MailingComposer({ onSent }: { onSent: (text: string) => 
   return (
     <Card className="p-6 space-y-5">
       <div>
-        <label htmlFor="mailing-subject" className={labelCls}>Subject <span className="text-red-500">*</span></label>
+        <label htmlFor="mailing-subject" className={labelCls}>Subject <span className="text-amber-600">*</span></label>
         <input id="mailing-subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} className={inputCls}
           aria-invalid={problems.subject ? true : undefined} aria-describedby={problems.subject ? "mailing-subject-error" : undefined} />
         {problems.subject && <p id="mailing-subject-error" className="mt-1 text-xs text-red-600">{problems.subject}</p>}
       </div>
       <div>
-        <label htmlFor="mailing-body" className={labelCls}>Message <span className="text-red-500">*</span></label>
+        <label htmlFor="mailing-body" className={labelCls}>Message <span className="text-amber-600">*</span></label>
         <textarea id="mailing-body" value={body} onChange={(e) => setBody(e.target.value)} rows={10} maxLength={20_000} className={`${inputCls} resize-y`}
           aria-invalid={problems.body ? true : undefined} aria-describedby={`mailing-body-help${problems.body ? " mailing-body-error" : ""}`} />
         <p id="mailing-body-help" className="mt-1 text-xs text-gray-500">
@@ -99,7 +99,7 @@ export default function MailingComposer({ onSent }: { onSent: (text: string) => 
         <div className="flex flex-wrap items-center gap-2">
           <label htmlFor="mailing-country" className="text-xs font-semibold text-gray-600 w-20">Countries</label>
           <select id="mailing-country" value="" onChange={(e) => e.target.value && setCountries((xs) => (xs.includes(e.target.value) ? xs : [...xs, e.target.value]))}
-            className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs font-medium text-gray-700">
+            className="bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs font-medium text-gray-700">
             <option value="">Add a country…</option>
             {COUNTRIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>

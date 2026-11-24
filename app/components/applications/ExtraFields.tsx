@@ -17,7 +17,7 @@ function SelectField({ label, name, value, onChange, options, placeholder, error
     <div>
       <label htmlFor={id} className="block text-sm font-semibold text-slate-700 mb-2">
         {optional ? <>{label.slice(0, optional.index).trim()} <span className="font-normal text-slate-600">(optional)</span></> : label}{" "}
-        {required && <span className="text-red-500">*</span>}
+        {required && <span className="text-amber-600">*</span>}
       </label>
       <select
         id={id}
@@ -110,7 +110,7 @@ export function MultiChoiceField({ label, name, groups, value, onChange, error, 
   return (
     <fieldset aria-describedby={`${id}-note`} data-testid={`${name}-choices`}>
       <legend className="block text-sm font-semibold text-slate-700 mb-2">
-        {label} <span className="text-red-500">*</span>
+        {label} <span className="text-amber-600">*</span>
       </legend>
       <div className="space-y-3">
         {groups.map((g) => (
@@ -156,7 +156,7 @@ export function AreaField({ label, value, onChange, error, hint, required, max, 
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-semibold text-slate-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-amber-600">*</span>}
       </label>
       <textarea
         id={id}

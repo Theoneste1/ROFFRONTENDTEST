@@ -38,7 +38,7 @@ export const TextField = forwardRef<HTMLInputElement, FieldProps>(function TextF
   return (
     <div className={className}>
       <label htmlFor={inputId} className="block text-sm font-semibold text-slate-700 mb-2">
-        <LabelText label={label} /> {required && <span className="text-red-500">*</span>}
+        <LabelText label={label} /> {required && <span className="text-amber-600">*</span>}
       </label>
       <input
         ref={ref}
@@ -74,7 +74,7 @@ export const PasswordField = forwardRef<HTMLInputElement, Omit<FieldProps, "type
   return (
     <div className={className}>
       <label htmlFor={inputId} className="block text-sm font-semibold text-slate-700 mb-2">
-        <LabelText label={label} /> {required && <span className="text-red-500">*</span>}
+        <LabelText label={label} /> {required && <span className="text-amber-600">*</span>}
       </label>
       <div className="relative">
         <input

@@ -68,7 +68,7 @@ function CorrectDateOfBirthForm({ userId, current, onDone, onClose }: { userId: 
         </p>
         <div>
           <label htmlFor={dateId} className="block text-xs font-semibold text-gray-600 mb-1">
-            Date of birth <span className="text-red-500">*</span>
+            Date of birth <span className="text-amber-600">*</span>
           </label>
           <input
             id={dateId}
@@ -84,7 +84,7 @@ function CorrectDateOfBirthForm({ userId, current, onDone, onClose }: { userId: 
         </div>
         <div>
           <label htmlFor={reasonId} className="block text-xs font-semibold text-gray-600 mb-1">
-            Reason <span className="text-red-500">*</span>
+            Reason <span className="text-amber-600">*</span>
           </label>
           <textarea
             id={reasonId}

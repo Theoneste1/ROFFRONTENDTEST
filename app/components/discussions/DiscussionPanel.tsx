@@ -156,7 +156,7 @@ function NewThreadForm({
         onChange={(e) => setTitle(e.target.value)}
         maxLength={200}
         placeholder="Topic title (at least 3 characters)"
-        className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl py-2.5 px-4 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+        className="w-full bg-canvas border border-gray-200 rounded-xl py-2.5 px-4 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
         aria-label="Topic title"
       />
       <textarea
@@ -165,7 +165,7 @@ function NewThreadForm({
         maxLength={5000}
         rows={4}
         placeholder="What would you like to ask or share?"
-        className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl py-2.5 px-4 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600 resize-y"
+        className="w-full bg-canvas border border-gray-200 rounded-xl py-2.5 px-4 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600 resize-y"
         aria-label="First message"
       />
       <div className="flex items-center justify-end gap-3">
@@ -261,7 +261,7 @@ export function ThreadView({ thread, postingDisabled }: { thread: DiscussionThre
             value={draft}
             maxLength={2000}
             onChange={(e) => setDraft(e.target.value)}
-            className="flex-1 min-w-0 bg-[#F8FAFC] border border-gray-200 rounded-full py-2.5 px-4 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
+            className="flex-1 min-w-0 bg-canvas border border-gray-200 rounded-full py-2.5 px-4 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-600"
             aria-label="Write a comment"
           />
           <button
@@ -356,12 +356,12 @@ function CommentCard({
   const busyError = actions.react.error ?? actions.edit.error ?? actions.remove.error ?? actions.add.error;
 
   return (
-    <div className={`${isReply ? "bg-[#F8FAFC] border-gray-200/60" : "bg-white shadow-sm border-gray-200/80"} rounded-2xl p-5 border relative`}>
+    <div className={`${isReply ? "bg-canvas border-gray-200/60" : "bg-white shadow-sm border-gray-200/80"} rounded-2xl p-5 border relative`}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
           {/* Other people: the generated avatar only — no one else's photo (many authors are minors). */}
           {deleted ? (
-            <div className="w-10 h-10 rounded-full bg-[#0F172A] text-white flex items-center justify-center font-bold text-sm shrink-0" aria-hidden="true">?</div>
+            <div className="w-10 h-10 rounded-full bg-ink text-white flex items-center justify-center font-bold text-sm shrink-0" aria-hidden="true">?</div>
           ) : (
             <AvatarBadge user={{ id: comment.author!.id, firstName: comment.author!.firstName, lastName: comment.author!.lastName, username: comment.author!.username }} size="md" />
           )}
@@ -400,7 +400,7 @@ function CommentCard({
             onChange={(e) => setEditText(e.target.value)}
             maxLength={2000}
             rows={3}
-            className="w-full bg-[#F8FAFC] border border-gray-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
+            className="w-full bg-canvas border border-gray-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
             aria-label="Edit comment"
           />
           <div className="flex justify-end gap-2">
@@ -431,7 +431,7 @@ function CommentCard({
                 disabled={actions.react.isPending}
                 onClick={() => actions.react.mutate({ commentId: comment.id, type, parentId })}
                 className={`flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-60 ${
-                  active ? "bg-blue-50 border-blue-300 text-blue-800" : "bg-[#F1F5F9] border-gray-200/60 text-gray-700 hover:bg-gray-200/60"
+                  active ? "bg-blue-50 border-blue-300 text-blue-800" : "bg-canvas border-gray-200/60 text-gray-700 hover:bg-gray-200/60"
                 }`}
               >
                 <span className={`w-4 h-4 rounded-full ${tone} flex items-center justify-center text-white`}>
@@ -485,7 +485,7 @@ function CommentCard({
             maxLength={2000}
             autoFocus
             placeholder="Write a reply..."
-            className="flex-1 min-w-0 bg-[#F8FAFC] border border-gray-200 rounded-full py-2 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
+            className="flex-1 min-w-0 bg-canvas border border-gray-200 rounded-full py-2 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
             aria-label="Write a reply"
           />
           <button type="submit" disabled={!reply.trim() || actions.add.isPending} className="px-4 py-2 text-xs font-semibold text-white bg-brand rounded-xl disabled:opacity-50">
@@ -586,7 +586,7 @@ function ReportForm({ target, onDone }: { target: ReportTarget; onDone: (msg?: s
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-4 bg-[#F8FAFC] border border-gray-200 rounded-xl p-3 space-y-2">
+    <form onSubmit={onSubmit} className="mt-4 bg-canvas border border-gray-200 rounded-xl p-3 space-y-2">
       <p className="text-xs font-semibold text-gray-800">Report this {what}</p>
       <select
         value={reason}

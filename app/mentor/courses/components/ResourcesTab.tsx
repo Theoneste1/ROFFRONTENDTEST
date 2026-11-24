@@ -324,7 +324,7 @@ function RowMenu({
         onClick={() => setOpen((o) => !o)}
         aria-label={`Actions for ${resource.title}`}
         aria-expanded={open}
-        className="px-2 md:px-3 py-1 md:py-1.5 rounded-full bg-[#F2F5F9] hover:bg-gray-200 text-gray-600 transition-colors inline-flex items-center justify-center"
+        className="px-2 md:px-3 py-1 md:py-1.5 rounded-md bg-canvas hover:bg-gray-200 text-gray-600 transition-colors inline-flex items-center justify-center"
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>

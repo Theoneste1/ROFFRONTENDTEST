@@ -234,7 +234,7 @@ function OverrideDialog({ testId, approved, unapproved, onClose, onDone }: {
         </p>
         {error && <Alert tone="error">{error}</Alert>}
         <div>
-          <label htmlFor={`${ids}-reason`} className={labelCls}>Reason <span className="text-red-600" aria-hidden="true">*</span></label>
+          <label htmlFor={`${ids}-reason`} className={labelCls}>Reason <span className="text-amber-600" aria-hidden="true">*</span></label>
           <textarea id={`${ids}-reason`} rows={3} maxLength={OVERRIDE_REASON_MAX} className={`${inputCls} ${problem ? inputBad : inputOk}`} value={reason}
             onChange={(e) => setReason(e.target.value)} aria-invalid={!!problem} aria-describedby={`${ids}-reason-d`} data-testid="override-reason" />
           <p id={`${ids}-reason-d`} className={`mt-1 text-xs ${problem ? "text-red-700" : "text-slate-600"}`}>{problem ?? "Mandatory, at least 10 characters."}</p>

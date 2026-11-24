@@ -279,7 +279,7 @@ export default function StudentListFilter() {
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-gray-600">
-            <thead className="bg-[#F8FAFC] text-xs font-semibold text-gray-600">
+            <thead className="bg-canvas text-xs font-semibold text-gray-600">
               <tr>
                 <th className="py-3 px-4">Student Name</th>
                 <th className="py-3 px-4">Last Participation</th>

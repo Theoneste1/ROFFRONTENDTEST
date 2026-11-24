@@ -54,7 +54,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
   if (assignment.isError) {
     const notFound = isApiError(assignment.error) && [400, 403, 404].includes(assignment.error.status);
     return (
-      <div className="min-h-screen bg-[#E6EBF2] p-6 space-y-4">
+      <div className="min-h-screen bg-canvas p-6 space-y-4">
         <Link href="/mentor/assignments" className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800">
           <ArrowLeft className="w-4 h-4" /> Back to Assignments
         </Link>
@@ -83,7 +83,7 @@ export default function ReviewList({ assignmentId }: { assignmentId: string }) {
   const editable = a.status === "DRAFT" || a.status === "REJECTED";
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 md:p-6 text-slate-800 font-sans">
+    <div className="min-h-screen bg-canvas p-4 md:p-6 text-slate-800 font-sans">
       <div className="mb-4">
         <Link href={`/mentor/assignments/${a.id}`} className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition w-fit">
           <ArrowLeft className="w-4 h-4" />

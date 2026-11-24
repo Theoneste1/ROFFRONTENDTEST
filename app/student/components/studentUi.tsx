@@ -29,25 +29,25 @@ export const COURSE_STYLE: Record<CourseCode, { symbol: string; chip: string; bu
     symbol: "∑",
     chip: "bg-blue-50 text-blue-600",
     button: "bg-brand-900 hover:bg-brand-800",
-    banner: "from-blue-300 via-blue-400 to-indigo-300",
+    banner: "from-brand-100 via-brand-50 to-white",
   },
   NUMBER_THEORY: {
     symbol: "#",
     chip: "bg-teal-50 text-teal-700",
-    button: "bg-[#003B46] hover:bg-[#005662]",
-    banner: "from-teal-300 via-cyan-400 to-blue-300",
+    button: "bg-brand-800 hover:bg-brand-700",
+    banner: "from-brand-100 via-brand-50 to-white",
   },
   COMBINATORICS: {
     symbol: "☍",
     chip: "bg-purple-50 text-purple-600",
-    button: "bg-[#6c2bd9] hover:bg-[#5b21b6]",
-    banner: "from-purple-300 via-indigo-400 to-blue-300",
+    button: "bg-brand-600 hover:bg-brand-700",
+    banner: "from-brand-100 via-brand-50 to-white",
   },
   GEOMETRY: {
     symbol: "△",
-    chip: "bg-red-50 text-red-600",
-    button: "bg-red-600 hover:bg-red-700",
-    banner: "from-rose-300 via-red-300 to-orange-200",
+    chip: "bg-amber-50 text-amber-700",
+    button: "bg-brand-700 hover:bg-brand-600",
+    banner: "from-brand-100 via-brand-50 to-white",
   },
 };
 

@@ -232,7 +232,7 @@ function SubscriberDialog({ subscriber, onClose, onSaved }: { subscriber: Subscr
         )}
         {!subscriber && (
           <div>
-            <label htmlFor="sub-email" className={labelCls}>E-mail address <span className="text-red-500">*</span></label>
+            <label htmlFor="sub-email" className={labelCls}>E-mail address <span className="text-amber-600">*</span></label>
             <input id="sub-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} className={inputCls} required />
           </div>
         )}

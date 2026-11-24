@@ -34,7 +34,7 @@ export default function GradingView({ assignmentId, submissionId }: { assignment
   if (sub.isError) {
     const notFound = isApiError(sub.error) && [400, 403, 404].includes(sub.error.status);
     return (
-      <div className="min-h-screen bg-[#E6EBF2] p-8 space-y-6">
+      <div className="min-h-screen bg-canvas p-8 space-y-6">
         <Link href={`/mentor/assignments/${assignmentId}/assignmentReview`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 w-fit">
           <ArrowLeft className="w-4 h-4" /> Back to Submissions
         </Link>
@@ -125,7 +125,7 @@ function Grading({
   }
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 md:p-8 text-gray-800 font-sans">
+    <div className="min-h-screen bg-canvas p-4 md:p-8 text-gray-800 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         <Link href={`/mentor/assignments/${assignmentId}/assignmentReview`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors w-fit">
           <ArrowLeft className="w-4 h-4" />

@@ -39,7 +39,7 @@ export default function ReportViewer({ id, base }: { id: string; base: string })
   }
 
   const back = (
-    <Link href={base} className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-[#00428C] hover:underline">
+    <Link href={base} className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline">
       <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> All reports
     </Link>
   );

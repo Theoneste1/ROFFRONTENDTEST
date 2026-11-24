@@ -57,7 +57,7 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
   if (assignment.isError) {
     const notFound = isApiError(assignment.error) && [400, 403, 404].includes(assignment.error.status);
     return (
-      <div className="p-6 md:p-10 space-y-6 bg-[#E6EBF2] min-h-screen">
+      <div className="p-6 md:p-10 space-y-6 bg-canvas min-h-screen">
         <Link href="/mentor/assignments" className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900">
           <ArrowLeft className="w-4 h-4" /> Back to Assignments
         </Link>
@@ -86,7 +86,7 @@ export default function AssignmentOverview({ assignmentId }: { assignmentId: str
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-10 font-sans bg-[#E6EBF2]">
+    <div className="min-h-screen p-4 md:p-10 font-sans bg-canvas">
       <div className="max-w-7xl mx-auto space-y-6">
         <button
           type="button"

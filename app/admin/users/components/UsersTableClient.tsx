@@ -38,7 +38,7 @@ function cell(key: string, u: AdminUser): ReactNode {
   switch (key) {
     case "name":
       return (
-        <Link href={`/admin/users/${u.id}`} className="inline-flex items-center gap-2 font-semibold text-gray-800 hover:text-[#00428C] whitespace-nowrap">
+        <Link href={`/admin/users/${u.id}`} className="inline-flex items-center gap-2 font-semibold text-gray-800 hover:text-brand whitespace-nowrap">
           <AvatarBadge user={u} size="xs" />
           <span>
             {u.firstName} {u.lastName}
@@ -318,7 +318,7 @@ export default function UsersTableClient() {
                   <th key={c.key} className={th} aria-sort={dir === "asc" ? "ascending" : dir === "desc" ? "descending" : "none"}>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-[#00428C]"
+                      className="inline-flex items-center gap-1 uppercase tracking-wider hover:text-brand"
                       onClick={() => {
                         const n = nextSort({ sort, order }, sortKey);
                         const next = new URLSearchParams(params);

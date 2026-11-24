@@ -344,7 +344,7 @@ function Field({
   return (
     <div>
       <label htmlFor={controlId} className="block text-xs font-semibold text-gray-600 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-amber-600">*</span>}
       </label>
       {children({
         id: controlId,

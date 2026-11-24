@@ -20,9 +20,9 @@ import { activeDivisions } from "@/lib/divisions/divisions";
 import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
 import ReportTable from "./ReportTable";
 
-const field = "w-full text-sm text-gray-800 bg-white border border-gray-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#00428C]/20 focus:border-[#00428C]";
+const field = "w-full text-sm text-gray-800 bg-white border border-gray-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand";
 const btn = "inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60";
-const primary = `${btn} bg-[#00428C] text-white hover:bg-[#003370]`;
+const primary = `${btn} bg-brand text-white hover:bg-brand-dark`;
 const secondary = `${btn} border border-gray-300 bg-white text-gray-800 hover:bg-gray-50`;
 const EMPTY: ReportDefinition = { source: "STUDENTS", columns: ["fullName"], filters: [], sort: [] };
 
@@ -114,7 +114,7 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
           <h2 className="mb-2 text-sm font-bold text-gray-900">Start from an example</h2>
           <div className="flex flex-wrap gap-2">
             {REPORT_TEMPLATES.map((t) => (
-              <button key={t.name} type="button" className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-semibold text-gray-800 hover:border-[#00428C] hover:text-[#00428C]" title={t.description}
+              <button key={t.name} type="button" className="rounded-md border border-gray-300 bg-white px-3 py-1 text-xs font-semibold text-gray-800 hover:border-brand hover:text-brand" title={t.description}
                 onClick={() => { setName(t.name); setDescription(t.description); change(templateDefinition(t, new Date())); }}>
                 {t.name}
               </button>
@@ -159,7 +159,7 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
         {builder && unused.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {unused.map((f) => (
-              <button key={f.key} type="button" className="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:border-[#00428C] hover:text-[#00428C]"
+              <button key={f.key} type="button" className="inline-flex items-center gap-1 rounded-md border border-dashed border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:border-brand hover:text-brand"
                 onClick={() => change({ ...d, columns: [...d.columns, f.key] })} data-testid={`add-column-${f.key}`}>
                 <Plus className="h-3 w-3" aria-hidden="true" /> {f.label}
               </button>

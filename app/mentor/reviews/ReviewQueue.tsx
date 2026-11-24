@@ -42,7 +42,7 @@ export default function ReviewQueue() {
   });
 
   return (
-    <div className="min-h-screen p-4 md:p-10 font-sans text-slate-800 bg-[#E6EBF2]">
+    <div className="min-h-screen p-4 md:p-10 font-sans text-slate-800 bg-canvas">
       <div className="max-w-5xl">
         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Reviews</h1>
         <p className="text-slate-600 text-sm mt-1 mb-6">Student work an administrator assigned to you for review.</p>

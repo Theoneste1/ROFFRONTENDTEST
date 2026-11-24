@@ -94,7 +94,7 @@ export default function AssignmentsDashboard() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-10 font-sans text-slate-800 bg-[#E6EBF2]">
+    <div className="min-h-screen p-4 md:p-10 font-sans text-slate-800 bg-canvas">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Assignments</h1>

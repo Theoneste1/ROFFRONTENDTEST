@@ -108,7 +108,7 @@ export default function DashboardMain() {
   const publishedCourses = courses.data?.filter((c) => c.status === 'PUBLISHED').length;
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 font-sans text-gray-800">
+    <div className="min-h-screen bg-canvas p-4 sm:p-6 md:p-10 font-sans text-gray-800">
       {/* Header Section */}
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">

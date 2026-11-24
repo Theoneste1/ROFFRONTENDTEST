@@ -254,7 +254,7 @@ function ReportsPanel({ scope, data }: { scope: TeachingScope; data: Analytics }
               {buckets.map((b) => (
                 <div key={b.label} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
                   <span className="text-xs font-semibold text-slate-600">{b.count}</span>
-                  <div className="w-8 bg-gradient-to-t from-blue-600 to-blue-500 rounded-t-md" style={{ height: `${(b.count / maxCount) * 85}%`, minHeight: b.count ? 4 : 0 }} title={`${b.label}%: ${b.count}`} />
+                  <div className="w-8 bg-brand-600 rounded-t-sm" style={{ height: `${(b.count / maxCount) * 85}%`, minHeight: b.count ? 4 : 0 }} title={`${b.label}%: ${b.count}`} />
                 </div>
               ))}
             </div>

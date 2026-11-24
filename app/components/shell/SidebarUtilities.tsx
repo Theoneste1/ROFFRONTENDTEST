@@ -19,7 +19,7 @@ export default function SidebarUtilities({ isOpen, settingsHref }: { isOpen: boo
     }`;
 
   return (
-    <div className="flex flex-col gap-2 pt-6 border-t border-blue-900/40">
+    <div className="flex flex-col gap-2 pt-6 border-t border-white/10">
       <Link href="/support" title="Help" className={item(pathname === "/support")}>
         <HelpCircle className="h-4 w-4 flex-shrink-0" />
         {isOpen && <span className="whitespace-nowrap">Help</span>}

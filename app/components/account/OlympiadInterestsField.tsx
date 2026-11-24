@@ -35,7 +35,7 @@ export default function OlympiadInterestsField({
   return (
     <fieldset aria-describedby={described} data-testid="olympiad-interests">
       <legend className="block text-sm font-semibold text-slate-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-amber-600">*</span>}
       </legend>
       <div className="flex flex-wrap gap-4">
         {OLYMPIAD_SUBJECTS.map((s) => (
@@ -70,7 +70,7 @@ export default function OlympiadInterestsField({
       {onOtherChange && otherOn && (
         <div className="mt-3">
           <label htmlFor={`${idPrefix}-other`} className="block text-sm font-semibold text-slate-700 mb-2">
-            Which other Olympiad? <span className="text-red-500">*</span>
+            Which other Olympiad? <span className="text-amber-600">*</span>
           </label>
           <input
             id={`${idPrefix}-other`}

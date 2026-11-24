@@ -35,7 +35,7 @@ export default function CoursesPage() {
                 {/* Banner */}
                 <Link href={href} aria-label={course.title}>
                   <div className={`relative flex h-36 w-full items-end justify-between rounded-xl bg-gradient-to-r ${style.banner} p-3 hover:opacity-90 transition-opacity`}>
-                    <span className="text-4xl font-black text-white/80 leading-none">{style.symbol}</span>
+                    <span className="stat-number text-[2.25rem] text-white/80 leading-none">{style.symbol}</span>
                     <span className="text-xs font-medium text-white/90">
                       {course.counts.resources} resources · {course.counts.assignments} assignments
                     </span>
@@ -61,21 +61,21 @@ export default function CoursesPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href={href}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-indigo-700 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-800"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-indigo-700 px-3.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-800"
                   >
                     <ChevronRight className="h-3.5 w-3.5" />
                     Continue Learning
                   </Link>
                   <Link
                     href={`${href}?tab=papers`}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
                   >
                     <GitFork className="h-3.5 w-3.5 text-indigo-600" />
                     Practice
                   </Link>
                   <Link
                     href={`${href}?tab=books`}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition-colors hover:bg-blue-100"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition-colors hover:bg-blue-100"
                   >
                     <Layers className="h-3.5 w-3.5 text-indigo-600" />
                     Resources

@@ -20,7 +20,7 @@ const SOURCE_TEXT: Record<string, string> = { STUDENTS: "Students", COACHES: "Co
 
 function Frame({ title, description, action, children }: { title: string; description?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800">
+    <div className="min-h-screen bg-canvas p-4 sm:p-6 md:p-10 text-gray-800">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">{title}</h1>
@@ -60,7 +60,7 @@ export function ReportsList({ base }: { base: string }) {
         <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="reports-list">
           {reports.data.map((r) => (
             <li key={r.id}>
-              <Link href={`${base}/${r.id}`} className="block h-full rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:border-[#00428C]">
+              <Link href={`${base}/${r.id}`} className="block h-full rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:border-brand">
                 <p className="font-bold text-gray-900">{r.name}</p>
                 {r.description && <p className="mt-1 line-clamp-2 text-xs text-gray-600">{r.description}</p>}
                 <p className="mt-3 text-[11px] text-gray-500">{SOURCE_TEXT[r.source] ?? r.source} · {r.columns.length} column{r.columns.length === 1 ? "" : "s"} · {r.myAccess.manage ? "Owner" : levelsText({ canView: r.myAccess.view, canDownload: r.myAccess.download, canEdit: r.myAccess.edit })}</p>
@@ -96,7 +96,7 @@ export function EditReport({ id, base }: { id: string; base: string }) {
 
 export function ViewReport({ id, base }: { id: string; base: string }) {
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800">
+    <div className="min-h-screen bg-canvas p-4 sm:p-6 md:p-10 text-gray-800">
       <ReportViewer id={id} base={base} />
     </div>
   );

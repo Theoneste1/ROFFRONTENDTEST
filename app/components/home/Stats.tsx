@@ -54,7 +54,7 @@ export default function Stats() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">ROF LMS in numbers</p>
-          <h2 id="impact-title" className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Our growing community</h2>
+          <h2 id="impact-title" className="mt-3 text-[1.75rem] leading-[2.25rem] text-white sm:text-[2rem] sm:leading-[2.5rem]">Our growing community</h2>
           <p className="mt-4 text-lg text-blue-100">Students, teachers, coaches and schools across Rwanda, learning and solving problems together.</p>
         </Reveal>
 
@@ -66,7 +66,7 @@ export default function Stats() {
                 <span className={`inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${tone} text-white shadow-lg`}>
                   <Icon className="h-6 w-6" aria-hidden="true" />
                 </span>
-                <p className="mt-5 text-4xl font-extrabold tabular-nums text-white" data-stat={key}>
+                <p className="mt-5 stat-number text-[2.25rem] leading-[2.5rem] text-white" data-stat={key}>
                   {query.isPending ? (
                     <span className="inline-block h-9 w-20 animate-pulse rounded-lg bg-white/15 align-middle" aria-label="Loading" />
                   ) : typeof value === "number" ? (

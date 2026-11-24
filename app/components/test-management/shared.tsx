@@ -55,7 +55,7 @@ function Field({ id, label, error, hint, children }: { id: string; label: string
   return (
     <div>
       <label htmlFor={id} className={labelCls}>
-        {label} <span className="text-red-600" aria-hidden="true">*</span>
+        {label} <span className="text-amber-600" aria-hidden="true">*</span>
       </label>
       {children}
       {error ? (

@@ -89,7 +89,7 @@ export default function SchoolClaimFields({
   return (
     <fieldset className="space-y-4" data-testid="school-claim">
       <legend className={hideLegend ? "sr-only" : "mb-2 block text-sm font-semibold text-slate-700"}>
-        School <span className="text-red-500">*</span>
+        School <span className="text-amber-600">*</span>
       </legend>
       <CountrySelect
         options={countryOptions}

@@ -32,8 +32,8 @@ export default function StudentProfilePage({ studentId }: { studentId: string })
   const levels = hasFeature(detection, "olympiadLevels") && can("students.classifyLevel") && (admin || role === "MENTOR" || role === "HEAD_COACH");
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800">
-      <button type="button" onClick={() => router.back()} className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-[#00428C] hover:underline">
+    <div className="min-h-screen bg-canvas p-4 sm:p-6 md:p-10 text-gray-800">
+      <button type="button" onClick={() => router.back()} className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline">
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back
       </button>
       {!supported ? (

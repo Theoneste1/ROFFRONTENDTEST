@@ -66,7 +66,7 @@ export default function SchoolActiveDialog({
         </div>
         <div>
           <label htmlFor="school-active-reason" className="block text-xs font-semibold text-gray-600 mb-1">
-            Reason <span className="text-red-500">*</span>
+            Reason <span className="text-amber-600">*</span>
           </label>
           <textarea
             id="school-active-reason"

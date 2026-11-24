@@ -333,7 +333,7 @@ function YearFormDialog({ year, onClose, onSaved, onStale }: { year: AcademicYea
   const field = (key: keyof YearForm, label: string, type: string, extra: Record<string, unknown> = {}) => (
     <div>
       <label htmlFor={`year-${key}`} className="block text-xs font-semibold text-gray-600 mb-1">
-        {label} <span className="text-red-500">*</span>
+        {label} <span className="text-amber-600">*</span>
       </label>
       <input
         id={`year-${key}`}
@@ -451,7 +451,7 @@ function ActivateDialog({
 
         <fieldset className="space-y-2">
           <legend className="text-xs font-semibold text-gray-700 mb-1">
-            Students&apos; grades <span className="text-red-500">*</span>
+            Students&apos; grades <span className="text-amber-600">*</span>
           </legend>
           <label className="flex items-start gap-2 text-sm text-gray-700">
             <input type="radio" name="promote" checked={promote === "yes"} onChange={() => setPromote("yes")} className="mt-1" />

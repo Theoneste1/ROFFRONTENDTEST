@@ -63,7 +63,7 @@ export function SelectFilter({ label, value, onChange, options, id }: { label: s
         id={selectId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+        className="bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -144,12 +144,12 @@ export function SubmissionBadge({ status }: { status: SubmissionStatus }) {
 // ─── Buttons ────────────────────────────────────────────────────────────────
 
 export const btnPrimary =
-  "inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-full shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center gap-2 px-4 py-2 text-[0.8125rem] font-semibold text-white bg-brand border border-brand hover:bg-brand-dark hover:border-brand-dark rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 export const btnSecondary =
-  "inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center gap-2 px-4 py-2 text-[0.8125rem] font-semibold text-brand bg-white border border-line hover:border-brand hover:bg-canvas rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 export const btnDanger =
-  "inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-full shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-export const linkBtn = "text-indigo-600 hover:text-indigo-800 font-medium transition-colors text-xs";
+  "inline-flex items-center justify-center gap-2 px-4 py-2 text-[0.8125rem] font-semibold text-white bg-red-700 border border-red-700 hover:bg-red-800 hover:border-red-800 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+export const linkBtn = "text-brand-600 hover:text-brand underline-offset-2 hover:underline font-semibold transition-colors text-xs";
 
 /** Download an authenticated CSV export. */
 export function CsvButton({ onDownload, label = "Export CSV", disabledReason, note }: { onDownload: () => Promise<void>; label?: string; disabledReason?: string; note?: string }) {
@@ -283,7 +283,7 @@ export function ConfirmDialog({
         {note && (
           <div>
             <label htmlFor={noteId} className="block text-xs font-semibold text-gray-600 mb-1">
-              {note.label} {note.required ? <span className="text-red-500">*</span> : <span className="font-normal text-gray-500">(optional)</span>}
+              {note.label} {note.required ? <span className="text-amber-600">*</span> : <span className="font-normal text-gray-500">(optional)</span>}
             </label>
             <textarea
               id={noteId}
@@ -329,14 +329,19 @@ export function Notice({ tone = "success", children, onClose }: { tone?: "succes
 
 // ─── Metrics ────────────────────────────────────────────────────────────────
 
+/**
+ * One figure of an unboxed statistics bar (Academic Prestige): no card and no shadow — a hairline rule on the left, the
+ * category in small capitals, the number in Newsreader, a muted note underneath. In a grid, the figures read as one
+ * open band separated by vertical rules.
+ */
 export function MetricCard({ label, value, subtext }: { label: string; value: ReactNode; subtext?: ReactNode }) {
   return (
-    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between">
+    <div className="flex flex-col justify-between border-l border-line bg-white/60 py-3 pl-4 pr-3">
       <div>
-        <p className="text-xs font-semibold text-gray-500 tracking-wider uppercase mb-1">{label}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <p className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-muted mb-1.5">{label}</p>
+        <p className="stat-number text-[2rem] leading-[2.5rem] text-brand">{value}</p>
       </div>
-      {subtext && <p className="text-xs text-gray-500 mt-2 font-medium">{subtext}</p>}
+      {subtext && <p className="mt-1.5 text-xs leading-snug text-muted">{subtext}</p>}
     </div>
   );
 }

@@ -19,7 +19,7 @@ export default function ResultsTable() {
   const report = useResultsReport({ page, limit: 20 });
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800 font-sans">
+    <div className="min-h-screen bg-canvas p-4 sm:p-6 md:p-10 text-gray-800 font-sans">
       {/* Header */}
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>

@@ -135,7 +135,7 @@ export default function ProfileMenu() {
           className="absolute right-0 top-full z-40 mt-3 w-72 max-w-[calc(100vw-1.5rem)] origin-top-right rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-indigo-950/10"
           data-testid="profile-menu-list"
         >
-          <div className="flex items-center gap-3 rounded-xl bg-gradient-to-br from-brand-950 to-brand px-3 py-3 text-white" role="none">
+          <div className="flex items-center gap-3 rounded-xl bg-brand px-3 py-3 text-white" role="none">
             <AvatarBadge user={user} size="lg" />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{displayName(user)}</p>

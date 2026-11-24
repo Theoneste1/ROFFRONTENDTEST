@@ -63,7 +63,7 @@ function GroupEditor({ root, group, path, onChange, fields, operators, onRemove 
       <div className="flex flex-wrap gap-2 pt-1">
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
           onClick={() => filterable[0] && onChange(addCondition(root, path, newCondition(filterable[0])))}
           data-testid={`add-condition-${path.join("-") || "root"}`}
         >
@@ -72,7 +72,7 @@ function GroupEditor({ root, group, path, onChange, fields, operators, onRemove 
         {depth < MAX_DEPTH && (
           <button
             type="button"
-            className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
             onClick={() => onChange(addGroup(root, path, group.combinator === "AND" ? "OR" : "AND"))}
             data-testid={`add-group-${path.join("-") || "root"}`}
           >

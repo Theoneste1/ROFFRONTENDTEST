@@ -23,7 +23,7 @@ import { Alert, EmptyState, ErrorState, LoadingBlock, Spinner } from "@/app/comp
 import { Modal, btnPrimary, btnSecondary } from "../components/adminUi";
 
 const GRADES: GradeLevel[] = ["S1", "S2", "S3", "S4", "S5", "S6"];
-const input = "w-full text-sm text-gray-800 bg-white border border-gray-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#00428C]/20 focus:border-[#00428C]";
+const input = "w-full text-sm text-gray-800 bg-white border border-gray-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand";
 
 const ERRORS: Record<string, string> = {
   GRADES_NOT_COVERED: "Every grade S1–S6 must be suggested by exactly one active division.",
@@ -65,7 +65,7 @@ function GradePicker({ value, onChange, divisions, self }: { value: GradeLevel[]
           const holder = divisions.find((d) => d.id !== self && d.isActive && suggestedGrades(d).includes(g));
           const on = value.includes(g);
           return (
-            <label key={g} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs ${on ? "border-[#00428C] bg-[#00428C]/5 text-[#00428C]" : "border-gray-300 text-gray-800"}`}>
+            <label key={g} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs ${on ? "border-brand bg-brand/5 text-brand" : "border-gray-300 text-gray-800"}`}>
               <input type="checkbox" checked={on} onChange={() => onChange(on ? value.filter((x) => x !== g) : ([...value, g].sort() as GradeLevel[]))} />
               {g}
               {!on && holder && <span className="text-gray-500">({holder.name})</span>}
@@ -279,7 +279,7 @@ export default function DivisionsContent() {
   const sorted = useMemo(() => [...(divisions.data ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.code.localeCompare(b.code)), [divisions.data]);
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800 font-sans">
+    <div className="min-h-screen bg-canvas p-4 sm:p-6 md:p-10 text-gray-800 font-sans">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Divisions</h1>

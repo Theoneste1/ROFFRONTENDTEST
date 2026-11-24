@@ -103,7 +103,7 @@ function StudentsBoard() {
               <div key={entry.id} className={`flex flex-col items-center ${slot.order} ${slot.height}`}>
                 <div className="relative mb-3">
                   <div
-                    className={`w-20 h-20 md:w-24 md:h-24 rounded-full p-1 border-4 ${slot.accent} overflow-hidden shadow-md bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 flex items-center justify-center`}
+                    className={`w-20 h-20 md:w-24 md:h-24 rounded-full p-1 border-4 ${slot.accent} overflow-hidden shadow-md bg-brand-700 flex items-center justify-center`}
                   >
                     <span className="text-2xl font-black text-white">{initials(entry.displayName)}</span>
                   </div>
@@ -190,7 +190,7 @@ function StudentsBoard() {
               >
                 <div className="col-span-2 font-bold text-slate-900">{String(row.rank).padStart(2, '0')}</div>
                 <div className="col-span-7 sm:col-span-8 flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-brand-700 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
                     {initials(row.displayName)}
                   </div>
                   <div className="flex items-center gap-2 min-w-0">

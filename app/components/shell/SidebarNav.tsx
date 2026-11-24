@@ -40,9 +40,10 @@ export interface SidebarItem {
   children?: readonly SidebarChild[];
 }
 
-const ITEM = "flex items-center gap-3 w-full py-3 rounded-xl font-medium transition-all";
-const ACTIVE = "bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md shadow-indigo-950/50";
-const IDLE = "hover:bg-white/5 text-slate-400 hover:text-white";
+const ITEM = "flex items-center gap-3 w-full py-2.5 rounded-md text-[0.9rem] font-medium transition-colors";
+// Active: a flat tonal highlight with the amber marker on its left edge (Academic Prestige active indicator).
+const ACTIVE = "bg-white/10 text-white shadow-[inset_3px_0_0_0_#f59e0b]";
+const IDLE = "text-brand-200 hover:bg-white/5 hover:text-white";
 
 // useLayoutEffect warns during server rendering; the measurement only matters in the browser.
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -273,14 +274,14 @@ function NavGroup({ item, isOpen, inPanel, open, onToggle }: Omit<EntryProps, "g
         )}
       </button>
       {open && isOpen && (
-        <div className="ml-4 mt-1 space-y-1 border-l-2 border-blue-900/40 pl-4">
+        <div className="ml-4 mt-1 space-y-1 border-l border-white/15 pl-4">
           {item.children!.map((c) => (
             <Link
               key={c.href}
               href={c.href}
               aria-current={c.active ? "page" : undefined}
               data-nav-child={inPanel ? undefined : ""}
-              className={`flex items-center gap-3 w-full py-2 px-3 rounded-lg font-medium text-sm transition-all ${c.active ? "bg-blue-600/20 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}
+              className={`flex items-center gap-3 w-full py-2 px-3 rounded-lg font-medium text-sm transition-all ${c.active ? "bg-white/10 text-white" : "text-brand-200 hover:bg-white/5 hover:text-white"}`}
             >
               <span className="whitespace-nowrap">{c.label}</span>
             </Link>

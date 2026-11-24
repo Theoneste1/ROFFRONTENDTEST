@@ -78,26 +78,26 @@ export default function Hero() {
             <span className="h-1.5 w-1.5 rounded-full bg-amber-300" aria-hidden="true" />
             Rwanda Olympiad Foundation
           </p>
-          <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Where curious minds become <span className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">Olympiad problem-solvers</span>
+          <h1 className="mt-6 text-[2rem] leading-[2.5rem] text-white sm:text-[2.5rem] sm:leading-[3rem] lg:text-[2.75rem] lg:leading-[3.25rem]">
+            Where curious minds become <span className="text-amber-400">Olympiad problem-solvers</span>
           </h1>
 
           {/* Rotating quote */}
           <figure className="mt-8 border-l-4 border-amber-400 pl-5" aria-live="polite" aria-atomic="true">
-            <blockquote key={quote} className="home-quote text-xl font-medium italic leading-relaxed text-blue-50 sm:text-2xl">
+            <blockquote key={quote} className="home-quote font-serif text-xl font-normal italic leading-relaxed text-brand-100 sm:text-2xl">
               “{HERO_QUOTES[quote]}”
             </blockquote>
           </figure>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-7 py-3.5 font-bold text-brand-950 shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:bg-amber-300">
+            <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-md bg-amber-400 px-7 py-3.5 font-bold text-brand-950 shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:bg-amber-300">
               <GraduationCap className="h-5 w-5" /> Join as a Student
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <Link href="/register/teacher" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 font-bold text-brand-950 transition hover:-translate-y-0.5 hover:bg-blue-50">
+            <Link href="/register/teacher" className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-7 py-3.5 font-bold text-brand-950 transition hover:-translate-y-0.5 hover:bg-blue-50">
               <Users className="h-5 w-5" /> Join as a Teacher
             </Link>
-            <Link href="/login?next=%2Fstudent%2Fcourses" className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-semibold text-white ring-1 ring-white/50 transition hover:bg-white/10">
+            <Link href="/login?next=%2Fstudent%2Fcourses" className="inline-flex items-center justify-center gap-2 rounded-md px-7 py-3.5 font-semibold text-white ring-1 ring-white/50 transition hover:bg-white/10">
               <BookOpen className="h-5 w-5" /> Explore Learning Resources
             </Link>
           </div>

@@ -154,7 +154,7 @@ function Form({
   const err = (k: string) => errors[k] ?? server[k];
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 md:p-8 lg:p-12 text-[#2D3748]">
+    <div className="min-h-screen bg-canvas p-4 md:p-8 lg:p-12 text-ink">
       <div className="max-w-6xl mx-auto">
         <button type="button" onClick={() => back()} className="flex items-center text-xs font-semibold text-gray-600 hover:text-gray-900 mb-4 md:mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1" />
@@ -254,7 +254,7 @@ function Form({
 
             <div className="space-y-4">
               <p className="block text-sm font-semibold text-slate-700">
-                Files <span className="text-red-500">*</span>
+                Files <span className="text-amber-600">*</span>
               </p>
               {kept.length > 0 && (
                 <ul className="space-y-2">
@@ -297,7 +297,7 @@ function Field({ label, required, error, hint, htmlFor, children }: { label: str
   return (
     <div>
       <label htmlFor={htmlFor} className="block text-sm font-semibold text-slate-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-amber-600">*</span>}
       </label>
       {children}
       {error ? <p className="mt-1.5 text-xs text-red-600">{error}</p> : hint ? <p className="mt-1.5 text-xs text-slate-500">{hint}</p> : null}

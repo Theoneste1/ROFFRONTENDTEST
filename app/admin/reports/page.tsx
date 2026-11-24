@@ -120,7 +120,7 @@ export default function ReportsContent() {
   const serverFilters = hasFeature(caps.detection, "reportExportFilters");
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800 font-sans">
+    <div className="min-h-screen bg-canvas p-4 sm:p-6 md:p-10 text-gray-800 font-sans">
       {/* Header Section */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -128,7 +128,7 @@ export default function ReportsContent() {
           <p className="text-sm text-gray-600 mt-1 font-medium">Live figures for the current academic year, filtered by course, division and period.</p>
         </div>
         {customReports && (
-          <Link href="/admin/custom-reports" className="inline-flex items-center gap-1.5 rounded-xl bg-[#00428C] px-4 py-2 text-sm font-semibold text-white hover:bg-[#003370]" data-testid="open-custom-reports">
+          <Link href="/admin/custom-reports" className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark" data-testid="open-custom-reports">
             Custom reports
           </Link>
         )}

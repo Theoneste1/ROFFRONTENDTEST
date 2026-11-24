@@ -10,7 +10,7 @@ import Image from "@/app/components/ui/Image";
  * The layout of every sign-in and account page (app/(auth)): sign in, student / coach / teacher registration,
  * activation, password recovery, help. One look for all of them:
  *
- * - Large screens (1024px and up): a split page. On the left a brand panel in the logo's colour (#00428C) over a ROF
+ * - Large screens (1024px and up): a split page. On the left a brand panel in the institution's deep navy (#061B40) over a ROF
  *   photograph (a full-bleed background under a strong overlay, a subtle texture) with the ROF logo, "ROF LMS", a short
  *   welcome line for the page and what the platform offers; its content stays in view while the page scrolls. On the right, on a light background, the page's form on a white card (narrow for sign in and the
  *   account pages, wider for the registration forms, which are one continuous form and scroll with the page).
@@ -71,7 +71,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
   const welcome = WELCOME[path] ?? DEFAULT_WELCOME;
   const wide = WIDE.has(path);
   return (
-    <div className="min-h-dvh w-full bg-white font-sans lg:grid lg:grid-cols-[minmax(380px,5fr)_7fr] lg:bg-[#f5f6fb]" data-auth-frame={wide ? "signup" : "login"}>
+    <div className="min-h-dvh w-full bg-white font-sans lg:grid lg:grid-cols-[minmax(380px,5fr)_7fr] lg:bg-canvas" data-auth-frame={wide ? "signup" : "login"}>
       {/* Brand panel (large screens): stays in view while the form scrolls. */}
       <aside className="relative hidden overflow-hidden bg-brand lg:block" data-testid="auth-brand-panel">
         {/* A ROF photograph as a subtle texture behind the text: full-bleed, under a strong overlay in the logo's colour. */}

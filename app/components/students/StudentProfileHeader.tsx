@@ -90,7 +90,7 @@ export function StudentLink({ student, withPhoto = false, className = "" }: { st
   );
   if (!href) return <span className={`inline-flex items-center gap-2 ${className}`}>{body}</span>;
   return (
-    <Link href={href} className={`inline-flex items-center gap-2 font-semibold text-[#00428C] hover:underline ${className}`} data-testid="student-link">
+    <Link href={href} className={`inline-flex items-center gap-2 font-semibold text-brand hover:underline ${className}`} data-testid="student-link">
       {body}
     </Link>
   );

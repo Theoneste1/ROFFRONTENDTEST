@@ -49,7 +49,7 @@ export default function GenderStep({ firstName }: { firstName: string }) {
   }
 
   return (
-    <main className="min-h-screen w-full flex items-center justify-center bg-[#e2e8f0] p-4" data-testid="gender-step">
+    <main className="min-h-screen w-full flex items-center justify-center bg-canvas p-4" data-testid="gender-step">
       <div className="max-w-md w-full rounded-xl bg-white p-6 shadow-sm">
         <h1 className="text-xl font-semibold text-slate-900">One more step, {firstName}</h1>
         <p className="mt-2 text-sm text-slate-600">

@@ -294,7 +294,7 @@ function SavedFilterMenu({ saved, current, onUse }: { saved: SavedFilter[]; curr
     <label className="flex items-center gap-2 text-xs text-gray-600">
       <span className="font-semibold">Saved filters</span>
       <select
-        className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700"
+        className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700"
         value={current?.id ?? ""}
         onChange={(e) => {
           const f = saved.find((x) => x.id === e.target.value);

@@ -203,7 +203,7 @@ export default function AssignmentWizard({
   // ── Success (step 6 of the original create wizard) ──
   if (done) {
     return (
-      <div className="min-h-screen bg-[#E6EBF2] p-6 sm:p-10 text-slate-800">
+      <div className="min-h-screen bg-canvas p-6 sm:p-10 text-slate-800">
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="w-full max-w-xl flex flex-col items-center text-center">
             <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center mb-6 shadow-sm border border-emerald-100">
@@ -258,7 +258,7 @@ export default function AssignmentWizard({
   }
 
   return (
-    <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-10 text-slate-800">
+    <div className="min-h-screen bg-canvas p-4 sm:p-10 text-slate-800">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <button
@@ -542,7 +542,7 @@ function Field({ label, required, error, hint, htmlFor, children }: { label: str
   return (
     <div>
       <label htmlFor={htmlFor} className="block text-sm font-semibold text-slate-800 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-amber-600">*</span>}
       </label>
       {children}
       {error ? <p className="mt-1.5 text-xs text-red-600">{error}</p> : hint ? <p className="mt-1.5 text-xs text-slate-500">{hint}</p> : null}

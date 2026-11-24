@@ -13,7 +13,7 @@ export function Spinner({ className = "h-5 w-5" }: { className?: string }) {
 /** Centred spinner for a whole screen (session check, route guard). */
 export function FullPageLoader({ label = "Loading…" }: { label?: string }) {
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center gap-3 bg-[#e2e8f0]" role="status">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center gap-3 bg-canvas" role="status">
       <Spinner className="h-8 w-8" />
       <span className="text-sm text-slate-600">{label}</span>
     </div>

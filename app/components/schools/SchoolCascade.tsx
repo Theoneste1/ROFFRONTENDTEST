@@ -65,7 +65,7 @@ export function CascadeSelect({
   return (
     <div>
       <label htmlFor={id} className={s.label}>
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-amber-600">*</span>}
       </label>
       <select
         id={id}

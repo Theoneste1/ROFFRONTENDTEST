@@ -40,7 +40,7 @@ export default function AssignmentResults({ assignmentId }: { assignmentId: stri
       <span>Results</span>
     </Link>
   );
-  const shell = (children: React.ReactNode) => <div className="min-h-screen bg-[#E6EBF2] p-4 sm:p-6 md:p-10 text-gray-800 font-sans">{back}{children}</div>;
+  const shell = (children: React.ReactNode) => <div className="min-h-screen bg-canvas p-4 sm:p-6 md:p-10 text-gray-800 font-sans">{back}{children}</div>;
 
   if (assignment.isPending) return shell(<LoadingBlock />);
   if (assignment.isError)

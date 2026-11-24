@@ -29,10 +29,10 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
 
   return (
     <aside
-      className={`${isOpen ? "w-64 px-4" : "w-20 px-3"} h-full bg-brand-950 text-slate-400 flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out`}
+      className={`${isOpen ? "w-64 px-4" : "w-20 px-3"} h-full bg-brand text-brand-200 flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out`}
     >
       <div className="flex-1 min-h-0 flex flex-col gap-3">
-        <div className="text-white font-bold text-center text-lg tracking-wide pb-6 border-b border-blue-900/40 whitespace-nowrap">
+        <div className="text-white font-serif font-medium text-center text-xl tracking-normal pb-6 border-b border-white/10 whitespace-nowrap">
           {isOpen ? "ROF LMS" : "ROF"}
         </div>
         <SidebarNav

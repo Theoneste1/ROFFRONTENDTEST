@@ -66,7 +66,7 @@ export function Field({ label, error, hint, required, children, id }: { label: s
   return (
     <div>
       <label htmlFor={fid} className="block text-xs font-semibold text-gray-600 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-amber-600">*</span>}
       </label>
       {children(fid, describedBy)}
       {error ? (

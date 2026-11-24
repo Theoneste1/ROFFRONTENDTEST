@@ -298,7 +298,7 @@ export default function BulkActionDialog({
           ))}
           <div>
             <label htmlFor="bulk-reason" className={labelCls}>
-              Reason{preview.requiresReason ? <span className="text-red-500"> *</span> : " (optional)"}
+              Reason{preview.requiresReason ? <span className="text-amber-600"> *</span> : " (optional)"}
             </label>
             <textarea
               id="bulk-reason"
@@ -312,7 +312,7 @@ export default function BulkActionDialog({
           {preview.requiresStepUp && (
             <div>
               <label htmlFor="bulk-password" className={labelCls}>
-                Your current password <span className="text-red-500">*</span>
+                Your current password <span className="text-amber-600">*</span>
               </label>
               <input
                 id="bulk-password"
