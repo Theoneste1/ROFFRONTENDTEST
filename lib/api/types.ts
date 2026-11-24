@@ -860,6 +860,8 @@ export interface AdminUser {
   isApproved: boolean;
   /** null until the account is activated (invited accounts). */
   activatedAt: string | null;
+  /** GET /admin/users/:id (backends with adminActivateNow): the person chose a password (never the password itself). */
+  hasPassword?: boolean;
   avatarUrl: string | null;
   division: DivisionRef | null;
   /** olympiadLevels: the level was set by hand (it no longer follows the grade). */

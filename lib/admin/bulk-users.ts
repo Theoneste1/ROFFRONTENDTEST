@@ -50,6 +50,7 @@ export const BULK_ACTIONS: Readonly<Record<BulkAction, ActionMeta>> = {
   grantDelegation: { label: "Give a teacher a permission for these students", permissions: ["users.manageTeachers"], danger: false },
   revokeDelegation: { label: "Take a teacher's permission back for these students", permissions: ["users.manageTeachers"], danger: false },
   setOlympiadLevel: { label: "Set the Olympiad level", permissions: ["students.classifyLevel"], danger: false },
+  activateNow: { label: "Activate now (skip e-mail confirmation)", permissions: ["users.changeStatus"], danger: false },
 };
 
 /** Actions on teacher–student links: only on backends with teacherStudentAccess. */
@@ -66,7 +67,7 @@ export function delegationLabel(permission: string): string {
 }
 
 export const BULK_ACTION_ORDER: readonly BulkAction[] = [
-  "message", "changeClassification", "setOlympiadLevel", "assignRole", "activate", "deactivate", "suspend", "archive", "restore",
+  "message", "changeClassification", "setOlympiadLevel", "assignRole", "activate", "activateNow", "deactivate", "suspend", "archive", "restore",
   "assignTeacher", "unassignTeacher", "grantDelegation", "revokeDelegation",
 ];
 
@@ -81,12 +82,27 @@ export function exportAvailable(detection: BackendDetection | null | undefined, 
 
 /**
  * The actions this administrator may start (every permission the action needs is held). The teacher–student actions
- * also need the backend to offer teacherStudentAccess (`teacherStudentAccess`; false for older backends).
+ * also need the backend to offer teacherStudentAccess (`teacherStudentAccess`; false for older backends); setOlympiadLevel
+ * needs olympiadLevels and activateNow needs adminActivateNow.
  */
-export function allowedActions(can: (p: Permission) => boolean, teacherStudentAccess = false, olympiadLevels = false): BulkAction[] {
+export function allowedActions(can: (p: Permission) => boolean, teacherStudentAccess = false, olympiadLevels = false, activateNow = false): BulkAction[] {
   return BULK_ACTION_ORDER.filter(
-    (a) => (teacherStudentAccess || !TEACHER_STUDENT_ACTIONS.includes(a)) && (olympiadLevels || a !== "setOlympiadLevel") && BULK_ACTIONS[a].permissions.every((p) => can(p)),
+    (a) =>
+      (teacherStudentAccess || !TEACHER_STUDENT_ACTIONS.includes(a)) &&
+      (olympiadLevels || a !== "setOlympiadLevel") &&
+      (activateNow || a !== "activateNow") &&
+      BULK_ACTIONS[a].permissions.every((p) => can(p)),
   );
+}
+
+/** "3 accounts will be activated now; 2 are skipped (see below)." — the preview's count, when the server gives one. */
+export function willApplySummary(p: Pick<BulkPreview, "action" | "total" | "willApply">): string | null {
+  if (p.willApply === undefined) return null;
+  const n = p.willApply;
+  const skipped = Math.max(0, p.total - n);
+  const verb = p.action === "activateNow" ? "activated now" : "changed";
+  const head = `${n} account${n === 1 ? "" : "s"} will be ${verb}`;
+  return skipped === 0 ? `${head}.` : `${head}; ${skipped} ${skipped === 1 ? "is" : "are"} skipped (the reasons are below).`;
 }
 
 /** The backend advertises teacherStudentAccess (string check: the feature may be unknown to this build's list). */
@@ -317,6 +333,11 @@ const ITEM_CODES: Readonly<Record<string, string>> = {
   ALREADY_IN_ROLE: "Already has this role",
   NOT_STUDENT: "Not a student",
   NOT_ACTIVE: "Account not active",
+  // activateNow
+  ALREADY_ACTIVATED: "Already active: can sign in",
+  NO_PASSWORD_YET: "No password yet: resend the invitation",
+  ACCOUNT_NOT_ACTIVE: "Not active: reactivate, lift or restore it first",
+  ROLE_NOT_MANAGEABLE: "You cannot manage this role",
 };
 
 export function itemCodeLabel(code: string | null): string {

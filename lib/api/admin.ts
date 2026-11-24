@@ -192,6 +192,12 @@ export const usersApi = {
     api<AdminUser>(`/admin/users/${id}/status`, { method: "PATCH", body: status }),
   resendInvitation: (id: string) => api<{ purpose: string; expiresAt: string }>(`/admin/users/${id}/resend-invitation`, { method: "POST" }),
   sendPasswordReset: (id: string) => api<{ message: string }>(`/admin/users/${id}/send-password-reset`, { method: "POST" }),
+  /**
+   * Activate now (capability adminActivateNow): an account awaiting setup whose person chose a password is activated, so
+   * they sign in without confirming their e-mail. 409 ALREADY_ACTIVATED / NO_PASSWORD_YET / ACCOUNT_NOT_ACTIVE in plain words.
+   */
+  activateNow: (id: string) =>
+    api<{ user: AdminUser; stillBlockedBy: string[]; message: string }>(`/admin/users/${encodeURIComponent(id)}/activate-now`, { method: "POST" }),
   /** Only accounts without academic history (409 USER_HAS_HISTORY otherwise). Backends with accountStates refuse it: archive instead. */
   remove: (id: string) => api<{ message: string }>(`/admin/users/${id}`, { method: "DELETE" }),
   /**
