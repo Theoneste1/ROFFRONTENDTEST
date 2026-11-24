@@ -34,7 +34,7 @@ const loginAlert = (page: Page) => page.getByTestId("login-form").getByRole("ale
 test.describe("error messages: signing in", () => {
   test("wrong password: says it is not correct and what to do; the username stays typed", async ({ page }) => {
     await submitSignIn(page, "e2e.student", "Not-The-Password-1!");
-    await expect(loginAlert(page)).toContainText("The username or password is not correct. Check them and try again.", { timeout: 30_000 });
+    await expect(loginAlert(page)).toContainText("Wrong username or password. Check them and try again.", { timeout: 30_000 });
     await expect(page.locator('input[name="username"]')).toHaveValue("e2e.student");
     await expectNoTechnicalText(page);
   });
@@ -111,10 +111,14 @@ test.describe("error messages: permissions and missing records", () => {
     await signIn(page, "student");
     await page.goto("/admin/users");
     await page.waitForLoadState("networkidle");
-    // Either sent back to their own portal, or told plainly they have no access — never the admin list.
-    await expect(page.getByRole("table")).toHaveCount(0);
+    // Either sent back to their own portal, or told plainly they have no access — never the admin list: no "Users"
+    // heading, no other account's username. (Their own dashboard may hold tables of its own, e.g. the calendar.)
     const url = page.url();
     if (/\/admin\//.test(url)) await expect(page.getByText(/(don't|do not) have (access|permission)/i).first()).toBeVisible({ timeout: 30_000 });
+    else expect(new URL(url).pathname).toMatch(/^\/student(\/|$)/);
+    await expect(page.getByRole("heading", { level: 1, name: "Users" })).toHaveCount(0);
+    await expect(page.getByText("e2e.teacher")).toHaveCount(0);
+    await expect(page.getByText("e2e.coach")).toHaveCount(0);
     await expectNoTechnicalText(page);
   });
 
