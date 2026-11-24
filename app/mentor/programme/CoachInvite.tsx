@@ -61,7 +61,7 @@ export default function CoachInvite({ programmeId, programmeName }: { programmeI
   const formError =
     invite.error && Object.keys(errors).length === 0
       ? isApiError(invite.error) && invite.error.code === "IDENTITY_TAKEN"
-        ? "That username or e-mail is already in use."
+        ? "That username or e-mail is already used by another account. Choose a different username, or check whether this coach already has an account."
         : errorMessage(invite.error)
       : null;
 

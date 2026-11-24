@@ -58,7 +58,7 @@ test.describe("the sign-in page", () => {
 
       // Wrong credentials (an account that does not exist, so no real account is locked): the existing message.
       // (The backend allows 10 sign-ins a minute per address: a 429 waits the window out and tries again.)
-      const refused = page.getByRole("alert").filter({ hasText: "Invalid username or password." });
+      const refused = page.getByRole("alert").filter({ hasText: "The username or password is not correct. Check them and try again." });
       for (let attempt = 1; attempt <= 3; attempt++) {
         await username.fill(`nobody.${vp.width}.${Date.now().toString(36)}`);
         await page.locator('input[name="password"]').fill("Not-The-Password-1!");
@@ -120,7 +120,7 @@ test.describe("the sign-in page", () => {
     await page.locator('input[name="username"]').fill(ACCOUNTS.coach.username);
     await page.locator('input[name="password"]').fill("Wrong-Password-2026!");
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByTestId("login-form").getByRole("alert")).toHaveText("Invalid username or password.", { timeout: 30_000 });
+    await expect(page.getByTestId("login-form").getByRole("alert")).toHaveText("The username or password is not correct. Check them and try again.", { timeout: 30_000 });
     // The password is cleared, the username kept (as before).
     await expect(page.locator('input[name="password"]')).toHaveValue("");
     await expect(page.locator('input[name="username"]')).toHaveValue(ACCOUNTS.coach.username);
