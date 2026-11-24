@@ -66,7 +66,7 @@ export default function Stats() {
                 <span className={`inline-flex ${tone}`}>
                   <Icon className="h-9 w-9" strokeWidth={1.75} aria-hidden="true" />
                 </span>
-                <p className="mt-5 text-4xl font-extrabold tabular-nums text-white" data-stat={key}>
+                <p className="mt-5 font-serif text-[2.75rem] font-normal leading-none tabular-nums text-white" data-stat={key}>
                   {query.isPending ? (
                     <span className="inline-block h-9 w-20 animate-pulse rounded-lg bg-white/15 align-middle" aria-label="Loading" />
                   ) : typeof value === "number" ? (
