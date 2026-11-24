@@ -26,6 +26,7 @@ import { displayStatus, type DisplayStatus } from "@/lib/accounts/account-lifecy
 import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Badge, btnPrimary } from "../../components/adminUi";
 
+import { usernameProblem } from "@/lib/accounts/username";
 // ─── Status ─────────────────────────────────────────────────────────────────
 
 export type AccountStatus = DisplayStatus;
@@ -387,8 +388,7 @@ export function UserForm({
     if (!len(f.firstName, 1, 100)) e.firstName = "First name is required (up to 100 characters).";
     if (!len(f.lastName, 1, 100)) e.lastName = "Last name is required (up to 100 characters).";
     const u = f.username.trim().toLowerCase();
-    if ((mode !== "invite" || u) && (!len(u, USER_RULES.username.min, USER_RULES.username.max) || !USER_RULES.username.pattern.test(u)))
-      e.username = "3–30 characters: lowercase letters, digits, “.”, “_” and “-”.";
+    if ((mode !== "invite" || u) && usernameProblem(u)) e.username = usernameProblem(u)!;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = "Enter a valid e-mail address.";
     if (mode === "create" && !PASSWORD_RULE.test(f.password)) e.password = PASSWORD_RULE.hint;
     if (isStudent && !f.gradeLevel) e.gradeLevel = "Students need a grade (it sets the division).";
