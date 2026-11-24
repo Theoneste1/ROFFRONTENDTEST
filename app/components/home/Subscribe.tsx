@@ -130,12 +130,12 @@ export function SubscribeForm({ onClose }: { onClose?: () => void }) {
             <div className="mt-6 flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-600">We use your address only to send ROF news. You can unsubscribe at any time.</p>
               {done && onClose ? (
-                <button type="button" onClick={onClose} className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-950 px-8 py-3.5 font-bold text-white transition hover:bg-brand">
+                <button type="button" onClick={onClose} className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-950 px-6 py-3 font-semibold text-white transition-colors hover:bg-brand">
                   Close
                 </button>
               ) : (
               <button type="submit" disabled={subscribe.isPending}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-950 px-8 py-3.5 font-bold text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50">
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-950 px-6 py-3 font-semibold text-white transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50">
                 {subscribe.isPending ? "Subscribing…" : "Subscribe"}
               </button>
               )}
