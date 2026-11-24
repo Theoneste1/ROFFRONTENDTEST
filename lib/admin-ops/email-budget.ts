@@ -12,14 +12,19 @@ export type BudgetPauseReason = "DAILY_LIMIT" | "MONTHLY_LIMIT" | "PROVIDER_DAIL
 export interface EmailUsage {
   generatedAt: string;
   dryRun: boolean;
+  /** The day is the UTC calendar day (Resend resets at 00:00 UTC); the month a rolling 31 days. Budget null = no limit. */
   limits: {
     dailyLimit: number; monthlyLimit: number; dailySafetyMargin: number; monthlySafetyMargin: number;
-    dailyBudget: number; monthlyBudget: number; normalSharePercent: number; bulkSharePercent: number;
+    dailyBudget: number | null; monthlyBudget: number | null; dayWindow: string; monthWindow: string;
+    normalSharePercent: number; bulkSharePercent: number;
   };
-  sent: { last24h: number; last30d: number; sendingNow: number; todayUtc: number; thisMonthUtc: number };
-  remaining: { last24h: number; last30d: number };
+  /** today: since 00:00 UTC (the daily budget); last31d: the monthly budget; last24h / thisMonthUtc for information. */
+  sent: { today: number; last31d: number; sendingNow: number; last24h: number; thisMonthUtc: number };
+  /** When the daily budget resets (00:00 UTC). */
+  dayResetsAt: string;
+  remaining: { today: number | null; month: number | null };
   nextFreeAt: string | null;
-  priorities: { priority: EmailPriority; cap24h: number; cap30d: number; remaining: number; blockedBy: "DAY" | "MONTH" | null; nextFreeAt: string | null; queued: number }[];
+  priorities: { priority: EmailPriority; capDay: number | null; capMonth: number | null; remaining: number | null; blockedBy: "DAY" | "MONTH" | null; nextFreeAt: string | null; queued: number }[];
   queued: Record<EmailPriority, number> & { total: number };
   failed: { total: number; emails: number; decisionNotices: number };
   discarded: { total: number; reasons: { reason: string; count: number }[] };
@@ -56,17 +61,24 @@ export function waitingText(u: Pick<EmailUsage, "queued">): string {
   return u.queued.CRITICAL > 0 ? `${n(u.queued.total)} waiting (${n(u.queued.CRITICAL)} urgent)` : `${n(u.queued.total)} waiting`;
 }
 
-/** The main line: "62 of 95 e-mails used in the last 24 hours · next free slot at 14:05 Kigali time · 12 waiting (3 urgent)". */
+/**
+ * The main line: "62 of 95 e-mails used today (the count restarts at 02:00 Kigali time) · next free slot at 02:01 Kigali
+ * time · 12 waiting (3 urgent)". The day is Resend's: it restarts at 00:00 UTC (02:00 in Kigali).
+ */
 export function dailyLine(u: EmailUsage, now: Date = new Date()): string {
-  const parts = [`${n(u.sent.last24h)} of ${n(u.limits.dailyBudget)} e-mails used in the last 24 hours`];
+  const parts = [u.limits.dailyBudget === null
+    ? `${n(u.sent.today)} e-mails sent today (no daily limit)`
+    : `${n(u.sent.today)} of ${n(u.limits.dailyBudget)} e-mails used today (the count restarts at ${kigaliTime(u.dayResetsAt, now)} Kigali time)`];
   if (u.nextFreeAt) parts.push(`next free slot at ${kigaliTime(u.nextFreeAt, now)} Kigali time`);
   parts.push(waitingText(u));
   return parts.join(" · ");
 }
 
-/** "1,204 of 2,900 this month (last 30 days)". */
+/** "1,204 of 2,900 this month (last 31 days)". */
 export function monthlyLine(u: EmailUsage): string {
-  return `${n(u.sent.last30d)} of ${n(u.limits.monthlyBudget)} this month (last 30 days)`;
+  return u.limits.monthlyBudget === null
+    ? `${n(u.sent.last31d)} in the last 31 days (no monthly limit)`
+    : `${n(u.sent.last31d)} of ${n(u.limits.monthlyBudget)} this month (last 31 days)`;
 }
 
 const PAUSE_HEADLINE: Record<BudgetPauseReason, string> = {

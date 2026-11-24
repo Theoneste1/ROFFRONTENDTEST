@@ -1,11 +1,11 @@
 /**
  * E-mail within the Resend Free plan in the browser (owner 2026-11-24; capability `emailBudget`): an Administrator opens
- * the E-mail page and sees the "Sending today" panel — the e-mails used in the last 24 hours against the budget of 95,
+ * the E-mail page and sees the "Sending today" panel — the e-mails used today (UTC day) against the budget of 95,
  * the month line, what is waiting (urgent ones counted), and, with the daily budget used up, the plain message that the
  * waiting e-mails go out automatically from the next free slot. Then the dropped e-mails list shows the DISCARDED status
  * with its reason.
  *
- * Seeded in the disposable test database (synthetic addresses, unique per run): 95 e-mails SENT an hour ago, 3 urgent
+ * Seeded in the disposable test database (synthetic addresses, unique per run): 95 e-mails SENT earlier today (UTC), 3 urgent
  * and 2 ordinary e-mails waiting, one dropped e-mail. Everything seeded is removed at the end.
  */
 import { expect, test } from "@playwright/test";
@@ -20,9 +20,10 @@ test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
   await withDb(async (c) => {
-    // 95 e-mails sent an hour ago: the daily budget (100 minus the safety margin of 5) is used up for 23 hours.
+    // 95 e-mails sent earlier today (UTC day: up to an hour ago, never before 00:00 UTC): the daily budget (100 minus the
+    // safety margin of 5) is used up until just after 00:00 UTC.
     await c.query(`INSERT INTO "EmailDelivery" (id, "recipientEmail", subject, status, attempts, "attemptedAt", kind, priority)
-      SELECT gen_random_uuid()::text, 'sent' || g || '@${DOMAIN}', 'Earlier notice', 'SENT', 1, (now() AT TIME ZONE 'UTC') - interval '1 hour', 'NOTIFICATION', 'NORMAL'
+      SELECT gen_random_uuid()::text, 'sent' || g || '@${DOMAIN}', 'Earlier notice', 'SENT', 1, GREATEST(date_trunc('day', now() AT TIME ZONE 'UTC'), (now() AT TIME ZONE 'UTC') - interval '1 hour'), 'NOTIFICATION', 'NORMAL'
       FROM generate_series(1, 95) g`);
     await c.query(`INSERT INTO "EmailDelivery" (id, "recipientEmail", subject, body, status, kind, priority)
       SELECT gen_random_uuid()::text, 'urgent' || g || '@${DOMAIN}', 'Security notice', 'Hello', 'PENDING', 'SECURITY_NOTICE', 'CRITICAL'
@@ -48,7 +49,7 @@ test("an Administrator sees how much of the daily e-mail budget is used, what wa
 
   // At least the 95 seeded (other specs may have sent a few more) of the budget of 95.
   const daily = panel.getByTestId("sending-daily");
-  await expect(daily).toHaveText(/^(9[5-9]|\d{3,}) of 95 e-mails used in the last 24 hours · next free slot at (\d{1,2} \w{3} )?\d{2}:\d{2} Kigali time · \d+ waiting \(\d+ urgent\)$/);
+  await expect(daily).toHaveText(/^(9[5-9]|\d{3,}) of 95 e-mails used today \(the count restarts at (\d{1,2} \w{3} )?02:00 Kigali time\) · next free slot at (\d{1,2} \w{3} )?\d{2}:\d{2} Kigali time · \d+ waiting \(\d+ urgent\)$/);
   const urgent = Number(/\((\d+) urgent\)/.exec((await daily.textContent()) ?? "")![1]);
   expect(urgent).toBeGreaterThanOrEqual(3);
   await expect(panel.getByTestId("sending-monthly")).toHaveText(/^\d[\d,]* of 2,900 this month \(last 30 days\)$/);

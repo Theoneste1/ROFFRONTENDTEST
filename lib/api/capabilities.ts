@@ -236,8 +236,8 @@ export const KNOWN_FEATURES = [
    */
   "viewAs",
   /**
-   * E-mail within the Resend Free plan (owner 2026-11-24): GET /admin/email/usage (email.bulkSend) — e-mails used in the
-   * last 24 hours / 30 days against the budget, the next free slot, what is waiting (urgent first), failed and dropped
+   * E-mail within the Resend Free plan (owner 2026-11-24): GET /admin/email/usage (email.bulkSend) — e-mails used today
+   * (UTC day) / in the last 31 days against the budget, the next free slot, what is waiting (urgent first), failed and dropped
    * e-mails; POST /admin/email/usage/recover; deliveries may be DISCARDED (link no longer valid). Without it: no panel.
    */
   "emailBudget",

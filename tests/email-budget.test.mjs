@@ -15,9 +15,13 @@ const NOW = new Date("2026-11-24T08:00:00Z");
 const usage = (over = {}) => ({
   generatedAt: NOW.toISOString(),
   dryRun: false,
-  limits: { dailyLimit: 100, monthlyLimit: 3000, dailySafetyMargin: 5, monthlySafetyMargin: 100, dailyBudget: 95, monthlyBudget: 2900, normalSharePercent: 80, bulkSharePercent: 50 },
-  sent: { last24h: 62, last30d: 1204, sendingNow: 0, todayUtc: 40, thisMonthUtc: 900 },
-  remaining: { last24h: 33, last30d: 1696 },
+  limits: {
+    dailyLimit: 100, monthlyLimit: 3000, dailySafetyMargin: 5, monthlySafetyMargin: 100, dailyBudget: 95, monthlyBudget: 2900,
+    dayWindow: "UTC_CALENDAR_DAY", monthWindow: "ROLLING_31_DAYS", normalSharePercent: 80, bulkSharePercent: 50,
+  },
+  sent: { today: 62, last31d: 1204, sendingNow: 0, last24h: 70, thisMonthUtc: 900 },
+  dayResetsAt: "2026-11-25T00:00:00Z",
+  remaining: { today: 33, month: 1696 },
   nextFreeAt: null,
   priorities: [],
   queued: { CRITICAL: 3, NORMAL: 9, BULK: 0, total: 12 },
@@ -42,23 +46,29 @@ test("times are Kigali time: the hour today, the date otherwise", () => {
   assert.equal(kigaliTime("2026-11-25T06:30:00Z", NOW), "25 Nov 08:30");
 });
 
-test("normal day: used of the budget, next free slot, what waits (urgent ones counted)", () => {
-  assert.equal(dailyLine(usage(), NOW), "62 of 95 e-mails used in the last 24 hours · 12 waiting (3 urgent)");
-  assert.equal(dailyLine(usage({ nextFreeAt: at1405 }), NOW), "62 of 95 e-mails used in the last 24 hours · next free slot at 14:05 Kigali time · 12 waiting (3 urgent)");
-  assert.equal(monthlyLine(usage()), "1,204 of 2,900 this month (last 30 days)");
+test("normal day: used of the day's budget (Resend's day restarts at 00:00 UTC = 02:00 Kigali), next free slot, what waits", () => {
+  assert.equal(dailyLine(usage(), NOW), "62 of 95 e-mails used today (the count restarts at 25 Nov 02:00 Kigali time) · 12 waiting (3 urgent)");
+  assert.equal(dailyLine(usage({ nextFreeAt: at1405 }), NOW), "62 of 95 e-mails used today (the count restarts at 25 Nov 02:00 Kigali time) · next free slot at 14:05 Kigali time · 12 waiting (3 urgent)");
+  assert.equal(monthlyLine(usage()), "1,204 of 2,900 this month (last 31 days)");
   assert.equal(pausedText(usage(), NOW), null);
+});
+
+test("no limit (e.g. Resend Pro: no daily limit): plain counts", () => {
+  const u = usage({ limits: { ...usage().limits, dailyLimit: 0, dailyBudget: null, monthlyLimit: 0, monthlyBudget: null } });
+  assert.equal(dailyLine(u, NOW), "62 e-mails sent today (no daily limit) · 12 waiting (3 urgent)");
+  assert.equal(monthlyLine(u), "1,204 in the last 31 days (no monthly limit)");
 });
 
 test("nothing waiting", () => {
   const u = usage({ queued: { CRITICAL: 0, NORMAL: 0, BULK: 0, total: 0 } });
   assert.equal(waitingText(u), "nothing waiting");
-  assert.equal(dailyLine(u, NOW), "62 of 95 e-mails used in the last 24 hours · nothing waiting");
+  assert.equal(dailyLine(u, NOW), "62 of 95 e-mails used today (the count restarts at 25 Nov 02:00 Kigali time) · nothing waiting");
   assert.equal(waitingText(usage({ queued: { CRITICAL: 0, NORMAL: 4, BULK: 1, total: 5 } })), "5 waiting");
   assert.equal(pausedText({ ...u, status: { ...u.status, paused: true, reason: "DAILY_LIMIT", until: at1405 } }, NOW), "Daily e-mail limit reached — nothing is waiting.");
 });
 
 test("paused by the daily limit: how many wait and from when they go out by themselves", () => {
-  const u = usage({ sent: { ...usage().sent, last24h: 95 }, nextFreeAt: at1405, status: { paused: true, reason: "DAILY_LIMIT", until: at1405, lastProviderError: null, lastProviderPauseAt: null } });
+  const u = usage({ sent: { ...usage().sent, today: 95 }, nextFreeAt: at1405, status: { paused: true, reason: "DAILY_LIMIT", until: at1405, lastProviderError: null, lastProviderPauseAt: null } });
   assert.equal(pausedText(u, NOW), "Daily e-mail limit reached — 12 e-mails are waiting and will go out automatically from 14:05.");
   const one = { ...u, queued: { CRITICAL: 1, NORMAL: 0, BULK: 0, total: 1 } };
   assert.equal(pausedText(one, NOW), "Daily e-mail limit reached — 1 e-mail is waiting and will go out automatically from 14:05.");
