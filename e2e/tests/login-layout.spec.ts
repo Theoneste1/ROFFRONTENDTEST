@@ -9,6 +9,20 @@ import { expect, test, type Page } from "@playwright/test";
 import { signIn, signInWith } from "../support/session";
 import { ACCOUNTS, passwordOf, type AccountKey } from "../support/accounts";
 
+/**
+ * Opens the sign-in page and waits for its form. Opening a page first restores the session (POST /auth/refresh, 30 a
+ * minute per address); in a full run every test shares one address, the limit is reached and the app waits it out
+ * before showing the form ("Checking your session…"). As in signInWith: allow that wait, added to the test's timeout.
+ */
+async function openLogin(page: Page) {
+  await page.goto("/login");
+  const form = page.locator('input[name="username"]');
+  if (!(await form.isVisible())) {
+    test.info().setTimeout(test.info().timeout + 90_000);
+    await form.waitFor({ timeout: 90_000 });
+  }
+}
+
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 375, height: 667 },
@@ -34,9 +48,8 @@ test.describe("the sign-in page", () => {
   for (const vp of SIZES)
     test(`at ${vp.width}×${vp.height}: one card that fits, the messages, and the links`, async ({ page }) => {
       await page.setViewportSize(vp);
-      await page.goto("/login");
+      await openLogin(page);
       const username = page.locator('input[name="username"]');
-      await username.waitFor({ timeout: 60_000 });
       await expect(page.getByTestId("auth-card")).toHaveCount(1);
       await expect(page.getByRole("heading", { level: 1, name: "Sign in" })).toBeVisible();
       await expect(page.getByLabel("Username or email")).toBeVisible();
@@ -79,7 +92,7 @@ test.describe("the sign-in page", () => {
       // The links.
       await page.getByRole("link", { name: "Forgot password?" }).click();
       await page.waitForURL((u) => u.pathname === "/forgot-password");
-      await page.goto("/login");
+      await openLogin(page);
       await page.getByRole("link", { name: "Create account" }).click();
       await page.waitForURL((u) => u.pathname === "/register");
     });
