@@ -100,8 +100,8 @@ import {
   type SchoolClaimField,
 } from "@/lib/accounts/school-claim";
 
+import { USERNAME_HINT, usernameProblem } from "@/lib/accounts/username";
 const GRADES: GradeLevel[] = ["S1", "S2", "S3", "S4", "S5", "S6"];
-const USERNAME = /^[a-z0-9._-]{3,30}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const FIELDS = ["firstName", "lastName", "username", "email", "password", "gradeLevel", "schoolName", "schoolLocation", "homeLocation", "olympiadInterests", "gender"] as const;
 type F = (typeof FIELDS)[number] | "confirm";
@@ -219,7 +219,8 @@ export default function RegisterForm() {
       const g = validateGender(gender);
       if (g) e.gender = g;
     }
-    if (!USERNAME.test(v.username)) e.username = "3–30 characters: lowercase letters, digits, “.”, “_” or “-”.";
+    const usernameError = usernameProblem(v.username);
+    if (usernameError) e.username = usernameError;
     if (!EMAIL.test(v.email.trim())) e.email = "Enter a valid e-mail address.";
     if (!v.gradeLevel) e.gradeLevel = "Choose your grade.";
     if (!directory) {
@@ -592,7 +593,7 @@ export default function RegisterForm() {
     ) : (
       <TextField label="Home location" name="homeLocation" autoComplete="address-level2" required maxLength={200} value={v.homeLocation} onChange={(e) => set("homeLocation")(e.target.value)} error={errors.homeLocation} hint="District or city where you live" />
     ),
-    username: <TextField label="Username" placeholder="e.g. theoneste.nsanza" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint="Lowercase letters, digits, “.”, “_” or “-”." />,
+    username: <TextField label="Username" placeholder="e.g. theoneste.nsanza" name="username" autoComplete="username" required maxLength={30} value={v.username} onChange={(e) => set("username")(e.target.value.toLowerCase())} error={errors.username} hint={USERNAME_HINT} />,
     email: <TextField label="E-mail" placeholder="e.g. theoneste.nsanza@example.com" name="email" type="email" autoComplete="email" required maxLength={254} value={v.email} onChange={(e) => set("email")(e.target.value)} error={errors.email} />,
     password: <NewPasswordFields only="password" {...passwordProps} />,
     confirm: <NewPasswordFields only="confirm" {...passwordProps} />,

@@ -236,6 +236,12 @@ export const KNOWN_FEATURES = [
    */
   "viewAs",
   /**
+   * Activate now (owner 2026-11-24): POST /admin/users/:id/activate-now activates an account "Awaiting setup" whose person
+   * chose their own password (they sign in without confirming their e-mail), and the Users list's bulk action activateNow
+   * does the same per account (its preview says how many will be activated). Without it: neither is offered.
+   */
+  "adminActivateNow",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */

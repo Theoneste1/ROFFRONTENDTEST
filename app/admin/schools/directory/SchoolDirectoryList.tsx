@@ -11,7 +11,7 @@
  * of students; backends with schoolsTable) and page live in the URL; a row opens the school's page. On a small screen
  * the table scrolls sideways inside its own container.
  */
-import { useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCountryOptions } from "@/lib/queries/countries";
 import { countryDisplayName } from "@/lib/countries/reference";
@@ -62,12 +62,20 @@ export default function SchoolDirectoryList() {
 
   /** Remounts the search box on "Clear filters" (it keeps its own text while typing). */
   const [searchKey, setSearchKey] = useState(0);
+  // The latest filters asked for. Two quick changes (e.g. Status, then Province before the page re-renders) must build
+  // on each other: the second one starts from what the first asked for, not from the address before it (2026-11-24 fix).
+  const latest = useRef(state);
+  const urlKey = params.toString();
+  useEffect(() => {
+    latest.current = listStateFromParams(new URLSearchParams(urlKey));   // the address changed (a change applied, or Back)
+  }, [urlKey]);
   const go = (next: ListState) => {
+    latest.current = next;
     const query = listStateToParams(next);
     router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
   };
   // Any change but a page change goes back to page 1; the sort is kept with every filter.
-  const update = (patch: Partial<ListState>) => go({ ...state, ...patch, page: patch.page ?? 1 });
+  const update = (patch: Partial<ListState>) => go({ ...latest.current, ...patch, page: patch.page ?? 1 });
   const sortBy = (column: SchoolSort) => update(nextSort(state, column));
   // Filtered by a contact (owner 2026-11-23: "I should find the school contact"): a school opens on its Contacts tab.
   const contactsTab = state.contact.trim() !== "" || state.email !== "any" || state.phone !== "any";

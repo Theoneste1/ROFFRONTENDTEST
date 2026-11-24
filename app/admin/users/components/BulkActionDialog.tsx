@@ -24,6 +24,7 @@ import {
   EMPTY_PARAMS,
   REASON_MAX,
   allowedActions,
+  willApplySummary,
   teacherStudentBulkSupported,
   TEACHER_STUDENT_ACTIONS,
   TEACHER_DELEGATION_OPTIONS,
@@ -67,7 +68,8 @@ export default function BulkActionDialog({
   const { detection } = useBackendCapabilities();
   const teacherActions = teacherStudentBulkSupported(detection);
   const levelActions = hasFeature(detection, "olympiadLevels");
-  const actions = useMemo(() => allowedActions(can, teacherActions, levelActions), [can, teacherActions, levelActions]);
+  const activateNowAction = hasFeature(detection, "adminActivateNow");
+  const actions = useMemo(() => allowedActions(can, teacherActions, levelActions, activateNowAction), [can, teacherActions, levelActions, activateNowAction]);
   const divisions = useDivisions();
   const [action, setAction] = useState<BulkAction | "">(actions[0] ?? "");
   const [params, setParams] = useState<ParamsDraft>(EMPTY_PARAMS);
@@ -267,6 +269,11 @@ export default function BulkActionDialog({
                   </div>
                 )}
               </dl>
+            )}
+            {willApplySummary(preview) && (
+              <p className="mt-1 text-sm font-medium text-slate-800" data-testid="bulk-will-apply">
+                {willApplySummary(preview)}
+              </p>
             )}
             {preview.consequences.map((c) => (
               <p key={c} className="mt-1 text-xs text-slate-600">

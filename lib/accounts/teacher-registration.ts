@@ -20,6 +20,7 @@ import { RWANDA as DEFAULT_COUNTRY } from "../schools/countries";
 import { otherInterestField, validateInterestsWithOther } from "./olympiad-interests";
 import { cleanSchoolCode, schoolCodeProblem } from "../schools/school-code";
 
+import { usernameProblem } from "./username";
 // ─── Subjects ───────────────────────────────────────────────────────────────
 
 export const OLYMPIAD_SUBJECTS: readonly { value: OlympiadSubject; label: string }[] = [
@@ -305,7 +306,8 @@ export function validateTeacherRegistration(d: TeacherDraft, homeRules = false, 
   else if (first.length > TEACHER_RULES.nameMax) e.firstName = "At most 100 characters.";
   if (!last) e.lastName = "Enter your last name.";
   else if (last.length > TEACHER_RULES.nameMax) e.lastName = "At most 100 characters.";
-  if (!TEACHER_RULES.usernamePattern.test(d.username)) e.username = "3–30 characters: lowercase letters, digits, “.”, “_” or “-”.";
+  const usernameError = usernameProblem(d.username);
+  if (usernameError) e.username = usernameError;
   if (!TEACHER_RULES.emailPattern.test(d.email.trim())) e.email = "Enter a valid e-mail address.";
   if (!TEACHER_RULES.countryPattern.test(d.country.trim().toUpperCase())) e.country = homeRules ? "Choose your home country." : "Choose your country.";
   if (!d.phone.trim()) e.phone = "Enter your phone number.";
