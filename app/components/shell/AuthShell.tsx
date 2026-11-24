@@ -73,7 +73,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh w-full bg-white font-sans lg:grid lg:grid-cols-[minmax(380px,5fr)_7fr] lg:bg-[#f5f6fb]" data-auth-frame={wide ? "signup" : "login"}>
       {/* Brand panel (large screens): stays in view while the form scrolls. */}
-      <aside className="relative hidden overflow-hidden bg-brand lg:block" data-testid="auth-brand-panel">
+      <aside className="relative hidden overflow-hidden bg-brand lg:sticky lg:top-0 lg:block lg:h-dvh lg:self-start" data-testid="auth-brand-panel">
         {/* A ROF photograph as a subtle texture behind the text: full-bleed, under a strong overlay in the logo's colour. */}
         <Image
           src="/home/students-solving.jpg"
@@ -85,7 +85,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
           className="absolute inset-0 h-full w-full object-cover object-[55%_45%]"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-brand/90 via-brand/[0.93] to-brand-deep/[0.97]" aria-hidden="true" />
-        <div className="relative sticky top-0 flex h-dvh flex-col px-12 py-10 xl:px-16 xl:py-12">
+        <div className="relative flex h-full flex-col px-12 py-10 xl:px-16 xl:py-12">
           <BrandMark size="panel" />
           <div className="mt-auto max-w-md">
             <h2 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-white xl:text-[44px]">{welcome.title}</h2>
