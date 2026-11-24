@@ -52,7 +52,7 @@ test("an Administrator sees how much of the daily e-mail budget is used, what wa
   await expect(daily).toHaveText(/^(9[5-9]|\d{3,}) of 95 e-mails used today \(the count restarts at (\d{1,2} \w{3} )?02:00 Kigali time\) · next free slot at (\d{1,2} \w{3} )?\d{2}:\d{2} Kigali time · \d+ waiting \(\d+ urgent\)$/);
   const urgent = Number(/\((\d+) urgent\)/.exec((await daily.textContent()) ?? "")![1]);
   expect(urgent).toBeGreaterThanOrEqual(3);
-  await expect(panel.getByTestId("sending-monthly")).toHaveText(/^\d[\d,]* of 2,900 this month \(last 30 days\)$/);
+  await expect(panel.getByTestId("sending-monthly")).toHaveText(/^\d[\d,]* of 2,900 this month \(last 31 days\)$/);
 
   // Paused by the daily limit, in plain words, with the time the waiting e-mails go out.
   await expect(panel.getByTestId("sending-paused")).toHaveText(
