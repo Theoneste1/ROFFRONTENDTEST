@@ -336,7 +336,7 @@ export function Notice({ tone = "success", children, onClose }: { tone?: "succes
  */
 export function MetricCard({ label, value, subtext }: { label: string; value: ReactNode; subtext?: ReactNode }) {
   return (
-    <div className="flex flex-col justify-between border-l border-line bg-white/60 py-3 pl-4 pr-3">
+    <div className="flex flex-col justify-between border-l border-line bg-white/60 py-3 pl-4 pr-3" data-metric>
       <div>
         <p className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-muted mb-1.5">{label}</p>
         <p className="stat-number text-[2rem] leading-[2.5rem] text-brand">{value}</p>

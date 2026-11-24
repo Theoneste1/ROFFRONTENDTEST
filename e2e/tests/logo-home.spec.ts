@@ -47,5 +47,6 @@ test("the browser tab shows the ROF logo and a clear title; search engines find 
   for (const p of ["/login", "/register", "/apply", "/support"]) expect(sitemap).toContain(`${p}</loc>`);
   expect(sitemap).not.toContain("/admin");
   const manifest = await (await request.get("/manifest.webmanifest")).json();
-  expect(manifest).toMatchObject({ short_name: "ROF LMS", theme_color: "#00428C" });
+  // The phone browser bar in the institution's deep navy (Academic Prestige primary).
+  expect(manifest).toMatchObject({ short_name: "ROF LMS", theme_color: "#061B40" });
 });

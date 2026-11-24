@@ -43,7 +43,8 @@ test("a dry run recognises the existing school by code, proposes only the new on
   const headline = page.getByTestId("sync-headline");
   await expect(headline).toBeVisible();
   // A metric card: its label, its value, its explanation.
-  const card = (label: string) => headline.locator("div.rounded-xl").filter({ has: page.getByText(label, { exact: true }) });
+  // A headline figure (MetricCard, marked data-metric) by its label — independent of the card styling.
+  const card = (label: string) => headline.locator("[data-metric]").filter({ has: page.getByText(label, { exact: true }) });
   const value = (label: string) => card(label).locator("p").nth(1);
   await expect(value("Schools found")).toHaveText("3");
   await expect(value("Already in the directory")).toHaveText("1");
