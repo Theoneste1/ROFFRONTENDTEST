@@ -14,7 +14,6 @@ import {
     Users,
     Award
 } from "lucide-react";
-import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
 import { MENTOR_MARKING, MENTOR_NAV, MENTOR_RESULTS, MENTOR_SHARED_REPORTS, MENTOR_STUDENTS, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
@@ -89,8 +88,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                 />
             </div>
 
-            {/* BOTTOM UTILITY LINKS */}
-            <SidebarUtilities isOpen={isOpen} settingsHref="/mentor/account" />
         </aside>
     );
 }

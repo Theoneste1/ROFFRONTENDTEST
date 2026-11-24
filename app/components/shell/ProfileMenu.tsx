@@ -9,7 +9,7 @@
  * Menu-button pattern (WAI-ARIA APG): Enter, Space or ArrowDown opens it on the first item, ArrowUp
  * on the last; ArrowUp/ArrowDown move (wrapping), Home/End jump; Escape closes it and returns focus to
  * the button; Tab, a click outside or choosing an item closes it. Logout is the session's own logout
- * (POST /auth/logout and the local sign-out), exactly like the sidebar's Sign Out.
+ * (POST /auth/logout and the local sign-out).
  */
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";

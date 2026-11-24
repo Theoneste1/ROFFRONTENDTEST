@@ -48,7 +48,6 @@ const SIDEBARS = [
   "app/admin/dashboard/components/Sidebar.tsx",
   "app/mentor/dashboard/components/Sidebar.tsx",
   "app/teacher/components/Sidebar.tsx",
-  "app/components/shell/SidebarUtilities.tsx",
 ];
 
 /** Literal links in a component's source: href="/…" and settingsHref="/…". */
@@ -78,9 +77,12 @@ test("every link written in the portal sidebars has a page", () => {
   }
   // The student menu is written in its sidebar: make sure the scan found its items.
   const student = literalHrefs(SIDEBARS[0]);
-  for (const href of ["/student/dashboard", "/student/leaderboard", "/student/courses", "/student/resources", "/student/assignments", "/student/assignments/results", "/student/account"]) {
+  for (const href of ["/student/dashboard", "/student/leaderboard", "/student/courses", "/student/resources", "/student/assignments", "/student/assignments/results"]) {
     assert.ok(student.includes(href), `student sidebar scan missed ${href}`);
   }
+  // Help, Settings (/student/account) and Sign Out are in the profile menu only, not in the sidebar (owner 2026-11-25;
+  // the profile menu's links are checked in tests/profile-menu.test.mjs).
+  assert.ok(!student.includes("/student/account"), "the student sidebar has no Settings link (it is in the profile menu)");
 });
 
 test("admin menu offers Schools to every administrator (role-served, no permission)", () => {
