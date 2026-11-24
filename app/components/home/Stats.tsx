@@ -14,11 +14,11 @@ import { usePublicStatistics } from "@/lib/queries/account";
 import Reveal, { useInView } from "./Reveal";
 
 const CARDS = [
-  { key: "students", label: "Students", text: "Active learners preparing for Olympiads", icon: GraduationCap, tone: "from-sky-400 to-blue-600" },
-  { key: "teachers", label: "Teachers", text: "Teachers from the schools we work with", icon: Presentation, tone: "from-emerald-400 to-teal-600" },
-  { key: "coaches", label: "Coaches", text: "Coaches mentoring and training our students", icon: Trophy, tone: "from-amber-300 to-orange-500" },
-  { key: "schools", label: "Schools", text: "Schools with students on the platform", icon: School, tone: "from-fuchsia-400 to-purple-600" },
-  { key: "members", label: "Community members", text: "All active members of the platform", icon: UsersRound, tone: "from-rose-400 to-pink-600" },
+  { key: "students", label: "Students", text: "Active learners preparing for Olympiads", icon: GraduationCap, tone: "text-sky-300" },
+  { key: "teachers", label: "Teachers", text: "Teachers from the schools we work with", icon: Presentation, tone: "text-emerald-300" },
+  { key: "coaches", label: "Coaches", text: "Coaches mentoring and training our students", icon: Trophy, tone: "text-amber-300" },
+  { key: "schools", label: "Schools", text: "Schools with students on the platform", icon: School, tone: "text-fuchsia-300" },
+  { key: "members", label: "Community members", text: "All active members of the platform", icon: UsersRound, tone: "text-rose-300" },
 ] as const;
 
 function Counter({ value, run }: { value: number; run: boolean }) {
@@ -63,8 +63,8 @@ export default function Stats() {
             const value = stats?.[key];
             return (
               <Reveal key={key} delayClass={["", "delay-100", "delay-200", "delay-300", "delay-500"][i]} className={`rounded-2xl bg-white/[0.07] p-5 sm:p-6 ring-1 ring-white/15 backdrop-blur transition hover:-translate-y-1 hover:bg-white/[0.11] ${i === CARDS.length - 1 ? "col-span-2 lg:col-span-1" : ""}`}>
-                <span className={`inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${tone} text-white shadow-lg`}>
-                  <Icon className="h-6 w-6" aria-hidden="true" />
+                <span className={`inline-flex ${tone}`}>
+                  <Icon className="h-9 w-9" strokeWidth={1.75} aria-hidden="true" />
                 </span>
                 <p className="mt-5 text-4xl font-extrabold tabular-nums text-white" data-stat={key}>
                   {query.isPending ? (
