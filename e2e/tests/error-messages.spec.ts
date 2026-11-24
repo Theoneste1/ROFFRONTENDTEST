@@ -34,7 +34,7 @@ const loginAlert = (page: Page) => page.getByTestId("login-form").getByRole("ale
 test.describe("error messages: signing in", () => {
   test("wrong password: says it is not correct and what to do; the username stays typed", async ({ page }) => {
     await submitSignIn(page, "e2e.student", "Not-The-Password-1!");
-    await expect(loginAlert(page)).toContainText("Wrong username or password. Check them and try again.", { timeout: 30_000 });
+    await expect(loginAlert(page)).toContainText("Wrong username or password. Try again.", { timeout: 30_000 });
     await expect(page.locator('input[name="username"]')).toHaveValue("e2e.student");
     await expectNoTechnicalText(page);
   });
