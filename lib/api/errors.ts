@@ -105,6 +105,8 @@ export function errorMessage(error: unknown, fallback = UNEXPECTED_ERROR): strin
   switch (error.code) {
     case "NETWORK_ERROR":
       return "Cannot reach the server. Check your internet connection, then try again.";
+    case "TIMEOUT":
+      return "The server took too long to answer. Check your internet connection, then try again. If you were saving something, check whether it was saved before trying again.";
     case "SESSION_REFRESH_UNAVAILABLE":
       return "Can't reach the server to renew your session. You are still signed in — please try again in a moment.";
     case "VALIDATION_FAILED": {

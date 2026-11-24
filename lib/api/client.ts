@@ -93,13 +93,27 @@ function notifyExpired() {
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+/**
+ * One refresh attempt waits at most this long; a hung attempt counts as a network failure (retried, then `unavailable`,
+ * the session kept). Without it one hung request would hold every other request — in every tab — for ever.
+ */
+export const REFRESH_TIMEOUT_MS = 30_000;
+
 /** One POST /auth/refresh (the httpOnly cookie carries the refresh token). */
 async function postRefresh() {
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
-    method: "POST",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REFRESH_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   return {
     status: res.status,
     retryAfter: res.headers.get("retry-after"),
@@ -243,12 +257,35 @@ async function send(path: string, opts: RequestOptions): Promise<Response> {
     return sendMultipart(url, init.method ?? "POST", headers, body, cookies, init.signal ?? undefined);
   }
 
+  // A request that gets no answer at all stops after REQUEST_TIMEOUT_MS (a hung connection would otherwise leave the
+  // page loading for ever) and says so in plain words. The clock stops when the answer starts (a long download is
+  // never cut off); the caller's own signal still cancels it.
+  const controller = new AbortController();
+  const callerSignal = init.signal ?? undefined;
+  const onCallerAbort = () => controller.abort(callerSignal?.reason);
+  if (callerSignal?.aborted) onCallerAbort();
+  else callerSignal?.addEventListener("abort", onCallerAbort, { once: true });
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
   try {
-    return await fetch(url, { ...init, headers, body: payload, credentials: cookies ? "include" : "omit" });
+    return await fetch(url, { ...init, signal: controller.signal, headers, body: payload, credentials: cookies ? "include" : "omit" });
   } catch {
+    if (timedOut) throw new ApiError(0, "TIMEOUT", "The server took too long to answer.");
     throw new ApiError(0, "NETWORK_ERROR", "Cannot reach the server.");
+  } finally {
+    clearTimeout(timer);
+    callerSignal?.removeEventListener("abort", onCallerAbort);
   }
 }
+
+/**
+ * How long a request may wait for the server's answer to start. Generous: the backend's host can take up to about a
+ * minute to wake up after a quiet period.
+ */
+export const REQUEST_TIMEOUT_MS = 90_000;
 
 function formSize(form: FormData): number {
   let size = 0;
