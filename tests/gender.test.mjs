@@ -38,7 +38,8 @@ test("the field: two radio choices named gender, marked required, the error show
   assert.equal((html.match(/type="radio"/g) ?? []).length, 2);
   assert.match(html, /name="gender" value="FEMALE"/);
   assert.match(html, /name="gender" value="MALE"/);
-  assert.match(html, /Gender <span class="text-red-500">\*<\/span>/);
+  // The required marker is in the design system's amber (Academic Prestige: required asterisks in #D97706).
+  assert.match(html, /Gender <span class="text-amber-600">\*<\/span>/);
   assert.match(html, /Choose your gender\./);
   const chosen = renderToStaticMarkup(createElement(GenderField, { value: "MALE", onChange: () => {} }));
   assert.match(chosen, /name="gender" checked="" value="MALE"/);

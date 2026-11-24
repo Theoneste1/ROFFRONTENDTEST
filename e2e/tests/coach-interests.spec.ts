@@ -57,7 +57,7 @@ test.describe("coach subjects", () => {
     await page.locator('input[name="phone"]').fill("0788333444");
     const subjects = page.getByTestId("olympiad-interests");
     await expect(subjects.getByText(QUESTION)).toBeVisible();
-    await expect(subjects.locator("legend .text-red-500")).toHaveText("*");
+    await expect(subjects.locator("legend .text-amber-600")).toHaveText("*"); // required marker (Academic Prestige amber)
     // Occupation: not listed, so "Other (type it)".
     await page.locator('select[name="occupation"]').selectOption("__other__");
     await page.locator('input[name="occupation"]').fill("Physics lecturer");
