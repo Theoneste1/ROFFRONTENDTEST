@@ -905,6 +905,18 @@ export interface AdminUser {
   gender?: "FEMALE" | "MALE" | null;
 }
 
+/**
+ * The account as returned by POST /admin/users/:id/activate-now and POST /admin/users/:id/status-changes: only these
+ * fields (backend STATUS_USER_SELECT), not a full AdminUser. Read the full account again with GET /admin/users/:id.
+ */
+export type AccountStateUser = Pick<AdminUser, "id" | "username" | "firstName" | "lastName" | "role" | "isActive" | "isApproved" | "activatedAt"> & {
+  accountStatus: AccountState;
+  updatedAt: string;
+};
+
+/** What still stops an account signing in after a state change or "Activate now" (backend SignInBlock). */
+export type SignInBlock = "NOT_ACTIVATED" | "PENDING_APPROVAL" | "LOCKED" | "ROLE_DISABLED";
+
 /** Account states (capability accountStates). */
 export type AccountState = "ACTIVE" | "DEACTIVATED" | "SUSPENDED" | "ARCHIVED";
 
