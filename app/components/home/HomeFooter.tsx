@@ -9,6 +9,12 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { subscribersSupported } from "@/lib/subscribers/rules";
 import { useEffect, useState } from "react";
 import { SubscribeDialog } from "./Subscribe";
+import { serif } from "./fonts";
+import { Building2, Clock, Mail, MailPlus, Phone, Send } from "lucide-react";
+
+/** The contact column: one row per detail, an amber icon before it. */
+const CONTACT_ROW = "flex items-start gap-2.5";
+const CONTACT_ICON = "mt-0.5 h-[18px] w-[18px] flex-shrink-0 text-amber-400";
 
 const QUICK = [
   { href: "#top", label: "Home" },
@@ -46,21 +52,26 @@ export default function HomeFooter() {
   return (
     <footer className="bg-brand-950 text-blue-100" aria-labelledby="footer-title">
       <h2 id="footer-title" className="sr-only">Footer</h2>
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:px-8">
         <div>
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="" width={44} height={44} className="h-11 w-11 rounded-full" />
-            <span className="text-xl font-extrabold text-white">ROF LMS</span>
+            <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-white p-0.5">
+              <Image src="/logo.png" alt="" width={112} height={112} className="h-full w-full rounded-full object-cover" />
+            </span>
+            <span className="leading-tight">
+              <span className={`${serif.className} block text-[1.5rem] font-medium text-white`}>ROF LMS</span>
+              <span className="block text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-blue-100/70">{SITE.organisation}</span>
+            </span>
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-blue-100/80">{SITE.description}</p>
-          <div className="mt-6">
+          <p className="mt-5 max-w-sm text-[0.875rem] leading-6 text-blue-100/80">{SITE.description}</p>
+          <div className="mt-5">
             <SocialLinks />
           </div>
         </div>
 
         <nav aria-label="Quick links">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-white">Quick links</h3>
-          <ul className="mt-4 space-y-2 text-sm">
+          <h3 className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-amber-300">Quick links</h3>
+          <ul className="mt-4 space-y-2.5 text-[0.875rem]">
             {QUICK.map((l) => (
               <li key={l.href}><a href={l.href} className="hover:text-amber-300">{l.label}</a></li>
             ))}
@@ -69,8 +80,8 @@ export default function HomeFooter() {
         </nav>
 
         <nav aria-label="Learning resources">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-white">Learning resources</h3>
-          <ul className="mt-4 space-y-2 text-sm">
+          <h3 className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-amber-300">Learning resources</h3>
+          <ul className="mt-4 space-y-2.5 text-[0.875rem]">
             {RESOURCES.map((l) => (
               <li key={l.href}><Link href={l.href} className="hover:text-amber-300">{l.label}</Link></li>
             ))}
@@ -78,15 +89,16 @@ export default function HomeFooter() {
         </nav>
 
         <div>
-          <h3 className="text-sm font-bold uppercase tracking-wider text-white">Contact</h3>
-          <ul className="mt-4 space-y-2 text-sm">
-            <li className="text-white">{SITE.organisation}</li>
-            {info?.email && <li><a href={`mailto:${info.email}`} className="hover:text-amber-300">{info.email}</a></li>}
-            {info?.phone && <li><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="hover:text-amber-300">{info.phone}</a></li>}
-            {info?.hours && <li>{info.hours}</li>}
-            <li><a href="#contact" className="hover:text-amber-300">Send us a message</a></li>
+          <h3 className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-amber-300">Contact</h3>
+          <ul className="mt-4 space-y-3 text-[0.875rem]">
+            <li className={CONTACT_ROW}><Building2 className={CONTACT_ICON} strokeWidth={1.8} aria-hidden="true" /><span className="text-white">{SITE.organisation}</span></li>
+            {info?.email && <li className={CONTACT_ROW}><Mail className={CONTACT_ICON} strokeWidth={1.8} aria-hidden="true" /><a href={`mailto:${info.email}`} className="break-all hover:text-amber-300">{info.email}</a></li>}
+            {info?.phone && <li className={CONTACT_ROW}><Phone className={CONTACT_ICON} strokeWidth={1.8} aria-hidden="true" /><a href={`tel:${info.phone.replace(/[^\d+]/g, "")}`} className="hover:text-amber-300">{info.phone}</a></li>}
+            {info?.hours && <li className={CONTACT_ROW}><Clock className={CONTACT_ICON} strokeWidth={1.8} aria-hidden="true" /><span>{info.hours}</span></li>}
+            <li className={CONTACT_ROW}><Send className={CONTACT_ICON} strokeWidth={1.8} aria-hidden="true" /><a href="#contact" className="hover:text-amber-300">Send us a message</a></li>
             {news && (
-              <li>
+              <li className={CONTACT_ROW}>
+                <MailPlus className={CONTACT_ICON} strokeWidth={1.8} aria-hidden="true" />
                 <a href="#news" onClick={(e) => { e.preventDefault(); setNewsOpen(true); }} className="hover:text-amber-300" data-testid="footer-news-link">
                   Get ROF news by e-mail
                 </a>
@@ -96,9 +108,13 @@ export default function HomeFooter() {
         </div>
       </div>
       <div className="border-t border-white/10">
-        <p className="mx-auto max-w-7xl px-4 py-6 text-center text-xs text-blue-100/60 sm:px-6 lg:px-8">
-          © {new Date().getFullYear()} {SITE.organisation}. All rights reserved.
-        </p>
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-[0.8125rem] text-blue-100/70 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <p>© {new Date().getFullYear()} {SITE.organisation}. All rights reserved.</p>
+          <p className="flex gap-5">
+            <Link href="/support" className="hover:text-amber-300">Help and support</Link>
+            <a href="#contact" className="hover:text-amber-300">Contact</a>
+          </p>
+        </div>
       </div>
       {newsOpen && <SubscribeDialog onClose={() => { setNewsOpen(false); if (window.location.hash === "#news") history.replaceState(null, "", window.location.pathname + window.location.search); }} />}
     </footer>
