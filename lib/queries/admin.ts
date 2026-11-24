@@ -115,6 +115,8 @@ export type UserAction =
   | { type: "status"; isActive?: boolean; isApproved?: boolean }
   | { type: "resendInvitation" }
   | { type: "sendPasswordReset" }
+  /** Activate now (capability adminActivateNow): an account awaiting setup, whose person chose a password. */
+  | { type: "activateNow" }
   | { type: "delete" }
   /** Account states (capability accountStates): archive, or restore an archived account. Both need a reason. */
   | { type: "archive"; reason: string }
@@ -134,6 +136,8 @@ export function useUserAction(id: string) {
           return usersApi.resendInvitation(id);
         case "sendPasswordReset":
           return usersApi.sendPasswordReset(id);
+        case "activateNow":
+          return usersApi.activateNow(id);
         case "delete":
           return usersApi.remove(id);
         case "archive":

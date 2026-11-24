@@ -80,6 +80,10 @@ test.describe("view as (read only)", () => {
     await page.getByTestId("view-as-open").click();
     const [tab] = await Promise.all([context.waitForEvent("page"), page.getByRole("dialog").getByTestId("view-as-start").click()]);
     await expect(tab.getByTestId("view-as-banner")).toBeVisible({ timeout: 60_000 });
+    // Let the dashboard finish loading first: a request still on its way when the session ends is refused too, and
+    // the tab then redirects to the "ended" page itself — at the same moment as the goto below, which cancelled it
+    // (full run 2026-11-24). The point here is the next page load after the end.
+    await tab.waitForLoadState("networkidle");
     // The session is ended elsewhere (as when the permission is removed): the next request answers VIEW_AS_ENDED.
     await withDb((c) => c.query(`UPDATE "ViewAsSession" SET "endedAt" = now(), "endedReason" = 'PERMISSION_REMOVED' WHERE "targetId" = $1 AND "endedAt" IS NULL`, [studentId]));
     await tab.goto("/student/notifications");

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { schoolsApi, USER_RULES, type CreateUserInput, type InviteUserInput, type UpdateUserInput } from "@/lib/api/admin";
 import { PASSWORD_RULE } from "@/lib/api/auth";
 import { errorMessage, fieldErrors, isApiError } from "@/lib/api/errors";
+import { TAKEN_FIELD_TEXT, takenFields } from "@/lib/accounts/identity-taken";
 import type { AdminUser, GradeLevel, Permission, Role, SchoolRef } from "@/lib/api/types";
 import { roleLabel } from "@/lib/auth/roles";
 import { assignableRoles, canPromoteToSuperAdmin, roleChangeNeedsPassword, roleChangeStepUp } from "@/lib/auth/role-rules";
@@ -26,6 +27,7 @@ import { displayStatus, type DisplayStatus } from "@/lib/accounts/account-lifecy
 import { Alert, Spinner } from "@/app/components/ui/feedback";
 import { Badge, btnPrimary } from "../../components/adminUi";
 
+import { usernameProblem } from "@/lib/accounts/username";
 // ─── Status ─────────────────────────────────────────────────────────────────
 
 export type AccountStatus = DisplayStatus;
@@ -290,7 +292,7 @@ const USER_ERRORS: Readonly<Record<string, string>> = {
   CANNOT_CHANGE_OWN_ROLE: "You can't change your own role.",
   LAST_SUPER_ADMIN: "This is the last active Super Administrator; another one must exist first.",
   GRADE_REQUIRED: "Students need a grade.",
-  IDENTITY_TAKEN: "That username or e-mail is already in use.",
+  IDENTITY_TAKEN: "That username or e-mail is already used by another account. Choose a different username or e-mail address.",
   USERNAME_UNAVAILABLE: "No username could be made from this e-mail address; enter one.",
   SCHOOL_REFERENCE_REQUIRED: "Choose an existing school from the list.",
   SCHOOL_NAME_MISMATCH: "The school name doesn't match the school chosen.",
@@ -387,8 +389,7 @@ export function UserForm({
     if (!len(f.firstName, 1, 100)) e.firstName = "First name is required (up to 100 characters).";
     if (!len(f.lastName, 1, 100)) e.lastName = "Last name is required (up to 100 characters).";
     const u = f.username.trim().toLowerCase();
-    if ((mode !== "invite" || u) && (!len(u, USER_RULES.username.min, USER_RULES.username.max) || !USER_RULES.username.pattern.test(u)))
-      e.username = "3–30 characters: lowercase letters, digits, “.”, “_” and “-”.";
+    if ((mode !== "invite" || u) && usernameProblem(u)) e.username = usernameProblem(u)!;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = "Enter a valid e-mail address.";
     if (mode === "create" && !PASSWORD_RULE.test(f.password)) e.password = PASSWORD_RULE.hint;
     if (isStudent && !f.gradeLevel) e.gradeLevel = "Students need a grade (it sets the division).";
@@ -458,6 +459,7 @@ export function UserForm({
       const fe = fieldErrors(err, FIELDS);
       const homeCoded = isApiError(err) && err.code ? HOME_ERRORS[err.code] : undefined;
       if (homeCoded) fe[homeCoded.field] = homeCoded.message;
+      for (const f of takenFields(err)) fe[f] = TAKEN_FIELD_TEXT[f];
       if (isApiError(err) && err.code === "STEP_UP_REQUIRED") {
         fe.currentPassword = stepUp ? "That password isn't correct. Enter your own current password." : "Enter your own password to confirm this role change.";
         setStepUpAsked(true);

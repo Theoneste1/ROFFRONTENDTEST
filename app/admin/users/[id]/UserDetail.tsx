@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, ArrowLeft, CheckCircle2, KeyRound, MailPlus, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, BadgeCheck, CheckCircle2, KeyRound, MailPlus, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { useAdminUser, useUserAction, type UserAction } from "@/lib/queries/admin";
 import { isApiError } from "@/lib/api/errors";
@@ -38,6 +38,7 @@ import OlympiadLevelCard from "@/app/components/students/OlympiadLevelCard";
 import { AvatarTile } from "@/app/components/account/UserAvatar";
 import ViewAsButton from "./ViewAsButton";
 import { viewAsButtonVisible } from "@/lib/auth/view-as";
+import { activateNowConfirmText, activateNowDoneText, activateNowVisible } from "@/lib/accounts/activate-now";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -48,7 +49,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-type Confirm = { action: UserAction; title: string; body: ReactNode; label: string; tone?: "danger"; done: string; reason?: boolean };
+type Confirm = { action: UserAction; title: string; body: ReactNode; label: string; tone?: "danger"; done: string; reason?: boolean; name?: string };
 
 export default function UserDetail({ userId }: { userId: string }) {
   const router = useRouter();
@@ -180,6 +181,17 @@ export default function UserDetail({ userId }: { userId: string }) {
                 onClick={() => ask({ action: { type: "status", isApproved: true }, title: "Approve this account?", body: `${name} will be able to use the platform.`, label: "Approve", done: "Account approved." })}
               >
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Approve account
+              </button>
+            )}
+            {/* Activate now (adminActivateNow, owner 2026-11-24): awaiting setup, with the person's own password. */}
+            {activateNowVisible(u, { featureOn: hasFeature(detection, "adminActivateNow"), canChangeStatus: can("users.changeStatus"), isMe }) && (
+              <button
+                type="button"
+                className={btnPrimary}
+                data-testid="activate-now"
+                onClick={() => ask({ action: { type: "activateNow" }, title: "Activate this account now?", body: activateNowConfirmText(name), label: "Activate now", done: "activated", name })}
+              >
+                <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" /> Activate now
               </button>
             )}
             {!u.activatedAt && u.isActive && (
@@ -333,6 +345,7 @@ export default function UserDetail({ userId }: { userId: string }) {
             const action = confirm.action.type === "archive" || confirm.action.type === "restore" ? { ...confirm.action, reason } : confirm.action;
             const result = (await act.mutateAsync(action)) as { stillBlockedBy?: string[] } | undefined;
             if (confirm.done === "deleted") router.replace("/admin/users");
+            else if (action.type === "activateNow") setNotice({ tone: "success", text: activateNowDoneText(confirm.name ?? name, result?.stillBlockedBy) });
             else setNotice({ tone: "success", text: [confirm.done, action.type === "restore" ? stillBlockedText(result?.stillBlockedBy) : null].filter(Boolean).join(" ") });
           }}
         />

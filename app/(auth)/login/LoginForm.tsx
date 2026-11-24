@@ -101,7 +101,7 @@ export default function LoginForm() {
             </>
           ) : isApiError(error) && error.status === 401 ? (
             <>
-              Invalid username or password.
+              Wrong username or password. Try again.
               {failures >= 2 && (
                 <>
                   {" "}

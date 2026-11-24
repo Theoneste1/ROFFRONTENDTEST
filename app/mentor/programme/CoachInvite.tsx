@@ -17,6 +17,7 @@ import { Alert } from "@/app/components/ui/feedback";
 import { Modal, btnPrimary, btnSecondary } from "@/app/admin/components/adminUi";
 import { TextInput } from "@/app/admin/users/components/userUi";
 
+import { usernameProblem } from "@/lib/accounts/username";
 const FIELDS = ["firstName", "lastName", "email", "username"] as const;
 type F = (typeof FIELDS)[number];
 
@@ -52,7 +53,7 @@ export default function CoachInvite({ programmeId, programmeName }: { programmeI
     if (!len(v.lastName, USER_RULES.name.min, USER_RULES.name.max)) err.lastName = "Last name is required.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) err.email = "Enter a valid e-mail address.";
     const u = v.username.trim().toLowerCase();
-    if (u && (!len(u, USER_RULES.username.min, USER_RULES.username.max) || !USER_RULES.username.pattern.test(u))) err.username = "3–30 characters: lowercase letters, digits, “.”, “_” and “-”.";
+    if (u && usernameProblem(u)) err.username = usernameProblem(u)!;
     setErrors(err);
     if (Object.keys(err).length === 0) invite.mutate();
   }
@@ -60,7 +61,7 @@ export default function CoachInvite({ programmeId, programmeName }: { programmeI
   const formError =
     invite.error && Object.keys(errors).length === 0
       ? isApiError(invite.error) && invite.error.code === "IDENTITY_TAKEN"
-        ? "That username or e-mail is already in use."
+        ? "That username or e-mail is already used by another account. Choose a different username, or check whether this coach already has an account."
         : errorMessage(invite.error)
       : null;
 

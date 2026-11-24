@@ -7,6 +7,7 @@ import { api, apiBlob, saveFile, type QueryValue } from "./client";
 import type { DateOfBirthHistoryEntry } from "../accounts/date-of-birth-correction";
 import type { OlympiadSubject } from "./teacher-registration";
 import type {
+  AccountStateUser,
   AdminDashboard,
   AdminDivision,
   AdminSubmission,
@@ -47,6 +48,7 @@ import type {
   SchoolRef,
   SchoolSummary,
   SettingValue,
+  SignInBlock,
   StudentReportRow,
   SubmissionStatus,
   UserImportResult,
@@ -192,6 +194,12 @@ export const usersApi = {
     api<AdminUser>(`/admin/users/${id}/status`, { method: "PATCH", body: status }),
   resendInvitation: (id: string) => api<{ purpose: string; expiresAt: string }>(`/admin/users/${id}/resend-invitation`, { method: "POST" }),
   sendPasswordReset: (id: string) => api<{ message: string }>(`/admin/users/${id}/send-password-reset`, { method: "POST" }),
+  /**
+   * Activate now (capability adminActivateNow): an account awaiting setup whose person chose a password is activated, so
+   * they sign in without confirming their e-mail. 409 ALREADY_ACTIVATED / NO_PASSWORD_YET / ACCOUNT_NOT_ACTIVE in plain words.
+   */
+  activateNow: (id: string) =>
+    api<{ user: AccountStateUser; stillBlockedBy: SignInBlock[]; message: string }>(`/admin/users/${encodeURIComponent(id)}/activate-now`, { method: "POST" }),
   /** Only accounts without academic history (409 USER_HAS_HISTORY otherwise). Backends with accountStates refuse it: archive instead. */
   remove: (id: string) => api<{ message: string }>(`/admin/users/${id}`, { method: "DELETE" }),
   /**
@@ -200,7 +208,7 @@ export const usersApi = {
    * when it leaves ACTIVE. `stillBlockedBy`: anything else that still stops it signing in after a restore.
    */
   changeStatus: (id: string, body: { toStatus: AccountState; reason?: string; confirm?: boolean }) =>
-    api<{ user: AdminUser; stillBlockedBy?: string[] }>(`/admin/users/${id}/status-changes`, { method: "POST", body }),
+    api<{ user: AccountStateUser; change: unknown; stillBlockedBy?: SignInBlock[] }>(`/admin/users/${id}/status-changes`, { method: "POST", body }),
   /**
    * Correct a student's date of birth (capability dateOfBirthCorrection): "YYYY-MM-DD" and a reason (5–500 characters).
    * 400 VALIDATION_FAILED / NOT_A_STUDENT, 409 DATE_OF_BIRTH_UNCHANGED.
