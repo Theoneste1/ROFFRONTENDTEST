@@ -61,21 +61,16 @@ export function displayName(p: AvatarPerson | null | undefined): string {
   return full || (p?.username ?? "").trim() || "User";
 }
 
-/** ROF navy and amber tones for the generated avatar (text colour readable on each, WCAG AA). */
-export const AVATAR_TONES = [
-  "bg-brand-950 text-amber-300",
-  "bg-brand text-white",
-  "bg-amber-400 text-brand-950",
-  "bg-brand text-white",
-  "bg-amber-200 text-brand-950",
-] as const;
+/**
+ * The generated avatar's tone (owner 2026-11-25): one for every account without a picture — the logo blue with white
+ * initials (WCAG AA).
+ */
+export const AVATAR_TONES = ["bg-brand text-white"] as const;
 
-/** A stable tone for the account (by id, else username, else name). */
-export function avatarTone(p: AvatarPerson | null | undefined): string {
-  const seed = p?.id || p?.username || avatarLabel(p);
-  let h = 0;
-  for (const ch of seed) h = (h * 31 + ch.codePointAt(0)!) >>> 0;
-  return AVATAR_TONES[h % AVATAR_TONES.length];
+/** The tone of an account's generated avatar: the same for everyone (the account is accepted, not used). */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function avatarTone(_p?: AvatarPerson | null): string {
+  return AVATAR_TONES[0];
 }
 
 // ─── Profile pictures (backend capability `profilePictures`) ────────────────

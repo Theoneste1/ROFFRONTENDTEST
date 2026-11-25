@@ -10,6 +10,7 @@ import Pagination from '@/app/components/ui/Pagination';
 import LeaderboardFilter, { type LeaderboardView } from './LeaderboardFilter';
 import { HIDDEN_TEXT, HIDDEN_TITLE, leaderboardHidden, rankLabel } from '@/lib/community/leaderboard';
 import { divisionLabel } from '../../components/studentUi';
+import { AvatarBadge } from "@/app/components/account/UserAvatar";
 
 const PAGE_SIZE = 20;
 
@@ -19,14 +20,17 @@ const PODIUM = [
   { place: 2, label: '3rd', accent: 'border-orange-400', order: 'order-3 md:order-3', height: 'md:pt-12', isFirst: false },
 ];
 
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((p) => p.charAt(0))
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+/** The student's profile picture (or their initials), loaded through the session (AvatarBadge). */
+function StudentPicture({ entry, className = '' }: { entry: LeaderboardEntry; className?: string }) {
+  const [first = '', last = ''] = entry.displayName.split(' ');
+  return <AvatarBadge user={{ id: entry.id, firstName: first, lastName: last.replace('.', ''), avatarUrl: entry.avatarUrl }} size="sm" className={className} />;
 }
+
+/** A school that has not confirmed the student yet. */
+function NotVerified() {
+  return <span className="ml-1.5 whitespace-nowrap rounded bg-slate-100 px-1.5 py-px text-[10px] font-semibold text-slate-700" title="The school has not confirmed this student yet">not yet verified</span>;
+}
+
 
 export default function LeaderboardContent() {
   const { user } = useSession();
@@ -103,9 +107,9 @@ function StudentsBoard() {
               <div key={entry.id} className={`flex flex-col items-center ${slot.order} ${slot.height}`}>
                 <div className="relative mb-3">
                   <div
-                    className={`w-20 h-20 md:w-24 md:h-24 rounded-full p-1 border-4 ${slot.accent} overflow-hidden shadow-md bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 flex items-center justify-center`}
+                    className={`w-20 h-20 md:w-24 md:h-24 rounded-full border-4 ${slot.accent} overflow-hidden shadow-md bg-white flex items-center justify-center`}
                   >
-                    <span className="text-2xl font-black text-white">{initials(entry.displayName)}</span>
+                    <StudentPicture entry={entry} className="!h-full !w-full !text-2xl !ring-0" />
                   </div>
                   {slot.isFirst && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-white p-1 rounded-full shadow-sm" aria-hidden="true">
@@ -127,7 +131,8 @@ function StudentsBoard() {
                     {entry.displayName}
                     {entry.isMe && ' (You)'}
                   </h3>
-                  {entry.school && <p className="text-[11px] text-slate-600">{entry.school.name}</p>}
+                  {entry.school && <p className="text-[11px] text-slate-600">{entry.school.name}{entry.school.verified === false && <NotVerified />}</p>}
+                  {entry.level && <p className="text-[11px] font-semibold text-slate-600">{entry.level.name}</p>}
                   <div className="mt-1">
                     <span className="text-xl font-black text-indigo-600 block">{formatNumber(entry.points)}</span>
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Points</span>
@@ -172,9 +177,11 @@ function StudentsBoard() {
       {/* Rankings */}
       <div className="bg-indigo-50/50 rounded-2xl p-2 sm:p-4 border border-indigo-100/50">
         <div className="grid grid-cols-12 px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">
-          <div className="col-span-2">Rank</div>
-          <div className="col-span-7 sm:col-span-8">Name</div>
-          <div className="col-span-3 sm:col-span-2 text-right">Points</div>
+          <div className="col-span-2 sm:col-span-1">Rank</div>
+          <div className="col-span-7 sm:col-span-4">Student</div>
+          <div className="hidden sm:block sm:col-span-4">School</div>
+          <div className="hidden sm:block sm:col-span-2">Level</div>
+          <div className="col-span-3 sm:col-span-1 text-right">Points</div>
         </div>
 
         {rows.length === 0 ? (
@@ -188,18 +195,26 @@ function StudentsBoard() {
                   row.isMe ? 'bg-indigo-100/70 border border-indigo-200/80 font-bold text-indigo-950' : 'bg-white/60 hover:bg-white text-slate-700'
                 }`}
               >
-                <div className="col-span-2 font-bold text-slate-900">{String(row.rank).padStart(2, '0')}</div>
-                <div className="col-span-7 sm:col-span-8 flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
-                    {initials(row.displayName)}
-                  </div>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="truncate">{row.displayName}</span>
-                    {row.isMe && <span className="bg-indigo-900 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">You</span>}
-                    {row.school && <span className="hidden sm:inline text-[11px] font-normal text-slate-600 truncate">{row.school.name}</span>}
+                <div className="col-span-2 sm:col-span-1 font-bold text-slate-900">{String(row.rank).padStart(2, '0')}</div>
+                <div className="col-span-7 sm:col-span-4 flex items-center gap-3 min-w-0">
+                  <StudentPicture entry={row} className="shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="truncate">{row.displayName}</span>
+                      {row.isMe && <span className="bg-indigo-900 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">You</span>}
+                    </div>
+                    {/* Phones: the school and the level under the name. */}
+                    <p className="sm:hidden text-[11px] leading-4 font-normal text-slate-600" data-testid="leaderboard-row-details">
+                      {[row.school?.name, row.level?.name].filter(Boolean).join(' · ') || '—'}
+                      {row.school?.verified === false && <NotVerified />}
+                    </p>
                   </div>
                 </div>
-                <div className="col-span-3 sm:col-span-2 text-right font-bold text-indigo-600">{formatNumber(row.points)}</div>
+                <div className="hidden sm:block sm:col-span-4 min-w-0 truncate font-normal text-slate-700" data-testid="leaderboard-row-school">
+                  {row.school ? <>{row.school.name}{row.school.verified === false && <NotVerified />}</> : <span className="text-slate-600">—</span>}
+                </div>
+                <div className="hidden sm:block sm:col-span-2 font-normal text-slate-700" data-testid="leaderboard-row-level">{row.level?.name ?? '—'}</div>
+                <div className="col-span-3 sm:col-span-1 text-right font-bold text-indigo-600">{formatNumber(row.points)}</div>
               </div>
             ))}
           </div>
