@@ -28,7 +28,8 @@ import {
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { AdminPage, Badge, FilterPills, Notice, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { AdminPage, Badge, FilterPills, Notice, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 
 export default function DeliveryLog() {
   const { permissionsStatus, can, retry: retrySession } = useSession();
@@ -84,7 +85,7 @@ export default function DeliveryLog() {
           {notice.text}
         </Notice>
       )}
-      <div className="mb-6 flex flex-wrap items-center gap-4">
+      <div className="mb-3 flex flex-wrap items-center gap-4">
         <FilterPills
           label="Status"
           options={[...DELIVERY_STATUS_FILTERS]}
@@ -94,16 +95,16 @@ export default function DeliveryLog() {
             setPage(1);
           }}
         />
-        <SelectFilter
-          label="Type"
-          value={type}
-          options={[...DELIVERY_TYPE_FILTERS]}
-          onChange={(v) => {
-            setType(v);
-            setPage(1);
-          }}
-        />
       </div>
+      {/* Filters (owner 2026-11-25): "+ Add filter" and the active one as a chip. */}
+      <FilterBar
+        testId="delivery-filters"
+        onClearAll={() => { setType(""); setPage(1); }}
+        filters={[
+          { key: "type", kind: "select", label: "Type", value: type, onChange: (v) => { setType(v); setPage(1); },
+            options: DELIVERY_TYPE_FILTERS.filter((o) => o.value !== "") },
+        ]}
+      />
       {notFound ? (
         <Notice tone="info">This server doesn&apos;t have the notification delivery log yet.</Notice>
       ) : list.isError ? (

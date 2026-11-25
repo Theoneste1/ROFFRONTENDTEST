@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye } from "lucide-react";
+import { IconAction } from "@/app/components/ui/IconAction";
 import { downloadCsv, type UserReportFilters } from "@/lib/api/admin";
 import type { MentorReportRow, ReportUserStatus } from "@/lib/api/types";
 import { useAdminDivisions, useMentorReport, useMentorRequests } from "@/lib/queries/admin";
 import { formatDate, formatNumber } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { Badge, CsvButton, FilterPills, SearchInput, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "../../components/adminUi";
+import { Badge, CsvButton, SearchInput, TableCard, TableMessage, td, th } from "../../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import CourseAccessDialog from "./CourseAccessDialog";
 import ApplicationsPanel from "./ApplicationsPanel";
 
@@ -84,17 +85,22 @@ export default function MentorsClient() {
         <ApplicationsPanel />
       ) : (
         <>
-          {/* Controls Bar: Search & Pill Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <SearchInput value={q} onChange={(v) => setParam("q", v)} placeholder="Search coach…" label="Search coaches" />
-            <FilterPills label="Division" options={divisionTabs} value={divisionId} onChange={(v) => setParam("divisionId", v)} />
-            <SelectFilter
-              label="Status"
-              value={status}
-              onChange={(v) => setParam("status", v)}
-              options={[{ label: "Any", value: "" }, ...Object.entries(STATUS_BADGE).map(([value, s]) => ({ value, label: s.label }))]}
-            />
-          </div>
+          {/* Search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+          <FilterBar
+            testId="coach-filters"
+            search={<SearchInput value={q} onChange={(v) => setParam("q", v)} placeholder="Search coach…" label="Search coaches" />}
+            onClearAll={() => {
+              // One change of the address (two setParam calls would each start from the old one).
+              const next = new URLSearchParams(params);
+              for (const k of ["divisionId", "status", "page"]) next.delete(k);
+              router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
+            }}
+            filters={[
+              { key: "divisionId", kind: "select", label: "Division", value: divisionId, onChange: (v) => setParam("divisionId", v || null), options: divisionTabs.slice(1) },
+              { key: "status", kind: "select", label: "Status", value: status, onChange: (v) => setParam("status", v || null),
+                options: Object.entries(STATUS_BADGE).map(([value, s]) => ({ value, label: s.label })) },
+            ]}
+          />
 
           {mentors.isError ? (
             <ErrorState error={mentors.error} title="Couldn't load coaches" onRetry={() => mentors.refetch()} />
@@ -172,9 +178,7 @@ export default function MentorsClient() {
                             >
                               Course access
                             </button>
-                            <Link href={`/admin/users/${m.id}`} className={linkBtn} aria-label={`View account of ${m.name}`}>
-                              Account
-                            </Link>
+                            <IconAction href={`/admin/users/${m.id}`} icon={Eye} tone="slate" label={`View account of ${m.name}`} />
                           </div>
                         </td>
                       </tr>

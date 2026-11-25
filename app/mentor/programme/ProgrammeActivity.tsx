@@ -12,10 +12,11 @@ import { ACTIVITY_EVENT, ACTIVITY_LABEL } from "@/lib/programmes/programme-rules
 import { useActivityLog } from "@/lib/queries/programmes";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { SelectFilter, TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
+import { TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 
 const PAGE_SIZE = 25;
-const TYPE_OPTIONS = [{ label: "All activity", value: "" }, ...Object.entries(ACTIVITY_LABEL).map(([value, label]) => ({ label, value }))];
+const TYPE_OPTIONS = Object.entries(ACTIVITY_LABEL).map(([value, label]) => ({ label, value }));
 
 export default function ProgrammeActivity({ courseTitle }: { courseTitle: (courseId: string) => string | undefined }) {
   const [page, setPage] = useState(1);
@@ -25,17 +26,14 @@ export default function ProgrammeActivity({ courseTitle }: { courseTitle: (cours
   const rows = log.data?.data ?? [];
   return (
     <>
-      <div className="mb-4">
-        <SelectFilter
-          label="Activity"
-          value={type}
-          onChange={(v) => {
-            setType(v);
-            setPage(1);
-          }}
-          options={TYPE_OPTIONS}
-        />
-      </div>
+      {/* Filter (owner 2026-11-25): "+ Add filter" and a chip. */}
+      <FilterBar
+        testId="programme-activity-filters"
+        onClearAll={() => { setType(""); setPage(1); }}
+        filters={[
+          { key: "type", kind: "select", label: "Activity", value: type, onChange: (v) => { setType(v); setPage(1); }, options: TYPE_OPTIONS },
+        ]}
+      />
       <TableCard footer={log.data && <Pagination page={page} totalPages={log.data.meta.totalPages} total={log.data.meta.total} onPage={setPage} disabled={log.isFetching} />}>
         <thead className="bg-gray-50/60 border-b border-gray-100">
           <tr>

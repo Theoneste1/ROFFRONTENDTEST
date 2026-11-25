@@ -16,6 +16,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 import { assignTeacherSchool, claim, createSchool, createStudent, idOf, withDb } from "../support/db";
 import { navigateViaSidebar, signIn } from "../support/session";
 import { passwordOf } from "../support/accounts";
+import { addFilter, changeFilter } from "../support/filters";
 
 const run = Date.now().toString(36);
 const title = `E2E Answer round ${run}`;
@@ -273,9 +274,11 @@ test.describe.serial("Teacher (G2): submits for a verified student of their scho
     await expect(own.getByRole("link", { name: /^View for/ })).toBeVisible();
     // Level and subject: shown per student, and filters.
     await expect(row.getByTestId("student-level-subjects")).toContainText("Junior");
-    await page.getByRole("button", { name: "Senior (S4–S6)" }).click();
+    // The level filter is in the filter bar ("+ Add filter", then the level; the chip changes it).
+    const bar = page.getByTestId("teacher-test-filters");
+    await addFilter(bar, "level", "Senior (S4–S6)");
     await expect(page.getByTestId(`student-row-${classmate}`)).toHaveCount(0);
-    await page.getByRole("button", { name: "Junior (S1–S3)" }).click();
+    await changeFilter(bar, "level", "Junior (S1–S3)");
     await expect(page.getByTestId(`student-row-${classmate}`)).toBeVisible();
     await row.getByRole("link", { name: /^Submit for/ }).click();
     await expect(page.getByRole("heading", { name: new RegExp(`Answer for ${classmateName}`) })).toBeVisible({ timeout: 30_000 });

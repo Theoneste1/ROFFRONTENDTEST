@@ -38,8 +38,8 @@ export function SearchInput({ value, onChange, placeholder = "Search…", label 
     return () => clearTimeout(t);
   }, [text, value, delay]);
   return (
-    <div className="relative flex-1 min-w-[min(200px,100%)] max-w-xs">
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
+    <div className="relative flex-1 min-w-[min(200px,100%)] max-w-sm">
+      <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" aria-hidden="true" />
       <input
         type="search"
         aria-label={label}
@@ -47,7 +47,7 @@ export function SearchInput({ value, onChange, placeholder = "Search…", label 
         value={text}
         maxLength={100}
         onChange={(e) => setText(e.target.value)}
-        className="w-full bg-white text-xs pl-10 pr-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-500 shadow-2xs"
+        className="w-full min-h-10 bg-white text-sm pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00428C]/15 focus:border-[#00428C] transition-all placeholder:text-slate-500"
       />
     </div>
   );

@@ -3,7 +3,8 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowDown, ArrowUp, Columns3, Layers, MailPlus, Upload, UserPlus } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns3, Eye, Layers, MailPlus, Upload, UserPlus } from "lucide-react";
+import { IconAction } from "@/app/components/ui/IconAction";
 import type { CreateUserInput, InviteUserInput, UserFilters } from "@/lib/api/admin";
 import type { AdminUser, Permission, Role } from "@/lib/api/types";
 import { hasFeature } from "@/lib/api/capabilities";
@@ -22,7 +23,8 @@ import { useAdminDivisions, useAdminUsers, useCreateUser } from "@/lib/queries/a
 import { formatDate } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { FilterPills, Modal, Notice, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
+import { FilterPills, Modal, Notice, SearchInput, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { AccountStatusBadge, UserForm } from "./userUi";
 import ImportUsersDialog from "./ImportUsersDialog";
 import BulkActionDialog from "./BulkActionDialog";
@@ -248,25 +250,35 @@ export default function UsersTableClient() {
         </Notice>
       )}
 
-      {/* Controls Bar: Search & Pill Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <SearchInput value={search} onChange={(v) => setParam("q", v)} placeholder="Search name, username or e-mail…" label="Search users" />
+      {/* The role tabs (the list's sections), then search and filters (owner 2026-11-25: "+ Add filter" and chips). */}
+      <div className="mb-3 flex flex-wrap items-center gap-3">
         <FilterPills label="Role" options={roleTabs} value={role} onChange={(v) => setParam("role", v)} />
-        <SelectFilter label="Status" value={status} onChange={(v) => setParam("status", v)} options={Object.entries(STATUS_FILTERS).map(([value, s]) => ({ value, label: s.label }))} />
-        <SelectFilter
-          label="Olympiad level"
-          value={divisionId}
-          onChange={(v) => setParam("divisionId", v)}
-          options={[{ label: "All", value: "" }, ...(divisions.data ?? []).map((d) => ({ label: d.name, value: d.id }))]}
-        />
-        {bankingOn && (
-          <SelectFilter label="Banking information" value={banking} onChange={(v) => setParam("banking", v)} options={BANKING_FILTERS} />
-        )}
-        <span className="flex-1" />
-        <button type="button" className={btnSecondary} onClick={() => setChoosing(true)} data-testid="choose-columns">
-          <Columns3 className="h-3.5 w-3.5" aria-hidden="true" /> Columns
-        </button>
       </div>
+      <FilterBar
+        testId="user-filters"
+        search={<SearchInput value={search} onChange={(v) => setParam("q", v)} placeholder="Search name, username or e-mail…" label="Search users" />}
+        onClearAll={() => {
+          // Clears the filters; the role tab and the search stay.
+          const next = new URLSearchParams(params);
+          for (const k of ["status", "divisionId", "banking", "page"]) next.delete(k);
+          router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
+        }}
+        filters={[
+          { key: "status", kind: "select", label: "Status", value: status, onChange: (v) => setParam("status", v),
+            options: Object.entries(STATUS_FILTERS).map(([value, s]) => ({ value, label: s.label })) },
+          { key: "divisionId", kind: "select", label: "Olympiad level", value: divisionId, onChange: (v) => setParam("divisionId", v),
+            options: (divisions.data ?? []).map((d) => ({ label: d.name, value: d.id })) },
+          { key: "banking", kind: "select", label: "Banking information", value: banking, show: bankingOn, onChange: (v) => setParam("banking", v), options: BANKING_FILTERS },
+        ]}
+        trailing={
+          <>
+            <span className="flex-1" />
+            <button type="button" className={btnSecondary} onClick={() => setChoosing(true)} data-testid="choose-columns">
+              <Columns3 className="h-3.5 w-3.5" aria-hidden="true" /> Columns
+            </button>
+          </>
+        }
+      />
 
       {selectable && users.data && (
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl bg-white border border-gray-100 px-4 py-3 text-xs text-gray-600" data-testid="bulk-toolbar">
@@ -390,9 +402,7 @@ export default function UsersTableClient() {
                     </td>
                   ))}
                   <td className={td}>
-                    <Link href={`/admin/users/${u.id}`} className={linkBtn} aria-label={`View ${u.firstName} ${u.lastName}`}>
-                      View
-                    </Link>
+                    <IconAction href={`/admin/users/${u.id}`} icon={Eye} tone="slate" label={`View ${u.firstName} ${u.lastName}`} />
                   </td>
                 </tr>
               ))

@@ -20,7 +20,8 @@ import { personName } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame } from "@/app/components/ui/PageFrame";
-import { Badge, Notice, SearchInput, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "@/app/admin/components/adminUi";
+import { Badge, Notice, SearchInput, TableCard, TableMessage, linkBtn, td, th } from "@/app/admin/components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { TeacherTestsWidget } from "@/app/components/test-management/ResultViews";
 import { submissionLockSupported } from "@/lib/test-management/submissions";
 
@@ -58,41 +59,28 @@ export default function TeacherStudents() {
           You can see the list of your students. To open a student&apos;s profile or progress, or to submit work for a student, an administrator must grant you that permission.
         </Notice>
       )}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <SearchInput
-          value={q}
-          onChange={(v) => {
-            setQ(v);
-            setPage(1);
-          }}
-          placeholder="Search by name or username…"
-          label="Search students"
-        />
-        <SelectFilter
-          label="Grade"
-          value={grade}
-          onChange={(v) => {
-            setGrade(v as "" | GradeLevel);
-            setPage(1);
-          }}
-          options={[{ label: "All grades", value: "" }, ...GRADES.map((g) => ({ label: g, value: g }))]}
-        />
-        {tsa && (
-          <SelectFilter
-            label="Shown because"
-            value={access}
+      {/* Search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <FilterBar
+        testId="teacher-student-filters"
+        search={
+          <SearchInput
+            value={q}
             onChange={(v) => {
-              setAccess(v as "" | "SCHOOL" | "ASSIGNED");
+              setQ(v);
               setPage(1);
             }}
-            options={[
-              { label: "All my students", value: "" },
-              { label: "Students of my schools", value: "SCHOOL" },
-              { label: "Assigned to me", value: "ASSIGNED" },
-            ]}
+            placeholder="Search by name or username…"
+            label="Search students"
           />
-        )}
-      </div>
+        }
+        onClearAll={() => { setGrade(""); setAccess(""); setPage(1); }}
+        filters={[
+          { key: "grade", kind: "select", label: "Grade", value: grade, onChange: (v) => { setGrade(v as "" | GradeLevel); setPage(1); },
+            options: GRADES.map((g) => ({ label: g, value: g })) },
+          { key: "access", kind: "select", label: "Shown because", value: access, show: tsa, onChange: (v) => { setAccess(v as "" | "SCHOOL" | "ASSIGNED"); setPage(1); },
+            options: [{ label: "Students of my schools", value: "SCHOOL" }, { label: "Assigned to me", value: "ASSIGNED" }] },
+        ]}
+      />
 
       {students.isError ? (
         <ErrorState error={students.error} title="Couldn't load your students" onRetry={() => students.refetch()} />

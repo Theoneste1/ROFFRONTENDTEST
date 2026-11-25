@@ -18,6 +18,7 @@ import Pagination from "@/app/components/ui/Pagination";
 import {
   Badge, ConfirmDialog, CsvButton, Modal, Notice, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th,
 } from "../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 
 type NoticeFn = (tone: "success" | "error" | "info", text: string) => void;
 
@@ -54,24 +55,28 @@ export default function SubscriberList({ onNotice }: { onNotice: NoticeFn }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <SearchInput value={filters.q ?? ""} onChange={(v) => change({ q: v || undefined })} placeholder="Search by e-mail or name" label="Search subscribers" />
-        <SelectFilter label="Status" value={filters.status ?? ""} onChange={(v) => change({ status: (v || undefined) as SubscriberFilters["status"] })}
-          options={[{ label: "All", value: "" }, { label: "Subscribed", value: "ACTIVE" }, { label: "Unsubscribed", value: "UNSUBSCRIBED" }]} />
-        <SelectFilter label="Interest" value={filters.interest ?? ""} onChange={(v) => change({ interest: (v || undefined) as OlympiadSubject | undefined })}
-          options={[{ label: "All", value: "" }, ...SUBJECTS]} />
-        <SelectFilter label="Kind" value={filters.kind ?? ""} onChange={(v) => change({ kind: (v || undefined) as SubscriberKind | undefined })}
-          options={[{ label: "All", value: "" }, ...KINDS]} />
-        <SelectFilter label="Source" value={filters.source ?? ""} onChange={(v) => change({ source: (v || undefined) as SubscriberFilters["source"] })}
-          options={[{ label: "All", value: "" }, { label: "Website", value: "WEBSITE" }, { label: "Added", value: "ADMIN" }, { label: "Imported", value: "IMPORT" }]} />
-        <SelectFilter label="Country" value={filters.country ?? ""} onChange={(v) => change({ country: v || undefined })}
-          options={[{ label: "All", value: "" }, ...COUNTRIES]} />
-        <SelectFilter label="Sort" value={filters.sort ?? "newest"} onChange={(v) => setFilters({ ...filters, sort: v as SubscriberFilters["sort"], page: 1 })}
-          options={[{ label: "Newest first", value: "newest" }, { label: "Oldest first", value: "oldest" }, { label: "Name", value: "name" }, { label: "E-mail", value: "email" }]} />
-        {filtered && (
-          <button type="button" className={linkBtn} onClick={() => setFilters({})}>Clear filters</button>
-        )}
-      </div>
+      {/* Search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips; the sort stays beside them. */}
+      <FilterBar
+        testId="subscriber-filters"
+        search={<SearchInput value={filters.q ?? ""} onChange={(v) => change({ q: v || undefined })} placeholder="Search by e-mail or name" label="Search subscribers" />}
+        onClearAll={() => setFilters({ q: filters.q, sort: filters.sort })}
+        filters={[
+          { key: "status", kind: "select", label: "Status", value: filters.status ?? "", onChange: (v) => change({ status: (v || undefined) as SubscriberFilters["status"] }),
+            options: [{ label: "Subscribed", value: "ACTIVE" }, { label: "Unsubscribed", value: "UNSUBSCRIBED" }] },
+          { key: "interest", kind: "select", label: "Interest", value: filters.interest ?? "", onChange: (v) => change({ interest: (v || undefined) as OlympiadSubject | undefined }),
+            options: [...SUBJECTS] },
+          { key: "kind", kind: "select", label: "Kind", value: filters.kind ?? "", onChange: (v) => change({ kind: (v || undefined) as SubscriberKind | undefined }),
+            options: [...KINDS] },
+          { key: "source", kind: "select", label: "Source", value: filters.source ?? "", onChange: (v) => change({ source: (v || undefined) as SubscriberFilters["source"] }),
+            options: [{ label: "Website", value: "WEBSITE" }, { label: "Added", value: "ADMIN" }, { label: "Imported", value: "IMPORT" }] },
+          { key: "country", kind: "select", label: "Country", value: filters.country ?? "", onChange: (v) => change({ country: v || undefined }),
+            options: COUNTRIES },
+        ]}
+        trailing={
+          <SelectFilter label="Sort" value={filters.sort ?? "newest"} onChange={(v) => setFilters({ ...filters, sort: v as SubscriberFilters["sort"], page: 1 })}
+            options={[{ label: "Newest first", value: "newest" }, { label: "Oldest first", value: "oldest" }, { label: "Name", value: "name" }, { label: "E-mail", value: "email" }]} />
+        }
+      />
       <div className="flex flex-wrap items-start justify-end gap-2 mb-4">
         <button type="button" className={btnSecondary} onClick={() => setDialog({ kind: "import" })}><Upload className="h-3.5 w-3.5" aria-hidden="true" /> Import CSV</button>
         <CsvButton onDownload={() => subscribersApi.exportCsv(filters)} label="Export CSV" note={filtered ? "Exports the filtered list." : undefined} />

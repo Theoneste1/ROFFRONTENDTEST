@@ -8,7 +8,8 @@ import { useHiddenComments, useModerate, useModerationActions, useModerationRepo
 import { formatDateTime, personName } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { Badge, ConfirmDialog, FilterPills, Notice, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { Badge, ConfirmDialog, FilterPills, Notice, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { humanizeAction } from "../components/auditText";
 import { REASON_LABEL, REPORT_STATUS, excerpt } from "./moderationUi";
 
@@ -24,7 +25,7 @@ function ReportsTab() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-3 mb-3">
         <FilterPills
           label="Report status"
           value={status}
@@ -39,29 +40,18 @@ function ReportsTab() {
             { label: "All", value: "" },
           ]}
         />
-        <SelectFilter
-          label="Reason"
-          value={reason}
-          onChange={(v) => {
-            setReason(v as "" | ReportReason);
-            reset();
-          }}
-          options={[{ label: "Any", value: "" }, ...Object.entries(REASON_LABEL).map(([value, label]) => ({ value, label }))]}
-        />
-        <SelectFilter
-          label="Target"
-          value={targetType}
-          onChange={(v) => {
-            setTargetType(v as "" | "THREAD" | "COMMENT");
-            reset();
-          }}
-          options={[
-            { label: "Any", value: "" },
-            { label: "Comments", value: "COMMENT" },
-            { label: "Threads", value: "THREAD" },
-          ]}
-        />
       </div>
+      {/* Filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <FilterBar
+        testId="report-filters"
+        onClearAll={() => { setReason(""); setTargetType(""); reset(); }}
+        filters={[
+          { key: "reason", kind: "select", label: "Reason", value: reason, onChange: (v) => { setReason(v as "" | ReportReason); reset(); },
+            options: Object.entries(REASON_LABEL).map(([value, label]) => ({ value, label })) },
+          { key: "targetType", kind: "select", label: "Target", value: targetType, onChange: (v) => { setTargetType(v as "" | "THREAD" | "COMMENT"); reset(); },
+            options: [{ label: "Comments", value: "COMMENT" }, { label: "Threads", value: "THREAD" }] },
+        ]}
+      />
       {reports.isError ? (
         <ErrorState error={reports.error} title="Couldn't load reports" onRetry={() => reports.refetch()} />
       ) : (

@@ -30,6 +30,7 @@ import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedba
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
 import { MetricCard, Notice, SearchInput, TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { AnswerGate, WindowBadge } from "./AnswerWorkspace";
 import StudentName from "@/app/components/students/StudentName";
 
@@ -209,12 +210,21 @@ function StudentsOfTest({ testId }: { testId: string }) {
           <MetricCard label="Late (blocked)" value={c.lateBlocked} />
         </div>
       )}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      {/* The state tabs, then search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <div className="mb-3 flex flex-wrap items-center gap-3">
         <FilterPills label="State" options={STATES} value={status} onChange={(v) => { setStatus(v); setPage(1); }} />
-        {lockAware && <FilterPills label="Level" options={LEVELS} value={level} onChange={(v) => { setLevel(v); setPage(1); }} />}
-        {lockAware && <FilterPills label="Subject" options={SUBJECTS} value={subject} onChange={(v) => { setSubject(v); setPage(1); }} />}
-        <SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search students" label="Search students" />
       </div>
+      <FilterBar
+        testId="teacher-test-filters"
+        search={<SearchInput value={q} onChange={(v) => { setQ(v); setPage(1); }} placeholder="Search students" label="Search students" />}
+        onClearAll={() => { setLevel(""); setSubject(""); setPage(1); }}
+        filters={[
+          { key: "level", kind: "select", label: "Level", value: level, show: lockAware, onChange: (v) => { setLevel(v as "" | TestLevel); setPage(1); },
+            options: LEVELS.filter((o) => o.value !== "") },
+          { key: "subject", kind: "select", label: "Subject", value: subject, show: lockAware, onChange: (v) => { setSubject(v as "" | OlympiadSubjectCode); setPage(1); },
+            options: SUBJECTS.filter((o) => o.value !== "") },
+        ]}
+      />
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load the students" onRetry={() => list.refetch()} /> : (
         <>
           <TableCard>

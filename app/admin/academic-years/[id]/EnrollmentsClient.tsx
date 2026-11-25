@@ -20,7 +20,8 @@ import { queryKeys } from "@/lib/query/keys";
 import { YEAR_ERRORS, formatDay } from "@/lib/admin/academic-years";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { AdminPage, Badge, ConfirmDialog, Modal, Notice, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
+import { AdminPage, Badge, ConfirmDialog, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 
 const GRADES: GradeLevel[] = ["S1", "S2", "S3", "S4", "S5", "S6"];
 const STATUS: Record<EnrollmentStatus, { label: string; cls: string }> = {
@@ -99,26 +100,17 @@ export default function EnrollmentsClient({ yearId }: { yearId: string }) {
           {notice}
         </Notice>
       )}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <SelectFilter
-          label="Grade"
-          value={grade}
-          onChange={(v) => {
-            setGrade(v as "" | GradeLevel);
-            setPage(1);
-          }}
-          options={[{ label: "All grades", value: "" }, ...GRADES.map((g) => ({ label: g, value: g }))]}
-        />
-        <SelectFilter
-          label="Status"
-          value={status}
-          onChange={(v) => {
-            setStatus(v as "" | EnrollmentStatus);
-            setPage(1);
-          }}
-          options={[{ label: "All statuses", value: "" }, ...(Object.keys(STATUS) as EnrollmentStatus[]).map((s) => ({ label: STATUS[s].label, value: s }))]}
-        />
-      </div>
+      {/* Filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <FilterBar
+        testId="enrollment-filters"
+        onClearAll={() => { setGrade(""); setStatus(""); setPage(1); }}
+        filters={[
+          { key: "grade", kind: "select", label: "Grade", value: grade, onChange: (v) => { setGrade(v as "" | GradeLevel); setPage(1); },
+            options: GRADES.map((g) => ({ label: g, value: g })) },
+          { key: "status", kind: "select", label: "Status", value: status, onChange: (v) => { setStatus(v as "" | EnrollmentStatus); setPage(1); },
+            options: (Object.keys(STATUS) as EnrollmentStatus[]).map((s) => ({ label: STATUS[s].label, value: s })) },
+        ]}
+      />
 
       {rows.isError ? (
         <ErrorState error={rows.error} title={isApiError(rows.error) && rows.error.status === 404 ? "Academic year not found" : "Couldn't load the enrolments"} onRetry={() => rows.refetch()} />
