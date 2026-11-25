@@ -24,6 +24,7 @@ import { Button, PasswordField } from "@/app/components/ui/form";
 import { PageFrame } from "@/app/components/ui/PageFrame";
 import NewPasswordFields, { validateNewPassword } from "@/app/components/auth/NewPasswordFields";
 import NotificationPreferences from "./NotificationPreferences";
+import BankingSettings from "./BankingSettings";
 import { Section } from "./Section";
 
 export default function AccountSettingsPage() {
@@ -51,6 +52,8 @@ export default function AccountSettingsPage() {
             Your name and picture are on <Link href={portalPath(user.role, "profile")} className="font-semibold text-brand hover:underline">My Profile</Link>.
           </p>
         </Section>
+        {/* Teachers, Coaches and Head Coaches: their banking information, to see and update at any time. */}
+        <BankingSettings role={user.role} firstName={user.firstName} />
         <PasswordForm />
         <SessionsCard />
         <NotificationPreferences role={user.role} />

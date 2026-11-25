@@ -5,14 +5,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  asksSchool, BANKS, confirmReplaceMessage, conflictsOf, initialValues, needsBanking, requiredFieldsOf, rulesFor, submissionOf, TEACHER_NUMBER_MESSAGE,
+  asksSchool, BANKS, confirmReplaceMessage, conflictsOf, initialValues, NAME_DIGIT_MESSAGES, needsBanking, requiredFieldsOf, rulesFor, SCHOOL_NUMBER_MESSAGE, submissionOf, TEACHER_NUMBER_MESSAGE,
   UMWALIMU_SACCO, validateBanking,
 } from "../lib/accounts/banking.ts";
 import { KNOWN_FEATURES } from "../lib/api/capabilities.ts";
 
 const teacher = {
   personalAccountName: "Jean Uwase", personalBankName: UMWALIMU_SACCO, personalAccountNumber: "123456789012",
-  schoolAccountName: "GS Kigali", schoolBankName: UMWALIMU_SACCO, schoolAccountNumber: "4001234567",
+  schoolAccountName: "GS Kigali", schoolBankName: UMWALIMU_SACCO, schoolAccountNumber: "400100004567",
 };
 // A coach's form values: the three personal fields; the school fields are empty (never asked).
 const coach = {
@@ -36,7 +36,7 @@ test("the owner's twelve banks; teachers: Umwalimu SACCO only, 12 digits", () =>
   assert.ok(BANKS.includes("Zigama Credit and Savings Bank"), "the agreed name");
   assert.ok(!BANKS.some((b) => b.includes("Zigama CSS")));
   assert.deepEqual(rulesFor("TEACHER"), {
-    personalBank: "FIXED", schoolBank: "FIXED", fixedBank: UMWALIMU_SACCO, banks: [UMWALIMU_SACCO], personalNumberDigits: 12,
+    personalBank: "FIXED", schoolBank: "FIXED", fixedBank: UMWALIMU_SACCO, banks: [UMWALIMU_SACCO], personalNumberDigits: 12, schoolNumberDigits: 12,
     schoolRequired: true, fields: ["personalAccountName", "personalBankName", "personalAccountNumber", "schoolAccountName", "schoolBankName", "schoolAccountNumber"],
   });
   assert.equal(rulesFor("MENTOR").personalBank, "LIST");
@@ -107,10 +107,30 @@ test("a coach's submission sends the three personal fields only: school details 
   }
 });
 
-test("no format is imposed beyond the agreed 12-digit rule: coaches' and school numbers and names are kept as given", () => {
+test("account names: no digit (teacher personal and school; coach and head coach personal), the exact messages", () => {
+  for (const name of ["Jean 2", "GS 1", "0", "Ecole8"]) {
+    assert.deepEqual(validateBanking(rulesFor("TEACHER"), { ...teacher, personalAccountName: name, schoolAccountName: name }),
+      { personalAccountName: NAME_DIGIT_MESSAGES.personalAccountName, schoolAccountName: NAME_DIGIT_MESSAGES.schoolAccountName }, name);
+    for (const role of ["MENTOR", "HEAD_COACH"]) {
+      assert.deepEqual(validateBanking(rulesFor(role), { ...coach, personalAccountName: name }), { personalAccountName: NAME_DIGIT_MESSAGES.personalAccountName }, name);
+    }
+  }
+  for (const name of ["Jean-Pierre N'Dayisaba", "G.S. Saint-Joseph", "Éric Uwimana"]) {
+    assert.deepEqual(validateBanking(rulesFor("TEACHER"), { ...teacher, personalAccountName: name, schoolAccountName: name }), {}, name);
+  }
+  // A coach's school name is not asked, so not checked.
+  assert.deepEqual(validateBanking(rulesFor("MENTOR"), { ...coach, schoolAccountName: "School 2" }), {});
+});
+
+test("teacher: the school number is exactly 12 digits too (the exact message); coaches' numbers keep no format", () => {
+  for (const n of ["1", "4001234567", "40012345678", "4001234567890", "40012345678A", "4001 2345 6789", "4001-2345-6789", ""]) {
+    assert.deepEqual(validateBanking(rulesFor("TEACHER"), { ...teacher, schoolAccountNumber: n }), { schoolAccountNumber: SCHOOL_NUMBER_MESSAGE }, n);
+  }
+  assert.deepEqual(validateBanking(rulesFor("TEACHER"), { ...teacher, schoolAccountNumber: "000000000123" }), {});
+  // An older backend (no schoolNumberDigits): the form does not add a rule the backend does not have.
+  assert.deepEqual(validateBanking({ ...rulesFor("TEACHER"), schoolNumberDigits: undefined }, { ...teacher, schoolAccountNumber: "4001" }), {});
   for (const n of ["1", "00-1234-5678", "ACC 77", "1234567890123456789012345"]) {
     assert.deepEqual(validateBanking(rulesFor("MENTOR"), { ...coach, personalAccountNumber: n, schoolAccountNumber: n }), {}, n);
-    assert.deepEqual(validateBanking(rulesFor("TEACHER"), { ...teacher, schoolAccountNumber: n }), {}, n);
   }
   assert.deepEqual(validateBanking(rulesFor("MENTOR"), { ...coach, personalAccountName: "J" }), {});
 });

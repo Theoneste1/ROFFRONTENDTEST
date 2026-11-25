@@ -8,11 +8,13 @@
  * coach's school details saved earlier (no longer asked) are kept and shown apart, as not required.
  */
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Eye, EyeOff, Landmark } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Eye, EyeOff, Landmark, Pencil } from "lucide-react";
 import { bankingApi } from "@/lib/api/banking";
-import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
-import { BANKING_FIELDS, FIELD_LABELS, PERSONAL_FIELDS, STATUS_LABEL, type BankingField } from "@/lib/accounts/banking";
+import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
+import { Button } from "@/app/components/ui/form";
+import { BankingForm } from "@/app/components/auth/BankingStep";
+import { BANKING_FIELDS, FIELD_LABELS, PERSONAL_FIELDS, rulesFor, STATUS_LABEL, type BankingField } from "@/lib/accounts/banking";
 import BankingStatusBadge from "./BankingStatusBadge";
 
 const SCHOOL_FIELDS: BankingField[] = ["schoolAccountName", "schoolBankName", "schoolAccountNumber"];
@@ -37,7 +39,10 @@ function Rows({ fields, details }: { fields: readonly BankingField[]; details: P
 }
 
 export default function BankingCard({ userId, role, className = "" }: { userId: string; role?: string; className?: string }) {
+  const queryClient = useQueryClient();
   const [reveal, setReveal] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const q = useQuery({ queryKey: ["admin", "banking", userId, reveal], queryFn: () => bankingApi.ofUser(userId, reveal), staleTime: reveal ? 0 : 30_000, gcTime: reveal ? 0 : undefined });
   const v = q.data;
   return (
@@ -54,8 +59,20 @@ export default function BankingCard({ userId, role, className = "" }: { userId: 
         <ErrorState error={q.error} title="Couldn't load the banking information" onRetry={() => q.refetch()} />
       ) : !v?.required ? (
         <p className="mt-3 text-sm text-gray-600">Not asked of this role.</p>
+      ) : editing && role ? (
+        <AdminBankingEditor
+          userId={userId}
+          role={role}
+          onCancel={() => setEditing(false)}
+          onSaved={async () => {
+            setEditing(false);
+            setNotice("Banking information saved.");
+            await queryClient.invalidateQueries({ queryKey: ["admin", "banking", userId] });
+          }}
+        />
       ) : (
         <>
+          {notice && <div className="mt-3"><Alert tone="success">{notice}</Alert></div>}
           {(v.missingLabels.length > 0 || v.invalidLabels.length > 0) && (
             <p className="mt-3 text-sm text-gray-700" data-testid="banking-missing">
               {v.missingLabels.length > 0 && <>Missing: {v.missingLabels.join(", ")}. </>}
@@ -81,19 +98,54 @@ export default function BankingCard({ userId, role, className = "" }: { userId: 
           ) : (
             <p className="mt-3 text-sm text-gray-600">{STATUS_LABEL.NOT_STARTED}: nothing given yet.</p>
           )}
-          {v.details && (
-            <button
-              type="button"
-              onClick={() => setReveal((r) => !r)}
-              className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#00428C] hover:underline"
-              data-testid="banking-reveal"
-            >
-              {reveal ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-              {reveal ? "Hide full account numbers" : "Show full account numbers (recorded in the audit log)"}
-            </button>
-          )}
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+            {role && (
+              <Button type="button" variant="secondary" onClick={() => { setNotice(null); setEditing(true); }} data-testid="banking-edit">
+                <Pencil className="h-4 w-4" aria-hidden="true" /> Edit
+              </Button>
+            )}
+            {v.details && (
+              <button
+                type="button"
+                onClick={() => setReveal((r) => !r)}
+                className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#00428C] hover:underline"
+                data-testid="banking-reveal"
+              >
+                {reveal ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                {reveal ? "Hide full account numbers" : "Show full account numbers (recorded in the audit log)"}
+              </button>
+            )}
+          </div>
+          {role && <p className="mt-1 text-xs text-gray-500">Editing shows the full account numbers (recorded in the audit log); every change is recorded too.</p>}
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * An administrator edits one person's banking information (owner 2026-11-25): the same form and rules as the person's
+ * own, for their role; the current values in full (an audited view), saved by PUT /admin/users/:id/banking (audited).
+ */
+function AdminBankingEditor({ userId, role, onCancel, onSaved }: { userId: string; role: string; onCancel: () => void; onSaved: () => void }) {
+  const full = useQuery({ queryKey: ["admin", "banking", userId, true], queryFn: () => bankingApi.ofUser(userId, true), staleTime: 0, gcTime: 0 });
+  if (full.isPending) return <LoadingBlock label="Loading…" />;
+  if (full.isError) return <ErrorState error={full.error} title="Couldn't load the banking information" onRetry={() => full.refetch()} />;
+  const d = full.data;
+  const details = d.details ? Object.fromEntries(Object.entries(d.details).filter(([k]) => k !== "revealed")) : null;
+  return (
+    <div className="mt-4" data-testid="banking-admin-editor">
+      <BankingForm
+        variant="edit"
+        firstName=""
+        role={role}
+        view={{ required: true, status: d.status, missing: d.missing, invalid: d.invalid, rules: rulesFor(role), details }}
+        title="Edit banking information"
+        owner={false}
+        save={(body) => bankingApi.updateForUser(userId, body)}
+        onCancel={onCancel}
+        onSaved={onSaved}
+      />
+    </div>
   );
 }
