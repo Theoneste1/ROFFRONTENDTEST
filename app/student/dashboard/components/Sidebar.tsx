@@ -15,7 +15,6 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { STUDENT_RESULTS, STUDENT_TESTS } from "@/lib/auth/navigation";
 import { resultsNavVisible } from "@/lib/test-management/results";
 import { answerNavVisible } from "@/lib/test-management/submissions";
-import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 
 interface SidebarProps {
@@ -74,8 +73,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         />
       </div>
 
-      {/* BOTTOM UTILITY LINKS */}
-      <SidebarUtilities isOpen={isOpen} settingsHref="/student/account" />
     </aside>
   );
 }

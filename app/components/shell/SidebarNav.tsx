@@ -60,6 +60,7 @@ interface Metrics {
 export default function SidebarNav({ items, isOpen, label = "Main navigation" }: { items: readonly SidebarItem[]; isOpen: boolean; label?: string }) {
   const listRef = useRef<HTMLElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   // Groups the user opened or closed (by href); otherwise a group is open while one of its pages is active. Kept here
@@ -130,6 +131,19 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
     };
   }, [moreOpen, drawer]);
 
+  // The rail panel keeps the wheel to itself: "overscroll-contain" stops the page scrolling at the ends of a list that
+  // scrolls, but a list that fits does not scroll at all, and the browser then scrolls the page behind it. Non-passive,
+  // so it can cancel the wheel.
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!moreOpen || drawer || !el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollHeight <= el.clientHeight + 1) e.preventDefault();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [moreOpen, drawer]);
+
   // The panel closes on Escape and on a click outside it.
   useEffect(() => {
     if (!moreOpen || drawer) return;
@@ -190,6 +204,7 @@ export default function SidebarNav({ items, isOpen, label = "Main navigation" }:
               : <ChevronRight className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`} aria-hidden="true" />)}
           </button>
           <div
+            ref={panelRef}
             id={panelId}
             role="menu"
             aria-label="More pages"

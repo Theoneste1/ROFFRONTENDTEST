@@ -7,6 +7,7 @@
  */
 
 import type { OlympiadSubject } from "./teacher-registration";
+import type { BankingRowStatus } from "@/lib/accounts/banking";
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
@@ -151,6 +152,11 @@ export interface CurrentUser {
   gender?: "FEMALE" | "MALE" | null;
   /** Backends with `genderStep`: true for a student, teacher or coach without a gender, who gives it once (PUT /me/gender). */
   genderRequired?: boolean;
+  /**
+   * Backends with `bankingDetails` (owner 2026-11-25): true for a Teacher, Coach or Head Coach whose banking information
+   * is not complete, who completes it (PUT /me/banking) before anything else. Absent on older backends.
+   */
+  bankingRequired?: boolean;
 }
 
 /**
@@ -471,7 +477,10 @@ export interface LeaderboardEntry {
   avatarUrl: string | null;
   points: number;
   problemsSolved: number;
-  school: { id: string; name: string } | null;
+  /** The school the student studies at; `verified` false while the school has not confirmed it (newer backends). */
+  school: { id: string; name: string; verified?: boolean } | null;
+  /** The student's level (division), on newer backends. */
+  level?: { code: string; name: string } | null;
   isMe: boolean;
 }
 
@@ -881,6 +890,8 @@ export interface AdminUser {
   olympiadInterestOther?: string | null;
   /** testSubmissionLock, TEACHER rows of the Users list: false when an Administrator turned off their test submission. */
   testSubmissionAllowed?: boolean;
+  /** Teachers, Coaches and Head Coaches (capability bankingDetails): their banking status — never a bank detail. */
+  banking?: BankingRowStatus;
   /** The account state (backends with accountStates); isActive is true exactly when it is ACTIVE. */
   accountStatus?: AccountState;
   /**

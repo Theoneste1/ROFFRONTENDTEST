@@ -214,7 +214,7 @@ export default function Contact() {
               <button
                 type="submit"
                 disabled={send.isPending}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-950 px-8 py-3.5 font-bold text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-950 px-6 py-3 font-semibold text-white transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send className="h-4 w-4" aria-hidden="true" /> {send.isPending ? "Sending…" : "Send Message"}
               </button>

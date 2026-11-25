@@ -79,7 +79,7 @@ export default function Hero() {
             Rwanda Olympiad Foundation
           </p>
           <h1 className="mt-6 text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Where curious minds become <span className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text text-transparent">Olympiad problem-solvers</span>
+            Where curious minds become <span className="bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text pr-[0.08em] italic text-transparent">Olympiad problem-solvers</span>
           </h1>
 
           {/* Rotating quote */}
@@ -90,22 +90,22 @@ export default function Hero() {
           </figure>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-7 py-3.5 font-bold text-brand-950 shadow-lg shadow-amber-500/20 transition hover:-translate-y-0.5 hover:bg-amber-300">
+            <Link href="/register" className="group inline-flex items-center justify-center gap-2 rounded-md bg-amber-400 px-6 py-3 font-semibold text-brand-950 transition-colors hover:bg-amber-300">
               <GraduationCap className="h-5 w-5" /> Join as a Student
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <Link href="/register/teacher" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 font-bold text-brand-950 transition hover:-translate-y-0.5 hover:bg-blue-50">
+            <Link href="/register/teacher" className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-3 font-semibold text-brand-950 transition-colors hover:bg-blue-50">
               <Users className="h-5 w-5" /> Join as a Teacher
             </Link>
-            <Link href="/login?next=%2Fstudent%2Fcourses" className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-semibold text-white ring-1 ring-white/50 transition hover:bg-white/10">
+            <Link href="/login?next=%2Fstudent%2Fcourses" className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 font-semibold text-white ring-1 ring-white/50 transition-colors hover:bg-white/10">
               <BookOpen className="h-5 w-5" /> Explore Learning Resources
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Slide controls */}
-      <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full bg-black/30 px-4 py-2 backdrop-blur sm:left-auto sm:right-8 sm:translate-x-0">
+      {/* Slide controls: hidden (owner 2026-11-25); they appear when reached with the keyboard (Tab), so the slideshow can still be paused (WCAG 2.2.2). */}
+      <div className="sr-only focus-within:not-sr-only focus-within:absolute focus-within:bottom-6 focus-within:left-1/2 focus-within:flex focus-within:-translate-x-1/2 focus-within:items-center focus-within:gap-3 focus-within:rounded-full focus-within:bg-black/30 focus-within:px-4 focus-within:py-2 focus-within:backdrop-blur sm:focus-within:left-auto sm:focus-within:right-8 sm:focus-within:translate-x-0" data-testid="hero-controls">
         {HERO_SLIDES.map((s, i) => (
           <button
             key={s.src}

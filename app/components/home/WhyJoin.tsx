@@ -41,11 +41,11 @@ export default function WhyJoin() {
                 </ul>
                 <div className="mt-auto pt-8">
                   {a.cta.href.startsWith("#") ? (
-                    <a href={a.cta.href} className="inline-flex items-center gap-2 rounded-full bg-brand-950 px-6 py-3 font-semibold text-white transition hover:bg-brand">
+                    <a href={a.cta.href} className="inline-flex items-center gap-2 rounded-md bg-brand-950 px-6 py-3 font-semibold text-white transition-colors hover:bg-brand">
                       {a.cta.label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </a>
                   ) : (
-                    <Link href={a.cta.href} className="inline-flex items-center gap-2 rounded-full bg-brand-950 px-6 py-3 font-semibold text-white transition hover:bg-brand">
+                    <Link href={a.cta.href} className="inline-flex items-center gap-2 rounded-md bg-brand-950 px-6 py-3 font-semibold text-white transition-colors hover:bg-brand">
                       {a.cta.label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   )}

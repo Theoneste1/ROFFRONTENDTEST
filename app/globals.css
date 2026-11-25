@@ -56,7 +56,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-jakarta), Arial, Helvetica, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -70,7 +71,7 @@
 html, body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-jakarta), Arial, Helvetica, sans-serif;
   /* No sideways scrolling. "clip" (not "hidden") so html/body do not become scroll containers:
      the portals' top bar and sidebar stick while the page scrolls. "hidden" stays as the fallback
      for browsers without "clip". */
@@ -82,6 +83,16 @@ html, body {
 
 *, *::before, *::after {
   box-sizing: border-box;
+}
+
+/* Page titles and section headings everywhere: the serif at medium weight (never bold). Unlayered, so it wins over a
+   heading's font utilities. Small headings keep the text font and their own weight, where a serif would be hard to
+   read: card and list titles (text-xs / text-sm / text-base, 16px and smaller) and all-capitals labels (.uppercase,
+   e.g. the footer's column titles). */
+:is(h1, h2, h3):not(.uppercase, .text-xs, .text-sm, .text-base, .text-\[11px\], .text-\[0\.6875rem\]) {
+  font-family: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 /* ─── Public homepage (app/page.tsx): subtle motion, off for reduced motion ─── */

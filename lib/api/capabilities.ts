@@ -242,6 +242,12 @@ export const KNOWN_FEATURES = [
    */
   "adminActivateNow",
   /**
+   * Banking information (owner 2026-11-25): Teachers, Coaches and Head Coaches complete their personal and school bank
+   * details (GET / PUT /me/banking) before using the portal (`bankingRequired` on the profile; other requests 403
+   * BANKING_DETAILS_REQUIRED). Administrators: `banking` on Users list rows, ?banking= filter, GET /admin/users/:id/banking.
+   */
+  "bankingDetails",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */

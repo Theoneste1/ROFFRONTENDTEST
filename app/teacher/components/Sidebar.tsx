@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import { Award, FileQuestion, Table2, Users } from "lucide-react";
-import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
 import { TEACHER_NAV, TEACHER_RESULTS, TEACHER_SHARED_REPORTS, TEACHER_TESTS, visibleNav } from "@/lib/auth/navigation";
@@ -41,7 +40,6 @@ export default function Sidebar({ isOpen }: { isOpen: boolean }) {
           items={items.map((item) => ({ href: item.href, label: item.label, icon: iconOf(item.href), active: isActive(item.href) }))}
         />
       </div>
-      <SidebarUtilities isOpen={isOpen} settingsHref="/teacher/account" />
     </aside>
   );
 }

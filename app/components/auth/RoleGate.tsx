@@ -10,6 +10,8 @@ import { needsDateOfBirth } from "@/lib/accounts/date-of-birth-step";
 import DateOfBirthStep from "./DateOfBirthStep";
 import GenderStep from "./GenderStep";
 import { needsGender } from "@/lib/accounts/gender";
+import BankingStep from "./BankingStep";
+import { needsBanking } from "@/lib/accounts/banking";
 
 /**
  * Renders a portal only for the roles that use it (`role` names the portal:
@@ -58,6 +60,8 @@ export default function RoleGate({ role, children }: { role: Role; children: Rea
   if (needsDateOfBirth(session.user)) return <DateOfBirthStep firstName={session.user!.firstName} />;
   // Accounts from before gender was asked at sign-up give it once (capability genderStep).
   if (needsGender(session.user)) return <GenderStep firstName={session.user!.firstName} />;
+  // Teachers, Coaches and Head Coaches complete their banking information first (capability bankingDetails).
+  if (needsBanking(session.user)) return <BankingStep firstName={session.user!.firstName} role={session.user!.role} />;
 
   return <>{children}</>;
 }

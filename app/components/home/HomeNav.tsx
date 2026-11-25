@@ -62,15 +62,15 @@ export default function HomeNav() {
 
         <div className="hidden lg:flex items-center gap-3">
           {signedIn ? (
-            <Link href={portalHome(session.role!)} className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-brand-950 hover:bg-amber-300 transition-colors">
+            <Link href={portalHome(session.role!)} className="rounded-md bg-amber-400 px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-amber-300 transition-colors">
               My dashboard
             </Link>
           ) : (
             <>
-              <Link href="/login" className="rounded-full px-5 py-2.5 text-sm font-semibold text-white ring-1 ring-white/40 hover:bg-white/10 transition-colors">
+              <Link href="/login" className="rounded-md px-5 py-2.5 text-sm font-semibold text-white ring-1 ring-white/40 hover:bg-white/10 transition-colors">
                 Log in
               </Link>
-              <a href="#join" className="rounded-full bg-amber-400 px-5 py-2.5 text-sm font-bold text-brand-950 hover:bg-amber-300 transition-colors">
+              <a href="#join" className="rounded-md bg-amber-400 px-5 py-2.5 text-sm font-semibold text-brand-950 hover:bg-amber-300 transition-colors">
                 Join the community
               </a>
             </>
@@ -102,15 +102,15 @@ export default function HomeNav() {
           </ul>
           <div className="mt-4 grid gap-3">
             {signedIn ? (
-              <Link href={portalHome(session.role!)} className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-brand-950">
+              <Link href={portalHome(session.role!)} className="rounded-md bg-amber-400 px-5 py-3 text-center font-semibold text-brand-950">
                 My dashboard
               </Link>
             ) : (
               <>
-                <Link href="/login" className="rounded-full px-5 py-3 text-center font-semibold text-white ring-1 ring-white/40">
+                <Link href="/login" className="rounded-md px-5 py-3 text-center font-semibold text-white ring-1 ring-white/40">
                   Log in
                 </Link>
-                <a href="#join" onClick={() => setOpen(false)} className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-brand-950">
+                <a href="#join" onClick={() => setOpen(false)} className="rounded-md bg-amber-400 px-5 py-3 text-center font-semibold text-brand-950">
                   Join the community
                 </a>
               </>
