@@ -34,6 +34,33 @@ export default async function globalSetup() {
         ],
       );
     }
+    // Banking information (owner 2026-11-25): a Teacher, Coach or Head Coach without complete bank details is held at the
+    // banking step. So that every other spec tests what it was written for, the TEST database gives each such account
+    // complete, valid details (Umwalimu SACCO, 12 digits: valid for all three roles) — now and whenever one is created
+    // or becomes one of those roles. "bank.*" accounts are left alone: e2e/tests/banking.spec.ts tests the step with them.
+    if ((await client.query(`SELECT to_regclass('"UserBankDetails"') AS t`)).rows[0].t) {
+      await client.query(`
+        CREATE OR REPLACE FUNCTION e2e_complete_staff_bank_details() RETURNS trigger AS $$
+        BEGIN
+          INSERT INTO "UserBankDetails" ("userId", "personalAccountName", "personalBankName", "personalAccountNumber",
+                                         "schoolAccountName", "schoolBankName", "schoolAccountNumber", "updatedAt")
+          VALUES (NEW."id", 'E2E Account', 'Umwalimu SACCO', '100000000001', 'E2E School', 'Umwalimu SACCO', '200000000002', now())
+          ON CONFLICT ("userId") DO NOTHING;
+          RETURN NULL;
+        END;
+        $$ LANGUAGE plpgsql`);
+      await client.query(`DROP TRIGGER IF EXISTS e2e_complete_staff_bank_details ON "User"`);
+      await client.query(`
+        CREATE TRIGGER e2e_complete_staff_bank_details AFTER INSERT OR UPDATE OF "role" ON "User"
+        FOR EACH ROW WHEN (NEW."role" IN ('TEACHER', 'MENTOR', 'HEAD_COACH') AND NEW."username" NOT LIKE 'bank.%')
+        EXECUTE FUNCTION e2e_complete_staff_bank_details()`);
+      await client.query(`
+        INSERT INTO "UserBankDetails" ("userId", "personalAccountName", "personalBankName", "personalAccountNumber",
+                                       "schoolAccountName", "schoolBankName", "schoolAccountNumber", "updatedAt")
+        SELECT id, 'E2E Account', 'Umwalimu SACCO', '100000000001', 'E2E School', 'Umwalimu SACCO', '200000000002', now()
+          FROM "User" WHERE role IN ('TEACHER', 'MENTOR', 'HEAD_COACH') AND username NOT LIKE 'bank.%'
+        ON CONFLICT ("userId") DO NOTHING`);
+    }
   } finally {
     await client.end();
   }
