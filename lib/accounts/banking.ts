@@ -130,6 +130,12 @@ export interface BankingRowStatus {
   invalid: BankingField[];
 }
 
+/** An account number for a summary: the last 4 characters only ("•••• 1234"), as the backend masks it. */
+export function maskNumber(n: string | null | undefined): string {
+  if (!n) return "—";
+  return n.length <= 4 ? "••••" : `•••• ${n.slice(-4)}`;
+}
+
 /** The signed-in user must complete their banking information before using the portal (the backend's `bankingRequired`). */
 export function needsBanking(user: { role?: string | null; bankingRequired?: boolean } | null | undefined): boolean {
   return !!user && (BANKING_ROLES as readonly string[]).includes(user.role ?? "") && user.bankingRequired === true;

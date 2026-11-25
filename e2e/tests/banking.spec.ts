@@ -160,6 +160,68 @@ test.describe("banking information", () => {
     await page.getByTestId("banking-reveal").click();
     await expect(page.getByTestId("banking-personalAccountNumber")).toHaveText("123456789012");
   });
+
+  test("teacher: Settings shows the saved details (numbers masked) and updates them at any time, with the same rules", async ({ page }) => {
+    const savedRow = async () => withDb(async (c) => (await c.query(
+      `SELECT b.* FROM "UserBankDetails" b JOIN "User" u ON u.id = b."userId" WHERE u.username = 'bank.teacher'`)).rows[0]);
+    await signInWith(page, "bank.teacher", PASSWORD, { answerGender: false });
+    await page.goto("/teacher/account");
+    const card = page.getByTestId("settings-banking");
+    await expect(card.getByTestId("settings-banking-schoolAccountName")).toHaveText("GS Kigali");
+    await expect(card.getByTestId("settings-banking-personalAccountNumber")).toHaveText("•••• 9012");
+    await card.getByTestId("settings-banking-show").click();
+    await expect(card.getByTestId("settings-banking-personalAccountNumber")).toHaveText("123456789012");
+    await card.getByTestId("settings-banking-edit").click();
+    await expect(card.locator("#banking-schoolAccountNumber")).toHaveValue("400100004567");
+    await card.locator("#banking-schoolAccountNumber").fill("4001");
+    await card.getByTestId("banking-submit").click();
+    await expect(card.locator("#banking-schoolAccountNumber-error")).toHaveText(SCHOOL_MSG);
+    await card.locator("#banking-schoolAccountNumber").fill("400100008888");
+    await card.locator("#banking-personalAccountName").fill("Bank Person Updated");
+    await card.getByTestId("banking-submit").click();
+    await expect(card.getByText("Your banking information has been saved.")).toBeVisible();
+    await expect(card.getByTestId("settings-banking-personalAccountName")).toHaveText("Bank Person Updated");
+    expect(await savedRow()).toMatchObject({ personalAccountName: "Bank Person Updated", schoolAccountNumber: "400100008888", schoolBankName: SACCO });
+  });
+
+  test("coach: Settings shows and edits the three personal fields only", async ({ page }) => {
+    await signInWith(page, "bank.coach", PASSWORD, { answerGender: false });
+    await page.goto("/mentor/account");
+    const card = page.getByTestId("settings-banking");
+    await expect(card.getByTestId("settings-banking-personalBankName")).toHaveText("Bank of Kigali Plc");
+    await expect(card.locator("[data-testid^='settings-banking-school']")).toHaveCount(0);
+    await card.getByTestId("settings-banking-edit").click();
+    await expect(card.getByTestId("banking-school")).toHaveCount(0);
+    await card.locator("#banking-personalBankName").selectOption("Equity Bank Rwanda Plc");
+    await card.getByTestId("banking-submit").click();
+    await expect(card.getByTestId("settings-banking-personalBankName")).toHaveText("Equity Bank Rwanda Plc");
+  });
+
+  test("students and administrators have no banking section in Settings", async ({ page }) => {
+    await signIn(page, "student");
+    await page.goto("/student/account");
+    await expect(page.getByTestId("account-settings")).toBeVisible();
+    await expect(page.getByTestId("settings-banking")).toHaveCount(0);
+  });
+
+  test("administrators: edit a teacher's banking information on the person's page (the same rules; saved; masked again)", async ({ page }) => {
+    await signIn(page, "admin");
+    const id = await withDb(async (c) => (await c.query<{ id: string }>(`SELECT id FROM "User" WHERE username = 'bank.teacher'`)).rows[0].id);
+    await page.goto(`/admin/users/${id}`);
+    const card = page.getByTestId("banking-card");
+    await card.getByTestId("banking-edit").click();
+    const editor = card.getByTestId("banking-admin-editor");
+    await expect(editor.locator("#banking-personalAccountNumber")).toHaveValue("123456789012");
+    await editor.locator("#banking-personalAccountNumber").fill("12345");
+    await editor.getByTestId("banking-submit").click();
+    await expect(editor.locator("#banking-personalAccountNumber-error")).toHaveText(TEACHER_MSG);
+    await editor.locator("#banking-personalAccountNumber").fill("555566667777");
+    await editor.getByTestId("banking-submit").click();
+    await expect(card.getByText("Banking information saved.")).toBeVisible();
+    await expect(card.getByTestId("banking-personalAccountNumber")).toHaveText("•••• 7777");
+    const audit = await withDb(async (c) => (await c.query(`SELECT count(*)::int AS n FROM "AuditLog" WHERE action = 'BANK_DETAILS_UPDATED_BY_ADMIN' AND "entityId" = $1`, [id])).rows[0].n);
+    expect(audit).toBe(1);
+  });
 });
 
 test.describe("banking information: details saved earlier (conflicting banks; coaches' school details)", () => {
