@@ -2,7 +2,8 @@
  * Banking information (owner 2026-11-25), in the browser:
  *  - a Teacher / Coach / Head Coach without complete details sees "Complete Your Banking Information" instead of every
  *    portal page — after a reload, a typed address, or in a new tab — and can sign out;
- *  - Teachers: Umwalimu SACCO shown fixed for both banks (no list); 11 / 13 digits or letters → the exact message;
+ *  - Teachers: Umwalimu SACCO shown fixed for both banks (no list); personal or school number of 11 / 13 digits or
+ *    letters → the exact message;
  *    12 digits → saved, a confirmation, then the dashboard (and never the form again);
  *  - Coaches and Head Coaches: the three personal fields only (bank from the list of 12) — no school section, no
  *    school check or confirmation; school details saved earlier are kept untouched;
@@ -18,6 +19,7 @@ import { signIn, signInWith } from "../support/session";
 
 const SACCO = "Umwalimu SACCO";
 const TEACHER_MSG = "Your Umwalimu SACCO account number must contain exactly 12 digits.";
+const SCHOOL_MSG = "The school's Umwalimu SACCO account number must contain exactly 12 digits.";
 
 async function makeAccount(username: string, role: "TEACHER" | "MENTOR" | "HEAD_COACH", partial?: Record<string, string>) {
   const { hashSync } = await import("bcryptjs");
@@ -75,14 +77,24 @@ test.describe("banking information", () => {
     await page.getByTestId("banking-submit").click();
     await expect(page.locator("#banking-personalAccountName-error")).toHaveText("Bank account name is required.");
     await expect(page.locator("#banking-schoolAccountName-error")).toHaveText("School bank account name is required.");
-    await fill(page, { personalAccountName: "Bank Person", schoolAccountName: "GS Kigali", schoolAccountNumber: "4001234567" });
+    // Account names contain no digit (the exact messages), then fixed.
+    await fill(page, { personalAccountName: "Bank Person 2", schoolAccountName: "GS Kigali 1", schoolAccountNumber: "4001234567" });
+    await page.getByTestId("banking-submit").click();
+    await expect(page.locator("#banking-personalAccountName-error")).toHaveText("The bank account name must not contain numbers. Write the name exactly as on the account.");
+    await expect(page.locator("#banking-schoolAccountName-error")).toHaveText("The school's bank account name must not contain numbers. Write the name exactly as on the account.");
+    await fill(page, { personalAccountName: "Bank Person", schoolAccountName: "GS Kigali" });
     for (const n of ["12345678901", "1234567890123", "12345678901A"]) {
       await fill(page, { personalAccountNumber: n });
       await page.getByTestId("banking-submit").click();
       await expect(page.getByText(TEACHER_MSG)).toBeVisible();
       await expect(page.locator("#banking-personalAccountNumber")).toHaveValue(n);
     }
+    // The school's Umwalimu SACCO number: exactly 12 digits too (10 given above).
     await fill(page, { personalAccountNumber: "123456789012" });
+    await page.getByTestId("banking-submit").click();
+    await expect(page.locator("#banking-schoolAccountNumber-error")).toHaveText(SCHOOL_MSG);
+    await expect(page.locator("#banking-schoolAccountNumber")).toHaveValue("4001234567");
+    await fill(page, { schoolAccountNumber: "400100004567" });
     await page.getByTestId("banking-submit").click();
     await expect(page.getByTestId("banking-saved")).toBeVisible();
     await page.getByTestId("banking-continue").click();
@@ -157,7 +169,7 @@ test.describe("banking information: details saved earlier (conflicting banks; co
   test.beforeAll(async () => {
     await makeAccount("bank.legacy.t", "TEACHER", {
       personalAccountName: "Legacy Teacher", personalBankName: "Bank of Kigali Plc", personalAccountNumber: "123456789012",
-      schoolAccountName: "GS Legacy", schoolBankName: "Equity Bank Rwanda Plc", schoolAccountNumber: "4001111",
+      schoolAccountName: "GS Legacy", schoolBankName: "Equity Bank Rwanda Plc", schoolAccountNumber: "400100001111",
     });
     // A coach whose personal details are complete, with school details (another bank) saved by the earlier form.
     await makeAccount("bank.legacy.c", "MENTOR", {
@@ -177,7 +189,7 @@ test.describe("banking information: details saved earlier (conflicting banks; co
     await expect(page.getByTestId("banking-saved-personalBankName")).toHaveText("Bank of Kigali Plc");
     await expect(page.getByTestId("banking-saved-schoolBankName")).toHaveText("Equity Bank Rwanda Plc");
     await expect(page.locator("#banking-personalAccountName")).toHaveValue("Legacy Teacher");
-    await expect(page.locator("#banking-schoolAccountNumber")).toHaveValue("4001111");
+    await expect(page.locator("#banking-schoolAccountNumber")).toHaveValue("400100001111");
 
     // Not confirmed: refused, each field named; nothing replaced.
     await page.getByTestId("banking-submit").click();
@@ -194,7 +206,7 @@ test.describe("banking information: details saved earlier (conflicting banks; co
     await expect(page.getByTestId("banking-saved")).toBeVisible();
     expect(await savedRow("bank.legacy.t")).toMatchObject({
       personalAccountName: "Legacy Teacher", personalBankName: SACCO, personalAccountNumber: "123456789012",
-      schoolAccountName: "GS Legacy", schoolBankName: SACCO, schoolAccountNumber: "4001111",
+      schoolAccountName: "GS Legacy", schoolBankName: SACCO, schoolAccountNumber: "400100001111",
     });
   });
 

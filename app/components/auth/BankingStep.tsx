@@ -6,8 +6,8 @@
  * other request until it is done (403 BANKING_DETAILS_REQUIRED), so it cannot be skipped by a refresh, an address, the
  * menu or another tab. What is already saved is shown and kept; the user can sign out at any time.
  *
- *  - Teachers: personal and school details (six fields); both banks are Umwalimu SACCO (shown, not chosen); the
- *    personal account number is exactly 12 digits.
+ *  - Teachers: personal and school details (six fields); both banks are Umwalimu SACCO (shown, not chosen); both
+ *    account numbers are exactly 12 digits.
  *  - Coaches and Head Coaches: their personal details only (three fields; the bank chosen from the list). No school
  *    section, no school check, no school confirmation; school details saved earlier are left as they are.
  */
@@ -254,7 +254,10 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
         <Section icon={<School className="h-5 w-5" aria-hidden="true" />} title="Your school's bank account" testId="banking-school">
           {field("schoolAccountName", { hint: "The school's account name exactly as the bank shows it." })}
           {fixedBank("schoolBankName", "School accounts are held at Umwalimu SACCO.")}
-          {field("schoolAccountNumber", { hint: "As the bank shows it." })}
+          {field("schoolAccountNumber", {
+            inputMode: rules.schoolNumberDigits ? "numeric" : undefined,
+            hint: rules.schoolNumberDigits ? "Exactly 12 digits, without spaces." : "As the bank shows it.",
+          })}
         </Section>
       )}
 
