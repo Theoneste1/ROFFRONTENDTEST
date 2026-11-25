@@ -38,7 +38,8 @@ import { invalidateSyncRun, useSyncAccess, useSyncCategories, useSyncChanges, us
 import { formatDateTime, formatNumber } from "@/lib/format";
 import { Alert, ErrorState, LoadingBlock, Spinner } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { AdminPage, Badge, Card, CsvButton, MetricCard, Modal, Notice, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../../components/adminUi";
+import { AdminPage, Badge, Card, CsvButton, MetricCard, Modal, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { BackLink, STATUS_BADGE } from "../shared";
 
 const DECISION_BADGE: Record<SyncDecision, string> = {
@@ -351,20 +352,17 @@ function ChangesTab({ runId, open, superAdmin, onDone }: { runId: string; open: 
   });
   return (
     <>
-      <div className="flex flex-wrap gap-3 mb-3">
-        <SelectFilter
-          label="Kind"
-          value={kind}
-          onChange={(v) => { setKind(v as SyncChangeKind | ""); setPage(1); }}
-          options={[{ label: "All", value: "" }, ...(Object.keys(KIND_LABEL) as SyncChangeKind[]).map((k) => ({ label: KIND_LABEL[k], value: k }))]}
-        />
-        <SelectFilter
-          label="Decision"
-          value={decision}
-          onChange={(v) => { setDecision(v as SyncDecision | ""); setPage(1); }}
-          options={[{ label: "All", value: "" }, ...(Object.keys(DECISION_LABEL) as SyncDecision[]).map((k) => ({ label: DECISION_LABEL[k], value: k }))]}
-        />
-      </div>
+      {/* Filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <FilterBar
+        testId="change-filters"
+        onClearAll={() => { setKind(""); setDecision(""); setPage(1); }}
+        filters={[
+          { key: "kind", kind: "select", label: "Kind", value: kind, onChange: (v) => { setKind(v as SyncChangeKind | ""); setPage(1); },
+            options: (Object.keys(KIND_LABEL) as SyncChangeKind[]).map((k) => ({ label: KIND_LABEL[k], value: k })) },
+          { key: "decision", kind: "select", label: "Decision", value: decision, onChange: (v) => { setDecision(v as SyncDecision | ""); setPage(1); },
+            options: (Object.keys(DECISION_LABEL) as SyncDecision[]).map((k) => ({ label: DECISION_LABEL[k], value: k })) },
+        ]}
+      />
       {changes.isError ? (
         <ErrorState error={changes.error} title="Couldn't load the changes" onRetry={() => changes.refetch()} />
       ) : (
@@ -445,14 +443,15 @@ function RowsTab({ runId, runStatus, open, onDone }: { runId: string; runStatus:
   const canPropose = open || runStatus === "APPLIED";
   return (
     <>
-      <div className="flex flex-wrap gap-3 mb-3">
-        <SelectFilter
-          label="Outcome"
-          value={outcome}
-          onChange={(v) => { setOutcome(v as SyncItemOutcome | ""); setPage(1); }}
-          options={[{ label: "All", value: "" }, ...(Object.keys(OUTCOME_LABEL) as SyncItemOutcome[]).map((k) => ({ label: OUTCOME_LABEL[k], value: k }))]}
-        />
-      </div>
+      {/* Filters (owner 2026-11-25): "+ Add filter" and the active one as a chip. */}
+      <FilterBar
+        testId="row-filters"
+        onClearAll={() => { setOutcome(""); setPage(1); }}
+        filters={[
+          { key: "outcome", kind: "select", label: "Outcome", value: outcome, onChange: (v) => { setOutcome(v as SyncItemOutcome | ""); setPage(1); },
+            options: (Object.keys(OUTCOME_LABEL) as SyncItemOutcome[]).map((k) => ({ label: OUTCOME_LABEL[k], value: k })) },
+        ]}
+      />
       {items.isError ? (
         <ErrorState error={items.error} title="Couldn't load the rows" onRetry={() => items.refetch()} />
       ) : (

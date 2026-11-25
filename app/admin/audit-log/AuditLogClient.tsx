@@ -10,6 +10,7 @@ import { ROLE_LABEL } from "@/lib/auth/roles";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { Badge, CsvButton, FilterPills, Modal, SearchInput, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { AUDIT_CATEGORY_LABEL, auditActor, humanizeAction } from "../components/auditText";
 
 const MAIN_TABS: { label: string; value: "" | AuditCategory }[] = [
@@ -108,19 +109,23 @@ export default function AuditLogClient() {
         <CsvButton onDownload={() => auditApi.exportCsv(filters)} />
       </div>
 
-      {/* Controls Bar: Search & Pill Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <SearchInput value={action} onChange={(v) => setParam("action", v)} placeholder="Search actions (e.g. publish)…" label="Search actions" />
-        <SelectFilter label="Role" value={actorRole} onChange={(v) => setParam("actorRole", v)} options={[{ label: "Any", value: "" }, { label: "Administrator", value: "ADMIN" }, { label: "Coach", value: "MENTOR" }, { label: "Student", value: "STUDENT" }]} />
-        <label className="flex items-center gap-2 text-xs text-gray-600">
-          <span className="font-semibold">From</span>
-          <input type="date" value={from} onChange={(e) => setParam("from", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
-        </label>
-        <label className="flex items-center gap-2 text-xs text-gray-600">
-          <span className="font-semibold">To</span>
-          <input type="date" value={to} onChange={(e) => setParam("to", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
-        </label>
-      </div>
+      {/* Search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips; the category tabs below. */}
+      <FilterBar
+        testId="audit-filters"
+        search={<SearchInput value={action} onChange={(v) => setParam("action", v)} placeholder="Search actions (e.g. publish)…" label="Search actions" />}
+        onClearAll={() => {
+          // Clears the filters; the category and the search stay.
+          const next = new URLSearchParams(params);
+          for (const k of ["actorRole", "from", "to", "page"]) next.delete(k);
+          router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
+        }}
+        filters={[
+          { key: "actorRole", kind: "select", label: "Role", value: actorRole, onChange: (v) => setParam("actorRole", v),
+            options: [{ label: "Administrator", value: "ADMIN" }, { label: "Coach", value: "MENTOR" }, { label: "Student", value: "STUDENT" }] },
+          { key: "from", kind: "text", inputType: "date", label: "From", value: from, onChange: (v) => setParam("from", v) },
+          { key: "to", kind: "text", inputType: "date", label: "To", value: to, onChange: (v) => setParam("to", v) },
+        ]}
+      />
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <FilterPills label="Category" options={MAIN_TABS} value={category} onChange={(v) => setParam("category", v)} />
         <SelectFilter

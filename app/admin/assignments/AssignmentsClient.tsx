@@ -9,7 +9,8 @@ import { useCourses } from "@/lib/queries/learning";
 import { formatDate, personName } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { AssignmentBadge, CsvButton, FilterPills, SearchInput, SelectFilter, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { AssignmentBadge, CsvButton, FilterPills, SearchInput, TableCard, TableMessage, linkBtn, td, th } from "../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { useRecordBulk } from "../components/bulk/RecordBulk";
 import { bulkFilterFrom } from "@/lib/admin/bulk-records";
 
@@ -90,12 +91,23 @@ export default function AssignmentsClient() {
         <CsvButton onDownload={() => downloadCsv("/admin/reports/assignments.csv", { status: filters.status, courseId: filters.courseId, divisionId: filters.divisionId }, "assignments.csv")} />
       </div>
 
-      {/* Controls Bar: Search & Pill Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <SearchInput value={q} onChange={(v) => setParam("q", v)} placeholder="Search assignments…" label="Search assignments" />
-        <SelectFilter label="Course" value={courseId} onChange={(v) => setParam("courseId", v)} options={[{ label: "All", value: "" }, ...(courses.data ?? []).map((c) => ({ label: c.title, value: c.id }))]} />
-        <SelectFilter label="Division" value={divisionId} onChange={(v) => setParam("divisionId", v)} options={[{ label: "All", value: "" }, ...(divisions.data ?? []).map((d) => ({ label: d.name, value: d.id }))]} />
-      </div>
+      {/* Search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips; the status tabs below. */}
+      <FilterBar
+        testId="assignment-filters"
+        search={<SearchInput value={q} onChange={(v) => setParam("q", v)} placeholder="Search assignments…" label="Search assignments" />}
+        onClearAll={() => {
+          // Clears the filters; the status tab and the search stay.
+          const next = new URLSearchParams(params);
+          for (const k of ["courseId", "divisionId", "page"]) next.delete(k);
+          router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
+        }}
+        filters={[
+          { key: "courseId", kind: "select", label: "Course", value: courseId, onChange: (v) => setParam("courseId", v),
+            options: (courses.data ?? []).map((c) => ({ label: c.title, value: c.id })) },
+          { key: "divisionId", kind: "select", label: "Division", value: divisionId, onChange: (v) => setParam("divisionId", v),
+            options: (divisions.data ?? []).map((d) => ({ label: d.name, value: d.id })) },
+        ]}
+      />
       <div className="mb-6">
         <FilterPills
           label="Status"

@@ -21,7 +21,8 @@ import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import FileButton from "@/app/components/ui/FileButton";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills } from "@/app/components/ui/PageFrame";
-import { MetricCard, Modal, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "@/app/admin/components/adminUi";
+import { MetricCard, Modal, SearchInput, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "@/app/admin/components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import StudentName from "@/app/components/students/StudentName";
 
 export function ExtendedBadge({ label = "Extended" }: { label?: string }) {
@@ -60,15 +61,18 @@ export default function SubmissionsPanel({ testId }: { testId: string }) {
         </div>
       )}
       <FilterPills label="State" options={[...TRACKING_FILTERS]} value={status} onChange={reset(setStatus)} />
-      <div className="flex flex-wrap items-end gap-3">
-        <SearchInput value={q} onChange={reset(setQ)} placeholder="Search students" label="Search students" />
-        <SelectFilter label="Level" value={division} onChange={(v) => reset(setDivision)(v)}
-          options={[{ label: "All levels", value: "" }, ...levelOptions]} />
-        {schools.data && (
-          <SelectFilter label="School" value={schoolId} onChange={reset(setSchoolId)}
-            options={[{ label: "All schools", value: "" }, ...schools.data.data.map((s) => ({ label: s.name, value: s.id }))]} />
-        )}
-      </div>
+      {/* Search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <FilterBar
+        testId="tracking-filters"
+        search={<SearchInput value={q} onChange={reset(setQ)} placeholder="Search students" label="Search students" />}
+        onClearAll={() => { setDivision(""); setSchoolId(""); setPage(1); }}
+        filters={[
+          { key: "division", kind: "select", label: "Level", value: division, onChange: reset(setDivision), options: levelOptions },
+          // A Head Coach without the school list simply has no school filter.
+          { key: "schoolId", kind: "select", label: "School", value: schoolId, onChange: reset(setSchoolId), show: !!schools.data,
+            options: (schools.data?.data ?? []).map((s) => ({ label: s.name, value: s.id })) },
+        ]}
+      />
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load the submissions" onRetry={() => list.refetch()} /> : (
         <>
           <TableCard>

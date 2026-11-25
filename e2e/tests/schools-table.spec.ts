@@ -13,6 +13,7 @@ import type pg from "pg";
 import { PASSWORD } from "../support/accounts";
 import { claim, createStudent, idOf, withDb } from "../support/db";
 import { signIn } from "../support/session";
+import { addFilter, expectFilter, removeFilter } from "../support/filters";
 
 const run = Date.now().toString(36);
 const prefix = `E2E Tbl ${run}`;
@@ -100,35 +101,35 @@ test.describe.serial("Schools table", () => {
 
   test("filters: status, then district and sector; kept in the URL", async () => {
     await search();
-    await page.getByLabel("Status").selectOption("inactive");
+    await addFilter(page, "status", "Inactive");
     await expect(page).toHaveURL(/status=inactive/);
     await expect(rows()).toHaveCount(1);
     await expect(firstName()).toContainText(name.c);
-    await page.getByLabel("Status").selectOption("all");
-    await page.getByLabel("Province").selectOption("Southern Province");
-    await page.getByLabel("District").selectOption("Huye");
+    await removeFilter(page, "status");
+    await addFilter(page, "province", "Southern Province");
+    await addFilter(page, "district", "Huye");
     await expect(page).toHaveURL(/district=Huye/);
     await expect(page.getByTestId("school-count")).toHaveText("24 schools match the filters");
-    await page.getByLabel("Sector").selectOption("Tumba");
+    await addFilter(page, "sector", "Tumba");
     await expect(page).toHaveURL(/sector=Tumba/);
     await expect(rows()).toHaveCount(1);
     await expect(firstName()).toContainText(name.b);
     // Reloading keeps every filter.
     await page.reload();
     await expect(rows()).toHaveCount(1);
-    await expect(page.getByLabel("Sector")).toHaveValue("Tumba");
+    await expectFilter(page, "sector", "Tumba");
   });
 
   test("two filters changed back to back (without waiting for the list) both apply — the second never undoes the first (2026-11-24)", async () => {
     await search();
-    await page.getByLabel("Status").selectOption("inactive");
-    await page.getByLabel("Status").selectOption("all");
-    await page.getByLabel("Province").selectOption("Southern Province");
+    await addFilter(page, "status", "Inactive");
+    await removeFilter(page, "status");
+    await addFilter(page, "province", "Southern Province");
     await expect(page).toHaveURL(/province=Southern/);
     await expect(page).not.toHaveURL(/status=inactive/);
-    await expect(page.getByLabel("Status")).toHaveValue("all");
-    await page.getByLabel("District").selectOption("Huye");
-    await page.getByLabel("Status").selectOption("active");
+    await expectFilter(page, "status", null);
+    await addFilter(page, "district", "Huye");
+    await addFilter(page, "status", "Active");
     await expect(page).toHaveURL(/district=Huye/);
     await expect(page).toHaveURL(/status=active/);
     await expect(page.getByTestId("school-count")).toHaveText("24 schools match the filters");
@@ -152,7 +153,7 @@ test.describe.serial("Schools table", () => {
     await expect(rows().nth(3).getByTestId("school-name")).toContainText(name.c);
     await expect(rows().nth(4).getByTestId("school-name")).toContainText(name.a);
     // A filter keeps the sort and returns to page 1.
-    await page.getByLabel("Status").selectOption("active");
+    await addFilter(page, "status", "Active");
     await expect(page).toHaveURL(/status=active/);
     await expect(page).not.toHaveURL(/page=2/);
     await expect(page).toHaveURL(/sort=verifiedStudents/);

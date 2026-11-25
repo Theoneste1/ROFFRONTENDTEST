@@ -21,7 +21,8 @@ import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame, FilterPills } from "@/app/components/ui/PageFrame";
-import { SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, td, th } from "@/app/admin/components/adminUi";
+import { SearchInput, TableCard, TableMessage, btnPrimary, btnSecondary, td, th } from "@/app/admin/components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { StatusBadge, TestsGate, useTestSubjects } from "./shared";
 
 const STATUS_PILLS: { label: string; value: "" | TestStatus }[] = [
@@ -75,14 +76,21 @@ function List({ base, headCoach }: { base: string; headCoach?: boolean }) {
         </>
       )}
     >
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      {/* The status tabs, then search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <div className="mb-3 flex flex-wrap items-center gap-3">
         <FilterPills label="Status" options={STATUS_PILLS} value={status} onChange={reset(setStatus)} />
-        <SelectFilter label="Subject" value={subjectId} onChange={reset(setSubjectId)}
-          options={[{ label: "All subjects", value: "" }, ...(subjects.data ?? []).map((s) => ({ label: s.name, value: s.id }))]} />
-        <SelectFilter label="Division" value={division} onChange={(v) => reset(setDivision)(v as "" | TestDivision)}
-          options={[{ label: "Any", value: "" }, ...levelOptions.map((o) => ({ label: o.label, value: o.value }))]} />
-        <SearchInput value={q} onChange={reset(setQ)} placeholder="Search titles" label="Search tests" />
       </div>
+      <FilterBar
+        testId="test-filters"
+        search={<SearchInput value={q} onChange={reset(setQ)} placeholder="Search titles" label="Search tests" />}
+        onClearAll={() => { setSubjectId(""); setDivision(""); setPage(1); }}
+        filters={[
+          { key: "subjectId", kind: "select", label: "Subject", value: subjectId, onChange: reset(setSubjectId),
+            options: (subjects.data ?? []).map((s) => ({ label: s.name, value: s.id })) },
+          { key: "division", kind: "select", label: "Division", value: division, onChange: (v) => reset(setDivision)(v as "" | TestDivision),
+            options: levelOptions.map((o) => ({ label: o.label, value: o.value })) },
+        ]}
+      />
       {list.isPending ? (
         <LoadingBlock />
       ) : list.isError ? (

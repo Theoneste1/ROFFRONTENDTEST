@@ -14,7 +14,8 @@ import { personName } from "@/lib/format";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { PageFrame } from "@/app/components/ui/PageFrame";
 import Pagination from "@/app/components/ui/Pagination";
-import { Notice, SearchInput, SelectFilter, TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
+import { Notice, SearchInput, TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 
 const SUBJECT_LABEL: Record<string, string> = { MATHEMATICS: "Mathematics", PHYSICS: "Physics", COMPUTING: "Computing" };
 
@@ -39,15 +40,19 @@ function StudentsList() {
   const levels = (divisions.data ?? []).filter((d) => d.isActive !== false);
   return (
     <PageFrame title="Students" description="Every student of your programmes, at every level. Contact details are not shown.">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <SearchInput value={q} onChange={reset(setQ)} placeholder="Name or username" label="Search students" />
-        {list.data && list.data.programmes.length > 1 && (
-          <SelectFilter label="Programme" value={programmeId} onChange={reset(setProgrammeId)}
-            options={[{ label: "All my programmes", value: "" }, ...list.data.programmes.map((p) => ({ label: p.name, value: p.id }))]} />
-        )}
-        <SelectFilter label="Level" value={division} onChange={reset(setDivision)}
-          options={[{ label: "Every level", value: "" }, ...levels.map((d) => ({ label: d.name, value: d.code }))]} />
-      </div>
+      {/* Search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <FilterBar
+        testId="coach-student-filters"
+        search={<SearchInput value={q} onChange={reset(setQ)} placeholder="Name or username" label="Search students" />}
+        onClearAll={() => { setPage(1); setProgrammeId(""); setDivision(""); }}
+        filters={[
+          // Offered when the coach has more than one programme.
+          { key: "programmeId", kind: "select", label: "Programme", value: programmeId, onChange: reset(setProgrammeId), show: !!list.data && list.data.programmes.length > 1,
+            options: (list.data?.programmes ?? []).map((p) => ({ label: p.name, value: p.id })) },
+          { key: "division", kind: "select", label: "Level", value: division, onChange: reset(setDivision),
+            options: levels.map((d) => ({ label: d.name, value: d.code })) },
+        ]}
+      />
       {list.isPending ? <LoadingBlock /> : list.isError ? (
         <ErrorState error={list.error} title="Couldn't load the students" onRetry={() => list.refetch()} />
       ) : list.data.programmes.length === 0 ? (

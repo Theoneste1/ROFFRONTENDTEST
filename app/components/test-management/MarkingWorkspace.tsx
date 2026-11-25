@@ -27,7 +27,8 @@ import { Alert, EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui
 import FileButton from "@/app/components/ui/FileButton";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
-import { ConfirmDialog, MetricCard, Notice, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, td, th } from "@/app/admin/components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
+import { ConfirmDialog, MetricCard, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, td, th } from "@/app/admin/components/adminUi";
 import { inputBad, inputCls, inputOk, labelCls } from "./shared";
 
 /** The page when the backend has no marking, or the user cannot mark; otherwise the children. */
@@ -78,13 +79,20 @@ function Queue() {
           <MetricCard label="Marked" value={c.marked} />
         </div>
       )}
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      {/* The state tabs, then the test filter (owner 2026-11-25: "+ Add filter" and a chip) when there is more than one test. */}
+      <div className="mb-3 flex flex-wrap items-center gap-3">
         <FilterPills label="State" options={[...QUEUE_FILTERS]} value={state} onChange={(v) => { setState(v); setPage(1); }} />
-        {list.data && list.data.tests.length > 1 && (
-          <SelectFilter label="Test" value={testId} onChange={(v) => { setTestId(v); setPage(1); }}
-            options={[{ label: "All tests", value: "" }, ...list.data.tests.map((t) => ({ label: `${t.title} (${t.marked}/${t.assigned} marked)`, value: t.id }))]} />
-        )}
       </div>
+      {((list.data && list.data.tests.length > 1) || testId) && (
+        <FilterBar
+          testId="queue-filters"
+          onClearAll={() => { setTestId(""); setPage(1); }}
+          filters={[
+            { key: "testId", kind: "select", label: "Test", value: testId, onChange: (v) => { setTestId(v); setPage(1); },
+              options: (list.data?.tests ?? []).map((t) => ({ label: `${t.title} (${t.marked}/${t.assigned} marked)`, value: t.id })) },
+          ]}
+        />
+      )}
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load your marking queue" onRetry={() => list.refetch()} /> : list.data.data.length === 0 ? (
         <EmptyState title="Nothing to mark" description={state ? "No submission in this group." : "When submissions are assigned to you, they appear here."} />
       ) : (
