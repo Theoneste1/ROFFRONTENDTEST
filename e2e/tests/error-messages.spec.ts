@@ -148,7 +148,10 @@ test.describe("error messages: permissions and missing records", () => {
     await expectNoTechnicalText(page);
     fail = false;
     await page.getByRole("button", { name: /try again|retry/i }).first().click();
-    await expect(page.getByText("e2e.student").first()).toBeVisible({ timeout: 30_000 });
+    // Loaded again: the error is gone and the accounts are listed. Not a particular account: the list shows the newest
+    // first, and accounts created by earlier tests (e.g. banking.spec.ts) can push a given one off the first page.
+    await expect(page.getByRole("cell", { name: /@/ }).first()).toBeVisible({ timeout: 30_000 });   // an e-mail cell: a listed account
+    await expect(page.getByText(/Something went wrong on our side/)).toHaveCount(0);
   });
 });
 
