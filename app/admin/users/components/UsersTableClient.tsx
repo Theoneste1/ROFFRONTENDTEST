@@ -32,6 +32,7 @@ import { useTableLayout } from "@/lib/queries/table-layouts";
 import { AvatarBadge } from "@/app/components/account/UserAvatar";
 import { interestsWithOtherText } from "@/lib/accounts/olympiad-interests";
 import { countryName } from "@/lib/schools/countries";
+import BankingStatusBadge from "@/app/components/admin/BankingStatusBadge";
 
 /** One cell of the Users list per column key (the keys of lib/admin/table-layouts.ts). */
 function cell(key: string, u: AdminUser): ReactNode {
@@ -81,6 +82,8 @@ function cell(key: string, u: AdminUser): ReactNode {
       ) : (
         <span className="text-gray-600">Allowed</span>
       );
+    case "banking":
+      return <BankingStatusBadge banking={u.banking} />;
     case "accountStatus":
       return <AccountStatusBadge user={u} />;
     case "registeredAt":
@@ -107,6 +110,16 @@ const STATUS_FILTERS: Record<string, { label: string; flags: Partial<UserFilters
   "awaiting-approval": { label: "Awaiting approval", flags: { isActive: true, isApproved: false } },
 };
 
+/** Banking information filter (capability bankingDetails): URL value → backend ?banking=. */
+const BANKING_FILTERS: { value: string; label: string }[] = [
+  { value: "", label: "Any" },
+  { value: "COMPLETE", label: "Complete" },
+  { value: "INCOMPLETE", label: "Incomplete (any)" },
+  { value: "PARTIAL", label: "Partially completed" },
+  { value: "NOT_STARTED", label: "Not started" },
+  { value: "NEEDS_CORRECTION", label: "Needs correction" },
+];
+
 const PAGE_SIZE = 20;
 
 export default function UsersTableClient() {
@@ -122,6 +135,9 @@ export default function UsersTableClient() {
   const role = roleTabs.some((t) => t.value === requestedRole) ? requestedRole : "";
   const status = STATUS_FILTERS[params.get("status") ?? ""] ? (params.get("status") ?? "") : "";
   const divisionId = params.get("divisionId") ?? "";
+  const bankingOn = hasFeature(detection, "bankingDetails");
+  const bankingParam = params.get("banking") ?? "";
+  const banking = bankingOn && BANKING_FILTERS.some((b) => b.value === bankingParam) ? bankingParam : "";
   const search = params.get("q") ?? "";
   const page = Math.max(1, Number(params.get("page")) || 1);
   // Configurable columns and sortable headers (capability tableLayouts).
@@ -157,6 +173,7 @@ export default function UsersTableClient() {
     role: role || undefined,
     divisionId: divisionId || undefined,
     search: search || undefined,
+    ...(banking ? { banking: banking as UserFilters["banking"] } : {}),
     ...STATUS_FILTERS[status].flags,
     ...(sort ? { sort, ...(order ? { order } : {}) } : {}),
     page,
@@ -168,6 +185,11 @@ export default function UsersTableClient() {
   const total = users.data?.meta.total ?? 0;
 
   function selectionFor(choice: SelectionChoice): BulkSelection | null {
+    // The banking status is computed by the backend, not a stored filter: "every match" is never used with it.
+    if (choice !== "selected" && banking) {
+      setBulkError("Bulk actions and exports cannot use the banking filter. Tick the accounts you want instead.");
+      return null;
+    }
     return buildSelection(choice, selected, filters);
   }
   async function exportCsv(choice: SelectionChoice) {
@@ -237,6 +259,9 @@ export default function UsersTableClient() {
           onChange={(v) => setParam("divisionId", v)}
           options={[{ label: "All", value: "" }, ...(divisions.data ?? []).map((d) => ({ label: d.name, value: d.id }))]}
         />
+        {bankingOn && (
+          <SelectFilter label="Banking information" value={banking} onChange={(v) => setParam("banking", v)} options={BANKING_FILTERS} />
+        )}
         <span className="flex-1" />
         <button type="button" className={btnSecondary} onClick={() => setChoosing(true)} data-testid="choose-columns">
           <Columns3 className="h-3.5 w-3.5" aria-hidden="true" /> Columns

@@ -39,6 +39,7 @@ import { AvatarTile } from "@/app/components/account/UserAvatar";
 import ViewAsButton from "./ViewAsButton";
 import { viewAsButtonVisible } from "@/lib/auth/view-as";
 import { activateNowConfirmText, activateNowDoneText, activateNowVisible } from "@/lib/accounts/activate-now";
+import BankingCard from "@/app/components/admin/BankingCard";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -297,6 +298,8 @@ export default function UserDetail({ userId }: { userId: string }) {
         {u.role === "MENTOR" && coachInterestsSupported(detection) && <CoachSubjectsCard userId={u.id} subjects={u.olympiadInterests} other={u.olympiadInterestOther ?? null} canEdit={canEditCoachSubjects({ role: me?.role, can, overrides: permissionOverrides })} />}
         {/* Students' date of birth: correction with a reason, and its history (capability dateOfBirthCorrection). */}
         {canCorrectDateOfBirth(detection, u.role, can("users.manage")) && <DateOfBirthCard userId={u.id} dateOfBirth={u.dateOfBirth} />}
+        {/* Banking information of Teachers, Coaches and Head Coaches (capability bankingDetails; users.manage): masked. */}
+        {["TEACHER", "MENTOR", "HEAD_COACH"].includes(u.role) && hasFeature(detection, "bankingDetails") && can("users.manage") && <BankingCard userId={u.id} className="lg:col-span-3" />}
         {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
         {/* A teacher's test submission for students: one switch, the account untouched (testSubmissionLock). */}

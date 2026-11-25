@@ -109,6 +109,8 @@ export interface UserFilters {
   isApproved?: boolean;
   isActivated?: boolean;
   search?: string;
+  /** Teachers, Coaches and Head Coaches by banking status (capability bankingDetails). Never used for bulk actions. */
+  banking?: "COMPLETE" | "INCOMPLETE" | "PARTIAL" | "NOT_STARTED" | "NEEDS_CORRECTION";
   page?: number;
   limit?: number;
   [key: string]: QueryValue;
