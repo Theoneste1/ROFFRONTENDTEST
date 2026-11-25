@@ -1,13 +1,25 @@
 import type { Metadata, Viewport } from "next";
 import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_TITLE, SITE_URL, indexingAllowed } from "@/lib/site/seo";
 import { connection } from "next/server";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
 import Providers from "./providers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/** The text of the whole site (labels, buttons, tables, forms). */
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+/** Page titles and section headings (h1–h3, app/globals.css) and the footer's wordmark: a serif at medium weight. */
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -48,7 +60,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${newsreader.variable} ${geistMono.variable} h-full antialiased`}
       // Browsers and extensions add attributes to <html> (e.g. Edge's
       // data-js-focus-visible). This only silences attribute mismatches on
       // this one element, not on its children.

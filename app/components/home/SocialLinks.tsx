@@ -18,13 +18,14 @@ export function configuredSocials() {
 export default function SocialLinks({ tone = "dark" }: { tone?: "dark" | "light" }) {
   const links = configuredSocials();
   if (links.length === 0) return null;
-  const cls = tone === "dark" ? "bg-white/10 text-white hover:bg-amber-400 hover:text-brand-950" : "bg-slate-100 text-brand-950 hover:bg-brand hover:text-white";
+  // Dark (the footer): square hairline buttons (design system); light: round tiles.
+  const cls = tone === "dark" ? "h-9 w-9 rounded border border-white/20 text-blue-100 hover:border-amber-400 hover:text-amber-300" : "h-10 w-10 rounded-full bg-slate-100 text-brand-950 hover:bg-brand hover:text-white";
   return (
-    <ul className="flex flex-wrap gap-3">
+    <ul className={`flex flex-wrap ${tone === "dark" ? "gap-2" : "gap-3"}`}>
       {links.map((l) => (
         <li key={l.key}>
-          <a href={l.href} target="_blank" rel="noopener noreferrer" aria-label={`${l.label} (opens in a new tab)`} className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition ${cls}`}>
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+          <a href={l.href} target="_blank" rel="noopener noreferrer" aria-label={`${l.label} (opens in a new tab)`} className={`inline-flex items-center justify-center transition ${cls}`}>
+            <svg viewBox="0 0 24 24" className={tone === "dark" ? "h-4 w-4" : "h-5 w-5"} fill="currentColor" aria-hidden="true">
               <path d={l.path} />
             </svg>
           </a>

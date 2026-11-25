@@ -23,9 +23,9 @@ import {
   ClipboardList,
   Globe,
   FileQuestion,
-  Database
+  Database,
+  Settings
 } from "lucide-react";
-import SidebarUtilities from "@/app/components/shell/SidebarUtilities";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
 import { ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_REGISTRATION_DATA, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, ADMIN_TESTS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
@@ -62,6 +62,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/countries": Globe,
   "/admin/tests": FileQuestion,
   "/admin/registration-data": Database,
+  "/admin/settings": Settings,
 };
 
 /**
@@ -88,6 +89,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     ...(testsNavVisible(detection, knownPermissions) ? [ADMIN_TESTS] : []),
     // Registration data: the backend feature AND the known registrationData.manage (Super Administrators).
     ...(registrationDataNavVisible(detection, knownPermissions) ? [ADMIN_REGISTRATION_DATA] : []),
+    // Platform settings (settings.manage). Help, the user's own settings and Sign Out are in the profile menu (top right).
+    ...(canSeeNavItem(ADMIN_SETTINGS, knownPermissions) ? [{ ...ADMIN_SETTINGS, label: "Platform settings" }] : []),
   ];
 
   // Function to check if link is active
@@ -118,8 +121,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         />
       </div>
 
-      {/* BOTTOM UTILITY LINKS */}
-      <SidebarUtilities isOpen={isOpen} settingsHref={canSeeNavItem(ADMIN_SETTINGS, knownPermissions) ? ADMIN_SETTINGS.href : undefined} />
     </aside>
   );
 }
