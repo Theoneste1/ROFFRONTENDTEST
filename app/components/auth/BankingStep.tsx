@@ -6,8 +6,10 @@
  * other request until it is done (403 BANKING_DETAILS_REQUIRED), so it cannot be skipped by a refresh, an address, the
  * menu or another tab. What is already saved is shown and kept; the user can sign out at any time.
  *
- *  - Teachers: both banks are Umwalimu SACCO (shown, not chosen); the personal account number is exactly 12 digits.
- *  - Coaches and Head Coaches: the personal bank is chosen from the list; the school bank is Umwalimu SACCO.
+ *  - Teachers: personal and school details (six fields); both banks are Umwalimu SACCO (shown, not chosen); the
+ *    personal account number is exactly 12 digits.
+ *  - Coaches and Head Coaches: their personal details only (three fields; the bank chosen from the list). No school
+ *    section, no school check, no school confirmation; school details saved earlier are left as they are.
  */
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,7 +21,7 @@ import { useSession } from "@/lib/auth/session";
 import { Button, TextField } from "@/app/components/ui/form";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import {
-  conflictsOf, FIELD_LABELS, initialValues, rulesFor, submissionOf, UMWALIMU_SACCO, validateBanking,
+  asksSchool, conflictsOf, FIELD_LABELS, initialValues, rulesFor, submissionOf, UMWALIMU_SACCO, validateBanking,
   type BankingField, type BankingValues, type BankingView, type FixableBankField,
 } from "@/lib/accounts/banking";
 
@@ -67,6 +69,7 @@ export default function BankingStep({ firstName, role }: { firstName: string; ro
 function BankingForm({ firstName, role, view, signOut }: { firstName: string; role: string; view: BankingView; signOut: ReactNode }) {
   const queryClient = useQueryClient();
   const rules = view.rules ?? rulesFor(role);
+  const school = asksSchool(rules);
   const [values, setValues] = useState<BankingValues>(() => initialValues({ ...view, rules }));
   const [errors, setErrors] = useState<Partial<Record<BankingField, string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -199,8 +202,10 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">One more step, {firstName}</p>
         <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Complete Your Banking Information</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          To complete your profile, please provide your personal and school banking information. Rwanda Olympiad Foundation
-          requires these details for administrative and payment-related processes.
+          {school
+            ? "To complete your profile, please provide your personal and school banking information."
+            : "To complete your profile, please provide your personal banking information."}{" "}
+          Rwanda Olympiad Foundation requires these details for administrative and payment-related processes.
         </p>
         <p className="mt-3 text-xs text-slate-500">Fields marked <span className="text-red-500">*</span> are required.</p>
         {view.status === "PARTIAL" && missing.length > 0 && (
@@ -244,11 +249,14 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
         })}
       </Section>
 
-      <Section icon={<School className="h-5 w-5" aria-hidden="true" />} title="Your school's bank account" testId="banking-school">
-        {field("schoolAccountName", { hint: "The school's account name exactly as the bank shows it." })}
-        {fixedBank("schoolBankName", "School accounts are held at Umwalimu SACCO.")}
-        {field("schoolAccountNumber", { hint: "As the bank shows it." })}
-      </Section>
+      {/* The school's details: Teachers only (Coaches and Head Coaches are not asked). */}
+      {school && (
+        <Section icon={<School className="h-5 w-5" aria-hidden="true" />} title="Your school's bank account" testId="banking-school">
+          {field("schoolAccountName", { hint: "The school's account name exactly as the bank shows it." })}
+          {fixedBank("schoolBankName", "School accounts are held at Umwalimu SACCO.")}
+          {field("schoolAccountNumber", { hint: "As the bank shows it." })}
+        </Section>
+      )}
 
       <div className="space-y-3 rounded-2xl bg-white p-6 shadow-sm sm:p-8">
         {formError && <Alert tone="error">{formError}</Alert>}

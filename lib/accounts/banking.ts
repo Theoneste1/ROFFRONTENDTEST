@@ -1,10 +1,11 @@
 /**
- * Banking information (owner 2026-11-25): Teachers, Coaches and Head Coaches give their personal and their school's
- * bank details before using the platform. These rules mirror the backend's (src/banking/banking-rules.ts), which
- * decides: the form checks the same things first so mistakes show at once, and shows the backend's answer per field.
- * Only the agreed rules: every field required; teachers' personal number exactly 12 digits; coaches' personal bank
- * from the list; Umwalimu SACCO fixed where agreed. A conflicting saved bank is replaced only with the user's
- * explicit confirmation.
+ * Banking information (owner 2026-11-25, final requirements): Teachers give their personal and their school's bank
+ * details (six fields); Coaches and Head Coaches give their personal details only (three fields) — school details are
+ * never asked of them, never block them, and any saved earlier are kept as they are. These rules mirror the backend's
+ * (src/banking/banking-rules.ts), which decides: the form checks the same things first so mistakes show at once, and
+ * shows the backend's answer per field. Only the agreed rules: every required field required; teachers' personal
+ * number exactly 12 digits; coaches' personal bank from the list; Umwalimu SACCO fixed for teachers. A conflicting
+ * saved bank is replaced only with the user's explicit confirmation.
  * Tested in tests/banking.test.mjs.
  */
 
@@ -35,6 +36,9 @@ export const BANKING_FIELDS = [
 ] as const;
 export type BankingField = (typeof BANKING_FIELDS)[number];
 export type BankingValues = Record<BankingField, string>;
+
+/** The three personal fields: all a Coach or Head Coach gives. */
+export const PERSONAL_FIELDS = ["personalAccountName", "personalBankName", "personalAccountNumber"] as const;
 
 export const FIELD_LABELS: Record<BankingField, string> = {
   personalAccountName: "Bank account name",
@@ -74,6 +78,20 @@ export interface BankRules {
   fixedBank: string;
   banks: string[];
   personalNumberDigits: number | null;
+  /** Whether the school's bank details are asked (Teachers only). Older backends omit it: they asked everyone. */
+  schoolRequired?: boolean;
+  /** The fields this role gives, in form order (newer backends). */
+  fields?: BankingField[];
+}
+
+/** Whether these rules ask the school's bank details (Teachers only; an older backend asked everyone). */
+export function asksSchool(rules: Pick<BankRules, "schoolRequired">): boolean {
+  return rules.schoolRequired !== false;
+}
+
+/** The fields these rules require: six for Teachers, the three personal ones for Coaches and Head Coaches. */
+export function requiredFieldsOf(rules: Pick<BankRules, "schoolRequired" | "fields">): readonly BankingField[] {
+  return rules.fields ?? (asksSchool(rules) ? BANKING_FIELDS : PERSONAL_FIELDS);
 }
 
 /** GET /me/banking. */
@@ -90,6 +108,8 @@ export interface BankingView {
 
 /** GET /admin/users/:id/banking: numbers masked unless revealed. */
 export interface AdminBankingView extends Omit<BankingView, "rules" | "details" | "conflicts"> {
+  /** The fields this person's role gives (newer backends): six for a Teacher, three personal for a Coach or Head Coach. */
+  requiredFields?: BankingField[];
   missingLabels: string[];
   invalidLabels: string[];
   details: (Partial<Record<BankingField, string | null>> & { revealed: boolean }) | null;
@@ -116,6 +136,8 @@ export function rulesFor(role: string): BankRules {
     fixedBank: UMWALIMU_SACCO,
     banks: teacher ? [UMWALIMU_SACCO] : [...BANKS],
     personalNumberDigits: teacher ? 12 : null,
+    schoolRequired: teacher,
+    fields: teacher ? [...BANKING_FIELDS] : [...PERSONAL_FIELDS],
   };
 }
 
@@ -126,8 +148,9 @@ export function conflictsOf(view: Pick<BankingView, "details" | "rules" | "confl
   const d = view.details ?? {};
   const personal = d.personalBankName;
   if (view.rules?.personalBank === "FIXED" && personal && personal !== UMWALIMU_SACCO) out.push({ field: "personalBankName", saved: personal });
+  // A school bank conflicts only where school details are asked (Teachers): a coach's saved school bank is kept as it is.
   const school = d.schoolBankName;
-  if (school && school !== UMWALIMU_SACCO) out.push({ field: "schoolBankName", saved: school });
+  if (view.rules && asksSchool(view.rules) && school && school !== UMWALIMU_SACCO) out.push({ field: "schoolBankName", saved: school });
   return out;
 }
 
@@ -136,14 +159,14 @@ export function initialValues(view: Pick<BankingView, "details" | "rules">): Ban
   const d = view.details ?? {};
   const v = Object.fromEntries(BANKING_FIELDS.map((f) => [f, d[f] ?? ""])) as BankingValues;
   if (view.rules?.personalBank === "FIXED") v.personalBankName = UMWALIMU_SACCO;
-  v.schoolBankName = UMWALIMU_SACCO;
+  if (!view.rules || asksSchool(view.rules)) v.schoolBankName = UMWALIMU_SACCO;
   return v;
 }
 
 /**
- * The problem of each field, as the backend would answer (empty: ready to submit). The agreed rules only: every field
- * required; a teacher's personal number exactly 12 digits; a coach's personal bank from the list; a conflicting saved
- * bank replaced only when confirmed. Nothing is changed or cut.
+ * The problem of each field, as the backend would answer (empty: ready to submit). The agreed rules only: every
+ * required field required (school fields for Teachers only); a teacher's personal number exactly 12 digits; a coach's
+ * personal bank from the list; a conflicting saved bank replaced only when confirmed. Nothing is changed or cut.
  */
 export function validateBanking(
   rules: BankRules,
@@ -152,7 +175,8 @@ export function validateBanking(
   confirmed: ReadonlySet<string> = new Set(),
 ): Partial<Record<BankingField, string>> {
   const errors: Partial<Record<BankingField, string>> = {};
-  for (const f of ["personalAccountName", "schoolAccountName", "schoolAccountNumber"] as const) {
+  const names = asksSchool(rules) ? (["personalAccountName", "schoolAccountName", "schoolAccountNumber"] as const) : (["personalAccountName"] as const);
+  for (const f of names) {
     if (!v[f].trim()) errors[f] = `${FIELD_LABELS[f]} is required.`;
   }
   if (rules.personalBank === "LIST") {
@@ -166,15 +190,21 @@ export function validateBanking(
   return errors;
 }
 
-/** The body of PUT /me/banking: the fixed banks as Umwalimu SACCO, and the replacements the user confirmed. */
-export function submissionOf(rules: BankRules, v: BankingValues, confirmed: ReadonlySet<string> = new Set()): BankingValues & { confirmReplace?: FixableBankField[] } {
-  const confirmReplace = (["personalBankName", "schoolBankName"] as const).filter((f) => confirmed.has(f));
+/** What PUT /me/banking receives: the role's fields only, and the replacements the user confirmed. */
+export type BankingSubmission = Partial<BankingValues> & { confirmReplace?: FixableBankField[] };
+
+/**
+ * The body of PUT /me/banking: the role's fields only (a coach sends no school fields, so school details saved earlier
+ * stay as they are), the fixed banks as Umwalimu SACCO, and the replacements the user confirmed.
+ */
+export function submissionOf(rules: BankRules, v: BankingValues, confirmed: ReadonlySet<string> = new Set()): BankingSubmission {
+  const school = asksSchool(rules);
+  const confirmReplace = (["personalBankName", "schoolBankName"] as const).filter((f) => confirmed.has(f) && (f === "personalBankName" || school));
   return {
-    ...v,
     personalAccountName: v.personalAccountName.trim(),
-    schoolAccountName: v.schoolAccountName.trim(),
     personalBankName: rules.personalBank === "FIXED" ? UMWALIMU_SACCO : v.personalBankName,
-    schoolBankName: UMWALIMU_SACCO,
+    personalAccountNumber: v.personalAccountNumber,
+    ...(school ? { schoolAccountName: v.schoolAccountName.trim(), schoolBankName: UMWALIMU_SACCO, schoolAccountNumber: v.schoolAccountNumber } : {}),
     ...(confirmReplace.length ? { confirmReplace } : {}),
   };
 }

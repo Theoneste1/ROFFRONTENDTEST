@@ -299,7 +299,7 @@ export default function UserDetail({ userId }: { userId: string }) {
         {/* Students' date of birth: correction with a reason, and its history (capability dateOfBirthCorrection). */}
         {canCorrectDateOfBirth(detection, u.role, can("users.manage")) && <DateOfBirthCard userId={u.id} dateOfBirth={u.dateOfBirth} />}
         {/* Banking information of Teachers, Coaches and Head Coaches (capability bankingDetails; users.manage): masked. */}
-        {["TEACHER", "MENTOR", "HEAD_COACH"].includes(u.role) && hasFeature(detection, "bankingDetails") && can("users.manage") && <BankingCard userId={u.id} className="lg:col-span-3" />}
+        {["TEACHER", "MENTOR", "HEAD_COACH"].includes(u.role) && hasFeature(detection, "bankingDetails") && can("users.manage") && <BankingCard userId={u.id} role={u.role} className="lg:col-span-3" />}
         {can("users.manage") && <RegistrationHistoryCard userId={u.id} />}
         {/* Shown only with the backend permission (an Administrator's frozen /me/permissions list lacks both: see the PR notes). */}
         {/* A teacher's test submission for students: one switch, the account untouched (testSubmissionLock). */}

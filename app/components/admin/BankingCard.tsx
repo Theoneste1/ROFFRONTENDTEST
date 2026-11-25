@@ -4,18 +4,39 @@
  * An administrator's view of a Teacher's, Coach's or Head Coach's banking information (capability bankingDetails,
  * users.manage): the status, what is missing or to correct, and the details with account numbers masked. "Show full
  * numbers" asks the backend for them (recorded in the audit log); they are hidden again when the page is left.
+ * The rows are the role's required fields: six for a Teacher, the three personal ones for a Coach or Head Coach. A
+ * coach's school details saved earlier (no longer asked) are kept and shown apart, as not required.
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, EyeOff, Landmark } from "lucide-react";
 import { bankingApi } from "@/lib/api/banking";
 import { ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
-import { FIELD_LABELS, STATUS_LABEL, type BankingField } from "@/lib/accounts/banking";
+import { BANKING_FIELDS, FIELD_LABELS, PERSONAL_FIELDS, STATUS_LABEL, type BankingField } from "@/lib/accounts/banking";
 import BankingStatusBadge from "./BankingStatusBadge";
 
-const ROWS: BankingField[] = ["personalAccountName", "personalBankName", "personalAccountNumber", "schoolAccountName", "schoolBankName", "schoolAccountNumber"];
+const SCHOOL_FIELDS: BankingField[] = ["schoolAccountName", "schoolBankName", "schoolAccountNumber"];
 
-export default function BankingCard({ userId, className = "" }: { userId: string; className?: string }) {
+/** The role's required fields (the backend's `requiredFields`; from the role when an older backend omits it). */
+function rowsFor(role: string | undefined, requiredFields: BankingField[] | undefined): readonly BankingField[] {
+  if (requiredFields) return requiredFields;
+  return role === "MENTOR" || role === "HEAD_COACH" ? PERSONAL_FIELDS : BANKING_FIELDS;
+}
+
+function Rows({ fields, details }: { fields: readonly BankingField[]; details: Partial<Record<BankingField, string | null>> }) {
+  return (
+    <dl className="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+      {fields.map((f) => (
+        <div key={f} className="min-w-0">
+          <dt className="text-xs font-semibold text-gray-500">{FIELD_LABELS[f]}</dt>
+          <dd className="break-words font-medium text-gray-900" data-testid={`banking-${f}`}>{details[f] || "—"}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export default function BankingCard({ userId, role, className = "" }: { userId: string; role?: string; className?: string }) {
   const [reveal, setReveal] = useState(false);
   const q = useQuery({ queryKey: ["admin", "banking", userId, reveal], queryFn: () => bankingApi.ofUser(userId, reveal), staleTime: reveal ? 0 : 30_000, gcTime: reveal ? 0 : undefined });
   const v = q.data;
@@ -42,14 +63,21 @@ export default function BankingCard({ userId, className = "" }: { userId: string
             </p>
           )}
           {v.details ? (
-            <dl className="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-              {ROWS.map((f) => (
-                <div key={f} className="min-w-0">
-                  <dt className="text-xs font-semibold text-gray-500">{FIELD_LABELS[f]}</dt>
-                  <dd className="break-words font-medium text-gray-900" data-testid={`banking-${f}`}>{v.details?.[f] || "—"}</dd>
-                </div>
-              ))}
-            </dl>
+            <>
+              <Rows fields={rowsFor(role, v.requiredFields)} details={v.details} />
+              {(() => {
+                // School details saved earlier for a role that is no longer asked them: kept, shown apart, not required.
+                const rows = rowsFor(role, v.requiredFields);
+                const extra = SCHOOL_FIELDS.filter((f) => !rows.includes(f));
+                if (!extra.length || !extra.some((f) => v.details?.[f])) return null;
+                return (
+                  <div className="mt-4 border-t border-gray-100 pt-3" data-testid="banking-legacy-school">
+                    <p className="text-xs font-semibold text-gray-600">School details saved earlier (not required for this role)</p>
+                    <Rows fields={extra} details={v.details} />
+                  </div>
+                );
+              })()}
+            </>
           ) : (
             <p className="mt-3 text-sm text-gray-600">{STATUS_LABEL.NOT_STARTED}: nothing given yet.</p>
           )}

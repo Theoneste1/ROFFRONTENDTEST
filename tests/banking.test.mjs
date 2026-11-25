@@ -1,10 +1,12 @@
-// Banking information (owner 2026-11-25): the frontend's copy of the rules (lib/accounts/banking.ts) answers like the
-// backend's (src/banking/banking-rules.ts), which decides. The step shows for Teachers, Coaches and Head Coaches only.
+// Banking information (owner 2026-11-25, final requirements): the frontend's copy of the rules (lib/accounts/banking.ts)
+// answers like the backend's (src/banking/banking-rules.ts), which decides. The step shows for Teachers, Coaches and Head
+// Coaches only. Teachers give six fields; Coaches and Head Coaches the three personal ones (no school details).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  BANKS, confirmReplaceMessage, conflictsOf, initialValues, needsBanking, rulesFor, submissionOf, TEACHER_NUMBER_MESSAGE, UMWALIMU_SACCO, validateBanking,
+  asksSchool, BANKS, confirmReplaceMessage, conflictsOf, initialValues, needsBanking, requiredFieldsOf, rulesFor, submissionOf, TEACHER_NUMBER_MESSAGE,
+  UMWALIMU_SACCO, validateBanking,
 } from "../lib/accounts/banking.ts";
 import { KNOWN_FEATURES } from "../lib/api/capabilities.ts";
 
@@ -12,7 +14,12 @@ const teacher = {
   personalAccountName: "Jean Uwase", personalBankName: UMWALIMU_SACCO, personalAccountNumber: "123456789012",
   schoolAccountName: "GS Kigali", schoolBankName: UMWALIMU_SACCO, schoolAccountNumber: "4001234567",
 };
-const coach = { ...teacher, personalBankName: "Bank of Kigali Plc", personalAccountNumber: "00012345678" };
+// A coach's form values: the three personal fields; the school fields are empty (never asked).
+const coach = {
+  personalAccountName: "Eric Coach", personalBankName: "Bank of Kigali Plc", personalAccountNumber: "00012345678",
+  schoolAccountName: "", schoolBankName: "", schoolAccountNumber: "",
+};
+const PERSONAL = ["personalAccountName", "personalBankName", "personalAccountNumber"];
 
 test("the step shows for Teachers, Coaches and Head Coaches whose details are incomplete; never for other roles", () => {
   for (const role of ["TEACHER", "MENTOR", "HEAD_COACH"]) {
@@ -28,9 +35,25 @@ test("the owner's twelve banks; teachers: Umwalimu SACCO only, 12 digits", () =>
   assert.equal(BANKS.length, 12);
   assert.ok(BANKS.includes("Zigama Credit and Savings Bank"), "the agreed name");
   assert.ok(!BANKS.some((b) => b.includes("Zigama CSS")));
-  assert.deepEqual(rulesFor("TEACHER"), { personalBank: "FIXED", schoolBank: "FIXED", fixedBank: UMWALIMU_SACCO, banks: [UMWALIMU_SACCO], personalNumberDigits: 12 });
+  assert.deepEqual(rulesFor("TEACHER"), {
+    personalBank: "FIXED", schoolBank: "FIXED", fixedBank: UMWALIMU_SACCO, banks: [UMWALIMU_SACCO], personalNumberDigits: 12,
+    schoolRequired: true, fields: ["personalAccountName", "personalBankName", "personalAccountNumber", "schoolAccountName", "schoolBankName", "schoolAccountNumber"],
+  });
   assert.equal(rulesFor("MENTOR").personalBank, "LIST");
+  assert.equal(rulesFor("MENTOR").schoolRequired, false);
+  assert.deepEqual(rulesFor("MENTOR").fields, PERSONAL);
   assert.deepEqual(rulesFor("HEAD_COACH"), rulesFor("MENTOR"));
+});
+
+test("teachers give six fields, coaches and head coaches three; an older backend (no schoolRequired) asked everyone", () => {
+  assert.equal(requiredFieldsOf(rulesFor("TEACHER")).length, 6);
+  for (const role of ["MENTOR", "HEAD_COACH"]) {
+    assert.deepEqual([...requiredFieldsOf(rulesFor(role))], PERSONAL);
+    assert.equal(asksSchool(rulesFor(role)), false);
+  }
+  const older = { ...rulesFor("MENTOR"), schoolRequired: undefined, fields: undefined };
+  assert.equal(asksSchool(older), true);
+  assert.equal(requiredFieldsOf(older).length, 6);
 });
 
 test("teacher: a valid 12-digit number passes; 11, 13, letters or symbols get the exact message", () => {
@@ -40,9 +63,11 @@ test("teacher: a valid 12-digit number passes; 11, 13, letters or symbols get th
   }
 });
 
-test("coach and head coach: a bank from the list; an arbitrary bank refused; the 12-digit rule does not apply", () => {
+test("coach and head coach: three personal fields complete it; empty school fields never refused; a bank from the list; no 12-digit rule", () => {
   for (const role of ["MENTOR", "HEAD_COACH"]) {
-    assert.deepEqual(validateBanking(rulesFor(role), coach), {});
+    assert.deepEqual(validateBanking(rulesFor(role), coach), {}, "school fields empty: fine");
+    // Each missing personal field is still refused.
+    for (const f of PERSONAL) assert.deepEqual(Object.keys(validateBanking(rulesFor(role), { ...coach, [f]: "" })), [f], f);
     assert.deepEqual(validateBanking(rulesFor(role), { ...coach, personalBankName: "My Own Bank" }), { personalBankName: "Choose your bank from the list." });
     assert.deepEqual(validateBanking(rulesFor(role), { ...coach, personalBankName: "" }), { personalBankName: "Bank name is required." });
     assert.deepEqual(validateBanking(rulesFor(role), { ...coach, personalAccountNumber: "123456" }), {});
@@ -51,12 +76,13 @@ test("coach and head coach: a bank from the list; an arbitrary bank refused; the
 
 test("every missing field is named; saved values are kept, the fixed banks filled in; the submission sends Umwalimu SACCO", () => {
   const empty = initialValues({ rules: rulesFor("MENTOR"), details: null });
-  assert.deepEqual(Object.keys(validateBanking(rulesFor("MENTOR"), empty)).sort(),
-    ["personalAccountName", "personalAccountNumber", "personalBankName", "schoolAccountName", "schoolAccountNumber"]);
+  assert.deepEqual(Object.keys(validateBanking(rulesFor("MENTOR"), empty)).sort(), ["personalAccountName", "personalAccountNumber", "personalBankName"]);
+  assert.deepEqual(Object.keys(validateBanking(rulesFor("TEACHER"), initialValues({ rules: rulesFor("TEACHER"), details: null }))).sort(),
+    ["personalAccountName", "personalAccountNumber", "schoolAccountName", "schoolAccountNumber"]);
   const kept = initialValues({ rules: rulesFor("MENTOR"), details: { personalAccountName: "Partial Person", personalBankName: "Ecobank Rwanda Plc" } });
   assert.equal(kept.personalAccountName, "Partial Person");
   assert.equal(kept.personalBankName, "Ecobank Rwanda Plc");
-  assert.equal(kept.schoolBankName, UMWALIMU_SACCO);
+  assert.equal(kept.schoolBankName, "", "a coach's school bank is not filled in (not asked)");
   // A teacher's saved other bank is shown as replaced on submit (never silently by the system).
   const t = initialValues({ rules: rulesFor("TEACHER"), details: { personalBankName: "Bank of Kigali Plc" } });
   assert.equal(t.personalBankName, UMWALIMU_SACCO);
@@ -65,6 +91,20 @@ test("every missing field is named; saved values are kept, the fixed banks fille
   assert.equal(body.schoolBankName, UMWALIMU_SACCO);
   assert.equal(body.personalAccountName, "Jean");
   assert.equal(body.personalAccountNumber, "123456789012");
+  assert.equal(body.schoolAccountName, "GS Kigali");
+});
+
+test("a coach's submission sends the three personal fields only: school details saved earlier are never touched", () => {
+  for (const role of ["MENTOR", "HEAD_COACH"]) {
+    const rules = rulesFor(role);
+    const details = { personalAccountName: "Legacy Coach", personalBankName: "Ecobank Rwanda Plc", personalAccountNumber: "009988", schoolAccountName: "GS Legacy", schoolBankName: "Bank of Kigali Plc", schoolAccountNumber: "4002222" };
+    const values = initialValues({ rules, details });
+    assert.equal(values.schoolBankName, "Bank of Kigali Plc", "the saved school bank is not replaced in the form");
+    assert.deepEqual(validateBanking(rules, values, conflictsOf({ rules, details })), {});
+    assert.deepEqual(submissionOf(rules, { ...values, personalAccountName: " Legacy Coach " }), { personalAccountName: "Legacy Coach", personalBankName: "Ecobank Rwanda Plc", personalAccountNumber: "009988" });
+    // Even a stray confirmation never sends a school replacement for a coach.
+    assert.equal(submissionOf(rules, values, new Set(["schoolBankName"])).confirmReplace, undefined);
+  }
 });
 
 test("no format is imposed beyond the agreed 12-digit rule: coaches' and school numbers and names are kept as given", () => {
@@ -93,6 +133,9 @@ test("a conflicting saved bank: shown, refused until confirmed, then sent with c
   assert.deepEqual(body.confirmReplace, ["personalBankName", "schoolBankName"]);
   assert.equal(body.personalAccountNumber, teacher.personalAccountNumber);
   assert.equal(submissionOf(rules, values).confirmReplace, undefined, "nothing confirmed: nothing claimed");
-  // Coach: only the school bank can conflict (the personal bank is chosen from the list).
-  assert.deepEqual(conflictsOf({ rules: rulesFor("MENTOR"), details: { ...coach, schoolBankName: "Bank of Kigali Plc" } }), [{ field: "schoolBankName", saved: "Bank of Kigali Plc" }]);
+  // Coach and Head Coach: no conflict at all — the personal bank is chosen from the list, and a saved school bank is
+  // not asked (kept as it is, no confirmation prompt).
+  for (const role of ["MENTOR", "HEAD_COACH"]) {
+    assert.deepEqual(conflictsOf({ rules: rulesFor(role), details: { ...coach, schoolBankName: "Bank of Kigali Plc" } }), [], role);
+  }
 });

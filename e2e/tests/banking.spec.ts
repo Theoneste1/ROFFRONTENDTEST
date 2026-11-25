@@ -4,7 +4,8 @@
  *    portal page — after a reload, a typed address, or in a new tab — and can sign out;
  *  - Teachers: Umwalimu SACCO shown fixed for both banks (no list); 11 / 13 digits or letters → the exact message;
  *    12 digits → saved, a confirmation, then the dashboard (and never the form again);
- *  - Coaches and Head Coaches: the personal bank from the list of 12; the school bank fixed;
+ *  - Coaches and Head Coaches: the three personal fields only (bank from the list of 12) — no school section, no
+ *    school check or confirmation; school details saved earlier are kept untouched;
  *  - details saved in part are shown and kept;
  *  - Students and Administrators never see it;
  *  - Administrators: the Users list shows the status and filters by it; a person's page shows masked numbers.
@@ -90,27 +91,37 @@ test.describe("banking information", () => {
     await expect(step(page)).toHaveCount(0);
   });
 
-  test("coach: the personal bank from the list of 12; the school bank fixed", async ({ page }) => {
+  test("coach: the three personal fields only, the bank from the list of 12; no school section", async ({ page }) => {
     await signInWith(page, "bank.coach", PASSWORD, { answerGender: false });
     await expect(step(page)).toBeVisible();
+    await expect(page.getByText("please provide your personal banking information.", { exact: false })).toBeVisible();
     const bank = page.locator("#banking-personalBankName");
     await expect(bank.locator("option")).toHaveCount(13);   // "Choose your bank" + the 12 banks
-    await expect(page.getByTestId("banking-fixed-schoolBankName")).toHaveText(SACCO);
-    await fill(page, { personalAccountName: "Bank Coach", personalAccountNumber: "00012345678", schoolAccountName: "GS Huye", schoolAccountNumber: "4009876543" });
+    // No school details asked: no section, no field, no fixed school bank, no confirmation.
+    await expect(page.getByTestId("banking-school")).toHaveCount(0);
+    await expect(page.locator("#banking-schoolAccountName, #banking-schoolAccountNumber")).toHaveCount(0);
+    await expect(page.getByTestId("banking-fixed-schoolBankName")).toHaveCount(0);
+    await fill(page, { personalAccountName: "Bank Coach", personalAccountNumber: "00012345678" });
     await page.getByTestId("banking-submit").click();
     await expect(page.locator("#banking-personalBankName-error")).toHaveText("Bank name is required.");
     await bank.selectOption("Bank of Kigali Plc");
     await page.getByTestId("banking-submit").click();
     await expect(page.getByTestId("banking-saved")).toBeVisible();
+    await page.getByTestId("banking-continue").click();
+    await expect(step(page)).toHaveCount(0);
+    const row = await withDb(async (c) => (await c.query(
+      `SELECT b.* FROM "UserBankDetails" b JOIN "User" u ON u.id = b."userId" WHERE u.username = 'bank.coach'`)).rows[0]);
+    expect(row).toMatchObject({ personalAccountName: "Bank Coach", personalBankName: "Bank of Kigali Plc", personalAccountNumber: "00012345678", schoolAccountName: null, schoolBankName: null, schoolAccountNumber: null });
   });
 
-  test("head coach: details saved in part are shown and kept; only the missing ones asked", async ({ page }) => {
+  test("head coach: details saved in part are shown and kept; only the missing personal field asked", async ({ page }) => {
     await signInWith(page, "bank.hc", PASSWORD, { answerGender: false });
     await expect(step(page)).toBeVisible();
-    await expect(page.getByText(/Some of your details are already saved/)).toBeVisible();
+    await expect(page.getByText(/Some of your details are already saved\. Still needed: Bank account number\./)).toBeVisible();
     await expect(page.locator("#banking-personalAccountName")).toHaveValue("Partial Person");
     await expect(page.locator("#banking-personalBankName")).toHaveValue("Ecobank Rwanda Plc");
-    await fill(page, { personalAccountNumber: "00012345678", schoolAccountName: "GS Musanze", schoolAccountNumber: "4005556667" });
+    await expect(page.getByTestId("banking-school")).toHaveCount(0);
+    await fill(page, { personalAccountNumber: "00012345678" });
     await page.getByTestId("banking-submit").click();
     await expect(page.getByTestId("banking-saved")).toBeVisible();
   });
@@ -139,7 +150,7 @@ test.describe("banking information", () => {
   });
 });
 
-test.describe("banking information: details saved earlier that conflict with the rules", () => {
+test.describe("banking information: details saved earlier (conflicting banks; coaches' school details)", () => {
   const savedRow = async (username: string) => withDb(async (c) => (await c.query(
     `SELECT b.* FROM "UserBankDetails" b JOIN "User" u ON u.id = b."userId" WHERE u.username = $1`, [username])).rows[0]);
 
@@ -148,12 +159,16 @@ test.describe("banking information: details saved earlier that conflict with the
       personalAccountName: "Legacy Teacher", personalBankName: "Bank of Kigali Plc", personalAccountNumber: "123456789012",
       schoolAccountName: "GS Legacy", schoolBankName: "Equity Bank Rwanda Plc", schoolAccountNumber: "4001111",
     });
-    for (const [u, role] of [["bank.legacy.c", "MENTOR"], ["bank.legacy.hc", "HEAD_COACH"]] as const) {
-      await makeAccount(u, role, {
-        personalAccountName: "Legacy Coach", personalBankName: "Ecobank Rwanda Plc", personalAccountNumber: "009988",
-        schoolAccountName: "GS Legacy C", schoolBankName: "Bank of Kigali Plc", schoolAccountNumber: "4002222",
-      });
-    }
+    // A coach whose personal details are complete, with school details (another bank) saved by the earlier form.
+    await makeAccount("bank.legacy.c", "MENTOR", {
+      personalAccountName: "Legacy Coach", personalBankName: "Ecobank Rwanda Plc", personalAccountNumber: "009988",
+      schoolAccountName: "GS Legacy C", schoolBankName: "Bank of Kigali Plc", schoolAccountNumber: "4002222",
+    });
+    // A head coach with the same kind of school details, and the personal account number still missing.
+    await makeAccount("bank.legacy.hc", "HEAD_COACH", {
+      personalAccountName: "Legacy HC", personalBankName: "Ecobank Rwanda Plc",
+      schoolAccountName: "GS Legacy HC", schoolBankName: "Bank of Kigali Plc", schoolAccountNumber: "4003333",
+    });
   });
 
   test("teacher: both saved banks shown and marked; not replaced until each is confirmed; other details kept", async ({ page }) => {
@@ -183,22 +198,41 @@ test.describe("banking information: details saved earlier that conflict with the
     });
   });
 
-  for (const u of ["bank.legacy.c", "bank.legacy.hc"]) {
-    test(`${u === "bank.legacy.c" ? "coach" : "head coach"}: the saved school bank shown and marked; replaced only when confirmed; the personal bank kept`, async ({ page }) => {
-      await signInWith(page, u, PASSWORD, { answerGender: false });
-      await expect(step(page)).toBeVisible();
-      await expect(page.getByTestId("banking-saved-schoolBankName")).toHaveText("Bank of Kigali Plc");
-      await expect(page.getByTestId("banking-conflict-personalBankName")).toHaveCount(0);
-      await expect(page.locator("#banking-personalBankName")).toHaveValue("Ecobank Rwanda Plc");
-      await page.getByTestId("banking-submit").click();
-      await expect(page.locator("#banking-schoolBankName-error")).toContainText("Bank of Kigali Plc");
-      expect((await savedRow(u)).schoolBankName).toBe("Bank of Kigali Plc");
-      await page.getByTestId("banking-confirm-schoolBankName").check();
-      await page.getByTestId("banking-submit").click();
-      await expect(page.getByTestId("banking-saved")).toBeVisible();
-      expect(await savedRow(u)).toMatchObject({ personalBankName: "Ecobank Rwanda Plc", personalAccountNumber: "009988", schoolBankName: SACCO, schoolAccountNumber: "4002222" });
+  test("coach with complete personal details and a saved school bank: never held at the step; school details kept", async ({ page }) => {
+    await signInWith(page, "bank.legacy.c", PASSWORD, { answerGender: false });
+    await expect(page.getByTestId("sidebar-nav").or(page.getByRole("button", { name: "Toggle Sidebar" })).first()).toBeVisible();
+    await expect(step(page)).toHaveCount(0);
+    expect(await savedRow("bank.legacy.c")).toMatchObject({ schoolAccountName: "GS Legacy C", schoolBankName: "Bank of Kigali Plc", schoolAccountNumber: "4002222" });
+  });
+
+  test("head coach with a saved school bank and a missing personal number: personal section only, no confirmation; school details kept", async ({ page }) => {
+    await signInWith(page, "bank.legacy.hc", PASSWORD, { answerGender: false });
+    await expect(step(page)).toBeVisible();
+    await expect(page.getByTestId("banking-school")).toHaveCount(0);
+    await expect(page.locator("[data-testid^='banking-conflict-'], [data-testid^='banking-confirm-']")).toHaveCount(0);
+    await expect(page.locator("#banking-personalBankName")).toHaveValue("Ecobank Rwanda Plc");
+    await fill(page, { personalAccountNumber: "77001" });
+    await page.getByTestId("banking-submit").click();
+    await expect(page.getByTestId("banking-saved")).toBeVisible();
+    expect(await savedRow("bank.legacy.hc")).toMatchObject({
+      personalAccountName: "Legacy HC", personalBankName: "Ecobank Rwanda Plc", personalAccountNumber: "77001",
+      schoolAccountName: "GS Legacy HC", schoolBankName: "Bank of Kigali Plc", schoolAccountNumber: "4003333",
     });
-  }
+  });
+
+  test("administrators: a coach is complete with three personal fields; the school details saved earlier shown apart, masked", async ({ page }) => {
+    await signIn(page, "admin");
+    const id = await withDb(async (c) => (await c.query<{ id: string }>(`SELECT id FROM "User" WHERE username = 'bank.legacy.c'`)).rows[0].id);
+    await page.goto(`/admin/users/${id}`);
+    const card = page.getByTestId("banking-card");
+    await expect(card.getByTestId("banking-status")).toHaveText("Complete");
+    await expect(card.getByTestId("banking-missing")).toHaveCount(0);
+    await expect(card.getByTestId("banking-personalAccountNumber")).toHaveText("•••• 9988");
+    const legacy = card.getByTestId("banking-legacy-school");
+    await expect(legacy).toContainText("not required for this role");
+    await expect(legacy.getByTestId("banking-schoolAccountName")).toHaveText("GS Legacy C");
+    await expect(legacy.getByTestId("banking-schoolAccountNumber")).toHaveText("•••• 2222");
+  });
 });
 
 test.describe("banking information on a phone", () => {
