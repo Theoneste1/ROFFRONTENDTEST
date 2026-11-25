@@ -28,9 +28,11 @@ async function makeAccount(username: string, role: "TEACHER" | "MENTOR" | "HEAD_
       [username, `${username}@e2e.local`, role, hashSync(PASSWORD, 10)],
     )).rows[0].id;
     if (partial) {
+      // Details saved earlier (some or all six fields), as they are.
+      const cols = Object.keys(partial);
       await c.query(
-        `INSERT INTO "UserBankDetails" ("userId", "personalAccountName", "personalBankName", "updatedAt") VALUES ($1, $2, $3, now())`,
-        [id, partial.personalAccountName, partial.personalBankName],
+        `INSERT INTO "UserBankDetails" ("userId", ${cols.map((k) => `"${k}"`).join(", ")}, "updatedAt") VALUES ($1, ${cols.map((_, i) => `$${i + 2}`).join(", ")}, now())`,
+        [id, ...cols.map((k) => partial[k])],
       );
     }
   });
@@ -135,6 +137,68 @@ test.describe("banking information", () => {
     await page.getByTestId("banking-reveal").click();
     await expect(page.getByTestId("banking-personalAccountNumber")).toHaveText("123456789012");
   });
+});
+
+test.describe("banking information: details saved earlier that conflict with the rules", () => {
+  const savedRow = async (username: string) => withDb(async (c) => (await c.query(
+    `SELECT b.* FROM "UserBankDetails" b JOIN "User" u ON u.id = b."userId" WHERE u.username = $1`, [username])).rows[0]);
+
+  test.beforeAll(async () => {
+    await makeAccount("bank.legacy.t", "TEACHER", {
+      personalAccountName: "Legacy Teacher", personalBankName: "Bank of Kigali Plc", personalAccountNumber: "123456789012",
+      schoolAccountName: "GS Legacy", schoolBankName: "Equity Bank Rwanda Plc", schoolAccountNumber: "4001111",
+    });
+    for (const [u, role] of [["bank.legacy.c", "MENTOR"], ["bank.legacy.hc", "HEAD_COACH"]] as const) {
+      await makeAccount(u, role, {
+        personalAccountName: "Legacy Coach", personalBankName: "Ecobank Rwanda Plc", personalAccountNumber: "009988",
+        schoolAccountName: "GS Legacy C", schoolBankName: "Bank of Kigali Plc", schoolAccountNumber: "4002222",
+      });
+    }
+  });
+
+  test("teacher: both saved banks shown and marked; not replaced until each is confirmed; other details kept", async ({ page }) => {
+    await signInWith(page, "bank.legacy.t", PASSWORD, { answerGender: false });
+    await expect(step(page)).toBeVisible();
+    await expect(page.getByTestId("banking-saved-personalBankName")).toHaveText("Bank of Kigali Plc");
+    await expect(page.getByTestId("banking-saved-schoolBankName")).toHaveText("Equity Bank Rwanda Plc");
+    await expect(page.locator("#banking-personalAccountName")).toHaveValue("Legacy Teacher");
+    await expect(page.locator("#banking-schoolAccountNumber")).toHaveValue("4001111");
+
+    // Not confirmed: refused, each field named; nothing replaced.
+    await page.getByTestId("banking-submit").click();
+    await expect(page.locator("#banking-personalBankName-error")).toContainText("Bank of Kigali Plc");
+    await expect(page.locator("#banking-schoolBankName-error")).toContainText("Equity Bank Rwanda Plc");
+    // One confirmed only: still refused for the other.
+    await page.getByTestId("banking-confirm-personalBankName").check();
+    await page.getByTestId("banking-submit").click();
+    await expect(page.locator("#banking-schoolBankName-error")).toContainText("Equity Bank Rwanda Plc");
+    expect((await savedRow("bank.legacy.t")).personalBankName).toBe("Bank of Kigali Plc");
+
+    await page.getByTestId("banking-confirm-schoolBankName").check();
+    await page.getByTestId("banking-submit").click();
+    await expect(page.getByTestId("banking-saved")).toBeVisible();
+    expect(await savedRow("bank.legacy.t")).toMatchObject({
+      personalAccountName: "Legacy Teacher", personalBankName: SACCO, personalAccountNumber: "123456789012",
+      schoolAccountName: "GS Legacy", schoolBankName: SACCO, schoolAccountNumber: "4001111",
+    });
+  });
+
+  for (const u of ["bank.legacy.c", "bank.legacy.hc"]) {
+    test(`${u === "bank.legacy.c" ? "coach" : "head coach"}: the saved school bank shown and marked; replaced only when confirmed; the personal bank kept`, async ({ page }) => {
+      await signInWith(page, u, PASSWORD, { answerGender: false });
+      await expect(step(page)).toBeVisible();
+      await expect(page.getByTestId("banking-saved-schoolBankName")).toHaveText("Bank of Kigali Plc");
+      await expect(page.getByTestId("banking-conflict-personalBankName")).toHaveCount(0);
+      await expect(page.locator("#banking-personalBankName")).toHaveValue("Ecobank Rwanda Plc");
+      await page.getByTestId("banking-submit").click();
+      await expect(page.locator("#banking-schoolBankName-error")).toContainText("Bank of Kigali Plc");
+      expect((await savedRow(u)).schoolBankName).toBe("Bank of Kigali Plc");
+      await page.getByTestId("banking-confirm-schoolBankName").check();
+      await page.getByTestId("banking-submit").click();
+      await expect(page.getByTestId("banking-saved")).toBeVisible();
+      expect(await savedRow(u)).toMatchObject({ personalBankName: "Ecobank Rwanda Plc", personalAccountNumber: "009988", schoolBankName: SACCO, schoolAccountNumber: "4002222" });
+    });
+  }
 });
 
 test.describe("banking information on a phone", () => {

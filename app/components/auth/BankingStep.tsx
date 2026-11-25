@@ -19,8 +19,8 @@ import { useSession } from "@/lib/auth/session";
 import { Button, TextField } from "@/app/components/ui/form";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import {
-  FIELD_LABELS, initialValues, rulesFor, submissionOf, UMWALIMU_SACCO, validateBanking,
-  type BankingField, type BankingValues, type BankingView,
+  conflictsOf, FIELD_LABELS, initialValues, rulesFor, submissionOf, UMWALIMU_SACCO, validateBanking,
+  type BankingField, type BankingValues, type BankingView, type FixableBankField,
 } from "@/lib/accounts/banking";
 
 const selectCls = (bad: boolean) =>
@@ -73,15 +73,19 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // A bank saved earlier that this role may not use (e.g. after a role change): shown, never replaced without the user.
-  const conflicts = useMemo(() => {
-    const out: string[] = [];
-    const personal = view.details?.personalBankName;
-    if (rules.personalBank === "FIXED" && personal && personal !== UMWALIMU_SACCO) out.push(`Your saved bank “${personal}” is replaced by ${UMWALIMU_SACCO} when you submit.`);
-    const school = view.details?.schoolBankName;
-    if (school && school !== UMWALIMU_SACCO) out.push(`The saved school bank “${school}” is replaced by ${UMWALIMU_SACCO} when you submit.`);
-    return out;
-  }, [view.details, rules.personalBank]);
+  // A bank saved earlier that this role may not use (e.g. after a role change): shown in its field, marked for
+  // correction, and replaced by Umwalimu SACCO only when the user ticks the confirmation for that field.
+  const conflicts = useMemo(() => conflictsOf({ ...view, rules }), [view, rules]);
+  const [confirmed, setConfirmed] = useState<Set<FixableBankField>>(() => new Set());
+  const toggleConfirm = (f: FixableBankField, on: boolean) => {
+    setConfirmed((s) => {
+      const next = new Set(s);
+      if (on) next.add(f);
+      else next.delete(f);
+      return next;
+    });
+    setErrors((e) => ({ ...e, [f]: undefined }));
+  };
 
   const set = (f: BankingField) => (v: string) => {
     setValues((s) => ({ ...s, [f]: v }));
@@ -90,17 +94,18 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const problems = validateBanking(rules, values);
+    const problems = validateBanking(rules, values, conflicts, confirmed);
     setErrors(problems);
     setFormError(null);
     if (Object.keys(problems).length) {
       setFormError("Check the highlighted fields and try again.");
-      document.getElementById(`banking-${Object.keys(problems)[0]}`)?.focus();
+      const first = Object.keys(problems)[0];
+      (document.getElementById(`banking-${first}`) ?? document.getElementById(`banking-confirm-${first}`))?.focus();
       return;
     }
     setSaving(true);
     try {
-      const result = await bankingApi.save(submissionOf(rules, values));
+      const result = await bankingApi.save(submissionOf(rules, values, confirmed));
       queryClient.setQueryData(["me", "banking"], result);
       setSaved(true);
     } catch (err) {
@@ -142,21 +147,49 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
       hint={extra.hint}
       inputMode={extra.inputMode}
       autoComplete={extra.autoComplete ?? "off"}
-      maxLength={f.endsWith("Number") ? 40 : 120}
+      maxLength={f.endsWith("Number") ? 40 : 200}
     />
   );
 
-  const fixedBank = (f: BankingField, note: string) => (
-    <div>
-      <p className="mb-2 block text-sm font-semibold text-slate-700" id={`banking-${f}-label`}>
-        {FIELD_LABELS[f]} <span className="text-red-500">*</span>
-      </p>
-      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900" aria-labelledby={`banking-${f}-label`} data-testid={`banking-fixed-${f}`}>
-        <Lock className="h-4 w-4 flex-shrink-0 text-slate-500" aria-hidden="true" /> {UMWALIMU_SACCO}
+  const fixedBank = (f: FixableBankField, note: string) => {
+    const conflict = conflicts.find((c) => c.field === f);
+    return (
+      <div data-testid={`banking-bank-${f}`}>
+        <p className="mb-2 block text-sm font-semibold text-slate-700" id={`banking-${f}-label`}>
+          {FIELD_LABELS[f]} <span className="text-red-500">*</span>
+        </p>
+        {conflict && (
+          // The saved value, kept as it is until the user confirms its replacement.
+          <div className="mb-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm" data-testid={`banking-conflict-${f}`}>
+            <p className="font-semibold text-red-900">
+              Needs correction: your saved bank is “<span data-testid={`banking-saved-${f}`}>{conflict.saved}</span>”.
+            </p>
+            <p className="mt-0.5 text-xs text-red-900/80">Only {UMWALIMU_SACCO} can be used here. It stays saved until you confirm the change below.</p>
+            <label className="mt-2 flex min-h-11 cursor-pointer items-center gap-2 font-medium text-slate-900">
+              <input
+                type="checkbox"
+                id={`banking-confirm-${f}`}
+                className="h-4 w-4 accent-[#00428C]"
+                checked={confirmed.has(f)}
+                onChange={(e) => toggleConfirm(f, e.target.checked)}
+                aria-describedby={errors[f] ? `banking-${f}-error` : undefined}
+                data-testid={`banking-confirm-${f}`}
+              />
+              Replace “{conflict.saved}” with {UMWALIMU_SACCO}
+            </label>
+          </div>
+        )}
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900" aria-labelledby={`banking-${f}-label`} data-testid={`banking-fixed-${f}`}>
+          <Lock className="h-4 w-4 flex-shrink-0 text-slate-500" aria-hidden="true" /> {UMWALIMU_SACCO}
+        </div>
+        {errors[f] ? (
+          <p id={`banking-${f}-error`} className="mt-1.5 text-xs text-red-600">{errors[f]}</p>
+        ) : (
+          <p className="mt-1.5 text-xs text-slate-600">{note}</p>
+        )}
       </div>
-      <p className="mt-1.5 text-xs text-slate-600">{note}</p>
-    </div>
-  );
+    );
+  };
 
   const missing = view.missing.map((f) => FIELD_LABELS[f]);
 
@@ -176,9 +209,6 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
         {view.status === "NEEDS_CORRECTION" && (
           <div className="mt-4"><Alert tone="error">Some saved details need correcting: {view.invalid.map((f) => FIELD_LABELS[f]).join(", ")}.</Alert></div>
         )}
-        {conflicts.map((c) => (
-          <div key={c} className="mt-3"><Alert tone="info">{c}</Alert></div>
-        ))}
       </header>
 
       <Section icon={<Landmark className="h-5 w-5" aria-hidden="true" />} title="Your personal bank account" testId="banking-personal">
@@ -209,15 +239,15 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
           </div>
         )}
         {field("personalAccountNumber", {
-          inputMode: "numeric",
-          hint: rules.personalNumberDigits ? "Exactly 12 digits, without spaces." : "Digits only, without spaces or dashes.",
+          inputMode: rules.personalNumberDigits ? "numeric" : undefined,
+          hint: rules.personalNumberDigits ? "Exactly 12 digits, without spaces." : "As your bank shows it.",
         })}
       </Section>
 
       <Section icon={<School className="h-5 w-5" aria-hidden="true" />} title="Your school's bank account" testId="banking-school">
         {field("schoolAccountName", { hint: "The school's account name exactly as the bank shows it." })}
         {fixedBank("schoolBankName", "School accounts are held at Umwalimu SACCO.")}
-        {field("schoolAccountNumber", { inputMode: "numeric", hint: "Digits only, without spaces or dashes." })}
+        {field("schoolAccountNumber", { hint: "As the bank shows it." })}
       </Section>
 
       <div className="space-y-3 rounded-2xl bg-white p-6 shadow-sm sm:p-8">

@@ -2,6 +2,9 @@
  * Banking information (owner 2026-11-25): Teachers, Coaches and Head Coaches give their personal and their school's
  * bank details before using the platform. These rules mirror the backend's (src/banking/banking-rules.ts), which
  * decides: the form checks the same things first so mistakes show at once, and shows the backend's answer per field.
+ * Only the agreed rules: every field required; teachers' personal number exactly 12 digits; coaches' personal bank
+ * from the list; Umwalimu SACCO fixed where agreed. A conflicting saved bank is replaced only with the user's
+ * explicit confirmation.
  * Tested in tests/banking.test.mjs.
  */
 
@@ -20,7 +23,7 @@ export const BANKS = [
   "I&M Bank Rwanda Plc",
   "NCBA Bank Rwanda Plc",
   "Rwanda Development Bank (BRD)",
-  "Zigama Credit and Savings Bank (Zigama CSS)",
+  "Zigama Credit and Savings Bank",
   UMWALIMU_SACCO,
 ] as const;
 
@@ -43,7 +46,18 @@ export const FIELD_LABELS: Record<BankingField, string> = {
 };
 
 export const TEACHER_NUMBER_MESSAGE = "Your Umwalimu SACCO account number must contain exactly 12 digits.";
-export const ACCOUNT_NUMBER_MESSAGE = "Enter the account number with digits only (6 to 20 digits).";
+
+/** The bank fields that may be fixed to Umwalimu SACCO (and so may hold a conflicting saved bank). */
+export type FixableBankField = "personalBankName" | "schoolBankName";
+
+/** A saved bank this role may not use: shown, replaced only when the user confirms it. */
+export interface BankingConflict {
+  field: FixableBankField;
+  saved: string;
+}
+
+export const confirmReplaceMessage = (saved: string) =>
+  `Your saved bank “${saved}” cannot be used here. Confirm that ${UMWALIMU_SACCO} replaces it.`;
 
 export type BankingStatus = "COMPLETE" | "PARTIAL" | "NOT_STARTED" | "NEEDS_CORRECTION";
 
@@ -70,10 +84,12 @@ export interface BankingView {
   invalid: BankingField[];
   rules: BankRules | null;
   details: Partial<Record<BankingField, string | null>> | null;
+  /** Saved banks this role may not use (newer backends): replaced only with the user's confirmation. */
+  conflicts?: BankingConflict[];
 }
 
 /** GET /admin/users/:id/banking: numbers masked unless revealed. */
-export interface AdminBankingView extends Omit<BankingView, "rules" | "details"> {
+export interface AdminBankingView extends Omit<BankingView, "rules" | "details" | "conflicts"> {
   missingLabels: string[];
   invalidLabels: string[];
   details: (Partial<Record<BankingField, string | null>> & { revealed: boolean }) | null;
@@ -103,6 +119,18 @@ export function rulesFor(role: string): BankRules {
   };
 }
 
+/** The saved banks this role may not use (the backend's `conflicts`, or computed from the saved details). */
+export function conflictsOf(view: Pick<BankingView, "details" | "rules" | "conflicts">): BankingConflict[] {
+  if (view.conflicts) return view.conflicts;
+  const out: BankingConflict[] = [];
+  const d = view.details ?? {};
+  const personal = d.personalBankName;
+  if (view.rules?.personalBank === "FIXED" && personal && personal !== UMWALIMU_SACCO) out.push({ field: "personalBankName", saved: personal });
+  const school = d.schoolBankName;
+  if (school && school !== UMWALIMU_SACCO) out.push({ field: "schoolBankName", saved: school });
+  return out;
+}
+
 /** The form's starting values: what is saved (kept as it is), the fixed banks filled in. */
 export function initialValues(view: Pick<BankingView, "details" | "rules">): BankingValues {
   const d = view.details ?? {};
@@ -112,36 +140,41 @@ export function initialValues(view: Pick<BankingView, "details" | "rules">): Ban
   return v;
 }
 
-/** The problem of each field, as the backend would answer (empty: ready to submit). Nothing is changed or cut. */
-export function validateBanking(rules: BankRules, v: BankingValues): Partial<Record<BankingField, string>> {
+/**
+ * The problem of each field, as the backend would answer (empty: ready to submit). The agreed rules only: every field
+ * required; a teacher's personal number exactly 12 digits; a coach's personal bank from the list; a conflicting saved
+ * bank replaced only when confirmed. Nothing is changed or cut.
+ */
+export function validateBanking(
+  rules: BankRules,
+  v: BankingValues,
+  conflicts: readonly BankingConflict[] = [],
+  confirmed: ReadonlySet<string> = new Set(),
+): Partial<Record<BankingField, string>> {
   const errors: Partial<Record<BankingField, string>> = {};
-  const name = (f: BankingField) => {
-    const s = v[f].trim();
-    if (!s) errors[f] = `${FIELD_LABELS[f]} is required.`;
-    else if (s.length < 2 || s.length > 120) errors[f] = "Enter the account name as the bank shows it (2 to 120 characters).";
-  };
-  name("personalAccountName");
-  name("schoolAccountName");
+  for (const f of ["personalAccountName", "schoolAccountName", "schoolAccountNumber"] as const) {
+    if (!v[f].trim()) errors[f] = `${FIELD_LABELS[f]} is required.`;
+  }
   if (rules.personalBank === "LIST") {
     if (!v.personalBankName) errors.personalBankName = "Bank name is required.";
     else if (!rules.banks.includes(v.personalBankName)) errors.personalBankName = "Choose your bank from the list.";
   }
   if (rules.personalNumberDigits) {
     if (!/^\d{12}$/.test(v.personalAccountNumber)) errors.personalAccountNumber = TEACHER_NUMBER_MESSAGE;
-  } else if (!v.personalAccountNumber) errors.personalAccountNumber = `${FIELD_LABELS.personalAccountNumber} is required.`;
-  else if (!/^\d{6,20}$/.test(v.personalAccountNumber)) errors.personalAccountNumber = ACCOUNT_NUMBER_MESSAGE;
-  if (!v.schoolAccountNumber) errors.schoolAccountNumber = `${FIELD_LABELS.schoolAccountNumber} is required.`;
-  else if (!/^\d{6,20}$/.test(v.schoolAccountNumber)) errors.schoolAccountNumber = ACCOUNT_NUMBER_MESSAGE;
+  } else if (!v.personalAccountNumber.trim()) errors.personalAccountNumber = `${FIELD_LABELS.personalAccountNumber} is required.`;
+  for (const c of conflicts) if (!confirmed.has(c.field)) errors[c.field] = confirmReplaceMessage(c.saved);
   return errors;
 }
 
-/** The body of PUT /me/banking: the fixed banks are sent as Umwalimu SACCO (the backend enforces them anyway). */
-export function submissionOf(rules: BankRules, v: BankingValues): BankingValues {
+/** The body of PUT /me/banking: the fixed banks as Umwalimu SACCO, and the replacements the user confirmed. */
+export function submissionOf(rules: BankRules, v: BankingValues, confirmed: ReadonlySet<string> = new Set()): BankingValues & { confirmReplace?: FixableBankField[] } {
+  const confirmReplace = (["personalBankName", "schoolBankName"] as const).filter((f) => confirmed.has(f));
   return {
     ...v,
     personalAccountName: v.personalAccountName.trim(),
     schoolAccountName: v.schoolAccountName.trim(),
     personalBankName: rules.personalBank === "FIXED" ? UMWALIMU_SACCO : v.personalBankName,
     schoolBankName: UMWALIMU_SACCO,
+    ...(confirmReplace.length ? { confirmReplace } : {}),
   };
 }
