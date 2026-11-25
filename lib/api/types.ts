@@ -477,7 +477,10 @@ export interface LeaderboardEntry {
   avatarUrl: string | null;
   points: number;
   problemsSolved: number;
-  school: { id: string; name: string } | null;
+  /** The school the student studies at; `verified` false while the school has not confirmed it (newer backends). */
+  school: { id: string; name: string; verified?: boolean } | null;
+  /** The student's level (division), on newer backends. */
+  level?: { code: string; name: string } | null;
   isMe: boolean;
 }
 

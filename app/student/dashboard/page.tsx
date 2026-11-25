@@ -34,10 +34,10 @@ export default function StudentDashboard() {
       {/* LEFT COLUMN */}
       <div className="lg:col-span-2 space-y-8 min-w-0">
         {/* Welcome Banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-brand-900 p-8 text-white shadow-sm flex flex-col justify-between min-h-[220px]">
-          <div className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none opacity-20">
-            <div className="w-48 h-48 border-2 border-white/40 rounded-3xl rotate-12 flex items-center justify-center bg-white/10 backdrop-blur-sm">
-              <Calculator className="w-20 h-20 text-white" />
+        <div className="relative overflow-hidden rounded-3xl bg-brand-900 p-6 sm:px-8 text-white shadow-sm flex flex-col">
+          <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none opacity-20 hidden sm:block">
+            <div className="w-32 h-32 border-2 border-white/40 rounded-3xl rotate-12 flex items-center justify-center bg-white/10 backdrop-blur-sm">
+              <Calculator className="w-14 h-14 text-white" />
             </div>
           </div>
 
@@ -48,7 +48,7 @@ export default function StudentDashboard() {
             </p>
           </div>
 
-          <div className="relative z-10 mt-6 flex gap-10">
+          <div className="relative z-10 mt-5 flex gap-10">
             <div>
               <p className="text-2xl font-black">{formatNumber(user?.problemsSolved)}</p>
               <p className="text-[10px] font-bold tracking-widest text-blue-200/70 uppercase">Problems Solved</p>
