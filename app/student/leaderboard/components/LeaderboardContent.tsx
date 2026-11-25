@@ -28,7 +28,7 @@ function StudentPicture({ entry, className = '' }: { entry: LeaderboardEntry; cl
 
 /** A school that has not confirmed the student yet. */
 function NotVerified() {
-  return <span className="ml-1.5 whitespace-nowrap rounded bg-slate-100 px-1.5 py-px text-[10px] font-semibold text-slate-500" title="The school has not confirmed this student yet">not yet verified</span>;
+  return <span className="ml-1.5 whitespace-nowrap rounded bg-slate-100 px-1.5 py-px text-[10px] font-semibold text-slate-700" title="The school has not confirmed this student yet">not yet verified</span>;
 }
 
 
@@ -132,7 +132,7 @@ function StudentsBoard() {
                     {entry.isMe && ' (You)'}
                   </h3>
                   {entry.school && <p className="text-[11px] text-slate-600">{entry.school.name}{entry.school.verified === false && <NotVerified />}</p>}
-                  {entry.level && <p className="text-[11px] font-semibold text-slate-500">{entry.level.name}</p>}
+                  {entry.level && <p className="text-[11px] font-semibold text-slate-600">{entry.level.name}</p>}
                   <div className="mt-1">
                     <span className="text-xl font-black text-indigo-600 block">{formatNumber(entry.points)}</span>
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Points</span>
@@ -211,7 +211,7 @@ function StudentsBoard() {
                   </div>
                 </div>
                 <div className="hidden sm:block sm:col-span-4 min-w-0 truncate font-normal text-slate-700" data-testid="leaderboard-row-school">
-                  {row.school ? <>{row.school.name}{row.school.verified === false && <NotVerified />}</> : <span className="text-slate-500">—</span>}
+                  {row.school ? <>{row.school.name}{row.school.verified === false && <NotVerified />}</> : <span className="text-slate-600">—</span>}
                 </div>
                 <div className="hidden sm:block sm:col-span-2 font-normal text-slate-700" data-testid="leaderboard-row-level">{row.level?.name ?? '—'}</div>
                 <div className="col-span-3 sm:col-span-1 text-right font-bold text-indigo-600">{formatNumber(row.points)}</div>
