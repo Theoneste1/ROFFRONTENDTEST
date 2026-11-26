@@ -68,10 +68,10 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 
 // ── The queue ──────────────────────────────────────────────────────────────────
 
-export function MarkingQueue() {
+export function MarkingQueue({ before }: { before?: ReactNode } = {}) {
   return (
     <MarkingGate title="Marking">
-      <Queue />
+      <Queue before={before} />
     </MarkingGate>
   );
 }
@@ -95,7 +95,7 @@ function emptyQueue(view: QueueView, oneTest: boolean): { title: string; descrip
     : { title: "Nothing to mark", description: "No paper is assigned to you yet. When the Head Coach assigns papers to you, they appear here." };
 }
 
-function Queue() {
+function Queue({ before }: { before?: ReactNode }) {
   const { user } = useSession();
   const userId = user?.id ?? "";
   // The coach's saved "Show" choice (owner 2026-11-26): read once per account, kept until they choose another.
@@ -111,6 +111,8 @@ function Queue() {
   const empty = emptyQueue(view ?? "ALL", !!testId);
   return (
     <PageFrame title="Marking" description="The papers assigned to you. Marking is blind: you see a paper code, never the student.">
+      {/* Question-level marking (capability questionMarking): the questions to mark one at a time, when there are any. */}
+      {before}
       <QueueStats dash={dash.data} counts={dash.isError ? list.data?.counts : undefined} />
       {list.data && list.data.tests.length > 0 && (
         <TestPills tests={list.data.tests} value={testId} onChange={(v) => { setTestId(v); setPage(1); }} />
