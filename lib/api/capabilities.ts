@@ -299,6 +299,13 @@ export const KNOWN_FEATURES = [
    * Without it: none of these.
    */
   "testResults",
+  /**
+   * Question-level marking (design Rev 5.2, owner approval 2026-11-26; QUESTION_MARKING_ENABLED): a test marked by
+   * question — the Question marking tab (mode, coaches per question, tasks, review, decide, progress) and the coach's
+   * "By question" queue and workspace `/mentor/marking/q/:code/:ref` (one question of one paper at a time; blind).
+   * Without it: none of these; PAPER marking is unchanged.
+   */
+  "questionMarking",
 ] as const;
 export type BackendFeature = (typeof KNOWN_FEATURES)[number];
 
