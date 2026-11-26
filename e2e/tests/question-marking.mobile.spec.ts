@@ -60,7 +60,7 @@ test("a coach on a phone takes a question from the cards, marks it with the quic
   await page.goto("/mentor/marking");
   const card = page.getByTestId(`qm-card-${code}-q1`);
   await expect(card).toContainText("Question 1 · out of 4", { timeout: 30_000 });
-  await card.getByTestId(`qm-take-${code}-q1`).click();
+  await card.getByTestId(`qm-take-${code}-q1-card`).click();
   await page.waitForURL(new RegExp(`/mentor/marking/q/${code}/q1$`));
   await expect(page.getByRole("heading", { name: "You are marking Question 1 of 2" })).toBeVisible();
   await expect(page.getByTestId("qm-question")).toContainText("Define velocity.");

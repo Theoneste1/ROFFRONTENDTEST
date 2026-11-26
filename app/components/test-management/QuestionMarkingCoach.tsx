@@ -142,15 +142,16 @@ function QuestionQueue() {
   );
 }
 
-function RowAction({ r, onTake, busy, limitReached }: { r: CoachTask; onTake: (r: CoachTask) => void; busy?: CoachTask; limitReached: boolean }) {
+function RowAction({ r, onTake, busy, limitReached, where = "row" }: { r: CoachTask; onTake: (r: CoachTask) => void; busy?: CoachTask; limitReached: boolean; where?: "row" | "card" }) {
+  const sfx = where === "card" ? "-card" : "";
   const a = coachAction(r.state);
   if (a === "continue" || a === "view") {
-    return <Link href={workspacePath(r.code, r.ref)} className={btnSecondary} data-testid={`qm-open-${r.code}-${r.ref}`}>{a === "continue" ? "Continue" : "View"}</Link>;
+    return <Link href={workspacePath(r.code, r.ref)} className={btnSecondary} data-testid={`qm-open-${r.code}-${r.ref}${sfx}`}>{a === "continue" ? "Continue" : "View"}</Link>;
   }
   if (a === "take") {
     const loading = busy?.code === r.code && busy.ref === r.ref;
     return (
-      <button type="button" className={btnPrimary} disabled={!!busy || limitReached} onClick={() => onTake(r)} data-testid={`qm-take-${r.code}-${r.ref}`}
+      <button type="button" className={btnPrimary} disabled={!!busy || limitReached} onClick={() => onTake(r)} data-testid={`qm-take-${r.code}-${r.ref}${sfx}`}
         title={limitReached ? `You hold ${MAX_ACTIVE} questions already` : undefined}>
         {loading ? "Taking…" : "Take"}
       </button>
@@ -175,7 +176,7 @@ function QueueRows({ data, onTake, busy, limitReached, onPage }: { data: CoachQu
             </div>
             <p className="mt-1 text-xs text-gray-600">{r.test.title} · {r.test.subject}</p>
             {r.state === "MINE" && r.lockExpiresAt && <p className="mt-1 text-xs text-amber-900">Held for {minutesLeft(r.lockExpiresAt, now)} more minutes</p>}
-            <div className="mt-3"><RowAction r={r} onTake={onTake} busy={busy} limitReached={limitReached} /></div>
+            <div className="mt-3"><RowAction r={r} onTake={onTake} busy={busy} limitReached={limitReached} where="card" /></div>
           </li>
         ))}
       </ul>
