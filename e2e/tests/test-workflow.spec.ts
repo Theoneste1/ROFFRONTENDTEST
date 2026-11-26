@@ -53,7 +53,7 @@ async function markAs(browser: Browser, username: string, code: string, q1: stri
   await signInWith(p, username, PASSWORD);
   await navigateViaSidebar(p, "/mentor/marking");
   await p.getByTestId(`queue-${code}`).getByRole("link", { name: code }).click();
-  await expect(p.getByRole("heading", { name: `Submission ${code}` })).toBeVisible({ timeout: 30_000 });
+  await expect(p.getByRole("heading", { name: `Paper ${code}` })).toBeVisible({ timeout: 30_000 });
   const text = await p.locator("main").innerText();
   for (const leak of mustNotShow) expect([leak, text.includes(leak)]).toEqual([leak, false]);
   await p.getByTestId("mark-q1").getByLabel("Marks (of 5)").fill(q1);
@@ -212,7 +212,7 @@ test.describe.serial("the complete test workflow, from creation to republication
     const dialog = head.getByTestId("coach-dialog");
     await dialog.getByTestId("coach-select").selectOption(otherCoach === coach1 ? ids.c1 : ids.c2);
     await dialog.getByTestId("coach-confirm").click();
-    await expect(detail.getByTestId("submission-status")).toHaveText("Awaiting second marking");
+    await expect(detail.getByTestId("submission-status")).toHaveText("Second marking");
     await expect(dialog).toHaveCount(0);
     await head.getByRole("button", { name: "Close" }).click();
     // The second marker never sees the first marks or comments, nor who the student is.
