@@ -101,3 +101,27 @@ test("the even-share preview and labels", () => {
   assert.deepEqual(REVIEW_FILTERS.map((f) => f.value).filter(Boolean).sort(),
     ["APPROVED", "ASSIGNED", "AWAITING_SECOND_MARKING", "MARKED", "MARKING_IN_PROGRESS", "PUBLISHED", "RETURNED", "SUBMITTED"]);
 });
+
+test("the coach queue's saved Show choice: To mark first, then whatever the coach chose, per account", async () => {
+  const { QUEUE_VIEWS, DEFAULT_QUEUE_VIEW, queueViewKey, queueViewState, queueViewCount, readQueueView, saveQueueView } = await import("../lib/test-management/marking.ts");
+  assert.deepEqual(QUEUE_VIEWS.map((o) => o.label), ["To mark", "Marked", "All"]);
+  assert.equal(DEFAULT_QUEUE_VIEW, "TO_MARK");
+  const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
+  const s = mem();
+  assert.equal(readQueueView(s, "u1"), "TO_MARK");                       // nothing saved yet
+  saveQueueView(s, "u1", "MARKED");
+  assert.equal(readQueueView(s, "u1"), "MARKED");                        // kept until changed
+  assert.equal(readQueueView(s, "u2"), "TO_MARK");                       // another account on the same browser
+  assert.equal(s.m.get(queueViewKey("u1")), "MARKED");
+  saveQueueView(s, "u1", "ALL");
+  assert.equal(readQueueView(s, "u1"), "ALL");
+  s.setItem(queueViewKey("u1"), "SOMETHING_ELSE");
+  assert.equal(readQueueView(s, "u1"), "TO_MARK");                       // unknown value: the default
+  const broken = { getItem: () => { throw new Error("denied"); }, setItem: () => { throw new Error("denied"); } };
+  assert.equal(readQueueView(broken, "u1"), "TO_MARK");                  // storage refused: default, no crash
+  assert.doesNotThrow(() => saveQueueView(broken, "u1", "MARKED"));
+  assert.equal(readQueueView(null, "u1"), "TO_MARK");
+  assert.deepEqual(["TO_MARK", "MARKED", "ALL"].map(queueViewState), ["TO_MARK", "MARKED", undefined]);
+  const c = { notStarted: 2, inProgress: 3, marked: 4, total: 9 };
+  assert.deepEqual(["TO_MARK", "MARKED", "ALL"].map((v) => queueViewCount(v, c)), [5, 4, 9]);
+});

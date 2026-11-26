@@ -21,13 +21,12 @@ import { useSession } from "@/lib/auth/session";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime } from "@/lib/format";
-import { QUEUE_FILTERS, draftFrom, draftTotal, markingPageMode, marksBody, marksProblems, marksText, parseWhole, type MarksDraft } from "@/lib/test-management/marking";
+import { QUEUE_VIEWS, draftFrom, queueViewCount, queueViewState, readQueueView, saveQueueView, type QueueView, draftTotal, markingPageMode, marksBody, marksProblems, marksText, parseWhole, type MarksDraft } from "@/lib/test-management/marking";
 import { MY_MARKING_STATUS, queueStatus } from "@/lib/test-management/marking-status";
 import { Alert, EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import FileButton from "@/app/components/ui/FileButton";
 import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame } from "@/app/components/ui/PageFrame";
-import { FilterBar } from "@/app/components/ui/FilterBar";
 import { ConfirmDialog, Notice, TableCard, TableMessage, btnPrimary, btnSecondary, td, th } from "@/app/admin/components/adminUi";
 import { MarkingStatusBadge } from "@/app/components/marking/MarkingStatusBadge";
 import { StatTile } from "@/app/components/marking/StatTile";
@@ -77,38 +76,48 @@ export function MarkingQueue() {
   );
 }
 
-/** The state filter's words (a submitted paper is "Submitted", as on its badge). */
-const STATE_OPTIONS = QUEUE_FILTERS.filter((o) => o.value !== "").map((o) => ({ label: o.value === "MARKED" ? "Submitted" : o.label, value: o.value }));
+/** This browser's storage, or none (server rendering, or storage refused). */
+function browserStorage(): Storage | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** What an empty list says, by the coach's "Show" choice (and whether one test is chosen). */
+function emptyQueue(view: QueueView, oneTest: boolean): { title: string; description: string } {
+  const scope = oneTest ? " in this test" : "";
+  if (view === "TO_MARK") return { title: "Nothing left to mark", description: `Every paper assigned to you${scope} is marked. Choose "Marked" to see them again; new papers appear here when the Head Coach assigns them.` };
+  if (view === "MARKED") return { title: "No marked papers yet", description: `Papers you submit${scope} appear here. Choose "To mark" to see the papers waiting for you.` };
+  return oneTest
+    ? { title: "Nothing to mark", description: "No paper of this test is assigned to you. Choose \"All tests\" to see every paper assigned to you." }
+    : { title: "Nothing to mark", description: "No paper is assigned to you yet. When the Head Coach assigns papers to you, they appear here." };
+}
 
 function Queue() {
-  const [state, setState] = useState<"" | QueueState>("");
+  const { user } = useSession();
+  const userId = user?.id ?? "";
+  // The coach's saved "Show" choice (owner 2026-11-26): read once per account, kept until they choose another.
+  const saved = useMemo(() => (userId ? readQueueView(browserStorage(), userId) : null), [userId]);
+  const [chosen, setChosen] = useState<QueueView | null>(null);
+  const view = chosen ?? saved;
   const [testId, setTestId] = useState("");
   const [page, setPage] = useState(1);
-  const filters = { state: state || undefined, testId: testId || undefined, page, limit: 20 };
-  const list = useQuery({ queryKey: queryKeys.tests.queue(filters), queryFn: () => markerApi.queue(filters), placeholderData: keepPreviousData });
+  const chooseView = (v: QueueView) => { setChosen(v); setPage(1); if (userId) saveQueueView(browserStorage(), userId, v); };
+  const filters = { state: view ? queueViewState(view) : undefined, testId: testId || undefined, page, limit: 20 };
+  const list = useQuery({ queryKey: queryKeys.tests.queue(filters), queryFn: () => markerApi.queue(filters), placeholderData: keepPreviousData, enabled: view !== null });
   const dash = useQuery({ queryKey: queryKeys.tests.dashboard("coach"), queryFn: coachDashboardApi.dashboard, retry: false });
-  const filtered = !!state || !!testId;
+  const empty = emptyQueue(view ?? "ALL", !!testId);
   return (
     <PageFrame title="Marking" description="The papers assigned to you. Marking is blind: you see a paper code, never the student.">
       <QueueStats dash={dash.data} counts={dash.isError ? list.data?.counts : undefined} />
       {list.data && list.data.tests.length > 0 && (
         <TestPills tests={list.data.tests} value={testId} onChange={(v) => { setTestId(v); setPage(1); }} />
       )}
-      <FilterBar
-        testId="queue-filters"
-        onClearAll={() => { setState(""); setTestId(""); setPage(1); }}
-        filters={[
-          { key: "state", kind: "select", label: "Status", value: state, onChange: (v) => { setState(v as "" | QueueState); setPage(1); }, options: STATE_OPTIONS },
-          // Chosen with the test pills above; shown here as a chip (removable) once chosen.
-          { key: "testId", kind: "select", label: "Test", value: testId, show: false, onChange: (v) => { setTestId(v); setPage(1); },
-            options: (list.data?.tests ?? []).map((t) => ({ label: t.title, value: t.id })) },
-        ]}
-      />
+      {view && <QueueViewSwitch value={view} counts={list.data?.counts} onChange={chooseView} />}
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load your marking queue" onRetry={() => list.refetch()} /> : list.data.data.length === 0 ? (
-        <EmptyState
-          title="Nothing to mark"
-          description={filtered ? "No paper matches these filters. Clear the filters to see every paper assigned to you." : "No paper is assigned to you yet. When the Head Coach assigns papers to you, they appear here."}
-        />
+        <EmptyState title={empty.title} description={empty.description} />
       ) : (
         <>
           {/* Phones: cards; from md: a table. */}
@@ -173,6 +182,40 @@ function Queue() {
         </>
       )}
     </PageFrame>
+  );
+}
+
+/** "Show: To mark · Marked · All", with how many papers each holds; the choice is saved (see readQueueView). */
+function QueueViewSwitch({ value, counts, onChange }: { value: QueueView; counts?: QueuePage["counts"]; onChange: (v: QueueView) => void }) {
+  const labelId = useId();
+  const hintId = useId();
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2" data-testid="queue-view">
+      <span id={labelId} className="text-sm font-semibold text-gray-800">Show</span>
+      <div role="group" aria-labelledby={labelId} aria-describedby={hintId} className="inline-flex rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
+        {QUEUE_VIEWS.map((o) => {
+          const active = o.value === value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(o.value)}
+              className={`inline-flex min-h-10 items-center gap-1.5 rounded-md px-3.5 text-sm transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00428C] ${
+                active ? "bg-[#00428C] font-semibold text-white" : "text-gray-700 hover:bg-slate-100 hover:text-[#00428C]"
+              }`}
+              data-testid={`queue-view-${o.value}`}
+            >
+              {o.label}
+              {counts && (
+                <span className={`rounded-full px-1.5 text-xs font-bold leading-5 ${active ? "bg-white/20 text-white" : "bg-slate-100 text-gray-700"}`}>{queueViewCount(o.value, counts)}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <p id={hintId} className="text-xs text-gray-600">Saved: Marking opens on this choice until you change it.</p>
+    </div>
   );
 }
 

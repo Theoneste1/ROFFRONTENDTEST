@@ -28,6 +28,8 @@ import type { Page } from "./types";
 export type MarkingKind = "FIRST" | "SECOND" | "ADJUSTMENT";
 export type MarkingStatus = "DRAFT" | "SUBMITTED" | "RETURNED" | "APPROVED";
 export type QueueState = "NOT_STARTED" | "IN_PROGRESS" | "MARKED";
+/** The queue filter: one state, or TO_MARK (not started + in progress, returned included). */
+export type QueueFilterState = QueueState | "TO_MARK";
 export type ReviewAction = "APPROVED" | "RETURNED" | "SECOND_MARKING_REQUESTED" | "MARK_CHOSEN" | "UNLOCKED";
 export type HistoryType = "status" | "marks" | "reviews";
 
@@ -251,7 +253,7 @@ export const testMarkingApi = {
 };
 
 export const markerApi = {
-  queue: (f: { state?: QueueState; testId?: string; page?: number; limit?: number } = {}) => api<QueuePage>("/marking/queue", { query: { ...f } }),
+  queue: (f: { state?: QueueFilterState; testId?: string; page?: number; limit?: number } = {}) => api<QueuePage>("/marking/queue", { query: { ...f } }),
   get: (code: string) => api<MarkerSubmission>(C(code)),
   page: (code: string, page: number): Promise<DownloadedFile> => apiBlob(`${C(code)}/pages/${page}`, {}, `page-${page}`),
   paper: (code: string): Promise<DownloadedFile> => apiBlob(`${C(code)}/paper`, {}, "test-paper"),

@@ -146,6 +146,8 @@ test.describe.serial("Head Coach → coach A (blind) → second marking by coach
     await signIn(page, "coach");
     await navigateViaSidebar(page, "/mentor/marking");
     await expect(page.getByRole("heading", { name: "Marking", level: 1 })).toBeVisible();
+    // The saved "Show" choice starts on "To mark" (owner 2026-11-26).
+    await expect(page.getByTestId("queue-view-TO_MARK")).toHaveAttribute("aria-pressed", "true");
     const row = page.getByTestId(`queue-${code}`);
     await expect(row).toContainText("Not started");
     await noSeriousA11y(page);
@@ -199,6 +201,22 @@ test.describe.serial("Head Coach → coach A (blind) → second marking by coach
       const s = (await c.query(`SELECT status FROM "TestSubmission" WHERE "publicCode" = $1`, [code])).rows[0];
       expect(s.status).toBe("MARKED");
     });
+    // Done: the paper leaves "To mark"; "Marked" shows it, and that choice is kept (a reload, a new visit) until changed.
+    await navigateViaSidebar(page, "/mentor/marking");
+    await expect(page.getByTestId("queue-view-TO_MARK")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("queue-view")).toBeVisible();
+    await expect(page.getByTestId(`queue-${code}`)).toHaveCount(0);
+    await page.getByTestId("queue-view-MARKED").click();
+    await expect(page.getByTestId("queue-view-MARKED")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId(`queue-${code}`)).toBeVisible();
+    await noSeriousA11y(page);
+    await page.reload();
+    await expect(page.getByTestId("queue-view-MARKED")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId(`queue-${code}`)).toBeVisible();
+    await page.getByTestId("queue-view-ALL").click();
+    await expect(page.getByTestId(`queue-${code}`)).toBeVisible();
+    await page.getByTestId("queue-view-TO_MARK").click();
+    await expect(page.getByTestId(`queue-${code}`)).toHaveCount(0);
     await page.context().close();
   });
 
