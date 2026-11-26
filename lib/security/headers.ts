@@ -41,6 +41,9 @@ export function contentSecurityPolicy({ nonce, isDev, https }: { nonce: string; 
     `img-src 'self' blob: data:`,
     `font-src 'self'`,
     `connect-src 'self'${UPLOAD_ORIGIN ? ` ${UPLOAD_ORIGIN}` : ""}`,
+    // Answer pages that are PDFs show in the browser's own PDF viewer inside the page (owner 2026-11-26): only blob:
+    // frames, i.e. files the app itself fetched with the user's sign-in; no other site can be framed.
+    `frame-src 'self' blob:`,
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,
