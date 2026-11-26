@@ -7,6 +7,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { withDb } from "../support/db";
 import { signIn } from "../support/session";
+import { addFilter, changeFilter, expectFilter, removeFilter, retypeFilter, typeFilter } from "../support/filters";
 
 const run = Date.now().toString(36);
 const prefix = `E2E Filt ${run}`;
@@ -44,7 +45,6 @@ test.describe.serial("School list filters", () => {
   test.afterAll(async () => page.close());
 
   const rows = () => page.getByTestId("school-row");
-  const select = (label: string) => page.getByRole("combobox", { name: label, exact: true });
   const names = () => rows().getByTestId("school-name");
   const open = async () => {
     await page.goto("/admin/schools");
@@ -54,38 +54,37 @@ test.describe.serial("School list filters", () => {
 
   test("ownership, day / boarding, cell and village narrow the list and stay in the URL", async () => {
     await open();
-    await select("Ownership").selectOption("PRIVATE");
+    await addFilter(page, "ownership", "Private");
     await expect(page).toHaveURL(/ownership=PRIVATE/);
     await expect(names()).toHaveText([name.a]);
-    await select("Ownership").selectOption("");
-    await select("Day / boarding").selectOption("DAY");
+    await removeFilter(page, "ownership");
+    await addFilter(page, "accommodation", "Day");
     await expect(names()).toHaveText([name.b]);
-    await select("Day / boarding").selectOption("");
-    await page.getByRole("searchbox", { name: "Filter by cell" }).fill(`gihanama${run}`);
+    await removeFilter(page, "accommodation");
+    await typeFilter(page, "cell", `gihanama${run}`);
     await expect(page).toHaveURL(/cell=gihanama/);
     await expect(names()).toHaveText([name.a]);
-    await page.getByRole("searchbox", { name: "Filter by cell" }).fill("");
-    await page.getByRole("searchbox", { name: "Filter by village" }).fill(`Kiruhura${run}`);
+    await removeFilter(page, "cell");
+    await typeFilter(page, "village", `Kiruhura${run}`);
     await expect(names()).toHaveText([name.b]);
     await page.reload();
     await expect(names()).toHaveText([name.b]);
-    await expect(page.getByRole("searchbox", { name: "Filter by village" })).toHaveValue(`Kiruhura${run}`);
+    await expectFilter(page, "village", `Kiruhura${run}`);
   });
 
   test("with or without an e-mail", async () => {
     await open();
-    await select("E-mail").selectOption("with");
+    await addFilter(page, "email", "Has an e-mail");
     await expect(names()).toHaveText([name.a]);
-    await select("E-mail").selectOption("without");
+    await changeFilter(page, "email", "No e-mail");
     await expect(names()).toHaveText([name.b]);
   });
 
   test("a school found by its phone (typed with spaces and the leading 0) opens on its Contacts tab showing the contacts", async () => {
     await page.goto("/admin/schools");
-    const contact = page.getByRole("searchbox", { name: "Find a school by its e-mail or phone" });
-    await contact.fill("07");
+    await typeFilter(page, "contact", "07");
     await expect(page.getByTestId("contact-too-short")).toBeVisible();
-    await contact.fill(phone.typed);
+    await retypeFilter(page, "contact", phone.typed);
     await expect(page).toHaveURL(/contact=/);
     await expect(names()).toHaveText([name.a]);
     await rows().first().click();

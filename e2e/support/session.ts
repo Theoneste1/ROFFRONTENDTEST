@@ -76,7 +76,9 @@ export async function navigateViaSidebar(page: Page, href: string) {
   const link = nav.locator(`a[href="${href}"]`).first();
   if (!(await link.isVisible())) {
     const toggle = nav.getByTestId("sidebar-more-toggle");
-    if (await toggle.isVisible() && (await nav.locator(`[data-testid="sidebar-more-panel"] a[href="${href}"]`).count()) === 0) {
+    // The link is in the (closed) "More" panel: open it.
+    if (await toggle.isVisible() && (await toggle.getAttribute("aria-expanded")) === "false"
+      && (await nav.locator(`[data-testid="sidebar-more-panel"] a[href="${href}"]`).count()) > 0) {
       await toggle.click();
     }
     const closed = nav.locator(':scope > div:not([data-testid]) > button[aria-expanded="false"]');

@@ -8,13 +8,14 @@
  */
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Lock, Plus, Star, X } from "lucide-react";
 import { errorMessage } from "@/lib/api/errors";
 import {
-  OP_LABEL, REPORT_TEMPLATES, customReportsApi, definitionProblems, needsValue, opsFor, saveProblems, templateDefinition,
+  OP_LABEL, REPORT_TEMPLATES, SOURCE_GROUPS, customReportsApi, definitionProblems, needsValue, opsFor, saveProblems, templateDefinition,
   type CustomReport, type FieldType, type FilterOp, type ReportDefinition, type ReportPage, type ReportSource,
 } from "@/lib/reports/custom-reports";
-import { useReportCatalogue, useSaveReport } from "@/lib/queries/custom-reports";
+import { useReportCatalogue, useReports, useSaveReport } from "@/lib/queries/custom-reports";
+import { useSession } from "@/lib/auth/session";
 import { useDivisions } from "@/lib/queries/divisions";
 import { activeDivisions } from "@/lib/divisions/divisions";
 import { Alert, LoadingBlock } from "@/app/components/ui/feedback";
@@ -40,6 +41,7 @@ function ValueInput({ type, values, op, value, onChange, fieldKey }: { type: Fie
   const options = fieldKey === "olympiadLevel" ? activeDivisions(divisions.data).map((d) => ({ value: d.code, label: d.name })) : (values ?? []).map((v) => ({ value: v, label: v }));
   if (type === "boolean") return <select className={field} value={value === false ? "false" : "true"} onChange={(e) => onChange(e.target.value === "true")}><option value="true">Yes</option><option value="false">No</option></select>;
   if (type === "date") return <input type="date" className={field} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} />;
+  if (type === "number") return <input type="number" inputMode="numeric" className={field} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} />;
   if (options.length && op === "in") {
     const list = Array.isArray(value) ? (value as string[]) : [];
     return (
@@ -56,13 +58,20 @@ function ValueInput({ type, values, op, value, onChange, fieldKey }: { type: Fie
   return <input className={field} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} maxLength={200} />;
 }
 
-export default function ReportBuilder({ report, base, builder }: { report?: CustomReport; base: string; builder: boolean }) {
+export default function ReportBuilder({ report, base, builder, start }: { report?: CustomReport; base: string; builder: boolean; start?: CustomReport }) {
   const router = useRouter();
   const catalogue = useReportCatalogue(builder);
   const save = useSaveReport(report?.id);
+  const { user } = useSession();
+  const superAdmin = user?.role === "SUPER_ADMIN";
+  // Templates the Super Admin saved (owner 2026-11-25): every Administrator starts from them.
+  const saved = useReports(builder && !report);
+  const savedTemplates = (saved.data ?? []).filter((r) => r.isTemplate);
+  const [asTemplate, setAsTemplate] = useState(report?.isTemplate ?? false);
   const [name, setName] = useState(report?.name ?? "");
-  const [description, setDescription] = useState(report?.description ?? "");
-  const [d, setD] = useState<ReportDefinition>(report ? { source: report.source, columns: report.columns, filters: report.filters, sort: report.sort } : EMPTY);
+  const [description, setDescription] = useState(report?.description ?? start?.description ?? "");
+  const from = report ?? start;
+  const [d, setD] = useState<ReportDefinition>(from ? { source: from.source, columns: from.columns, filters: from.filters, sort: from.sort } : EMPTY);
   const [preview, setPreview] = useState<ReportPage | null>(null);
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -96,7 +105,7 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
     const p = saveProblems(name) ?? (builder ? definitionProblems(d, source)[0] : undefined);
     if (p) return setProblem(p);
     try {
-      const r = await save.mutateAsync({ name: name.trim(), description: description.trim() || undefined, ...d });
+      const r = await save.mutateAsync({ name: name.trim(), description: description.trim() || undefined, ...d, ...(superAdmin ? { isTemplate: asTemplate } : {}) });
       router.push(`${base}/${r.id}`);
     } catch (err) {
       setProblem(errorMessage(err));
@@ -111,7 +120,7 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
     <div className="flex flex-col gap-6" data-testid="report-builder">
       {builder && !report && (
         <section data-testid="report-templates">
-          <h2 className="mb-2 text-sm font-bold text-gray-900">Start from an example</h2>
+          <h2 className="mb-2 text-sm font-bold text-gray-900">Start from a template</h2>
           <div className="flex flex-wrap gap-2">
             {REPORT_TEMPLATES.map((t) => (
               <button key={t.name} type="button" className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-semibold text-gray-800 hover:border-[#00428C] hover:text-[#00428C]" title={t.description}
@@ -119,7 +128,15 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
                 {t.name}
               </button>
             ))}
+            {savedTemplates.map((t) => (
+              <button key={t.id} type="button" title={t.description ?? undefined} data-testid={`saved-template-${t.id}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#00428C]/25 bg-[#00428C]/[0.06] px-3 py-1 text-xs font-semibold text-[#00428C] hover:border-[#00428C]"
+                onClick={() => { setName(t.name); setDescription(t.description ?? ""); change({ source: t.source, columns: t.columns, filters: t.filters, sort: t.sort }); }}>
+                <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" aria-hidden="true" /> {t.name}
+              </button>
+            ))}
           </div>
+          {savedTemplates.length > 0 && <p className="mt-1.5 text-xs text-gray-600"><Star className="inline h-3 w-3 fill-amber-500 text-amber-500" aria-hidden="true" /> Saved as templates by the Super Admin. Starting from one makes a new report of your own.</p>}
         </section>
       )}
 
@@ -133,13 +150,31 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
           <input id="report-desc" className={field} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} />
         </div>
         {builder && (
-          <div>
-            <label htmlFor="report-source" className="mb-1 block text-xs font-semibold text-gray-700">Lists</label>
-            <select id="report-source" className={field} value={d.source} data-testid="report-source"
-              onChange={(e) => change({ source: e.target.value, columns: ["fullName"], filters: [], sort: [] })}>
-              {catalogue.data!.sources.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-            </select>
-          </div>
+          <fieldset className="md:col-span-3" data-testid="report-source">
+            <legend className="mb-1 text-xs font-semibold text-gray-700">Data</legend>
+            {SOURCE_GROUPS.map((g) => {
+              const list = catalogue.data!.sources.filter((s) => (s.group ?? "People") === g);
+              if (!list.length) return null;
+              return (
+                <div key={g} className="mt-2">
+                  <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-500">{g}</p>
+                  <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={g}>
+                    {list.map((s) => {
+                      const on = s.key === d.source;
+                      return (
+                        <button key={s.key} type="button" role="radio" aria-checked={on} data-testid={`report-source-${s.key}`}
+                          onClick={() => { if (!on) change({ source: s.key, columns: [s.fields[0]?.key].filter(Boolean) as string[], filters: [], sort: [] }); }}
+                          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${on ? "border-[#00428C] bg-[#00428C] text-white" : "border-gray-200 bg-white text-gray-800 hover:border-[#00428C]"}`}>
+                          {s.label}
+                          {s.superAdminOnly && <span className={`rounded-full px-1.5 text-[10px] font-bold ${on ? "bg-white/20 text-white" : "bg-amber-100 text-amber-900"}`}>Super Admin</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </fieldset>
         )}
       </section>
 
@@ -156,14 +191,29 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
             </li>
           ))}
         </ol>
-        {builder && unused.length > 0 && (
+        {builder && unused.some((f) => !f.protected) && (
           <div className="flex flex-wrap gap-2">
-            {unused.map((f) => (
+            {unused.filter((f) => !f.protected).map((f) => (
               <button key={f.key} type="button" className="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:border-[#00428C] hover:text-[#00428C]"
                 onClick={() => change({ ...d, columns: [...d.columns, f.key] })} data-testid={`add-column-${f.key}`}>
                 <Plus className="h-3 w-3" aria-hidden="true" /> {f.label}
               </button>
             ))}
+          </div>
+        )}
+        {builder && unused.some((f) => f.protected) && (
+          <div className="mt-4 border-t border-dashed border-gray-300 pt-3" data-testid="report-protected-fields">
+            <p className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+              <Lock className="h-3.5 w-3.5" aria-hidden="true" /> Personal data — Super Admin only. Every run and download that shows it is recorded in the audit log; anyone you share the report with sees it blank.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {unused.filter((f) => f.protected).map((f) => (
+                <button key={f.key} type="button" className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-400 bg-amber-50 px-2.5 py-1 text-xs text-amber-950 hover:border-amber-600"
+                  onClick={() => change({ ...d, columns: [...d.columns, f.key] })} data-testid={`add-column-${f.key}`}>
+                  <Plus className="h-3 w-3" aria-hidden="true" /> {f.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </section>
@@ -198,7 +248,7 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
           <h2 className="mb-2 mt-6 text-sm font-bold text-gray-900">Sort</h2>
           <div className="flex flex-wrap items-center gap-2">
             <select className={`${field} max-w-xs`} aria-label="Sort by" value={d.sort[0]?.field ?? ""} onChange={(e) => change({ ...d, sort: e.target.value ? [{ field: e.target.value, dir: d.sort[0]?.dir ?? "asc" }] : [] })}>
-              <option value="">Default (registration date, newest first)</option>
+              <option value="">Default order</option>
               {source.fields.filter((x) => x.sortable).map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
             </select>
             {d.sort[0] && (
@@ -211,6 +261,15 @@ export default function ReportBuilder({ report, base, builder }: { report?: Cust
         </section>
       )}
 
+      {builder && superAdmin && (
+        <label className="flex items-start gap-2 text-sm text-gray-800" data-testid="report-as-template">
+          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#00428C]" checked={asTemplate} onChange={(e) => setAsTemplate(e.target.checked)} />
+          <span><b>Save as a template</b> — every Administrator can start a report from it; only you (the Super Admin) can change it.</span>
+        </label>
+      )}
+      {report?.isTemplate && !superAdmin && (
+        <Alert tone="info">This report is a template: only the Super Admin can change it. Start a new report from it instead.</Alert>
+      )}
       {problem && <Alert tone="error">{problem}</Alert>}
       <div className="flex flex-wrap gap-2">
         <button type="button" className={secondary} disabled={busy} onClick={() => void runPreview(1)} data-testid="report-preview">{busy ? "Loading…" : "Preview"}</button>

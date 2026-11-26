@@ -17,7 +17,8 @@ import { useCountryOptions } from "@/lib/queries/countries";
 import { countryDisplayName } from "@/lib/countries/reference";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Plus } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Eye, Pencil, Plus, Power, RotateCcw } from "lucide-react";
+import { IconAction } from "@/app/components/ui/IconAction";
 import { hasFeature } from "@/lib/api/capabilities";
 import type { DirectorySchoolRecord, SchoolSource } from "@/lib/api/school-directory";
 import { useSession } from "@/lib/auth/session";
@@ -32,7 +33,8 @@ import {
 import { NO_PRIMARY_TEACHER } from "@/lib/schools/primary-teacher";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { AdminPage, Badge, Notice, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "../../components/adminUi";
+import { AdminPage, Badge, Notice, SearchInput, TableCard, TableMessage, btnPrimary, btnSecondary, td, th } from "../../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import SchoolActiveDialog from "./SchoolActiveDialog";
 import SchoolFormDialog from "./SchoolFormDialog";
 import { useRecordBulk } from "../../components/bulk/RecordBulk";
@@ -132,8 +134,6 @@ export default function SchoolDirectoryList() {
     { label: any, value: "any" }, { label: withLabel, value: "with" }, { label: withoutLabel, value: "without" },
   ];
   const contactTooShort = state.contact.trim().length > 0 && state.contact.trim().length < CONTACT_SEARCH_MIN;
-  // Remounts the cell / village / contact boxes on "Clear filters", like the search box.
-  const textKey = `${searchKey}`;
   // Bulk actions (capability bulkOperationsGeneric): tick schools, or act on every school matching the filters.
   const bulk = useRecordBulk("SCHOOL", {
     pageIds: schools.data?.data.map((s) => s.id) ?? [],
@@ -187,142 +187,58 @@ export default function SchoolDirectoryList() {
         </Notice>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 mb-3" data-testid="school-filters">
-        <SearchInput key={searchKey} value={state.q} onChange={(q) => update({ q })} placeholder="Name or code…" label="Search schools by name or code" />
-        <SelectFilter
-          label="Country"
-          value={state.countryCode}
+      {/* Filters (owner 2026-11-25): "+ Add filter" and the active ones as chips, not every filter on screen. */}
+      <FilterBar
+        testId="school-filters"
+        search={<SearchInput key={searchKey} value={state.q} onChange={(q) => update({ q })} placeholder="Name or code…" label="Search schools by name or code" />}
+        onClearAll={() => {
+          setSearchKey((k) => k + 1);
+          // Clears the filters; the sort stays.
+          go({ ...initialListState(), sort: state.sort, order: state.order });
+        }}
+        filters={[
           // A new country clears the place filters (they belong to Rwanda).
-          onChange={(v) => update({ countryCode: v, province: "", district: "", sector: "" })}
-          options={[{ label: "Any", value: "" }, ...countries]}
-        />
-        <SelectFilter
-          label="Status"
-          value={state.status}
-          onChange={(v) => update({ status: v as ListState["status"] })}
-          options={[
-            { label: "All", value: "all" },
-            { label: "Active", value: "active" },
-            { label: "Inactive", value: "inactive" },
-          ]}
-        />
-        <SelectFilter
-          label="Source"
-          value={state.source}
-          onChange={(v) => update({ source: v as SchoolSource | "" })}
-          options={[{ label: "All", value: "" }, ...(Object.keys(SOURCE_LABEL) as SchoolSource[]).map((s) => ({ label: SOURCE_LABEL[s], value: s }))]}
-        />
-        <SelectFilter
-          label="Code"
-          value={state.code}
-          onChange={(v) => update({ code: v as ListState["code"] })}
-          options={[
-            { label: "Any", value: "any" },
-            { label: "With a code", value: "with" },
-            { label: "Without a code", value: "without" },
-          ]}
-        />
-      </div>
-      {showPlaces && (
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <SelectFilter
-            label="Province"
-            value={state.province}
-            onChange={(province) => update({ province, district: "", sector: "" })}
-            options={[{ label: "Any", value: "" }, ...provinces.map((p) => ({ label: p.province, value: p.province }))]}
-          />
-          {state.province && (
-            <SelectFilter
-              label="District"
-              value={state.district}
-              onChange={(district) => update({ district, sector: "" })}
-              options={[{ label: "Any", value: "" }, ...districts.map((d) => ({ label: d.district, value: d.district }))]}
-            />
-          )}
-          {state.district && (
-            <SelectFilter label="Sector" value={state.sector} onChange={(sector) => update({ sector })} options={[{ label: "Any", value: "" }, ...sectors.map((s) => ({ label: s, value: s }))]} />
-          )}
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-3 mb-6" data-testid="school-more-filters">
-        <SelectFilter
-          label="Level"
-          value={state.level}
-          onChange={(level) => update({ level })}
-          options={[{ label: "Any", value: "" }, ...Object.entries(EDUCATION_LEVEL_LABEL).map(([value, label]) => ({ label, value }))]}
-        />
-        {allFields && (
-          <SelectFilter
-            label="Programme type"
-            value={state.programmeCategory}
-            // A new type clears a programme of another type.
-            onChange={(v) => update({ programmeCategory: v as ListState["programmeCategory"], programme: "" })}
-            options={[{ label: "Any", value: "" }, ...Object.entries(PROGRAMME_CATEGORY_LABEL).map(([value, label]) => ({ label, value }))]}
-          />
-        )}
-        {programmes.length > 0 && (
-          <SelectFilter
-            label="Combination / trade"
-            value={state.programme}
-            onChange={(programme) => update({ programme })}
-            options={[{ label: "Any", value: "" }, ...programmes.map((p) => ({ label: p.code ? `${p.name} (${p.code})` : p.name, value: p.id }))]}
-          />
-        )}
-        <SelectFilter
-          label="Day / boarding"
-          value={state.accommodation}
-          onChange={(v) => update({ accommodation: v as ListState["accommodation"] })}
-          options={[{ label: "Any", value: "" }, ...ACCOMMODATION_OPTIONS.map((a) => ({ label: ACCOMMODATION_LABEL[a], value: a }))]}
-        />
-        {allFields && (
-          <>
-            <SelectFilter
-              label="Ownership"
-              value={state.ownership}
-              onChange={(v) => update({ ownership: v as ListState["ownership"] })}
-              options={[{ label: "Any", value: "" }, ...OWNERSHIP_OPTIONS.map((o) => ({ label: OWNERSHIP_LABEL[o], value: o }))]}
-            />
-            <SelectFilter label="E-mail" value={state.email} onChange={(v) => update({ email: v as ListState["email"] })} options={presence("Any", "Has an e-mail", "No e-mail")} />
-            <SelectFilter label="Phone" value={state.phone} onChange={(v) => update({ phone: v as ListState["phone"] })} options={presence("Any", "Has a phone", "No phone")} />
-          </>
-        )}
-        <SelectFilter
-          label="Source data"
-          value={state.issues}
-          onChange={(v) => update({ issues: v as ListState["issues"] })}
-          options={presence("Any", "With problems", "Without problems")}
-        />
-      </div>
-      {allFields && (
-        <div className="flex flex-wrap items-start gap-3 mb-6" data-testid="school-text-filters">
-          {showPlaces && (
-            <>
-              <SearchInput key={`cell-${textKey}`} value={state.cell} onChange={(cell) => update({ cell: cleanPlace(cell) })} placeholder="Cell…" label="Filter by cell" />
-              <SearchInput key={`village-${textKey}`} value={state.village} onChange={(village) => update({ village: cleanPlace(village) })} placeholder="Village…" label="Filter by village" />
-            </>
-          )}
-          <div className="flex-1 min-w-[min(200px,100%)] max-w-xs">
-            <SearchInput key={`contact-${textKey}`} value={state.contact} onChange={(contact) => update({ contact })} placeholder="E-mail or phone…" label="Find a school by its e-mail or phone" />
-            {contactTooShort && (
-              <p className="text-xs text-gray-600 mt-1" data-testid="contact-too-short">
-                Type at least {CONTACT_SEARCH_MIN} characters of the e-mail or phone number.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-      {filtered && (
-        <button
-          type="button"
-          className={`${linkBtn} mb-4`}
-          onClick={() => {
-            setSearchKey((k) => k + 1);
-            // Clears the filters; the sort stays.
-            go({ ...initialListState(), sort: state.sort, order: state.order });
-          }}
-        >
-          Clear filters
-        </button>
+          { key: "country", kind: "select", label: "Country", value: state.countryCode, onChange: (v) => update({ countryCode: v, province: "", district: "", sector: "" }), options: countries },
+          { key: "status", kind: "select", label: "Status", value: state.status, emptyValue: "all", onChange: (v) => update({ status: v as ListState["status"] }),
+            options: [{ label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }] },
+          { key: "source", kind: "select", label: "Source", value: state.source, onChange: (v) => update({ source: v as SchoolSource | "" }),
+            options: (Object.keys(SOURCE_LABEL) as SchoolSource[]).map((s) => ({ label: SOURCE_LABEL[s], value: s })) },
+          { key: "code", kind: "select", label: "Code", value: state.code, emptyValue: "any", onChange: (v) => update({ code: v as ListState["code"] }),
+            options: [{ label: "With a code", value: "with" }, { label: "Without a code", value: "without" }] },
+          { key: "province", kind: "select", label: "Province", value: state.province, show: showPlaces, onChange: (province) => update({ province, district: "", sector: "" }),
+            options: provinces.map((p) => ({ label: p.province, value: p.province })) },
+          { key: "district", kind: "select", label: "District", value: state.district, show: showPlaces && !!state.province, onChange: (district) => update({ district, sector: "" }),
+            options: districts.map((d) => ({ label: d.district, value: d.district })) },
+          { key: "sector", kind: "select", label: "Sector", value: state.sector, show: showPlaces && !!state.district, onChange: (sector) => update({ sector }),
+            options: sectors.map((s) => ({ label: s, value: s })) },
+          { key: "cell", kind: "text", label: "Cell", value: state.cell, show: allFields && showPlaces, placeholder: "Cell…", onChange: (cell) => update({ cell: cleanPlace(cell) }) },
+          { key: "village", kind: "text", label: "Village", value: state.village, show: allFields && showPlaces, placeholder: "Village…", onChange: (village) => update({ village: cleanPlace(village) }) },
+          { key: "level", kind: "select", label: "Level", value: state.level, onChange: (level) => update({ level }),
+            options: Object.entries(EDUCATION_LEVEL_LABEL).map(([value, label]) => ({ label, value })) },
+          // A new type clears a programme of another type.
+          { key: "programmeCategory", kind: "select", label: "Programme type", value: state.programmeCategory, show: allFields,
+            onChange: (v) => update({ programmeCategory: v as ListState["programmeCategory"], programme: "" }),
+            options: Object.entries(PROGRAMME_CATEGORY_LABEL).map(([value, label]) => ({ label, value })) },
+          { key: "programme", kind: "select", label: "Combination / trade", value: state.programme, show: programmes.length > 0, onChange: (programme) => update({ programme }),
+            options: programmes.map((p) => ({ label: p.code ? `${p.name} (${p.code})` : p.name, value: p.id })) },
+          { key: "accommodation", kind: "select", label: "Day / boarding", value: state.accommodation, onChange: (v) => update({ accommodation: v as ListState["accommodation"] }),
+            options: ACCOMMODATION_OPTIONS.map((a) => ({ label: ACCOMMODATION_LABEL[a], value: a })) },
+          { key: "ownership", kind: "select", label: "Ownership", value: state.ownership, show: allFields, onChange: (v) => update({ ownership: v as ListState["ownership"] }),
+            options: OWNERSHIP_OPTIONS.map((o) => ({ label: OWNERSHIP_LABEL[o], value: o })) },
+          { key: "email", kind: "select", label: "E-mail", value: state.email, emptyValue: "any", show: allFields, onChange: (v) => update({ email: v as ListState["email"] }),
+            options: presence("Any", "Has an e-mail", "No e-mail") },
+          { key: "phone", kind: "select", label: "Phone", value: state.phone, emptyValue: "any", show: allFields, onChange: (v) => update({ phone: v as ListState["phone"] }),
+            options: presence("Any", "Has a phone", "No phone") },
+          { key: "contact", kind: "text", label: "E-mail or phone", value: state.contact, show: allFields, placeholder: "E-mail or phone…", onChange: (contact) => update({ contact }),
+            hint: `At least ${CONTACT_SEARCH_MIN} characters of the e-mail or phone number.` },
+          { key: "issues", kind: "select", label: "Source data", value: state.issues, emptyValue: "any", onChange: (v) => update({ issues: v as ListState["issues"] }),
+            options: presence("Any", "With problems", "Without problems") },
+        ]}
+      />
+      {contactTooShort && (
+        <p className="-mt-2 mb-3 text-xs text-gray-600" data-testid="contact-too-short">
+          Type at least {CONTACT_SEARCH_MIN} characters of the e-mail or phone number.
+        </p>
       )}
 
       {schools.data && (
@@ -422,21 +338,15 @@ export default function SchoolDirectoryList() {
                     <Badge className={s.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}>{s.isActive ? "Active" : "Inactive"}</Badge>
                   </td>
                   <td className={`${td} whitespace-nowrap`}>
-                    <span className="flex items-center gap-3">
-                      <Link href={schoolHref(s.id)} className={linkBtn} aria-label={`View ${s.name}`}>
-                        View
-                      </Link>
-                      <button type="button" className={linkBtn} onClick={() => setDialog({ kind: "edit", school: s })} aria-label={`Edit ${s.name}`}>
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className={`${linkBtn} ${s.isActive ? "!text-red-600 hover:!text-red-800" : ""}`}
+                    <span className="flex items-center gap-1.5">
+                      <IconAction href={schoolHref(s.id)} icon={Eye} tone="slate" label={`View ${s.name}`} />
+                      <IconAction icon={Pencil} tone="primary" label={`Edit ${s.name}`} onClick={() => setDialog({ kind: "edit", school: s })} />
+                      <IconAction
+                        icon={s.isActive ? Power : RotateCcw}
+                        tone={s.isActive ? "danger" : "teal"}
+                        label={`${s.isActive ? "Deactivate" : "Reactivate"} ${s.name}`}
                         onClick={() => setDialog({ kind: "active", school: s })}
-                        aria-label={`${s.isActive ? "Deactivate" : "Reactivate"} ${s.name}`}
-                      >
-                        {s.isActive ? "Deactivate" : "Reactivate"}
-                      </button>
+                      />
                     </span>
                   </td>
                 </tr>

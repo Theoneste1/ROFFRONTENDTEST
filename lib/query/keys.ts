@@ -167,6 +167,14 @@ export const queryKeys = {
     markingHistory: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "marking", testId, "history", filters] as const,
     queue: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "queue", filters] as const,
     toMark: (code: string) => [...queryKeys.tests.all, "to-mark", code] as const,
+    // Question-level marking (lib/api/question-marking.ts)
+    qmQueue: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "qm-queue", filters] as const,
+    qmTask: (code: string, ref: string) => [...queryKeys.tests.all, "qm-task", code, ref] as const,
+    qm: (testId: string) => [...queryKeys.tests.all, "qm", testId] as const,
+    qmMarkers: (testId: string) => [...queryKeys.tests.all, "qm", testId, "markers"] as const,
+    qmProgress: (testId: string) => [...queryKeys.tests.all, "qm", testId, "progress"] as const,
+    qmTasks: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "qm", testId, "tasks", filters] as const,
+    qmStaffTask: (testId: string, taskId: string) => [...queryKeys.tests.all, "qm", testId, "task", taskId] as const,
     // Phase 4 (lib/api/test-results.ts)
     publication: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "results", testId, "preview", filters] as const,
     publications: (testId: string) => [...queryKeys.tests.all, "results", testId, "publications"] as const,

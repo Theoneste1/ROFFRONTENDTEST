@@ -85,7 +85,7 @@ export default function PortalShell({
 
   return (
     <div className="min-h-screen w-full bg-[#e2e8f0] overflow-x-clip flex flex-col">
-      <header className="sticky top-0 z-30 w-full flex-shrink-0 shadow-[0_1px_0_rgba(148,163,184,0.55)] bg-[#e2e8f0]/95 backdrop-blur supports-[backdrop-filter]:bg-[#e2e8f0]/85" data-testid="portal-topbar">
+      <header className="sticky top-0 z-30 w-full flex-shrink-0 shadow-[0_1px_0_rgba(148,163,184,0.55)] bg-[#e2e8f0]" data-testid="portal-topbar">
         <PortalNavbar
           onMenuClick={toggle}
           menuButtonRef={menuButtonRef}

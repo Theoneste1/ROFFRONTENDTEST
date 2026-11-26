@@ -44,12 +44,14 @@ import ExtensionsPanel from "./ExtensionsPanel";
 import DistributionPanel from "./DistributionPanel";
 import ReviewPanel from "./ReviewPanel";
 import HistoryPanel from "./HistoryPanel";
+import QuestionMarkingPanel from "./QuestionMarkingPanel";
+import { staffTabVisible as qmTabVisible } from "@/lib/test-management/question-marking";
 import { TESTS_DISTRIBUTE, TESTS_REVIEW, markingTabVisible } from "@/lib/test-management/marking";
 import { TESTS_PUBLISH_RESULTS, TESTS_VIEW_RANKINGS, TESTS_VIEW_RESULTS, resultsTabVisible } from "@/lib/test-management/results";
 import { PublishingPanel, RankingsPanel, ResultsReportPanel } from "./ResultsPanels";
 
-type Tab = "details" | "questions" | "files" | "submissions" | "extensions" | "markers" | "review" | "history" | "publishing" | "results" | "rankings";
-const TABS: readonly Tab[] = ["details", "questions", "files", "submissions", "extensions", "markers", "review", "history", "publishing", "results", "rankings"];
+type Tab = "details" | "questions" | "files" | "submissions" | "extensions" | "markers" | "question-marking" | "review" | "history" | "publishing" | "results" | "rankings";
+const TABS: readonly Tab[] = ["details", "questions", "files", "submissions", "extensions", "markers", "question-marking", "review", "history", "publishing", "results", "rankings"];
 
 export default function TestDetail({ id, base, initialTab }: { id: string; base: string; initialTab?: string }) {
   return (
@@ -74,6 +76,8 @@ function Detail({ id, base, initialTab }: { id: string; base: string; initialTab
   const canExtensions = staffTabVisible(detection, actionAllowed(TESTS_EXTENSIONS, permissionsStatus, can));
   const canDistribute = markingTabVisible(detection, actionAllowed(TESTS_DISTRIBUTE, permissionsStatus, can));
   const canReview = markingTabVisible(detection, actionAllowed(TESTS_REVIEW, permissionsStatus, can));
+  // Question-level marking (capability questionMarking): the mode, coaches per question, review per question.
+  const canQuestionMarking = qmTabVisible(detection, actionAllowed(TESTS_REVIEW, permissionsStatus, can) || actionAllowed(TESTS_DISTRIBUTE, permissionsStatus, can) || canManage);
   // Phase 4 (capability testResults): Publishing, Results (report, exports), Rankings.
   const canPublish = resultsTabVisible(detection, actionAllowed(TESTS_PUBLISH_RESULTS, permissionsStatus, can));
   const canResults = resultsTabVisible(detection, actionAllowed(TESTS_VIEW_RESULTS, permissionsStatus, can));
@@ -104,6 +108,7 @@ function Detail({ id, base, initialTab }: { id: string; base: string; initialTab
     ...(canSubmissions ? [{ id: "submissions" as const, label: t.submissionCount ? `Submissions (${t.submissionCount})` : "Submissions" }] : []),
     ...(canExtensions ? [{ id: "extensions" as const, label: "Extensions" }] : []),
     ...(canMarkers || canDistribute ? [{ id: "markers" as const, label: canDistribute ? "Markers & distribution" : "Markers" }] : []),
+    ...(canQuestionMarking ? [{ id: "question-marking" as const, label: "Question marking" }] : []),
     ...(canReview ? [{ id: "review" as const, label: "Review" }, { id: "history" as const, label: "History" }] : []),
     ...(canPublish && t.status === "PUBLISHED" ? [{ id: "publishing" as const, label: "Publishing" }] : []),
     ...(canResults && t.status === "PUBLISHED" ? [{ id: "results" as const, label: "Results" }] : []),
@@ -150,6 +155,7 @@ function Detail({ id, base, initialTab }: { id: string; base: string; initialTab
             {canMarkers && <MarkersPanel subject={t.subject} />}
           </div>
         )}
+        {tab === "question-marking" && canQuestionMarking && <QuestionMarkingPanel testId={t.id} testStatus={t.status} />}
         {tab === "review" && canReview && <ReviewPanel testId={t.id} />}
         {tab === "history" && canReview && <HistoryPanel testId={t.id} />}
         {tab === "publishing" && canPublish && <PublishingPanel testId={t.id} />}

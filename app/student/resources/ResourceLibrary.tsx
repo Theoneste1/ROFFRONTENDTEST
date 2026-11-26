@@ -15,7 +15,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { BookOpen, FileText, Lock, NotebookPen, Search, X } from "lucide-react";
+import { BookOpen, FileText, Lock, NotebookPen, Search } from "lucide-react";
 import type { CourseResource } from "@/lib/api/types";
 import { isApiError } from "@/lib/api/errors";
 import { coursesApi } from "@/lib/api/learning";
@@ -36,6 +36,7 @@ import {
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import FileButton from "@/app/components/ui/FileButton";
 import { FilterPills } from "@/app/components/ui/PageFrame";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { courseStyle, divisionLabel } from "../components/studentUi";
 
 const KIND_ICON: Record<ResourceKind, typeof BookOpen> = { books: BookOpen, notes: NotebookPen, papers: FileText };
@@ -155,61 +156,43 @@ export default function ResourceLibrary() {
     <div className="p-6">
       {header}
 
+      {/* The topic tabs, then search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
       <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 sm:p-5 space-y-4 mb-6" data-testid="library-filters">
-        <div className="relative">
-          <label htmlFor="library-search" className="sr-only">
-            Search resources
-          </label>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" aria-hidden="true" />
-          <input
-            id="library-search"
-            type="search"
-            value={filters.q}
-            maxLength={100}
-            onChange={(e) => setFilters({ q: e.target.value })}
-            placeholder="Search by title, author, description or tag…"
-            className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-          />
-        </div>
         <FilterPills
           label="Topic"
           value={filters.topic}
           onChange={(v) => setFilters({ topic: v, year: null })}
           options={[{ label: "All topics", value: "" }, ...topics.map((c) => ({ label: topicLabel(c), value: c.id }))]}
         />
-        <div className="flex flex-wrap items-center gap-3">
-          <FilterPills
-            label="Kind"
-            value={filters.kind}
-            onChange={(v) => setFilters({ kind: v as ResourceKind | "" })}
-            options={[
-              { label: "All kinds", value: "" as ResourceKind | "", count: inTopic.length },
-              ...(Object.keys(KIND_LABEL) as ResourceKind[]).map((k) => ({ label: KIND_LABEL[k], value: k as ResourceKind | "", count: counts[k] })),
-            ]}
-          />
-          {years.length > 0 && (
-            <label className="flex items-center gap-2 text-xs font-semibold text-gray-600">
-              Year
-              <select
-                value={filters.year ?? ""}
-                onChange={(e) => setFilters({ year: e.target.value ? Number(e.target.value) : null })}
-                className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              >
-                <option value="">Any year</option>
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {anyFilter && (
-            <button type="button" onClick={() => setFilters({ topic: "", kind: "", q: "", year: null })} className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-              <X className="h-3.5 w-3.5" aria-hidden="true" /> Clear filters
-            </button>
-          )}
-        </div>
+        <FilterBar
+          testId="library-filter-bar"
+          search={
+            <div className="relative min-w-[min(200px,100%)] flex-1">
+              <label htmlFor="library-search" className="sr-only">
+                Search resources
+              </label>
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" aria-hidden="true" />
+              <input
+                id="library-search"
+                type="search"
+                value={filters.q}
+                maxLength={100}
+                onChange={(e) => setFilters({ q: e.target.value })}
+                placeholder="Search by title, author, description or tag…"
+                className="w-full min-h-10 pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              />
+            </div>
+          }
+          onClearAll={() => setFilters({ kind: "", year: null })}
+          filters={[
+            // The number of resources of each kind in the chosen topic.
+            { key: "kind", kind: "select", label: "Kind", value: filters.kind, onChange: (v) => setFilters({ kind: v as ResourceKind | "" }),
+              options: (Object.keys(KIND_LABEL) as ResourceKind[]).map((k) => ({ label: `${KIND_LABEL[k]} (${counts[k] ?? 0})`, value: k })) },
+            { key: "year", kind: "select", label: "Year", value: filters.year === null ? "" : String(filters.year), show: years.length > 0,
+              onChange: (v) => setFilters({ year: v ? Number(v) : null }),
+              options: years.map((y) => ({ label: String(y), value: String(y) })) },
+          ]}
+        />
       </div>
 
       {lib.loading ? (

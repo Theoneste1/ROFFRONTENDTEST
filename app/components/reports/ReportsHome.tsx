@@ -16,7 +16,11 @@ import { btnPrimary } from "@/app/admin/components/adminUi";
 import ReportBuilder from "./ReportBuilder";
 import ReportViewer from "./ReportViewer";
 
-const SOURCE_TEXT: Record<string, string> = { STUDENTS: "Students", COACHES: "Coaches", TEACHERS: "Teachers", USERS: "All users" };
+const SOURCE_TEXT: Record<string, string> = {
+  STUDENTS: "Students", COACHES: "Coaches", TEACHERS: "Teachers", USERS: "All users", SCHOOLS: "Schools", SCHOOL_TEACHERS: "School teachers",
+  TEST_RESULTS: "Test results", ASSIGNMENT_GRADES: "Assignment grades", ENROLMENTS: "Course enrolments", TEACHER_APPLICATIONS: "Teacher applications",
+  COACH_APPLICATIONS: "Coach applications", BANKING: "Banking information", PROGRAMME_MEMBERS: "Programmes and members", SUBSCRIBERS: "News subscribers", ACTIVITY: "Activity log",
+};
 
 function Frame({ title, description, action, children }: { title: string; description?: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -61,7 +65,10 @@ export function ReportsList({ base }: { base: string }) {
           {reports.data.map((r) => (
             <li key={r.id}>
               <Link href={`${base}/${r.id}`} className="block h-full rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:border-[#00428C]">
-                <p className="font-bold text-gray-900">{r.name}</p>
+                <p className="flex items-center gap-2 font-bold text-gray-900">
+                  {r.name}
+                  {r.isTemplate && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900" data-testid="report-template-badge">Template</span>}
+                </p>
                 {r.description && <p className="mt-1 line-clamp-2 text-xs text-gray-600">{r.description}</p>}
                 <p className="mt-3 text-[11px] text-gray-500">{SOURCE_TEXT[r.source] ?? r.source} · {r.columns.length} column{r.columns.length === 1 ? "" : "s"} · {r.myAccess.manage ? "Owner" : levelsText({ canView: r.myAccess.view, canDownload: r.myAccess.download, canEdit: r.myAccess.edit })}</p>
               </Link>

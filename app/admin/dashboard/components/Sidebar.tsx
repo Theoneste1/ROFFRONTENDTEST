@@ -24,13 +24,15 @@ import {
   Globe,
   FileQuestion,
   Database,
+  Gauge,
   Settings
 } from "lucide-react";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_REGISTRATION_DATA, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, ADMIN_TESTS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_MARKING_OVERVIEW, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_REGISTRATION_DATA, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, ADMIN_TESTS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
 import { registrationDataNavVisible } from "@/lib/admin/registration-data";
 import { testsNavVisible } from "@/lib/test-management/rules";
+import { markingOverviewNavVisible } from "@/lib/test-management/marking-overview";
 import { countriesNavVisible } from "@/lib/countries/reference";
 import { teacherApplicationsNavVisible } from "@/lib/admin/teacher-applications";
 import { notificationDeliveriesNavVisible } from "@/lib/admin/notification-deliveries";
@@ -61,6 +63,7 @@ const ICONS: Record<string, LucideIcon> = {
   "/admin/forms": ClipboardList,
   "/admin/countries": Globe,
   "/admin/tests": FileQuestion,
+  "/admin/marking-overview": Gauge,
   "/admin/registration-data": Database,
   "/admin/settings": Settings,
 };
@@ -87,6 +90,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     ...(countriesNavVisible(detection, knownPermissions) ? [ADMIN_COUNTRIES] : []),
     // Tests: the backend feature AND the known tests.view (lib/test-management/rules.ts).
     ...(testsNavVisible(detection, knownPermissions) ? [ADMIN_TESTS] : []),
+    // Marking overview: the backend feature `testResults` (the dashboard API) AND the known tests.view.
+    ...(markingOverviewNavVisible(detection, knownPermissions, "admin") ? [ADMIN_MARKING_OVERVIEW] : []),
     // Registration data: the backend feature AND the known registrationData.manage (Super Administrators).
     ...(registrationDataNavVisible(detection, knownPermissions) ? [ADMIN_REGISTRATION_DATA] : []),
     // Platform settings (settings.manage). Help, the user's own settings and Sign Out are in the profile menu (top right).

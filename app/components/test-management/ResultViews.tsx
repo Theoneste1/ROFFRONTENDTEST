@@ -34,7 +34,11 @@ import { MetricCard, Notice, SearchInput, TableCard, TableMessage, td, th } from
 import StudentName from "@/app/components/students/StudentName";
 
 /** The results pages when the backend has no Phase 4 or the user lacks the permission; otherwise the children. */
-export function ResultsGate({ title, permission, children }: { title: string; permission: Permission; children: ReactNode }) {
+export function ResultsGate({ title, permission, children, forbidden = "Test results are not available for this account." }: {
+  title: string; permission: Permission; children: ReactNode;
+  /** What an account without the permission is told (plain words). */
+  forbidden?: string;
+}) {
   const { permissionsStatus, can, retry } = useSession();
   const caps = useBackendCapabilities();
   const mode = resultsPageMode({ detection: caps.detection, detectionLoading: caps.loading, permissionsStatus, can, permission });
@@ -44,7 +48,7 @@ export function ResultsGate({ title, permission, children }: { title: string; pe
       {mode === "loading" && <LoadingBlock />}
       {mode === "error" && <ErrorState error={null} title="Couldn't load your permissions" onRetry={retry} />}
       {mode === "unsupported" && <Notice tone="info">This server does not provide test results yet.</Notice>}
-      {mode === "forbidden" && <Notice tone="info">Test results are not available for this account.</Notice>}
+      {mode === "forbidden" && <Notice tone="info">{forbidden}</Notice>}
     </PageFrame>
   );
 }

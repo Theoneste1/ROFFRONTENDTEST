@@ -50,6 +50,12 @@ export const FIELD_LABELS: Record<BankingField, string> = {
 };
 
 export const TEACHER_NUMBER_MESSAGE = "Your Umwalimu SACCO account number must contain exactly 12 digits.";
+export const SCHOOL_NUMBER_MESSAGE = "The school's Umwalimu SACCO account number must contain exactly 12 digits.";
+/** An account name with a digit (owner 2026-11-25: names contain no digit). The backend's exact words. */
+export const NAME_DIGIT_MESSAGES = {
+  personalAccountName: "The bank account name must not contain numbers. Write the name exactly as on the account.",
+  schoolAccountName: "The school's bank account name must not contain numbers. Write the name exactly as on the account.",
+} as const;
 
 /** The bank fields that may be fixed to Umwalimu SACCO (and so may hold a conflicting saved bank). */
 export type FixableBankField = "personalBankName" | "schoolBankName";
@@ -78,6 +84,8 @@ export interface BankRules {
   fixedBank: string;
   banks: string[];
   personalNumberDigits: number | null;
+  /** Exactly this many digits for the school account number (Teachers: Umwalimu SACCO; newer backends). */
+  schoolNumberDigits?: number | null;
   /** Whether the school's bank details are asked (Teachers only). Older backends omit it: they asked everyone. */
   schoolRequired?: boolean;
   /** The fields this role gives, in form order (newer backends). */
@@ -122,6 +130,12 @@ export interface BankingRowStatus {
   invalid: BankingField[];
 }
 
+/** An account number for a summary: the last 4 characters only ("•••• 1234"), as the backend masks it. */
+export function maskNumber(n: string | null | undefined): string {
+  if (!n) return "—";
+  return n.length <= 4 ? "••••" : `•••• ${n.slice(-4)}`;
+}
+
 /** The signed-in user must complete their banking information before using the portal (the backend's `bankingRequired`). */
 export function needsBanking(user: { role?: string | null; bankingRequired?: boolean } | null | undefined): boolean {
   return !!user && (BANKING_ROLES as readonly string[]).includes(user.role ?? "") && user.bankingRequired === true;
@@ -136,6 +150,7 @@ export function rulesFor(role: string): BankRules {
     fixedBank: UMWALIMU_SACCO,
     banks: teacher ? [UMWALIMU_SACCO] : [...BANKS],
     personalNumberDigits: teacher ? 12 : null,
+    schoolNumberDigits: teacher ? 12 : null,
     schoolRequired: teacher,
     fields: teacher ? [...BANKING_FIELDS] : [...PERSONAL_FIELDS],
   };
@@ -178,6 +193,7 @@ export function validateBanking(
   const names = asksSchool(rules) ? (["personalAccountName", "schoolAccountName", "schoolAccountNumber"] as const) : (["personalAccountName"] as const);
   for (const f of names) {
     if (!v[f].trim()) errors[f] = `${FIELD_LABELS[f]} is required.`;
+    else if ((f === "personalAccountName" || f === "schoolAccountName") && /\d/.test(v[f])) errors[f] = NAME_DIGIT_MESSAGES[f];
   }
   if (rules.personalBank === "LIST") {
     if (!v.personalBankName) errors.personalBankName = "Bank name is required.";
@@ -186,6 +202,8 @@ export function validateBanking(
   if (rules.personalNumberDigits) {
     if (!/^\d{12}$/.test(v.personalAccountNumber)) errors.personalAccountNumber = TEACHER_NUMBER_MESSAGE;
   } else if (!v.personalAccountNumber.trim()) errors.personalAccountNumber = `${FIELD_LABELS.personalAccountNumber} is required.`;
+  // The school's Umwalimu SACCO number: exactly 12 digits too (Teachers; owner 2026-11-25).
+  if (asksSchool(rules) && rules.schoolNumberDigits && !/^\d{12}$/.test(v.schoolAccountNumber)) errors.schoolAccountNumber = SCHOOL_NUMBER_MESSAGE;
   for (const c of conflicts) if (!confirmed.has(c.field)) errors[c.field] = confirmReplaceMessage(c.saved);
   return errors;
 }

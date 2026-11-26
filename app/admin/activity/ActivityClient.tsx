@@ -9,7 +9,8 @@ import { roleLabel } from "@/lib/auth/roles";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { AdminPage, Badge, MetricCard, RequirePermission, SelectFilter, TableCard, TableMessage, btnSecondary, linkBtn, td, th } from "../components/adminUi";
+import { AdminPage, Badge, MetricCard, RequirePermission, TableCard, TableMessage, td, th } from "../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 
 export default function ActivityClient() {
   return (
@@ -44,7 +45,6 @@ function ActivityLog() {
 
   const s = summary.data;
   const total = s ? Object.values(s.byType).reduce((a, b) => a + (b ?? 0), 0) : 0;
-  const filtered = !!(query.userId || query.courseId || query.type || query.from || query.to);
 
   return (
     <AdminPage title="Activity" description="What learners do on the platform: sign-ins, course and resource views, submissions and discussion posts.">
@@ -67,59 +67,26 @@ function ActivityLog() {
         )}
       </section>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-end gap-3 mb-6" data-testid="activity-filters">
-        <SelectFilter label="Type" value={query.type ?? ""} onChange={(v) => setParam("type", v)} options={[{ label: "Any", value: "" }, ...ACTIVITY_TYPES.map((t) => ({ label: ACTIVITY_LABEL[t], value: t }))]} />
-        <SelectFilter
-          label="Course"
-          value={query.courseId ?? ""}
-          onChange={(v) => setParam("courseId", v)}
-          options={[{ label: "Any", value: "" }, ...(courses.data ?? []).map((c) => ({ label: c.title, value: c.id }))]}
-        />
-        <label className="flex items-center gap-2 text-xs text-gray-600">
-          <span className="font-semibold">From</span>
-          <input type="date" value={raw.from ?? ""} onChange={(e) => setParam("from", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
-        </label>
-        <label className="flex items-center gap-2 text-xs text-gray-600">
-          <span className="font-semibold">To</span>
-          <input type="date" value={raw.to ?? ""} onChange={(e) => setParam("to", e.target.value)} className="bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs" />
-        </label>
-        <form
-          className="flex items-center gap-2 text-xs text-gray-600"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!userInvalid) setParam("userId", userText.trim());
-          }}
-        >
-          <label htmlFor="activity-user" className="font-semibold">
-            User ID
-          </label>
-          <input
-            id="activity-user"
-            value={userText}
-            onChange={(e) => setUserText(e.target.value)}
-            placeholder="Paste a user ID"
-            aria-invalid={userInvalid || undefined}
-            className={`bg-white border rounded-full px-3 py-1.5 text-xs w-72 ${userInvalid ? "border-red-400" : "border-gray-200"}`}
-          />
-          <button type="submit" className={btnSecondary} disabled={userInvalid}>
-            Apply
-          </button>
-        </form>
-        {filtered && (
-          <button
-            type="button"
-            className={linkBtn}
-            onClick={() => {
-              setUserText("");
-              router.replace(pathname, { scroll: false });
-            }}
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
-      {userInvalid && <p className="-mt-4 mb-4 text-xs text-red-600">A user ID looks like 3f2b…-…; pick a user from the list to filter by them.</p>}
+      {/* Filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <FilterBar
+        testId="activity-filters"
+        onClearAll={() => {
+          setUserText("");
+          router.replace(pathname, { scroll: false });
+        }}
+        filters={[
+          { key: "type", kind: "select", label: "Type", value: query.type ?? "", onChange: (v) => setParam("type", v),
+            options: ACTIVITY_TYPES.map((t) => ({ label: ACTIVITY_LABEL[t], value: t })) },
+          { key: "courseId", kind: "select", label: "Course", value: query.courseId ?? "", onChange: (v) => setParam("courseId", v),
+            options: (courses.data ?? []).map((c) => ({ label: c.title, value: c.id })) },
+          { key: "from", kind: "text", inputType: "date", label: "From", value: raw.from ?? "", onChange: (v) => setParam("from", v) },
+          { key: "to", kind: "text", inputType: "date", label: "To", value: raw.to ?? "", onChange: (v) => setParam("to", v) },
+          // Applied only when it is a user ID; otherwise the message below says what to do.
+          { key: "userId", kind: "text", label: "User ID", value: raw.userId ?? "", placeholder: "Paste a user ID",
+            hint: "A user ID looks like 3f2b…-…", onChange: (v) => { setUserText(v); if (v === "" || isUuid(v)) setParam("userId", v); } },
+        ]}
+      />
+      {userInvalid && <p className="-mt-2 mb-4 text-xs text-red-600">That is not a user ID, so it was not applied. A user ID looks like 3f2b…-…; pick a user from the list to filter by them.</p>}
 
       {list.isError ? (
         <ErrorState error={list.error} title="Couldn't load the activity log" onRetry={() => list.refetch()} />

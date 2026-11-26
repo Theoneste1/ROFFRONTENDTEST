@@ -140,25 +140,49 @@ test.describe.serial("Head Coach → coach A (blind) → second marking by coach
     });
   });
 
-  test("coach A: the marking queue and a blind marking page — a code only; draft, then submit for approval", async ({ browser }) => {
+  test("coach A: the marking queue and a blind marking page — a code only; draft, then submit for approval", async ({ browser, request }) => {
     test.setTimeout(120_000);
     const page = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
     await signIn(page, "coach");
     await navigateViaSidebar(page, "/mentor/marking");
     await expect(page.getByRole("heading", { name: "Marking", level: 1 })).toBeVisible();
+    // The saved "Show" choice starts on "To mark" (owner 2026-11-26).
+    await expect(page.getByTestId("queue-view-TO_MARK")).toHaveAttribute("aria-pressed", "true");
     const row = page.getByTestId(`queue-${code}`);
     await expect(row).toContainText("Not started");
     await noSeriousA11y(page);
     await row.getByRole("link", { name: code }).click();
     await page.waitForURL(new RegExp(`/mentor/marking/${code}$`));
-    await expect(page.getByRole("heading", { name: `Submission ${code}` })).toBeVisible();
+    await expect(page.getByRole("heading", { name: `Paper ${code}` })).toBeVisible();
     // Named after the test's title (owner 2026-11-22); an older backend: marking-guide.pdf.
     await expect(page.getByTestId("marking-guide")).toContainText(/(- marking guide|marking-guide)\.pdf/);
     // Blind: nothing on the page names the student, the school or the original file.
     const text = (await page.locator("main").innerText());
     for (const leak of [markedName, markedStudent, "E2E Marking School", "IMG_2001", "Kamali", "xtend"]) expect([leak, text.includes(leak)]).toEqual([leak, false]);
     await page.getByTestId("mark-q1").getByLabel("Marks (of 5)").fill("4");
+    await page.getByTestId("mark-q1").getByRole("button", { name: "Add a comment" }).click();
     await page.getByTestId("mark-q1").getByLabel("Comment (optional)").fill("Good working");
+    await page.getByTestId("save-draft").click();
+    await expect(page.getByText(/^Draft saved/)).toBeVisible();
+    // Another tab saves first: this (now stale) page's save is refused with plain words, never overwriting the newer marks.
+    const ca = { Authorization: `Bearer ${await apiToken(request, "e2e.coach", PASSWORD)}` };
+    const mine = await (await request.get(`/api/v1/marking/submissions/${code}`, { headers: ca })).json();
+    const [q1] = mine.test.questions as Array<{ id: string }>;
+    expect((await request.put(`/api/v1/marking/submissions/${code}/marking`, {
+      headers: ca, data: { scores: [{ questionId: q1.id, marks: 3 }], expectedRevision: mine.myMarking.revision },
+    })).status()).toBe(200);
+    await page.getByTestId("mark-q1").getByLabel("Marks (of 5)").fill("5");
+    await page.getByTestId("save-draft").click();
+    await expect(page.getByText(/Your marking was changed somewhere else \(another tab or device\)/)).toBeVisible();
+    await withDb(async (c) => {
+      const m = (await c.query(
+        `SELECT sc.marks FROM "TestMarkingScore" sc JOIN "TestMarking" m ON m.id = sc."markingId" JOIN "TestSubmission" s ON s.id = m."submissionId"
+          WHERE s."publicCode" = $1 AND sc."questionId" = $2`, [code, q1.id])).rows;
+      expect(m.map((r) => Number(r.marks))).toEqual([3]);   // the other tab's mark stands
+    });
+    await page.reload();
+    await expect(page.getByTestId("mark-q1").getByLabel("Marks (of 5)")).toHaveValue("3");
+    await page.getByTestId("mark-q1").getByLabel("Marks (of 5)").fill("4");
     await page.getByTestId("save-draft").click();
     await expect(page.getByText(/^Draft saved/)).toBeVisible();
     await page.getByTestId("submit-marking").click();
@@ -177,13 +201,29 @@ test.describe.serial("Head Coach → coach A (blind) → second marking by coach
       const s = (await c.query(`SELECT status FROM "TestSubmission" WHERE "publicCode" = $1`, [code])).rows[0];
       expect(s.status).toBe("MARKED");
     });
+    // Done: the paper leaves "To mark"; "Marked" shows it, and that choice is kept (a reload, a new visit) until changed.
+    await navigateViaSidebar(page, "/mentor/marking");
+    await expect(page.getByTestId("queue-view-TO_MARK")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("queue-view")).toBeVisible();
+    await expect(page.getByTestId(`queue-${code}`)).toHaveCount(0);
+    await page.getByTestId("queue-view-MARKED").click();
+    await expect(page.getByTestId("queue-view-MARKED")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId(`queue-${code}`)).toBeVisible();
+    await noSeriousA11y(page);
+    await page.reload();
+    await expect(page.getByTestId("queue-view-MARKED")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId(`queue-${code}`)).toBeVisible();
+    await page.getByTestId("queue-view-ALL").click();
+    await expect(page.getByTestId(`queue-${code}`)).toBeVisible();
+    await page.getByTestId("queue-view-TO_MARK").click();
+    await expect(page.getByTestId(`queue-${code}`)).toHaveCount(0);
     await page.context().close();
   });
 
   test("Review: the Head Coach requests an independent second marking by coach B", async () => {
     await head.getByTestId("tab-review").click();
     const row = head.getByTestId(`review-${markedStudent}`);
-    await expect(row).toContainText("Marked (awaiting approval)");
+    await expect(row).toContainText("Awaiting review");
     await expect(row).toContainText("15");
     await row.getByRole("button", { name: /^Review / }).click();
     const detail = head.getByTestId("review-detail");
@@ -194,7 +234,7 @@ test.describe.serial("Head Coach → coach A (blind) → second marking by coach
     await dialog.getByTestId("coach-select").selectOption({ label: `${coachBName} E2E (1 assigned)` });
     await dialog.getByTestId("coach-confirm").click();
     await expect(head.getByText("A second coach marks it independently")).toBeVisible();
-    await expect(detail.getByTestId("submission-status")).toHaveText("Awaiting second marking");
+    await expect(detail.getByTestId("submission-status")).toHaveText("Second marking");
     await noSeriousA11y(head);
     await head.getByRole("button", { name: "Close" }).click();
   });
@@ -205,7 +245,7 @@ test.describe.serial("Head Coach → coach A (blind) → second marking by coach
     await signInWith(page, coachB, PASSWORD);
     await navigateViaSidebar(page, "/mentor/marking");
     await page.getByTestId(`queue-${code}`).getByRole("link", { name: code }).click();
-    await expect(page.getByRole("heading", { name: `Submission ${code}` })).toBeVisible();
+    await expect(page.getByRole("heading", { name: `Paper ${code}` })).toBeVisible();
     const text = await page.locator("main").innerText();
     for (const leak of ["Good working", "15 / 20", "Coach E2E", markedName]) expect([leak, text.includes(leak)]).toEqual([leak, false]);
     await expect(page.getByTestId("running-total")).toHaveText("Total: —");
@@ -250,7 +290,7 @@ test.describe.serial("Head Coach → coach A (blind) → second marking by coach
     await unlock.getByTestId("decision-text").fill("Recount question 2");
     await unlock.getByTestId("decision-confirm").click();
     await expect(head.getByText("Unlocked: it can be reviewed again.")).toBeVisible();
-    await expect(detail.getByTestId("submission-status")).toHaveText("Marked (awaiting approval)");
+    await expect(detail.getByTestId("submission-status")).toHaveText("Awaiting review");
     await head.getByRole("button", { name: "Close" }).click();
     await head.getByTestId("tab-history").click();
     await head.getByTestId("history-panel").getByRole("button", { name: "Mark changes" }).click();

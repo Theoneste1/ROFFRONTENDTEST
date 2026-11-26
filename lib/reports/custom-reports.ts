@@ -10,7 +10,7 @@ import { api, apiBlob, type DownloadedFile } from "../api/client";
 import type { Page, Permission, Role } from "../api/types";
 import { hasFeature, type BackendDetection } from "../api/capabilities";
 
-export type FieldType = "text" | "enum" | "date" | "boolean" | "list";
+export type FieldType = "text" | "enum" | "date" | "boolean" | "list" | "number";
 export type FilterOp = "eq" | "neq" | "in" | "contains" | "gte" | "lte" | "isEmpty" | "isNotEmpty";
 
 export interface ReportField {
@@ -20,11 +20,18 @@ export interface ReportField {
   values: string[] | null;
   filterable: boolean;
   sortable: boolean;
+  /** Personal data (newer backends): only the Super Admin is offered it; anyone else sees it blank. */
+  protected?: boolean;
 }
+/** The data groups of the builder's "Data" picker (newer backends send `group`). */
+export const SOURCE_GROUPS = ["People", "Schools", "Learning", "Applications", "Administration"] as const;
 export interface ReportSource {
   key: string;
   label: string;
   fields: ReportField[];
+  group?: (typeof SOURCE_GROUPS)[number];
+  /** Only the Super Admin may use it (e.g. banking information). */
+  superAdminOnly?: boolean;
 }
 export interface ReportCatalogue {
   sources: ReportSource[];
@@ -61,6 +68,8 @@ export interface CustomReport extends ReportDefinition {
   createdAt: string;
   updatedAt: string;
   myAccess: ReportLevels;
+  /** A template every Administrator may start from (newer backends); only the Super Admin changes it. */
+  isTemplate?: boolean;
 }
 export interface ReportPage {
   report?: { id: string; name: string };
@@ -84,7 +93,7 @@ export interface GrantInput {
   canEdit: boolean;
 }
 
-export type SaveReportInput = ReportDefinition & { name: string; description?: string };
+export type SaveReportInput = ReportDefinition & { name: string; description?: string; /** The Super Admin only. */ isTemplate?: boolean };
 
 const enc = encodeURIComponent;
 export const customReportsApi = {
@@ -138,6 +147,8 @@ export function opsFor(field: Pick<ReportField, "type" | "key">): FilterOp[] {
       return ["eq"];
     case "list":
       return ["in", "eq", "isEmpty"];
+    case "number":
+      return ["eq", "gte", "lte", "isEmpty", "isNotEmpty"];
   }
 }
 

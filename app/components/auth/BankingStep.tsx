@@ -6,8 +6,8 @@
  * other request until it is done (403 BANKING_DETAILS_REQUIRED), so it cannot be skipped by a refresh, an address, the
  * menu or another tab. What is already saved is shown and kept; the user can sign out at any time.
  *
- *  - Teachers: personal and school details (six fields); both banks are Umwalimu SACCO (shown, not chosen); the
- *    personal account number is exactly 12 digits.
+ *  - Teachers: personal and school details (six fields); both banks are Umwalimu SACCO (shown, not chosen); both
+ *    account numbers are exactly 12 digits.
  *  - Coaches and Head Coaches: their personal details only (three fields; the bank chosen from the list). No school
  *    section, no school check, no school confirmation; school details saved earlier are left as they are.
  */
@@ -21,7 +21,7 @@ import { useSession } from "@/lib/auth/session";
 import { Button, TextField } from "@/app/components/ui/form";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import {
-  asksSchool, conflictsOf, FIELD_LABELS, initialValues, rulesFor, submissionOf, UMWALIMU_SACCO, validateBanking,
+  asksSchool, conflictsOf, FIELD_LABELS, initialValues, rulesFor, submissionOf, UMWALIMU_SACCO, validateBanking, type BankingSubmission,
   type BankingField, type BankingValues, type BankingView, type FixableBankField,
 } from "@/lib/accounts/banking";
 
@@ -66,7 +66,29 @@ export default function BankingStep({ firstName, role }: { firstName: string; ro
   );
 }
 
-function BankingForm({ firstName, role, view, signOut }: { firstName: string; role: string; view: BankingView; signOut: ReactNode }) {
+export interface BankingFormProps {
+  firstName: string;
+  role: string;
+  view: BankingView;
+  /** The step only: the sign-out link. */
+  signOut?: ReactNode;
+  /**
+   * "step" (default): the first-sign-in step. "edit": changing saved details later — the owner in Settings, or an
+   * administrator on the person's page (owner 2026-11-25). Same fields and rules; "Save changes" / "Cancel".
+   */
+  variant?: "step" | "edit";
+  /** Where the details are saved (default: the signed-in user's own, PUT /me/banking). */
+  save?: (body: BankingSubmission) => Promise<unknown>;
+  onSaved?: () => void;
+  onCancel?: () => void;
+  /** "edit": the heading (default "Edit banking information"). */
+  title?: string;
+  /** false when an administrator edits someone else's details: "Personal bank account", not "Your …". */
+  owner?: boolean;
+}
+
+export function BankingForm({ firstName, role, view, signOut, variant = "step", save, onSaved, onCancel, title, owner = true }: BankingFormProps) {
+  const editing = variant === "edit";
   const queryClient = useQueryClient();
   const rules = view.rules ?? rulesFor(role);
   const school = asksSchool(rules);
@@ -108,7 +130,13 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
     }
     setSaving(true);
     try {
-      const result = await bankingApi.save(submissionOf(rules, values, confirmed));
+      const body = submissionOf(rules, values, confirmed);
+      if (editing) {
+        await (save ?? bankingApi.save)(body);
+        onSaved?.();
+        return;
+      }
+      const result = await bankingApi.save(body);
       queryClient.setQueryData(["me", "banking"], result);
       setSaved(true);
     } catch (err) {
@@ -125,7 +153,7 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
       <section className="rounded-2xl bg-white p-6 text-center shadow-sm sm:p-10" data-testid="banking-saved" aria-live="polite">
         <CircleCheck className="mx-auto h-12 w-12 text-emerald-600" aria-hidden="true" />
         <h1 className="mt-4 text-2xl font-bold text-slate-900">Your banking information has been saved</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">Thank you, {firstName}. You can now continue to your dashboard. To change these details later, contact ROF support.</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Thank you, {firstName}. You can now continue to your dashboard. You can change these details at any time in Settings.</p>
         <Button
           type="button"
           className="mt-6 w-full sm:w-auto"
@@ -198,13 +226,21 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5" data-testid="banking-form">
-      <header className="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">One more step, {firstName}</p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Complete Your Banking Information</h1>
+      <header className={editing ? "rounded-2xl border border-gray-100 bg-white p-5 sm:p-6" : "rounded-2xl bg-white p-6 shadow-sm sm:p-8"}>
+        {editing ? (
+          <h2 className="text-lg font-bold text-slate-900">{title ?? "Edit banking information"}</h2>
+        ) : (
+          <>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">One more step, {firstName}</p>
+            <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Complete Your Banking Information</h1>
+          </>
+        )}
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          {school
-            ? "To complete your profile, please provide your personal and school banking information."
-            : "To complete your profile, please provide your personal banking information."}{" "}
+          {editing
+            ? school ? "Personal and school banking information." : "Personal banking information."
+            : school
+              ? "To complete your profile, please provide your personal and school banking information."
+              : "To complete your profile, please provide your personal banking information."}{" "}
           Rwanda Olympiad Foundation requires these details for administrative and payment-related processes.
         </p>
         <p className="mt-3 text-xs text-slate-500">Fields marked <span className="text-red-500">*</span> are required.</p>
@@ -216,8 +252,8 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
         )}
       </header>
 
-      <Section icon={<Landmark className="h-5 w-5" aria-hidden="true" />} title="Your personal bank account" testId="banking-personal">
-        {field("personalAccountName", { hint: "Your name exactly as it appears on the account.", autoComplete: "name" })}
+      <Section icon={<Landmark className="h-5 w-5" aria-hidden="true" />} title={owner ? "Your personal bank account" : "Personal bank account"} testId="banking-personal">
+        {field("personalAccountName", { hint: owner ? "Your name exactly as it appears on the account." : "The name exactly as it appears on the account.", autoComplete: owner ? "name" : "off" })}
         {rules.personalBank === "FIXED" ? (
           fixedBank("personalBankName", "Teachers are paid through Umwalimu SACCO.")
         ) : (
@@ -251,20 +287,28 @@ function BankingForm({ firstName, role, view, signOut }: { firstName: string; ro
 
       {/* The school's details: Teachers only (Coaches and Head Coaches are not asked). */}
       {school && (
-        <Section icon={<School className="h-5 w-5" aria-hidden="true" />} title="Your school's bank account" testId="banking-school">
+        <Section icon={<School className="h-5 w-5" aria-hidden="true" />} title={owner ? "Your school's bank account" : "School's bank account"} testId="banking-school">
           {field("schoolAccountName", { hint: "The school's account name exactly as the bank shows it." })}
           {fixedBank("schoolBankName", "School accounts are held at Umwalimu SACCO.")}
-          {field("schoolAccountNumber", { hint: "As the bank shows it." })}
+          {field("schoolAccountNumber", {
+            inputMode: rules.schoolNumberDigits ? "numeric" : undefined,
+            hint: rules.schoolNumberDigits ? "Exactly 12 digits, without spaces." : "As the bank shows it.",
+          })}
         </Section>
       )}
 
       <div className="space-y-3 rounded-2xl bg-white p-6 shadow-sm sm:p-8">
         {formError && <Alert tone="error">{formError}</Alert>}
-        <Button type="submit" loading={saving} className="w-full" data-testid="banking-submit">
-          {saving ? "Saving…" : "Submit banking information"}
-        </Button>
-        <p className="text-center text-xs text-slate-500">Your details are visible only to you and to authorised ROF administrators.</p>
-        <div className="text-center">{signOut}</div>
+        <div className={editing ? "flex flex-col-reverse gap-3 sm:flex-row sm:justify-end" : ""}>
+          {editing && onCancel && (
+            <Button type="button" variant="secondary" onClick={onCancel} disabled={saving} data-testid="banking-cancel">Cancel</Button>
+          )}
+          <Button type="submit" loading={saving} className={editing ? "" : "w-full"} data-testid="banking-submit">
+            {saving ? "Saving…" : editing ? "Save changes" : "Submit banking information"}
+          </Button>
+        </div>
+        <p className="text-center text-xs text-slate-500">These details are visible only to their owner and to authorised ROF administrators.</p>
+        {signOut && <div className="text-center">{signOut}</div>}
       </div>
       <div className="sr-only" aria-live="polite">{saving ? "Saving…" : ""}</div>
     </form>

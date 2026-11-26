@@ -118,6 +118,8 @@ test.describe.serial("Student profile pictures: no access just for being signed 
   });
 
   test("direct URL: signed out 401; in a classmate's signed-in browser still 401 (no cookie access); with a classmate's token 200 (owner 2026-11-22)", async ({ page, request }) => {
+    // The browser sign-in below may wait out the sign-in limit (up to 90 s, its own expectation): give the test that time.
+    test.info().setTimeout(test.info().timeout + 90_000);
     const url = `/api/v1/users/${studentId}/avatar`;
     expect((await request.get(url)).status()).toBe(401);
     // Signed in as a classmate, then opening the picture URL directly in the browser.

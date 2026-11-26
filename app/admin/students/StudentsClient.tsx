@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { School } from "lucide-react";
+import { Eye, School } from "lucide-react";
+import { IconAction } from "@/app/components/ui/IconAction";
 import { studentsApi, type UserReportFilters } from "@/lib/api/admin";
 import type { ReportUserStatus } from "@/lib/api/types";
 import { useAdminDivisions, useStudentReport } from "@/lib/queries/admin";
@@ -10,7 +11,8 @@ import { useSession } from "@/lib/auth/session";
 import { formatDate, formatNumber } from "@/lib/format";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
-import { Badge, CsvButton, FilterPills, SearchInput, SelectFilter, TableCard, TableMessage, btnSecondary, linkBtn, td, th } from "../components/adminUi";
+import { Badge, CsvButton, SearchInput, TableCard, TableMessage, btnSecondary, td, th } from "../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 
 const STATUS_BADGE: Record<ReportUserStatus, { label: string; badge: string }> = {
   ACTIVE: { label: "Active", badge: "bg-emerald-50 text-emerald-700" },
@@ -62,22 +64,22 @@ export default function StudentsClient() {
         </div>
       </div>
 
-      {/* Controls Bar: Search & Pill Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <SearchInput value={q} onChange={(v) => setParam("q", v)} placeholder="Search student…" label="Search students" />
-        <FilterPills
-          label="Division"
-          value={divisionId}
-          onChange={(v) => setParam("divisionId", v)}
-          options={[{ label: "All", value: "" }, ...(divisions.data ?? []).map((d) => ({ label: d.name.replace(/ division$/i, ""), value: d.id }))]}
-        />
-        <SelectFilter
-          label="Status"
-          value={status}
-          onChange={(v) => setParam("status", v)}
-          options={[{ label: "Any", value: "" }, ...Object.entries(STATUS_BADGE).map(([value, s]) => ({ value, label: s.label }))]}
-        />
-      </div>
+      {/* Search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <FilterBar
+        testId="student-filters"
+        search={<SearchInput value={q} onChange={(v) => setParam("q", v)} placeholder="Search student…" label="Search students" />}
+        onClearAll={() => {
+          const next = new URLSearchParams(params);
+          for (const k of ["divisionId", "status", "page"]) next.delete(k);
+          router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
+        }}
+        filters={[
+          { key: "divisionId", kind: "select", label: "Division", value: divisionId, onChange: (v) => setParam("divisionId", v),
+            options: (divisions.data ?? []).map((d) => ({ label: d.name.replace(/ division$/i, ""), value: d.id })) },
+          { key: "status", kind: "select", label: "Status", value: status, onChange: (v) => setParam("status", v),
+            options: Object.entries(STATUS_BADGE).map(([value, s]) => ({ value, label: s.label })) },
+        ]}
+      />
 
       {students.isError ? (
         <ErrorState error={students.error} title="Couldn't load students" onRetry={() => students.refetch()} />
@@ -131,9 +133,9 @@ export default function StudentsClient() {
                     {formatNumber(s.submissions)} submitted · {formatNumber(s.resultsPublished)} results · {formatNumber(s.points)} pts
                   </td>
                   <td className={`${td} text-right`}>
-                    <Link href={`/admin/users/${s.id}`} className={linkBtn} aria-label={`View ${s.name}`}>
-                      View
-                    </Link>
+                    <span className="inline-flex justify-end">
+                      <IconAction href={`/admin/users/${s.id}`} icon={Eye} tone="slate" label={`View ${s.name}`} />
+                    </span>
                   </td>
                 </tr>
               ))

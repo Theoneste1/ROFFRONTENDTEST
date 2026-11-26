@@ -79,7 +79,7 @@ test("coach on a phone: Marking from the drawer, a code only, marks saved as a d
   await noSeriousA11y(page);
   await card.click();
   await page.waitForURL(new RegExp(`/mentor/marking/${code}$`));
-  await expect(page.getByRole("heading", { name: `Submission ${code}` })).toBeVisible();
+  await expect(page.getByRole("heading", { name: `Paper ${code}` })).toBeVisible();
   await expect(page.getByTestId("typed-answer-view")).toHaveText("5");
   await expect(page.locator("main").getByText(/e2e\.student|Student E2E/)).toHaveCount(0);
   await page.getByTestId("mark-q1").getByLabel("Marks (of 5)").fill("5");

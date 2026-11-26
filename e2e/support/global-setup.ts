@@ -44,7 +44,7 @@ export default async function globalSetup() {
         BEGIN
           INSERT INTO "UserBankDetails" ("userId", "personalAccountName", "personalBankName", "personalAccountNumber",
                                          "schoolAccountName", "schoolBankName", "schoolAccountNumber", "updatedAt")
-          VALUES (NEW."id", 'E2E Account', 'Umwalimu SACCO', '100000000001', 'E2E School', 'Umwalimu SACCO', '200000000002', now())
+          VALUES (NEW."id", 'Test Account', 'Umwalimu SACCO', '100000000001', 'Test School', 'Umwalimu SACCO', '200000000002', now())
           ON CONFLICT ("userId") DO NOTHING;
           RETURN NULL;
         END;
@@ -57,7 +57,7 @@ export default async function globalSetup() {
       await client.query(`
         INSERT INTO "UserBankDetails" ("userId", "personalAccountName", "personalBankName", "personalAccountNumber",
                                        "schoolAccountName", "schoolBankName", "schoolAccountNumber", "updatedAt")
-        SELECT id, 'E2E Account', 'Umwalimu SACCO', '100000000001', 'E2E School', 'Umwalimu SACCO', '200000000002', now()
+        SELECT id, 'Test Account', 'Umwalimu SACCO', '100000000001', 'Test School', 'Umwalimu SACCO', '200000000002', now()
           FROM "User" WHERE role IN ('TEACHER', 'MENTOR', 'HEAD_COACH') AND username NOT LIKE 'bank.%'
         ON CONFLICT ("userId") DO NOTHING`);
     }

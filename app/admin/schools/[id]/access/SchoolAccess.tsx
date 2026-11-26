@@ -32,8 +32,9 @@ import {
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import {
-  AdminPage, Badge, Card, MetricCard, Modal, Notice, SearchInput, SelectFilter, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th,
+  AdminPage, Badge, Card, MetricCard, Modal, Notice, SearchInput, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th,
 } from "../../../components/adminUi";
+import { FilterBar } from "@/app/components/ui/FilterBar";
 import { GRADES, SelectInput, TextInput } from "../../../users/components/userUi";
 
 const PAGE_SIZE = 25;
@@ -180,20 +181,27 @@ export default function SchoolAccess({ schoolId }: { schoolId: string }) {
         )}
       </Card>
 
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <SearchInput value={q} onChange={resetPage(setQ)} placeholder="Search by name or username…" label="Search students" />
-        <SelectFilter label="Grade" value={grade} onChange={(v) => resetPage(setGrade)(v as "" | GradeLevel)} options={[{ label: "All grades", value: "" }, ...GRADES.map((g) => ({ label: g, value: g }))]} />
-        <SelectFilter label="School verification" value={verification} onChange={(v) => resetPage(setVerification)(v as "" | "VERIFIED" | "PENDING")}
-          options={[{ label: "Verified and pending", value: "" }, { label: "Verified", value: "VERIFIED" }, { label: "Pending", value: "PENDING" }]} />
-        <SelectFilter label="Teacher" value={teacherFilter || assigned} onChange={(v) => {
-          if (v === "true" || v === "false" || v === "") { setAssigned(v as "" | "true" | "false"); setTeacherFilter(""); } else { setTeacherFilter(v); setAssigned(""); }
-          setPage(1);
-        }}
-          options={[
-            { label: "Any", value: "" }, { label: "With a teacher", value: "true" }, { label: "Without a teacher", value: "false" },
-            ...a.teachers.map((t) => ({ label: `Assigned to ${personName(t.teacher)}`, value: t.teacher.id })),
-          ]} />
-      </div>
+      {/* Search and filters (owner 2026-11-25): "+ Add filter" and the active ones as chips. */}
+      <FilterBar
+        testId="access-filters"
+        search={<SearchInput value={q} onChange={resetPage(setQ)} placeholder="Search by name or username…" label="Search students" />}
+        onClearAll={() => { setGrade(""); setVerification(""); setAssigned(""); setTeacherFilter(""); setPage(1); }}
+        filters={[
+          { key: "grade", kind: "select", label: "Grade", value: grade, onChange: (v) => resetPage(setGrade)(v as "" | GradeLevel),
+            options: GRADES.map((g) => ({ label: g, value: g })) },
+          { key: "verification", kind: "select", label: "School verification", value: verification, onChange: (v) => resetPage(setVerification)(v as "" | "VERIFIED" | "PENDING"),
+            options: [{ label: "Verified", value: "VERIFIED" }, { label: "Pending", value: "PENDING" }] },
+          // "With / without a teacher", or one teacher's students.
+          { key: "teacher", kind: "select", label: "Teacher", value: teacherFilter || assigned, onChange: (v) => {
+              if (v === "true" || v === "false" || v === "") { setAssigned(v as "" | "true" | "false"); setTeacherFilter(""); } else { setTeacherFilter(v); setAssigned(""); }
+              setPage(1);
+            },
+            options: [
+              { label: "With a teacher", value: "true" }, { label: "Without a teacher", value: "false" },
+              ...a.teachers.map((t) => ({ label: `Assigned to ${personName(t.teacher)}`, value: t.teacher.id })),
+            ] },
+        ]}
+      />
 
       {selected.size > 0 && (
         <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3" data-testid="selection-bar">
