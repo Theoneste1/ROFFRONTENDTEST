@@ -1,8 +1,7 @@
 /**
  * Page help (owner, 2026-11-26): the Help button on every signed-in page opens the guide for THAT page and role, with
  * technical support on WhatsApp (Theoneste, 0780 850 611), the credit "Made by Theoneste, Technology lead", and the full
- * guide as a PDF that starts from signing in. Opens by itself once on a first visit (forced here: automated browsers
- * are left alone by default).
+ * guide as a PDF that starts from signing in. Closed by default: it opens only from the Help button.
  */
 import { expect, test } from "@playwright/test";
 import { signIn } from "../support/session";
@@ -45,18 +44,17 @@ test.describe("Page help", () => {
     expect((await request.get("/help/guide/nobody.pdf")).status()).toBe(404);
   });
 
-  test("first visit: opens by itself once; after closing it stays closed", async ({ page }) => {
+  test("closed by default: opens only from Help, and closes when the person moves to another page", async ({ page }) => {
     await signIn(page, "student");
-    await page.evaluate(() => localStorage.setItem("rof.help.autoOpenInTests", "1"));
     await page.goto("/student/courses");
     const panel = page.getByTestId("page-help-panel");
-    await expect(panel).toBeVisible();
-    await expect(page.getByTestId("page-help-topic")).toHaveText("Courses · for Students");
-    await page.getByRole("button", { name: "Close help" }).click();
-    await expect(panel).toBeHidden();
-    await page.reload();
     await expect(page.getByTestId("page-help-button")).toBeVisible();
-    await expect(panel).toBeHidden();
+    await expect(panel).toHaveCount(0);
+    await page.getByTestId("page-help-button").click();
+    await expect(page.getByTestId("page-help-topic")).toHaveText("Courses · for Students");
+    await page.goto("/student/leaderboard");
+    await expect(page.getByTestId("page-help-button")).toBeVisible();
+    await expect(panel).toHaveCount(0);
   });
 
   test("phone: the guide opens as a sheet and fits the screen", async ({ browser }) => {

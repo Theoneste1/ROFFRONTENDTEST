@@ -6,7 +6,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import {
-  HELP_CREDIT, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guideUrl, helpRoleOf, matchScore, roleFromGuideFile, shouldAutoOpen,
+  HELP_CREDIT, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guideUrl, helpRoleOf, matchScore, roleFromGuideFile,
   topicFor, whatsappUrl,
 } from "@/lib/help/rules";
 import { ADMIN_NAV, MENTOR_NAV, TEACHER_NAV, ADMIN_TESTS, ADMIN_FORMS, ADMIN_COUNTRIES, ADMIN_SUBSCRIBERS, ADMIN_SETTINGS,
@@ -99,7 +99,7 @@ test("technical support: Theoneste on WhatsApp 0780 850 611, with the page named
   assert.equal(decodeURIComponent(whatsappUrl().split("text=")[1]), "Hello Theoneste, I need help with ROF LMS.");
 });
 
-test("PDF file name and address per audience; the panel opens by itself once per topic", () => {
+test("PDF file name and address per audience", () => {
   assert.equal(guideUrl("HEAD_COACH"), "/help/guide/head-coaches.pdf");
   assert.equal(guideUrl("SUPER_ADMIN"), "/help/guide/super-administrators.pdf");
   for (const role of ROLES) assert.equal(roleFromGuideFile(guideUrl(role).replace("/help/guide/", "")), role);
@@ -107,6 +107,4 @@ test("PDF file name and address per audience; the panel opens by itself once per
   assert.equal(roleFromGuideFile("coaches"), null);
   assert.equal(guideFileName("HEAD_COACH"), "ROF-LMS-guide-Head-Coaches.pdf");
   assert.equal(guideFileName("STUDENT"), "ROF-LMS-guide-Students.pdf");
-  assert.equal(shouldAutoOpen([], "coach-marking"), true);
-  assert.equal(shouldAutoOpen(["coach-marking"], "coach-marking"), false);
 });

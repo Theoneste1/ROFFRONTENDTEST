@@ -4,60 +4,34 @@
  * Page help (owner, 2026-11-26): the Help button of the portal top bar and its panel — the guide for THIS page, written
  * for the signed-in role, the technical support contact on WhatsApp, the full guide as a PDF (from signing in) and the
  * credit "Made by Theoneste, Technology lead". Desktop: a panel on the right; phone: a sheet from the bottom.
- * The panel opens by itself once per topic, per account, on this device (never for automated browsers, whose tests
- * would otherwise find it in their way); the Help button opens it any time.
+ * Closed by default (owner, 2026-11-26): it opens only when the person presses Help, and closes when they leave the page.
  */
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CircleHelp, Download, MessageCircle, X } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
-import { TECH_SUPPORT, generalTopic, guideFileName, guideFor, guideUrl, helpRoleOf, seenKey, shouldAutoOpen, topicFor, whatsappUrl, type HelpRole } from "@/lib/help/rules";
-
-/** The topics already seen by this account on this device: an external store (localStorage), read without effects. */
-const SEEN_EVENT = "rof-help-seen";
-function readSeenRaw(userId: string | undefined): string | null {
-  if (!userId) return null;
-  try {
-    // Automated browsers (end-to-end tests) never get the panel by itself, unless a test asks for it.
-    if (navigator.webdriver === true && localStorage.getItem("rof.help.autoOpenInTests") !== "1") return "*";
-    return localStorage.getItem(seenKey(userId)) ?? "[]";
-  } catch { return "*"; }   // storage blocked: never open by itself
-}
-function subscribeSeen(onChange: () => void) {
-  window.addEventListener(SEEN_EVENT, onChange);
-  window.addEventListener("storage", onChange);
-  return () => { window.removeEventListener(SEEN_EVENT, onChange); window.removeEventListener("storage", onChange); };
-}
-function markSeen(userId: string, topicId: string) {
-  try {
-    const seen = JSON.parse(localStorage.getItem(seenKey(userId)) ?? "[]") as string[];
-    if (!seen.includes(topicId)) localStorage.setItem(seenKey(userId), JSON.stringify([...seen, topicId]));
-  } catch { /* private window: the panel simply opens again next time */ }
-  window.dispatchEvent(new Event(SEEN_EVENT));
-}
+import { TECH_SUPPORT, generalTopic, guideFileName, guideFor, guideUrl, helpRoleOf, topicFor, whatsappUrl, type HelpRole } from "@/lib/help/rules";
 
 export default function PageHelp() {
   const { user } = useSession();
   const pathname = usePathname() ?? "/";
   const role = helpRoleOf(user?.role);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  /** The person's own choice for a topic (Help button, close); otherwise the first visit decides. */
-  const [choice, setChoice] = useState<{ topicId: string; open: boolean } | null>(null);
-  const seenRaw = useSyncExternalStore(subscribeSeen, () => readSeenRaw(user?.id), () => null);
+  const [open, setOpen] = useState(false);
+  // A new page closes the panel: its guide is for the page it was opened on.
+  const [openOn, setOpenOn] = useState(pathname);
+  if (openOn !== pathname) { setOpenOn(pathname); setOpen(false); }
 
   const topic = role ? topicFor(role, pathname) ?? generalTopic(role) : null;
   if (!role || !topic || !user) return null;
-
-  const firstVisit = seenRaw !== null && seenRaw !== "*" && shouldAutoOpen(JSON.parse(seenRaw) as string[], topic.id);
-  const open = choice?.topicId === topic.id ? choice.open : firstVisit;
-  const close = () => { setChoice({ topicId: topic.id, open: false }); markSeen(user.id, topic.id); buttonRef.current?.focus(); };
+  const close = () => { setOpen(false); buttonRef.current?.focus(); };
 
   return (
     <>
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => { setChoice({ topicId: topic.id, open: !open }); markSeen(user.id, topic.id); }}
+        onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="dialog"
         data-testid="page-help-button"

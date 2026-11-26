@@ -113,13 +113,3 @@ export function roleFromGuideFile(file: string): HelpRole | null {
   for (const role of Object.keys(GUIDES) as HelpRole[]) if (guideUrl(role) === `/help/guide/${file}`) return role;
   return null;
 }
-
-/** localStorage key: the topics whose panel already opened once for this account (on this device). */
-export function seenKey(userId: string): string {
-  return `rof.help.seen.${userId}`;
-}
-
-/** Whether the panel should open by itself: the first visit of this topic, for this account, on this device. */
-export function shouldAutoOpen(seen: readonly string[], topicId: string): boolean {
-  return !seen.includes(topicId);
-}
