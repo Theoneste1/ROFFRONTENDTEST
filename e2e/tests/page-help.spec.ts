@@ -30,6 +30,17 @@ test.describe("Page help", () => {
     expect(pdf.headers()["content-disposition"]).toContain("ROF-LMS-guide-Administrators.pdf");
     expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
 
+    // Administrators get every role's documentation: one combined guide, and each role's guide.
+    await expect(page.getByTestId("page-help-every-role")).toHaveAttribute("href", "/help/guide/every-role.pdf");
+    const combined = await request.get("/help/guide/every-role.pdf");
+    expect(combined.status()).toBe(200);
+    expect(combined.headers()["content-disposition"]).toContain("ROF-LMS-guide-Every-role.pdf");
+    expect((await combined.body()).length).toBeGreaterThan((await pdf.body()).length);
+    const all = page.getByTestId("page-help-all-guides").getByRole("listitem").getByRole("link");
+    await expect(all).toHaveCount(6);
+    await expect(all.nth(2)).toHaveAttribute("href", "/help/guide/coaches.pdf");
+    await expect(all.nth(2)).toHaveText("Guide for Coaches");
+
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
     await expect(page.getByTestId("page-help-button")).toBeFocused();
@@ -41,6 +52,7 @@ test.describe("Page help", () => {
     await page.getByTestId("page-help-button").click();
     await expect(page.getByTestId("page-help-topic")).toHaveText("Dashboard · for Coaches");
     await expect(page.getByTestId("page-help-download")).toHaveAttribute("href", "/help/guide/coaches.pdf");
+    await expect(page.getByTestId("page-help-all-guides")).toHaveCount(0);   // only administrators list every guide
     expect((await request.get("/help/guide/nobody.pdf")).status()).toBe(404);
   });
 

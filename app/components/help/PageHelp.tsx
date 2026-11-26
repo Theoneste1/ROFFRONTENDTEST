@@ -10,7 +10,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { CircleHelp, Download, MessageCircle, X } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
-import { TECH_SUPPORT, generalTopic, guideFileName, guideFor, guideUrl, helpRoleOf, topicFor, whatsappUrl, type HelpRole } from "@/lib/help/rules";
+import { ALL_HELP_ROLES, EVERY_ROLE_GUIDE, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guideUrl, helpRoleOf, topicFor, whatsappUrl, type HelpRole } from "@/lib/help/rules";
 
 export default function PageHelp() {
   const { user } = useSession();
@@ -147,6 +147,36 @@ function HelpPanel({ role, topic, onClose }: { role: HelpRole; topic: NonNullabl
             </a>
             <p className="mt-1.5 text-center text-xs text-slate-500">Every page for {guide.audience.toLowerCase()}, starting from signing in.</p>
           </section>
+
+          {(role === "ADMIN" || role === "SUPER_ADMIN") && (
+            <section data-testid="page-help-all-guides">
+              <h3 className="mb-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-brand">Guides for every role</h3>
+              <p className="mb-2 text-slate-600">See exactly what each person can do, or send them their guide.</p>
+              <a
+                href={EVERY_ROLE_GUIDE.url}
+                download={EVERY_ROLE_GUIDE.fileName}
+                data-testid="page-help-every-role"
+                className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-[0.8125rem] font-semibold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2"
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                Every role in one guide (PDF)
+              </a>
+              <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200">
+                {ALL_HELP_ROLES.map((r) => (
+                  <li key={r}>
+                    <a
+                      href={guideUrl(r)}
+                      download={guideFileName(r)}
+                      className="flex items-center justify-between gap-2 px-3 py-2 text-slate-800 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300"
+                    >
+                      <span>Guide for {guideFor(r).audience}</span>
+                      <Download className="h-4 w-4 flex-none text-brand" aria-hidden="true" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         <div className="flex items-center gap-2 border-t border-slate-200 px-5 py-3 text-xs text-slate-500" data-testid="page-help-credit">

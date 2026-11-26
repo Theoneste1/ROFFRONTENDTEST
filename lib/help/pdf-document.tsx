@@ -5,7 +5,7 @@
  * site's Content-Security-Policy rightly forbids the WebAssembly the PDF layout engine needs in the browser.
  */
 import { Document, Font, Image, Link, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
-import { HELP_CREDIT, TECH_SUPPORT, guideFor, whatsappUrl, type HelpRole, type HelpTopic } from "./rules";
+import { ALL_HELP_ROLES, HELP_CREDIT, TECH_SUPPORT, guideFor, whatsappUrl, type HelpRole, type HelpTopic } from "./rules";
 import { SITE_URL } from "./content-shared";
 
 const C = { brand: "#00428c", brand950: "#001d3d", brand50: "#eef4fb", brand100: "#d9e6f4", amber: "#fcd34d", ink: "#0f172a", muted: "#475569", line: "#cbd5e1" };
@@ -87,11 +87,28 @@ function Frame({ audience }: { audience: string }) {
   );
 }
 
-export function GuideDocument({ role, origin, date }: { role: HelpRole; origin: string; date: Date }) {
-  const guide = guideFor(role);
+/** The combined guide for administrators: every role's chapter in one document. */
+export const EVERY_ROLE = "EVERY_ROLE" as const;
+export type GuideScope = HelpRole | typeof EVERY_ROLE;
+
+const SUPPORT_BOX = (
+  <View style={[s.box, { marginTop: 6 }]} wrap={false}>
+    <Text style={[s.topicTitle, { marginBottom: 4 }]}>Technical support</Text>
+    <Text>{`Something not working, or a question this guide does not answer? Contact ${TECH_SUPPORT.name}, ${TECH_SUPPORT.title}, on WhatsApp.`}</Text>
+    <Text style={{ marginTop: 6 }}>
+      {"WhatsApp: "}<Text style={{ fontWeight: 700 }}>{TECH_SUPPORT.phoneDisplay}</Text>{"   ·   "}<Link src={whatsappUrl()} style={s.link}>Open a chat</Link>
+    </Text>
+    <Text style={{ marginTop: 4, color: C.muted, fontSize: 9 }}>Say which page you are on and what you tried. Never send your password.</Text>
+  </View>
+);
+
+export function GuideDocument({ scope, origin, date }: { scope: GuideScope; origin: string; date: Date }) {
+  const every = scope === EVERY_ROLE;
+  const roles: readonly HelpRole[] = scope === EVERY_ROLE ? ALL_HELP_ROLES : [scope];
+  const audience = scope === EVERY_ROLE ? "every role" : guideFor(scope).audience;
   const day = date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   return (
-    <Document title={`ROF LMS guide for ${guide.audience}`} author={HELP_CREDIT} subject="How to use ROF LMS" creator="ROF LMS">
+    <Document title={`ROF LMS guide for ${audience}`} author={HELP_CREDIT} subject="How to use ROF LMS" creator="ROF LMS">
       {/* Cover */}
       <Page size="A4" style={{ fontFamily: "Jakarta", backgroundColor: C.brand950, color: "#ffffff", padding: 56 }}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -104,9 +121,11 @@ export function GuideDocument({ role, origin, date }: { role: HelpRole; origin: 
         </View>
         <View style={{ marginTop: 190 }}>
           <View style={{ width: 48, height: 4, backgroundColor: C.amber, marginBottom: 18 }} />
-          <Text style={{ fontFamily: "Newsreader", fontWeight: 600, fontSize: 40, lineHeight: 1.1 }}>{`Guide for ${guide.audience}`}</Text>
+          <Text style={{ fontFamily: "Newsreader", fontWeight: 600, fontSize: 40, lineHeight: 1.1 }}>{`Guide for ${audience}`}</Text>
           <Text style={{ fontSize: 13, color: "#dbe7f5", marginTop: 14, lineHeight: 1.5 }}>
-            How to use ROF LMS, step by step: from opening the website and signing in, to every page of your portal.
+            {every
+              ? `What every person on ROF LMS can do, role by role: ${roles.map((r) => guideFor(r).audience).join(", ")}. From opening the website and signing in, to every page of each portal.`
+              : "How to use ROF LMS, step by step: from opening the website and signing in, to every page of your portal."}
           </Text>
           <Text style={{ fontSize: 10, color: "#c7d7ea", marginTop: 24 }}>{`Version of ${day}`}</Text>
         </View>
@@ -116,38 +135,39 @@ export function GuideDocument({ role, origin, date }: { role: HelpRole; origin: 
         </View>
       </Page>
 
-      {/* Part 1: from signing in */}
+      {/* Part 1: from signing in (the same for every role) */}
       <Page size="A4" style={s.page}>
-        <Frame audience={guide.audience} />
+        <Frame audience={audience} />
         <Text style={s.part}>Part 1</Text>
         <Text style={s.partTitle}>Getting started</Text>
-        <Text style={s.partIntro}>From opening the website to your first page after signing in.</Text>
-        {guide.gettingStarted.map((topic) => <Topic key={topic.id} topic={topic} />)}
+        <Text style={s.partIntro}>{every ? "The same for everyone: from opening the website to the first page after signing in." : "From opening the website to your first page after signing in."}</Text>
+        {guideFor(roles[0]).gettingStarted.map((topic) => <Topic key={topic.id} topic={topic} />)}
       </Page>
 
-      {/* Part 2: every page */}
-      <Page size="A4" style={s.page}>
-        <Frame audience={guide.audience} />
-        <Text style={s.part}>Part 2</Text>
-        <Text style={s.partTitle}>Inside ROF LMS</Text>
-        <Text style={s.partIntro}>Every page of your portal, in the order of the menu. Inside the website, the Help button at the top right shows the part for the page you are on.</Text>
-        {guide.topics.map((topic) => <Topic key={topic.id} topic={topic} />)}
-
-        <View style={[s.box, { marginTop: 6 }]} wrap={false}>
-          <Text style={[s.topicTitle, { marginBottom: 4 }]}>Technical support</Text>
-          <Text>{`Something not working, or a question this guide does not answer? Contact ${TECH_SUPPORT.name}, ${TECH_SUPPORT.title}, on WhatsApp.`}</Text>
-          <Text style={{ marginTop: 6 }}>
-            {"WhatsApp: "}<Text style={{ fontWeight: 700 }}>{TECH_SUPPORT.phoneDisplay}</Text>{"   ·   "}<Link src={whatsappUrl()} style={s.link}>Open a chat</Link>
-          </Text>
-          <Text style={{ marginTop: 4, color: C.muted, fontSize: 9 }}>Say which page you are on and what you tried. Never send your password.</Text>
-        </View>
-      </Page>
+      {/* Then every page: one part per role */}
+      {roles.map((role, n) => {
+        const guide = guideFor(role);
+        return (
+          <Page key={role} size="A4" style={s.page}>
+            <Frame audience={audience} />
+            <Text style={s.part}>{`Part ${n + 2}`}</Text>
+            <Text style={s.partTitle}>{every ? `Guide for ${guide.audience}` : "Inside ROF LMS"}</Text>
+            <Text style={s.partIntro}>
+              {every
+                ? `Every page ${guide.audience.toLowerCase()} use, in the order of their menu, and what they can do there.`
+                : "Every page of your portal, in the order of the menu. Inside the website, the Help button at the top right shows the part for the page you are on."}
+            </Text>
+            {guide.topics.map((topic) => <Topic key={topic.id} topic={topic} />)}
+            {n === roles.length - 1 && SUPPORT_BOX}
+          </Page>
+        );
+      })}
     </Document>
   );
 }
 
-/** The role's guide as PDF bytes. `origin`: where the fonts (/fonts/*.ttf) and the logo (/logo.png) are served. */
-export async function renderGuide(role: HelpRole, origin: string, date = new Date()): Promise<Buffer> {
+/** A guide as PDF bytes: one role's, or every role's. `origin`: where the fonts (/fonts/*.ttf) and the logo are served. */
+export async function renderGuide(scope: GuideScope, origin: string, date = new Date()): Promise<Buffer> {
   registerFonts(origin);
-  return renderToBuffer(<GuideDocument role={role} origin={origin} date={date} />);
+  return renderToBuffer(<GuideDocument scope={scope} origin={origin} date={date} />);
 }

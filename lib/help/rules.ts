@@ -31,6 +31,9 @@ const GUIDES: Record<HelpRole, RoleGuide> = {
   SUPER_ADMIN: SUPER_ADMIN_GUIDE,
 };
 
+/** Every guide, in the order an administrator sees them listed. */
+export const ALL_HELP_ROLES: readonly HelpRole[] = ["STUDENT", "TEACHER", "COACH", "HEAD_COACH", "ADMIN", "SUPER_ADMIN"];
+
 /** The guide audience for an account role (MENTOR = Coach). Unknown roles get none: no help button is shown. */
 export function helpRoleOf(role: string | null | undefined): HelpRole | null {
   switch (role) {
@@ -107,6 +110,9 @@ export function guideFileName(role: HelpRole): string {
 export function guideUrl(role: HelpRole): string {
   return `/help/guide/${guideFor(role).audience.toLowerCase().replace(/\s+/g, "-")}.pdf`;
 }
+
+/** The combined guide (every role's chapter), offered to Administrators and Super Administrators. */
+export const EVERY_ROLE_GUIDE = { url: "/help/guide/every-role.pdf", fileName: "ROF-LMS-guide-Every-role.pdf" } as const;
 
 /** The role a guide URL's file names ("coaches.pdf"), or null for anything else. */
 export function roleFromGuideFile(file: string): HelpRole | null {
