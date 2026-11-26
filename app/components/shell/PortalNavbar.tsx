@@ -7,6 +7,7 @@ import type { Ref } from "react";
 import { Menu } from "lucide-react";
 import ProfileMenu from "@/app/components/shell/ProfileMenu";
 import NotificationBell from "@/app/components/notifications/NotificationBell";
+import PageHelp from "@/app/components/help/PageHelp";
 import Image from "@/app/components/ui/Image";
 
 interface NavbarProps {
@@ -70,6 +71,8 @@ export default function PortalNavbar({ onMenuClick, menuButtonRef, menuExpanded,
 
       {/* RIGHT SIDE */}
       <div className="flex items-center gap-2 sm:gap-3 md:gap-6 flex-shrink-0">
+        <PageHelp />
+
         <NotificationBell />
 
         <ProfileMenu />
