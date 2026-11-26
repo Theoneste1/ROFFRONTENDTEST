@@ -55,12 +55,52 @@ export const QUEUE_BADGE: Record<QueueState, { label: string; className: string 
   MARKED: { label: "Marked", className: "bg-emerald-100 text-emerald-900" },
 };
 
-export const QUEUE_FILTERS: ReadonlyArray<{ label: string; value: "" | QueueState }> = [
-  { label: "All", value: "" },
-  { label: "Not started", value: "NOT_STARTED" },
-  { label: "In progress", value: "IN_PROGRESS" },
-  { label: "Marked", value: "MARKED" },
+/**
+ * The coach queue's "Show" choice (owner 2026-11-26): what is still to mark (not started, in progress, returned), what
+ * is marked (submitted), or everything. Saved per account in this browser and used until the coach changes it; the
+ * first time: "To mark".
+ */
+export type QueueView = "TO_MARK" | "MARKED" | "ALL";
+export const QUEUE_VIEWS: ReadonlyArray<{ value: QueueView; label: string }> = [
+  { value: "TO_MARK", label: "To mark" },
+  { value: "MARKED", label: "Marked" },
+  { value: "ALL", label: "All" },
 ];
+export const DEFAULT_QUEUE_VIEW: QueueView = "TO_MARK";
+
+/** The storage key of an account's saved choice. */
+export const queueViewKey = (userId: string) => `rof.marking.queueView.${userId}`;
+
+/** The queue's state filter for a view (ALL: none). */
+export function queueViewState(view: QueueView): "TO_MARK" | "MARKED" | undefined {
+  return view === "ALL" ? undefined : view;
+}
+
+/** How many papers a view holds, from the queue's counts. */
+export function queueViewCount(view: QueueView, c: { notStarted: number; inProgress: number; marked: number; total: number }): number {
+  return view === "TO_MARK" ? c.notStarted + c.inProgress : view === "MARKED" ? c.marked : c.total;
+}
+
+type ViewStorage = Pick<Storage, "getItem" | "setItem">;
+
+/** The saved choice; the default when nothing (or something unknown) is saved, or storage is unavailable. */
+export function readQueueView(storage: ViewStorage | null | undefined, userId: string): QueueView {
+  try {
+    const v = storage?.getItem(queueViewKey(userId));
+    return QUEUE_VIEWS.some((o) => o.value === v) ? (v as QueueView) : DEFAULT_QUEUE_VIEW;
+  } catch {
+    return DEFAULT_QUEUE_VIEW;
+  }
+}
+
+/** Saves the choice; a browser that refuses storage keeps it for this visit only. */
+export function saveQueueView(storage: ViewStorage | null | undefined, userId: string, view: QueueView): void {
+  try {
+    storage?.setItem(queueViewKey(userId), view);
+  } catch {
+    /* private mode or full: the choice holds until the page is left */
+  }
+}
 
 export const MARKING_STATUS_BADGE: Record<MarkingStatus, { label: string; className: string }> = {
   DRAFT: { label: "Draft", className: "bg-slate-200 text-slate-800" },

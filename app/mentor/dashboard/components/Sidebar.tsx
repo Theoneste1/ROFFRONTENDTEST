@@ -12,15 +12,17 @@ import {
     FileQuestion,
     PenLine,
     Users,
-    Award
+    Award,
+    Gauge
 } from "lucide-react";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { MENTOR_MARKING, MENTOR_NAV, MENTOR_RESULTS, MENTOR_SHARED_REPORTS, MENTOR_STUDENTS, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
+import { MENTOR_MARKING, MENTOR_MARKING_OVERVIEW, MENTOR_NAV, MENTOR_RESULTS, MENTOR_SHARED_REPORTS, MENTOR_STUDENTS, MENTOR_TESTS, visibleNav } from "@/lib/auth/navigation";
 import { coachNavVisible } from "@/lib/coaches/coach-access";
 import { customReportsNavVisible } from "@/lib/reports/custom-reports";
 import { testsNavVisible } from "@/lib/test-management/rules";
 import { markingNavVisible } from "@/lib/test-management/marking";
+import { markingOverviewNavVisible } from "@/lib/test-management/marking-overview";
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 
 interface SidebarProps {
@@ -36,6 +38,7 @@ const ICONS: Record<string, LucideIcon> = {
     "/mentor/tests": FileQuestion,
     "/mentor/reports": FileQuestion,
     "/mentor/marking": PenLine,
+    "/mentor/marking-overview": Gauge,
     "/mentor/students": Users,
     "/mentor/results": Award,
 };
@@ -54,6 +57,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     const items = [
         ...visibleNav(MENTOR_NAV, knownPermissions),
         ...(testsNavVisible(detection, knownPermissions) ? [MENTOR_TESTS] : []),
+        // Marking overview: Head Coaches (tests.view + tests.review) on a backend with `testResults` (the dashboard API).
+        ...(markingOverviewNavVisible(detection, knownPermissions, "mentor") ? [MENTOR_MARKING_OVERVIEW] : []),
         ...(markingNavVisible(detection, knownPermissions) ? [MENTOR_MARKING] : []),
         // Coaches across their programmes (owner 2026-11-23): Students and Results.
         ...(coachNavVisible(detection, knownPermissions, MENTOR_STUDENTS.permission!) ? [MENTOR_STUDENTS] : []),
@@ -66,7 +71,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         if (path === "/mentor/dashboard") {
             return pathname === "/mentor/dashboard";
         }
-        return pathname.startsWith(path);
+        // A whole path segment: /mentor/marking must not light up on /mentor/marking-overview.
+        return pathname === path || pathname.startsWith(`${path}/`);
     };
 
     return (

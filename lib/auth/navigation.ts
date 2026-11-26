@@ -122,6 +122,15 @@ export const TEACHER_TESTS: NavItem = { href: "/teacher/tests", label: "Tests", 
 export const MENTOR_MARKING: NavItem = { href: "/mentor/marking", label: "Marking", permission: "tests.mark" };
 
 /**
+ * The marking overviews (owner-approved designs, 2026-11-26): every paper's status, the tests' marking progress and the
+ * coaches' workload from GET /admin/test-dashboard. Separately gated (lib/test-management/marking-overview.ts →
+ * markingOverviewNavVisible): a backend advertising `testResults` and the known tests.view; in the coach portal also
+ * tests.review (Head Coaches). Not part of ADMIN_NAV / MENTOR_NAV.
+ */
+export const ADMIN_MARKING_OVERVIEW: NavItem = { href: "/admin/marking-overview", label: "Marking overview", permission: "tests.view" };
+export const MENTOR_MARKING_OVERVIEW: NavItem = { href: "/mentor/marking-overview", label: "Marking overview", permission: "tests.view" };
+
+/**
  * Coaches across their programmes (owner 2026-11-23): the programme's students and its published test results. Separately
  * gated: a backend advertising `coachProgrammeAccess` and the known permission (lib/coaches/coach-access.ts coachNavVisible).
  */
