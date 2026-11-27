@@ -17,6 +17,7 @@ import { useTeacherStudents, useTeacherStudentsSummary } from "@/lib/queries/tea
 import { useBackendCapabilities } from "@/lib/queries/capabilities";
 import { ABILITY_LABEL, abilities, accessBadges, pendingText, teacherStudentAccessSupported } from "@/lib/accounts/teacher-student-access";
 import { personName } from "@/lib/format";
+import { StudentCell, StudentUsernameCell } from "@/app/components/students/StudentCell";
 import { ErrorState } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame } from "@/app/components/ui/PageFrame";
@@ -95,6 +96,7 @@ export default function TeacherStudents() {
             <thead className="bg-gray-50/60 border-b border-gray-100">
               <tr>
                 <th className={th}>Student</th>
+                <th className={th}>Username</th>
                 <th className={th}>Grade</th>
                 <th className={th}>Division</th>
                 <th className={th}>School</th>
@@ -103,9 +105,9 @@ export default function TeacherStudents() {
             </thead>
             <tbody className="divide-y divide-gray-50" data-testid="teacher-students">
               {students.isPending ? (
-                <TableMessage colSpan={canOpen ? 5 : 4}>Loading…</TableMessage>
+                <TableMessage colSpan={canOpen ? 6 : 5}>Loading…</TableMessage>
               ) : rows.length === 0 ? (
-                <TableMessage colSpan={canOpen ? 5 : 4}>
+                <TableMessage colSpan={canOpen ? 6 : 5}>
                   {q || grade || access
                     ? "No student matches these filters."
                     : selfService
@@ -120,8 +122,7 @@ export default function TeacherStudents() {
                   return (
                   <tr key={s.id} className="hover:bg-gray-50/50" data-testid="teacher-student-row">
                     <td className={td}>
-                      <p className="font-semibold text-gray-800">{personName(s)}</p>
-                      <p className="text-xs text-gray-500">@{s.username}</p>
+                      <StudentCell {...s} name={personName(s)}>
                       {(accessBadges(s.access).length > 0 || (may && may.length > 0)) && (
                         <div className="mt-1 flex flex-wrap gap-1">
                           {accessBadges(s.access).map((b) => (
@@ -132,7 +133,9 @@ export default function TeacherStudents() {
                           ))}
                         </div>
                       )}
+                      </StudentCell>
                     </td>
+                    <td className={td}><StudentUsernameCell username={s.username} /></td>
                     <td className={`${td} text-gray-600`}>{s.gradeLevel ?? "—"}</td>
                     <td className={`${td} text-gray-600`}>{s.division?.name ?? "—"}</td>
                     <td className={`${td} text-gray-600`}>{s.school?.name ?? "—"}</td>

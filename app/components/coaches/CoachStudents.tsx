@@ -4,7 +4,7 @@
  * The coach's Students page (owner 2026-11-23): every student of the coach's programmes, every level — name, level, grade,
  * school and Olympiad subjects; never contact details. Filters: programme, level, search. Open a student for their profile.
  */
-import Link from "next/link";
+import { StudentCell, StudentUsernameCell } from "@/app/components/students/StudentCell";
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth/session";
@@ -60,15 +60,13 @@ function StudentsList() {
       ) : (
         <TableCard footer={<Pagination page={list.data.meta.page} totalPages={list.data.meta.totalPages} total={list.data.meta.total} onPage={setPage} disabled={list.isFetching} />}>
           <thead><tr className="border-b border-gray-100">
-            <th className={th}>Student</th><th className={th}>Level</th><th className={th}>Grade</th><th className={th}>School</th><th className={th}>Olympiad subjects</th>
+            <th className={th}>Student</th><th className={th}>Username</th><th className={th}>Level</th><th className={th}>Grade</th><th className={th}>School</th><th className={th}>Olympiad subjects</th>
           </tr></thead>
           <tbody className="divide-y divide-gray-100/80" data-testid="coach-students">
-            {list.data.data.length === 0 ? <TableMessage colSpan={5}>No student matches.</TableMessage> : list.data.data.map((s) => (
+            {list.data.data.length === 0 ? <TableMessage colSpan={6}>No student matches.</TableMessage> : list.data.data.map((s) => (
               <tr key={s.id} className="text-sm" data-testid={`coach-student-${s.username}`}>
-                <td className={td}>
-                  <Link href={`/mentor/profiles/${s.id}`} className="font-semibold text-indigo-700 hover:underline">{personName(s)}</Link>
-                  <span className="ml-1 text-xs text-gray-600">@{s.username}</span>
-                </td>
+                <td className={td}><StudentCell {...s} name={personName(s)} href={`/mentor/profiles/${s.id}`} /></td>
+                <td className={td}><StudentUsernameCell username={s.username} /></td>
                 <td className={`${td} text-gray-700`}>{s.division?.name ?? "—"}</td>
                 <td className={`${td} text-gray-700`}>{s.gradeLevel ?? "—"}</td>
                 <td className={`${td} text-gray-700`}>{s.school?.name ?? "—"}</td>

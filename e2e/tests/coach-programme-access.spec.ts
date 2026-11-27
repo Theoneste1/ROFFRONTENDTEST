@@ -37,6 +37,12 @@ test.beforeAll(async () => {
     const studentId = await createStudent(c, studentUser, studentName, school, "VERIFIED");
     // A Senior student (grade S5: the database places them at the grade's level): the coach sees every level.
     await c.query(`UPDATE "User" SET "gradeLevel" = 'S5', phone = '+250788777000' WHERE id = $1`, [studentId]);
+    // Enrolled in the current year (the Administrators' Students list shows the current year's students).
+    await c.query(
+      `INSERT INTO "StudentEnrollment" (id, "studentId", "academicYearId", "divisionId", "gradeLevel", "schoolId")
+       SELECT gen_random_uuid()::text, u.id, y.id, u."divisionId", 'S5', $2 FROM "User" u, "AcademicYear" y
+        WHERE u.id = $1 AND y."isCurrent" = true AND u."divisionId" IS NOT NULL`, [studentId, school],
+    );
     for (const userId of [coachId, studentId, head]) {
       await c.query(
         `INSERT INTO "ProgrammeMembership" (id, "userId", "disciplineId", source) VALUES (gen_random_uuid()::text, $1, $2, 'MANUAL')
@@ -56,6 +62,12 @@ test("a programme coach has Students and Results; Students lists every level, wi
   await page.getByLabel("Search students").fill(studentName);
   const row = page.getByTestId(`coach-student-${studentUser}`);
   await expect(row).toContainText("Senior");
+  // Owner 2026-11-27: the student's picture (initials without one) beside the name; the username in its own column.
+  await expect(page.getByRole("columnheader", { name: "Username" })).toBeVisible();
+  await expect(row.getByTestId("student-cell")).toContainText(studentName);
+  await expect(row.getByTestId("student-cell")).not.toContainText(studentUser);
+  await expect(row.getByTestId("student-username")).toHaveText(studentUser);
+  await expect(row.getByTestId("avatar-badge")).toBeVisible();
   await expect(page.locator("main")).not.toContainText("+250788777000");
   await page.goto("/mentor/results");
   await expect(page.getByRole("heading", { name: "Results", level: 1 })).toBeVisible();
@@ -91,4 +103,17 @@ test("an Administrator gives it back on the coach's user page", async ({ page })
   const active = await withDb(async (c) => (await c.query(
     `SELECT count(*)::int AS n FROM "CoachProgrammeRestriction" WHERE "coachId" = $1 AND capability = 'STUDENTS' AND "liftedAt" IS NULL`, [coachId])).rows[0].n);
   expect(active).toBe(0);
+});
+
+test("the Administrators' Students list: the picture beside the name, the username in its own column", async ({ page }) => {
+  await signIn(page, "admin");
+  await page.goto(`/admin/students?q=${studentUser}`);
+  await expect(page.getByRole("columnheader", { name: "Username" })).toBeVisible();
+  const row = page.locator("tbody tr", { hasText: studentUser });
+  await expect(row).toHaveCount(1);
+  await expect(row.getByTestId("avatar-badge")).toBeVisible();
+  await expect(row.getByTestId("student-cell")).toContainText(studentName);
+  await expect(row.getByTestId("student-cell")).toContainText("Last sign-in");
+  await expect(row.getByTestId("student-cell")).not.toContainText(studentUser);
+  await expect(row.getByTestId("student-username")).toHaveText(studentUser);
 });
