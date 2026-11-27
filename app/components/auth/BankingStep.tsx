@@ -6,8 +6,10 @@
  * other request until it is done (403 BANKING_DETAILS_REQUIRED), so it cannot be skipped by a refresh, an address, the
  * menu or another tab. What is already saved is shown and kept; the user can sign out at any time.
  *
- *  - Teachers: personal and school details (six fields); both banks are Umwalimu SACCO (shown, not chosen); both
- *    account numbers are exactly 12 digits.
+ *  - Teachers: personal and school details (six fields). With a backend advertising managedBanks (owner 2026-11-27)
+ *    both banks are chosen from the list the Super Administrator manages (Umwalimu SACCO suggested), and each account
+ *    number follows its chosen bank: Umwalimu SACCO exactly 12 digits, another bank its own rule; the instruction
+ *    under the number changes as soon as the bank changes. Older backends: both banks fixed to Umwalimu SACCO.
  *  - Coaches and Head Coaches: their personal details only (three fields; the bank chosen from the list). No school
  *    section, no school check, no school confirmation; school details saved earlier are left as they are.
  */
@@ -21,7 +23,7 @@ import { useSession } from "@/lib/auth/session";
 import { Button, TextField } from "@/app/components/ui/form";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import {
-  asksSchool, conflictsOf, FIELD_LABELS, initialValues, rulesFor, submissionOf, UMWALIMU_SACCO, validateBanking, type BankingSubmission,
+  asksSchool, conflictsOf, FIELD_LABELS, initialValues, managedBanks, numberInstruction, numericBank, rulesFor, submissionOf, UMWALIMU_SACCO, validateBanking, type BankingSubmission,
   type BankingField, type BankingValues, type BankingView, type FixableBankField,
 } from "@/lib/accounts/banking";
 
@@ -119,7 +121,7 @@ export function BankingForm({ firstName, role, view, signOut, variant = "step", 
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const problems = validateBanking(rules, values, conflicts, confirmed);
+    const problems = validateBanking(rules, values, conflicts, confirmed, view.details);
     setErrors(problems);
     setFormError(null);
     if (Object.keys(problems).length) {
@@ -222,6 +224,35 @@ export function BankingForm({ firstName, role, view, signOut, variant = "step", 
     );
   };
 
+  /** A bank chosen from the list the Super Administrator manages; the account number's instruction follows the choice. */
+  const bankSelect = (f: FixableBankField) => (
+    <div data-testid={`banking-bank-${f}`}>
+      <label htmlFor={`banking-${f}`} className="mb-2 block text-sm font-semibold text-slate-700">
+        {FIELD_LABELS[f]} <span className="text-red-500">*</span>
+      </label>
+      <select
+        id={`banking-${f}`}
+        name={f}
+        value={values[f]}
+        onChange={(e) => set(f)(e.target.value)}
+        aria-invalid={errors[f] ? true : undefined}
+        aria-describedby={errors[f] ? `banking-${f}-error` : undefined}
+        className={selectCls(!!errors[f])}
+        required
+      >
+        <option value="">Choose the bank</option>
+        {rules.banks.map((b) => <option key={b} value={b}>{b}</option>)}
+        {/* A saved bank no longer offered: shown so the user sees it (kept as long as it is not changed). */}
+        {values[f] && !rules.banks.includes(values[f]) && <option value={values[f]}>{values[f]}</option>}
+      </select>
+      {errors[f] && <p id={`banking-${f}-error`} className="mt-1.5 text-xs text-red-600">{errors[f]}</p>}
+    </div>
+  );
+  const managed = managedBanks(rules);
+  const numberHint = (bank: string, legacyDigits?: number | null) => (
+    <span data-testid="banking-number-hint">{numberInstruction(rules, bank, legacyDigits)}</span>
+  );
+
   const missing = view.missing.map((f) => FIELD_LABELS[f]);
 
   return (
@@ -254,34 +285,10 @@ export function BankingForm({ firstName, role, view, signOut, variant = "step", 
 
       <Section icon={<Landmark className="h-5 w-5" aria-hidden="true" />} title={owner ? "Your personal bank account" : "Personal bank account"} testId="banking-personal">
         {field("personalAccountName", { hint: owner ? "Your name exactly as it appears on the account." : "The name exactly as it appears on the account.", autoComplete: owner ? "name" : "off" })}
-        {rules.personalBank === "FIXED" ? (
-          fixedBank("personalBankName", "Teachers are paid through Umwalimu SACCO.")
-        ) : (
-          <div>
-            <label htmlFor="banking-personalBankName" className="mb-2 block text-sm font-semibold text-slate-700">
-              {FIELD_LABELS.personalBankName} <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="banking-personalBankName"
-              name="personalBankName"
-              value={values.personalBankName}
-              onChange={(e) => set("personalBankName")(e.target.value)}
-              aria-invalid={errors.personalBankName ? true : undefined}
-              aria-describedby={errors.personalBankName ? "banking-personalBankName-error" : undefined}
-              className={selectCls(!!errors.personalBankName)}
-              required
-            >
-              <option value="">Choose your bank</option>
-              {rules.banks.map((b) => <option key={b} value={b}>{b}</option>)}
-              {/* A saved bank no longer in the list: shown so the user sees it, but refused until another is chosen. */}
-              {values.personalBankName && !rules.banks.includes(values.personalBankName) && <option value={values.personalBankName}>{values.personalBankName}</option>}
-            </select>
-            {errors.personalBankName && <p id="banking-personalBankName-error" className="mt-1.5 text-xs text-red-600">{errors.personalBankName}</p>}
-          </div>
-        )}
+        {rules.personalBank === "FIXED" ? fixedBank("personalBankName", "Teachers are paid through Umwalimu SACCO.") : bankSelect("personalBankName")}
         {field("personalAccountNumber", {
-          inputMode: rules.personalNumberDigits ? "numeric" : undefined,
-          hint: rules.personalNumberDigits ? "Exactly 12 digits, without spaces." : "As your bank shows it.",
+          inputMode: (managed ? numericBank(rules, values.personalBankName) : !!rules.personalNumberDigits) ? "numeric" : undefined,
+          hint: numberHint(values.personalBankName, rules.personalNumberDigits),
         })}
       </Section>
 
@@ -289,10 +296,10 @@ export function BankingForm({ firstName, role, view, signOut, variant = "step", 
       {school && (
         <Section icon={<School className="h-5 w-5" aria-hidden="true" />} title={owner ? "Your school's bank account" : "School's bank account"} testId="banking-school">
           {field("schoolAccountName", { hint: "The school's account name exactly as the bank shows it." })}
-          {fixedBank("schoolBankName", "School accounts are held at Umwalimu SACCO.")}
+          {rules.schoolBank === "LIST" ? bankSelect("schoolBankName") : fixedBank("schoolBankName", "School accounts are held at Umwalimu SACCO.")}
           {field("schoolAccountNumber", {
-            inputMode: rules.schoolNumberDigits ? "numeric" : undefined,
-            hint: rules.schoolNumberDigits ? "Exactly 12 digits, without spaces." : "As the bank shows it.",
+            inputMode: (managed ? numericBank(rules, values.schoolBankName) : !!rules.schoolNumberDigits) ? "numeric" : undefined,
+            hint: numberHint(values.schoolBankName, rules.schoolNumberDigits),
           })}
         </Section>
       )}

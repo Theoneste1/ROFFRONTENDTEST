@@ -139,7 +139,7 @@ function AdminBankingEditor({ userId, role, onCancel, onSaved }: { userId: strin
         variant="edit"
         firstName=""
         role={role}
-        view={{ required: true, status: d.status, missing: d.missing, invalid: d.invalid, rules: rulesFor(role), details }}
+        view={{ required: true, status: d.status, missing: d.missing, invalid: d.invalid, rules: d.rules ?? rulesFor(role), details }}
         title="Edit banking information"
         owner={false}
         save={(body) => bankingApi.updateForUser(userId, body)}

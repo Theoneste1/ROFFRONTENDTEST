@@ -84,6 +84,9 @@ export const ADMIN_COUNTRIES: NavItem = { href: "/admin/countries", label: "Coun
  */
 export const ADMIN_REGISTRATION_DATA: NavItem = { href: "/admin/registration-data", label: "Registration Data", permission: "registrationData.manage" };
 
+/** The bank list (owner 2026-11-27): Super Administrators only, with a backend advertising managedBanks (lib/admin/banks.ts). */
+export const ADMIN_BANKS: NavItem = { href: "/admin/banks", label: "Banks" };
+
 export const ADMIN_TESTS: NavItem = { href: "/admin/tests", label: "Tests", permission: "tests.view" };
 
 /**

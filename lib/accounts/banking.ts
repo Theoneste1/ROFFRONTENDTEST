@@ -78,9 +78,26 @@ export const STATUS_LABEL: Record<BankingStatus, string> = {
   NEEDS_CORRECTION: "Needs correction",
 };
 
+/** One bank of the list the Super Administrator manages (newer backends: GET /me/banking rules.bankOptions). */
+export interface BankOptionView {
+  name: string;
+  active: boolean;
+  minDigits: number | null;
+  maxDigits: number | null;
+  /** What the account number must look like for this bank, e.g. "Umwalimu SACCO account numbers must contain exactly 12 digits." */
+  instruction: string;
+}
+
+export const SACCO_NUMBER_MESSAGE = "Umwalimu SACCO account numbers must contain exactly 12 digits.";
+export const GENERAL_NUMBER_MESSAGE = "An account number has 5 to 40 characters: digits, letters, spaces or hyphens, with at least one digit.";
+
 export interface BankRules {
   personalBank: "FIXED" | "LIST";
-  schoolBank: "FIXED";
+  /** "LIST" on newer backends (owner 2026-11-27: Teachers choose their school's bank too). */
+  schoolBank: "FIXED" | "LIST";
+  /** Each available bank with its account-number rule and instruction (newer backends; managed by the Super Administrator). */
+  bankOptions?: BankOptionView[];
+  generalInstruction?: string;
   fixedBank: string;
   banks: string[];
   personalNumberDigits: number | null;
@@ -118,6 +135,8 @@ export interface BankingView {
 export interface AdminBankingView extends Omit<BankingView, "rules" | "details" | "conflicts"> {
   /** The fields this person's role gives (newer backends): six for a Teacher, three personal for a Coach or Head Coach. */
   requiredFields?: BankingField[];
+  /** How this person's banks are chosen (newer backends): the administrator's edit form uses the same list and rules. */
+  rules?: BankRules | null;
   missingLabels: string[];
   invalidLabels: string[];
   details: (Partial<Record<BankingField, string | null>> & { revealed: boolean }) | null;
@@ -156,9 +175,48 @@ export function rulesFor(role: string): BankRules {
   };
 }
 
+const isSacco = (name: string | null | undefined) => (name ?? "").trim().toLowerCase() === UMWALIMU_SACCO.toLowerCase();
+
+/** Whether these rules come from a backend where every bank is chosen from the managed list (owner 2026-11-27). */
+export function managedBanks(rules: Pick<BankRules, "bankOptions">): boolean {
+  return Array.isArray(rules.bankOptions);
+}
+
+/** The chosen bank's entry in the list (case-insensitive), if any. */
+export function bankOptionOf(rules: Pick<BankRules, "bankOptions">, name: string | null | undefined): BankOptionView | undefined {
+  const key = (name ?? "").trim().toLowerCase();
+  return rules.bankOptions?.find((b) => b.name.toLowerCase() === key);
+}
+
+/** The instruction under an account number: it follows the bank chosen, and changes as soon as the bank changes. */
+export function numberInstruction(rules: BankRules, bankName: string | null | undefined, legacyDigits?: number | null): string {
+  if (!managedBanks(rules)) return legacyDigits ? "Exactly 12 digits, without spaces." : "As the bank shows it.";
+  if (!bankName) return "Choose the bank first: the account number's rule depends on it.";
+  if (isSacco(bankName)) return SACCO_NUMBER_MESSAGE;
+  return bankOptionOf(rules, bankName)?.instruction ?? rules.generalInstruction ?? GENERAL_NUMBER_MESSAGE;
+}
+
+/** Whether the chosen bank's numbers are digits only (a numeric keyboard on phones). */
+export function numericBank(rules: BankRules, bankName: string | null | undefined): boolean {
+  if (isSacco(bankName)) return true;
+  const o = bankOptionOf(rules, bankName);
+  return !!o && o.minDigits !== null;
+}
+
+/** Why an account number does not suit the chosen bank (null: fine) — the backend's rule, mirrored. */
+export function numberProblemFor(rules: BankRules, bankName: string | null | undefined, value: string): string | null {
+  if (isSacco(bankName)) return /^\d{12}$/.test(value) ? null : SACCO_NUMBER_MESSAGE;
+  const o = bankOptionOf(rules, bankName);
+  if (o && o.minDigits !== null && o.maxDigits !== null) {
+    return /^\d+$/.test(value) && value.length >= o.minDigits && value.length <= o.maxDigits ? null : o.instruction;
+  }
+  return /^[0-9A-Za-z -]{5,40}$/.test(value) && /\d/.test(value) ? null : (rules.generalInstruction ?? GENERAL_NUMBER_MESSAGE);
+}
+
 /** The saved banks this role may not use (the backend's `conflicts`, or computed from the saved details). */
 export function conflictsOf(view: Pick<BankingView, "details" | "rules" | "conflicts">): BankingConflict[] {
   if (view.conflicts) return view.conflicts;
+  if (view.rules && managedBanks(view.rules)) return [];   // every bank is chosen: nothing to confirm
   const out: BankingConflict[] = [];
   const d = view.details ?? {};
   const personal = d.personalBankName;
@@ -173,6 +231,14 @@ export function conflictsOf(view: Pick<BankingView, "details" | "rules" | "confl
 export function initialValues(view: Pick<BankingView, "details" | "rules">): BankingValues {
   const d = view.details ?? {};
   const v = Object.fromEntries(BANKING_FIELDS.map((f) => [f, d[f] ?? ""])) as BankingValues;
+  if (view.rules && managedBanks(view.rules)) {
+    // Chosen from the list. Teachers start with Umwalimu SACCO suggested (they can change it); nothing saved is replaced.
+    if (asksSchool(view.rules)) {
+      if (!v.personalBankName) v.personalBankName = view.rules.fixedBank;
+      if (!v.schoolBankName) v.schoolBankName = view.rules.fixedBank;
+    }
+    return v;
+  }
   if (view.rules?.personalBank === "FIXED") v.personalBankName = UMWALIMU_SACCO;
   if (!view.rules || asksSchool(view.rules)) v.schoolBankName = UMWALIMU_SACCO;
   return v;
@@ -188,7 +254,9 @@ export function validateBanking(
   v: BankingValues,
   conflicts: readonly BankingConflict[] = [],
   confirmed: ReadonlySet<string> = new Set(),
+  saved: Partial<Record<BankingField, string | null>> | null = null,
 ): Partial<Record<BankingField, string>> {
+  if (managedBanks(rules)) return validateManaged(rules, v, saved ?? {});
   const errors: Partial<Record<BankingField, string>> = {};
   const names = asksSchool(rules) ? (["personalAccountName", "schoolAccountName", "schoolAccountNumber"] as const) : (["personalAccountName"] as const);
   for (const f of names) {
@@ -208,6 +276,36 @@ export function validateBanking(
   return errors;
 }
 
+/**
+ * Newer backends (owner 2026-11-27): both banks chosen from the list; the account number follows the chosen bank
+ * (Umwalimu SACCO exactly 12 digits; another bank its rule or the general check); a number kept unchanged with an
+ * unchanged bank is not refused; a bank no longer offered is accepted only when it is the one already saved.
+ */
+function validateManaged(rules: BankRules, v: BankingValues, saved: Partial<Record<BankingField, string | null>>): Partial<Record<BankingField, string>> {
+  const errors: Partial<Record<BankingField, string>> = {};
+  const school = asksSchool(rules);
+  const groups = (school ? ["personal", "school"] : ["personal"]) as Array<"personal" | "school">;
+  for (const g of groups) {
+    const nameF = `${g}AccountName` as "personalAccountName" | "schoolAccountName";
+    const bankF = `${g}BankName` as FixableBankField;
+    const numF = `${g}AccountNumber` as "personalAccountNumber" | "schoolAccountNumber";
+    if (!v[nameF].trim()) errors[nameF] = `${FIELD_LABELS[nameF]} is required.`;
+    else if (/\d/.test(v[nameF])) errors[nameF] = NAME_DIGIT_MESSAGES[nameF];
+    const bank = v[bankF];
+    const keptAsSaved = !!bank && (saved[bankF] ?? "").trim().toLowerCase() === bank.trim().toLowerCase();
+    if (!bank) errors[bankF] = "Choose the bank from the list.";
+    else if (!rules.banks.some((b) => b.toLowerCase() === bank.trim().toLowerCase()) && !keptAsSaved) errors[bankF] = "Choose the bank from the list.";
+    const num = v[numF];
+    if (!num.trim()) errors[numF] = bank ? numberInstruction(rules, bank) : `${FIELD_LABELS[numF]} is required.`;
+    else if (bank) {
+      const unchanged = num === (saved[numF] ?? null) && keptAsSaved;
+      const problem = isSacco(bank) || !unchanged ? numberProblemFor(rules, bank, num) : null;
+      if (problem) errors[numF] = problem;
+    }
+  }
+  return errors;
+}
+
 /** What PUT /me/banking receives: the role's fields only, and the replacements the user confirmed. */
 export type BankingSubmission = Partial<BankingValues> & { confirmReplace?: FixableBankField[] };
 
@@ -217,6 +315,12 @@ export type BankingSubmission = Partial<BankingValues> & { confirmReplace?: Fixa
  */
 export function submissionOf(rules: BankRules, v: BankingValues, confirmed: ReadonlySet<string> = new Set()): BankingSubmission {
   const school = asksSchool(rules);
+  if (managedBanks(rules)) {
+    return {
+      personalAccountName: v.personalAccountName.trim(), personalBankName: v.personalBankName, personalAccountNumber: v.personalAccountNumber,
+      ...(school ? { schoolAccountName: v.schoolAccountName.trim(), schoolBankName: v.schoolBankName, schoolAccountNumber: v.schoolAccountNumber } : {}),
+    };
+  }
   const confirmReplace = (["personalBankName", "schoolBankName"] as const).filter((f) => confirmed.has(f) && (f === "personalBankName" || school));
   return {
     personalAccountName: v.personalAccountName.trim(),
