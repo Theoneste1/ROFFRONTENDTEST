@@ -13,6 +13,8 @@
  *   PATCH  /admin/tests/:id/questions/:questionId       tests.manage
  *   DELETE /admin/tests/:id/questions/:questionId       tests.manage
  *   PUT    /admin/tests/:id/questions/order             tests.manage  { questionIds } (every question once)
+ *   PUT    /admin/tests/:id/questions                   tests.manage  { questions, reason } the whole list at once; after
+ *                                                                     submissions Super Administrators only, before marking
  *   PUT    /admin/tests/:id/files/paper|marking-guide   tests.manage  multipart `file` (PDF or image, 20 MB)
  *   GET    /admin/tests/:id/files/paper|marking-guide   tests.view    neutral file name
  *   DELETE /admin/tests/:id/files/paper|marking-guide   tests.manage
@@ -146,6 +148,9 @@ const M = "/admin/test-markers";
 const id_ = (id: string) => encodeURIComponent(id);
 
 export const testsApi = {
+  /** The whole question list at once (owner 2026-11-27). After submissions: Super Administrators, with a reason, before marking. */
+  setQuestions: (id: string, body: { questions: QuestionInput[]; reason?: string }) =>
+    api<TestDetail>(`${T}/${id}/questions`, { method: "PUT", body }),
   subjects: () => api<TestSubject[]>(`${T}/subjects`),
   list: (f: TestFilters = {}) => api<Page<TestSummary>>(T, { query: { ...f } }),
   get: (id: string) => api<TestDetail>(`${T}/${id_(id)}`),

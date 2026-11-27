@@ -62,7 +62,7 @@ export default function TestDetail({ id, base, initialTab }: { id: string; base:
 }
 
 function Detail({ id, base, initialTab }: { id: string; base: string; initialTab?: Tab }) {
-  const { can, permissionsStatus } = useSession();
+  const { can, permissionsStatus, role } = useSession();
   const qc = useQueryClient();
   const router = useRouter();
   const test = useQuery({ queryKey: queryKeys.tests.detail(id), queryFn: () => testsApi.get(id) });
@@ -145,7 +145,7 @@ function Detail({ id, base, initialTab }: { id: string; base: string; initialTab
       )}
       <Tabs tabs={tabs} value={tab} onChange={setTab}>
         {tab === "details" && <DetailsTab test={t} canManage={canManage} onSaved={(x) => apply(x, "The details were saved.")} />}
-        {tab === "questions" && <QuestionsTab test={t} canManage={canManage} onChanged={apply} />}
+        {tab === "questions" && <QuestionsTab test={t} canManage={canManage} onChanged={apply} superAdminCorrection={locked && role === "SUPER_ADMIN"} />}
         {tab === "files" && <FilesTab test={t} canManage={canManage} onChanged={apply} />}
         {tab === "submissions" && canSubmissions && <SubmissionsPanel testId={t.id} />}
         {tab === "extensions" && canExtensions && <ExtensionsPanel test={t} />}
@@ -302,8 +302,9 @@ function Info({ label, children }: { label: string; children: ReactNode }) {
 
 // ── Questions ────────────────────────────────────────────────────────────────
 
-function QuestionsTab({ test, canManage, onChanged }: { test: Test; canManage: boolean; onChanged: (t: Test, message: string) => void }) {
+function QuestionsTab({ test, canManage, onChanged, superAdminCorrection = false }: { test: Test; canManage: boolean; onChanged: (t: Test, message: string) => void; superAdminCorrection?: boolean }) {
   const [editing, setEditing] = useState<TestQuestion | "new" | null>(null);
+  const [settingAll, setSettingAll] = useState(false);
   const [removing, setRemoving] = useState<TestQuestion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const marks = test.questions.map((q) => q.maxMarks);
@@ -339,7 +340,18 @@ function QuestionsTab({ test, canManage, onChanged }: { test: Test; canManage: b
           ))}
         </ol>
       )}
-      {canManage && <button type="button" className={btnSecondary} onClick={() => setEditing("new")} data-testid="add-question">Add a question</button>}
+      {canManage && !superAdminCorrection && <button type="button" className={btnSecondary} onClick={() => setEditing("new")} data-testid="add-question">Add a question</button>}
+      {superAdminCorrection && (
+        <section className="rounded-xl border border-amber-300 bg-amber-50 p-4" data-testid="super-admin-questions">
+          <h3 className="text-sm font-semibold text-amber-950">Super Administrator: set the questions</h3>
+          <p className="mt-1 text-sm text-amber-950">
+            Students have already submitted. You can still set this test&apos;s questions and their marks, for example to mark it question by question,
+            as long as no marking has started. Students&apos; answers, pages and files are not changed. Your reason is kept in the audit log.
+          </p>
+          <button type="button" className={`${btnPrimary} mt-3`} onClick={() => setSettingAll(true)} data-testid="set-questions">Set the questions</button>
+        </section>
+      )}
+      {settingAll && <SetQuestionsDialog test={test} onClose={() => setSettingAll(false)} onSaved={(t) => { setSettingAll(false); onChanged(t, "The questions were set. The students' answers were not changed."); }} />}
       {editing && (
         <QuestionDialog test={test} question={editing === "new" ? null : editing} onClose={() => setEditing(null)}
           onSaved={(t, msg) => { setEditing(null); onChanged(t, msg); }} />
@@ -405,6 +417,70 @@ function QuestionDialog({ test, question, onClose, onSaved }: { test: Test; ques
         <div className="flex justify-end gap-3">
           <button type="button" className={btnSecondary} onClick={onClose}>Cancel</button>
           <button type="submit" className={btnPrimary} disabled={save.isPending}>{save.isPending ? "Saving…" : "Save question"}</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** Super Administrator: the whole question list at once, with a reason (after submissions, before any marking). */
+function SetQuestionsDialog({ test, onClose, onSaved }: { test: Test; onClose: () => void; onSaved: (t: Test) => void }) {
+  const ids = useId();
+  const [rows, setRows] = useState<QuestionDraft[]>(() =>
+    test.questions.length ? test.questions.map((q) => ({ prompt: q.prompt, maxMarks: String(q.maxMarks) })) : [{ prompt: "Question 1", maxMarks: "" }]);
+  const [reason, setReason] = useState("");
+  const [problem, setProblem] = useState<string | null>(null);
+  const total = rows.reduce((a, r) => a + (parseMarks(r.maxMarks) ?? 0), 0);
+  const save = useMutation({
+    mutationFn: () => testsApi.setQuestions(test.id, { questions: rows.map(questionBody), reason: reason.trim() }),
+    onSuccess: onSaved,
+    onError: (e) => setProblem(errorMessage(e)),
+  });
+  const set = (i: number, patch: Partial<QuestionDraft>) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    if (rows.some((r) => !r.prompt.trim())) return setProblem("Give every question its wording (for example \"Question 1\").");
+    if (rows.some((r) => parseMarks(r.maxMarks) === null)) return setProblem("Give every question a whole number of marks, at least 1.");
+    if (total !== test.maxMarks) return setProblem(`The questions must add up to the test's ${test.maxMarks} marks (they add up to ${total}).`);
+    if (reason.trim().length < 3) return setProblem("Give the reason for setting the questions (at least 3 characters).");
+    setProblem(null);
+    save.mutate();
+  }
+  return (
+    <Modal title="Set the questions" onClose={onClose} wide>
+      <form onSubmit={submit} noValidate className="space-y-4" data-testid="set-questions-form">
+        <Alert tone="info">
+          {`${test.submissionCount ?? 0} students have submitted. Their answers stay exactly as they are; only the list of questions and their marks changes. This is refused if marking has already started on this test.`}
+        </Alert>
+        {problem && <Alert tone="error">{problem}</Alert>}
+        <ol className="space-y-3">
+          {rows.map((r, i) => (
+            <li key={i} className="grid grid-cols-[2rem_minmax(0,1fr)_6rem_auto] items-start gap-2" data-testid={`set-question-${i + 1}`}>
+              <span className="pt-2 text-sm font-bold text-slate-700">{i + 1}.</span>
+              <div>
+                <label htmlFor={`${ids}-p${i}`} className="sr-only">{`Question ${i + 1} wording`}</label>
+                <textarea id={`${ids}-p${i}`} rows={2} maxLength={5000} className={`${inputCls} ${inputOk}`} value={r.prompt} onChange={(e) => set(i, { prompt: e.target.value })} />
+              </div>
+              <div>
+                <label htmlFor={`${ids}-m${i}`} className="sr-only">{`Question ${i + 1} marks`}</label>
+                <input id={`${ids}-m${i}`} inputMode="numeric" placeholder="Marks" className={`${inputCls} ${inputOk}`} value={r.maxMarks} onChange={(e) => set(i, { maxMarks: e.target.value })} />
+              </div>
+              <IconBtn label={`Remove question ${i + 1}`} danger disabled={rows.length === 1} onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></IconBtn>
+            </li>
+          ))}
+        </ol>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button type="button" className={btnSecondary} onClick={() => setRows((rs) => [...rs, { prompt: `Question ${rs.length + 1}`, maxMarks: "" }])} data-testid="set-questions-add">Add a question</button>
+          <p className={`text-sm font-semibold ${total === test.maxMarks ? "text-slate-800" : "text-amber-900"}`} data-testid="set-questions-total">{`Total ${total} of ${test.maxMarks} marks`}</p>
+        </div>
+        <div>
+          <label htmlFor={`${ids}-reason`} className={labelCls}>Reason (kept in the audit log)</label>
+          <textarea id={`${ids}-reason`} rows={2} maxLength={500} className={`${inputCls} ${inputOk}`} value={reason} onChange={(e) => setReason(e.target.value)}
+            placeholder="For example: the test was created without its questions; it will be marked question by question." />
+        </div>
+        <div className="flex justify-end gap-3">
+          <button type="button" className={btnSecondary} onClick={onClose}>Cancel</button>
+          <button type="submit" className={btnPrimary} disabled={save.isPending} data-testid="set-questions-save">{save.isPending ? "Saving…" : "Set the questions"}</button>
         </div>
       </form>
     </Modal>
