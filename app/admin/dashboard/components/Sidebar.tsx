@@ -29,8 +29,9 @@ import {
 } from "lucide-react";
 import SidebarNav from "@/app/components/shell/SidebarNav";
 import { useSession } from "@/lib/auth/session";
-import { ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_MARKING_OVERVIEW, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_REGISTRATION_DATA, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, ADMIN_TESTS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
+import { ADMIN_BANKS, ADMIN_COUNTRIES, ADMIN_FORMS, ADMIN_MARKING_OVERVIEW, ADMIN_NAV, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_REGISTRATION_DATA, ADMIN_SETTINGS, ADMIN_TEACHER_APPLICATIONS, ADMIN_TESTS, canSeeNavItem, visibleNav } from "@/lib/auth/navigation";
 import { registrationDataNavVisible } from "@/lib/admin/registration-data";
+import { banksNavVisible } from "@/lib/admin/banks";
 import { testsNavVisible } from "@/lib/test-management/rules";
 import { markingOverviewNavVisible } from "@/lib/test-management/marking-overview";
 import { countriesNavVisible } from "@/lib/countries/reference";
@@ -76,7 +77,7 @@ const ICONS: Record<string, LucideIcon> = {
  */
 export default function Sidebar({ isOpen }: SidebarProps) {
   const pathname = usePathname();
-  const { knownPermissions } = useSession();
+  const { knownPermissions, role } = useSession();
   const { detection } = useBackendCapabilities();
   // Teacher applications: only with the backend feature AND the (known) users.manageTeachers.
   const items = [
@@ -94,6 +95,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     ...(markingOverviewNavVisible(detection, knownPermissions, "admin") ? [ADMIN_MARKING_OVERVIEW] : []),
     // Registration data: the backend feature AND the known registrationData.manage (Super Administrators).
     ...(registrationDataNavVisible(detection, knownPermissions) ? [ADMIN_REGISTRATION_DATA] : []),
+    // Banks: Super Administrators only, with a backend advertising managedBanks (lib/admin/banks.ts).
+    ...(banksNavVisible(detection, role) ? [ADMIN_BANKS] : []),
     // Platform settings (settings.manage). Help, the user's own settings and Sign Out are in the profile menu (top right).
     ...(canSeeNavItem(ADMIN_SETTINGS, knownPermissions) ? [{ ...ADMIN_SETTINGS, label: "Platform settings" }] : []),
   ];
