@@ -450,7 +450,7 @@ function SetQuestionsDialog({ test, onClose, onSaved }: { test: Test; onClose: (
     <Modal title="Set the questions" onClose={onClose} wide>
       <form onSubmit={submit} noValidate className="space-y-4" data-testid="set-questions-form">
         <Alert tone="info">
-          {`${test.submissionCount ?? 0} students have submitted. Their answers stay exactly as they are; only the list of questions and their marks changes. This is refused if marking has already started on this test.`}
+          {`${test.submissionCount ?? 0} ${(test.submissionCount ?? 0) === 1 ? "student has" : "students have"} submitted. Their answers stay exactly as they are; only the list of questions and their marks changes. This is refused if marking has already started on this test.`}
         </Alert>
         {problem && <Alert tone="error">{problem}</Alert>}
         <ol className="space-y-3">

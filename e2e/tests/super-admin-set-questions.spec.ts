@@ -60,7 +60,7 @@ test("Super Administrator: sets the questions of a test that already has papers;
   await expect(page.getByTestId("add-question")).toHaveCount(0);
   await page.getByTestId("set-questions").click();
   const form = page.getByTestId("set-questions-form");
-  await expect(form).toContainText("1 students have submitted");
+  await expect(form).toContainText("1 student has submitted");
 
   // Marks that do not add up, and a missing reason, are explained before anything is sent.
   await form.getByLabel("Question 1 marks").fill("8");
