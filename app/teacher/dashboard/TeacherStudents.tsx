@@ -22,7 +22,6 @@ import Pagination from "@/app/components/ui/Pagination";
 import { PageFrame } from "@/app/components/ui/PageFrame";
 import { Badge, Notice, SearchInput, TableCard, TableMessage, linkBtn, td, th } from "@/app/admin/components/adminUi";
 import { FilterBar } from "@/app/components/ui/FilterBar";
-import { TeacherTestsWidget } from "@/app/components/test-management/ResultViews";
 import { submissionLockSupported } from "@/lib/test-management/submissions";
 
 const GRADES: GradeLevel[] = ["S1", "S2", "S3", "S4", "S5", "S6"];
@@ -45,10 +44,9 @@ export default function TeacherStudents() {
 
   return (
     <PageFrame title="My students" description={selfService
-      ? "Every student who registered with your school code appears here automatically. Submit their tests from Tests."
+      ? "Every student who registered with your school code appears here automatically."
       : tsa ? "Verified students of your schools, and students an administrator assigned to you." : "Students of the schools assigned to you by an administrator."}>
-      {/* Tests (Phase 4 dashboard: capability testResults, tests.submitForStudents) */}
-      <div className="mb-6"><TeacherTestsWidget /></div>
+      {/* Owner 2026-11-27: only students here; everything about tests is on the Tests tab (TeacherTestsWidget there). */}
       {pending && (
         <div className="mb-4" data-testid="pending-students">
           <Notice tone="info">{pending}</Notice>
