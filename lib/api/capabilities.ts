@@ -248,6 +248,12 @@ export const KNOWN_FEATURES = [
    */
   "bankingDetails",
   /**
+   * The bank list (owner 2026-11-27): every bank chosen from a list the Super Administrator manages (GET / PUT
+   * /admin/banking/banks); the account number follows the chosen bank (Umwalimu SACCO exactly 12 digits). GET
+   * /me/banking rules.bankOptions carries each bank's rule and instruction.
+   */
+  "managedBanks",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */

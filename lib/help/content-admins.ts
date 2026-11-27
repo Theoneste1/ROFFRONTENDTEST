@@ -148,9 +148,18 @@ const registrationData: HelpTopic = t("registration-data", ["/admin/registration
   ],
   ["Every correction is recorded in the audit log."]);
 
+const banks: HelpTopic = t("banks", ["/admin/banks"], "Banks",
+  "The banks Teachers, Coaches and Head Coaches choose, and the rule each bank's account numbers follow.",
+  [
+    "Add a bank, rename one, or switch one off (it is then no longer offered; whoever has it keeps it).",
+    "Choose each bank's account-number rule: the general check, exactly N digits, or between N and M digits.",
+    "Write the reason, click Save the bank list and confirm.",
+  ],
+  ["Umwalimu SACCO always stays, with exactly 12 digits.", "A bank people use cannot be removed, only switched off.", "Nobody is locked out by a change: people are asked only when they next change their account number."]);
+
 export const SUPER_ADMIN_GUIDE: RoleGuide = {
   role: "SUPER_ADMIN",
   audience: "Super Administrators",
   gettingStarted: ADMIN_GUIDE.gettingStarted,
-  topics: [...ADMIN_TOPICS.slice(0, 1), registrationData, ...ADMIN_TOPICS.slice(1)],
+  topics: [...ADMIN_TOPICS.slice(0, 1), registrationData, banks, ...ADMIN_TOPICS.slice(1)],
 };

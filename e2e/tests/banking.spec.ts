@@ -2,8 +2,9 @@
  * Banking information (owner 2026-11-25), in the browser:
  *  - a Teacher / Coach / Head Coach without complete details sees "Complete Your Banking Information" instead of every
  *    portal page — after a reload, a typed address, or in a new tab — and can sign out;
- *  - Teachers: Umwalimu SACCO shown fixed for both banks (no list); personal or school number of 11 / 13 digits or
- *    letters → the exact message;
+ *  - Teachers: both banks chosen from the list the Super Administrator manages (Umwalimu SACCO suggested); the
+ *    instruction under each number follows the chosen bank (owner 2026-11-27); Umwalimu SACCO numbers of 11 / 13
+ *    digits or letters → "Umwalimu SACCO account numbers must contain exactly 12 digits.";
  *    12 digits → saved, a confirmation, then the dashboard (and never the form again);
  *  - Coaches and Head Coaches: the three personal fields only (bank from the list of 12) — no school section, no
  *    school check or confirmation; school details saved earlier are kept untouched;
@@ -18,8 +19,9 @@ import { PASSWORD } from "../support/accounts";
 import { signIn, signInWith } from "../support/session";
 
 const SACCO = "Umwalimu SACCO";
-const TEACHER_MSG = "Your Umwalimu SACCO account number must contain exactly 12 digits.";
-const SCHOOL_MSG = "The school's Umwalimu SACCO account number must contain exactly 12 digits.";
+const TEACHER_MSG = "Umwalimu SACCO account numbers must contain exactly 12 digits.";
+const SCHOOL_MSG = TEACHER_MSG;
+const GENERAL_MSG = "An account number has 5 to 40 characters: digits, letters, spaces or hyphens, with at least one digit.";
 
 async function makeAccount(username: string, role: "TEACHER" | "MENTOR" | "HEAD_COACH", partial?: Record<string, string>) {
   const { hashSync } = await import("bcryptjs");
@@ -53,7 +55,7 @@ test.describe("banking information", () => {
     await makeAccount("bank.hc", "HEAD_COACH", { personalAccountName: "Partial Person", personalBankName: "Ecobank Rwanda Plc" });
   });
 
-  test("teacher: held at the step everywhere; fixed banks; 12 digits exactly; then the dashboard, never the form again", async ({ page, context }) => {
+  test("teacher: held at the step everywhere; banks chosen (Umwalimu SACCO suggested); the hint follows the bank; 12 digits for SACCO", async ({ page, context }) => {
     await signInWith(page, "bank.teacher", PASSWORD, { answerGender: false });
     await expect(step(page)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Complete Your Banking Information" })).toBeVisible();
@@ -68,10 +70,15 @@ test.describe("banking information", () => {
     await expect(other.getByTestId("banking-step")).toBeVisible();
     await other.close();
 
-    // Both banks fixed: shown, no list to choose from.
-    await expect(page.getByTestId("banking-fixed-personalBankName")).toHaveText(SACCO);
-    await expect(page.getByTestId("banking-fixed-schoolBankName")).toHaveText(SACCO);
-    await expect(page.locator("select")).toHaveCount(0);
+    // Both banks chosen from the list, Umwalimu SACCO suggested; the instruction follows the chosen bank at once.
+    await expect(page.locator("#banking-personalBankName")).toHaveValue(SACCO);
+    await expect(page.locator("#banking-schoolBankName")).toHaveValue(SACCO);
+    const personalHint = page.getByTestId("banking-bank-personalBankName").locator("xpath=following-sibling::*[1]").getByTestId("banking-number-hint");
+    await expect(personalHint).toHaveText(TEACHER_MSG);
+    await page.locator("#banking-personalBankName").selectOption("Bank of Kigali Plc");
+    await expect(personalHint).toHaveText(GENERAL_MSG);
+    await page.locator("#banking-personalBankName").selectOption(SACCO);
+    await expect(personalHint).toHaveText(TEACHER_MSG);
 
     // Required fields, then the 12-digit rule (nothing cut or changed).
     await page.getByTestId("banking-submit").click();
@@ -86,7 +93,7 @@ test.describe("banking information", () => {
     for (const n of ["12345678901", "1234567890123", "12345678901A"]) {
       await fill(page, { personalAccountNumber: n });
       await page.getByTestId("banking-submit").click();
-      await expect(page.getByText(TEACHER_MSG)).toBeVisible();
+      await expect(page.locator("#banking-personalAccountNumber-error")).toHaveText(TEACHER_MSG);
       await expect(page.locator("#banking-personalAccountNumber")).toHaveValue(n);
     }
     // The school's Umwalimu SACCO number: exactly 12 digits too (10 given above).
@@ -115,7 +122,7 @@ test.describe("banking information", () => {
     await expect(page.getByTestId("banking-fixed-schoolBankName")).toHaveCount(0);
     await fill(page, { personalAccountName: "Bank Coach", personalAccountNumber: "00012345678" });
     await page.getByTestId("banking-submit").click();
-    await expect(page.locator("#banking-personalBankName-error")).toHaveText("Bank name is required.");
+    await expect(page.locator("#banking-personalBankName-error")).toHaveText("Choose the bank from the list.");
     await bank.selectOption("Bank of Kigali Plc");
     await page.getByTestId("banking-submit").click();
     await expect(page.getByTestId("banking-saved")).toBeVisible();
@@ -245,31 +252,19 @@ test.describe("banking information: details saved earlier (conflicting banks; co
     });
   });
 
-  test("teacher: both saved banks shown and marked; not replaced until each is confirmed; other details kept", async ({ page }) => {
+  test("teacher with other banks saved: never held at the step; the banks are kept as chosen (owner 2026-11-27)", async ({ page }) => {
     await signInWith(page, "bank.legacy.t", PASSWORD, { answerGender: false });
-    await expect(step(page)).toBeVisible();
-    await expect(page.getByTestId("banking-saved-personalBankName")).toHaveText("Bank of Kigali Plc");
-    await expect(page.getByTestId("banking-saved-schoolBankName")).toHaveText("Equity Bank Rwanda Plc");
-    await expect(page.locator("#banking-personalAccountName")).toHaveValue("Legacy Teacher");
-    await expect(page.locator("#banking-schoolAccountNumber")).toHaveValue("400100001111");
-
-    // Not confirmed: refused, each field named; nothing replaced.
-    await page.getByTestId("banking-submit").click();
-    await expect(page.locator("#banking-personalBankName-error")).toContainText("Bank of Kigali Plc");
-    await expect(page.locator("#banking-schoolBankName-error")).toContainText("Equity Bank Rwanda Plc");
-    // One confirmed only: still refused for the other.
-    await page.getByTestId("banking-confirm-personalBankName").check();
-    await page.getByTestId("banking-submit").click();
-    await expect(page.locator("#banking-schoolBankName-error")).toContainText("Equity Bank Rwanda Plc");
-    expect((await savedRow("bank.legacy.t")).personalBankName).toBe("Bank of Kigali Plc");
-
-    await page.getByTestId("banking-confirm-schoolBankName").check();
-    await page.getByTestId("banking-submit").click();
-    await expect(page.getByTestId("banking-saved")).toBeVisible();
-    expect(await savedRow("bank.legacy.t")).toMatchObject({
-      personalAccountName: "Legacy Teacher", personalBankName: SACCO, personalAccountNumber: "123456789012",
-      schoolAccountName: "GS Legacy", schoolBankName: SACCO, schoolAccountNumber: "400100001111",
-    });
+    await expect(page.getByTestId("sidebar-nav").or(page.getByRole("button", { name: "Toggle Sidebar" })).first()).toBeVisible();
+    await expect(step(page)).toHaveCount(0);
+    await page.goto("/teacher/account");
+    const card = page.getByTestId("settings-banking");
+    await card.getByTestId("settings-banking-edit").click();
+    await expect(card.locator("#banking-personalBankName")).toHaveValue("Bank of Kigali Plc");
+    await expect(card.locator("#banking-schoolBankName")).toHaveValue("Equity Bank Rwanda Plc");
+    await expect(card.locator("[data-testid^='banking-conflict-'], [data-testid^='banking-confirm-']")).toHaveCount(0);
+    await card.getByTestId("banking-submit").click();
+    await expect(card.getByText("Your banking information has been saved.")).toBeVisible();
+    expect(await savedRow("bank.legacy.t")).toMatchObject({ personalBankName: "Bank of Kigali Plc", schoolBankName: "Equity Bank Rwanda Plc", schoolAccountNumber: "400100001111" });
   });
 
   test("coach with complete personal details and a saved school bank: never held at the step; school details kept", async ({ page }) => {
@@ -316,5 +311,49 @@ test.describe("banking information on a phone", () => {
     await signInWith(page, "bank.phone", PASSWORD, { answerGender: false });
     await expect(step(page)).toBeVisible();
     expect(await page.evaluate(() => document.scrollingElement!.scrollWidth - document.scrollingElement!.clientWidth)).toBeLessThanOrEqual(0);
+  });
+});
+
+test.describe("the bank list: managed by the Super Administrator (owner 2026-11-27)", () => {
+  test("Super Administrator adds a 10-digit bank; a teacher's form offers it and follows its rule; administrators have no Banks page", async ({ page, browser }) => {
+    await makeAccount("bank.teacher.list", "TEACHER");
+    await signIn(page, "superAdmin");
+    await page.goto("/admin/banks");
+    await expect(page.getByRole("heading", { name: "Banks" })).toBeVisible();
+    const table = page.getByTestId("banks-table");
+    await expect(table).toContainText(SACCO);
+    await page.getByTestId("bank-add").click();
+    const rows = table.locator("tbody tr");
+    const last = rows.last();
+    await last.getByLabel("Bank name").fill("E2E Ten Digit Bank");
+    await last.getByLabel("Rule").selectOption("EXACT");
+    await last.getByLabel("Number of digits").fill("10");
+    await expect(last).toContainText("E2E Ten Digit Bank account numbers must contain exactly 10 digits.");
+    await page.getByTestId("banks-save").click();
+    await expect(page.getByText("Give the reason for the change")).toBeVisible();
+    await page.getByLabel("Reason for the change (kept in the audit log)").fill("A new partner bank");
+    await page.getByTestId("banks-save").click();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByText("The bank list was saved.")).toBeVisible();
+
+    const teacher = await (await browser.newContext()).newPage();
+    await signInWith(teacher, "bank.teacher.list", PASSWORD, { answerGender: false });
+    await expect(step(teacher)).toBeVisible();
+    await teacher.locator("#banking-personalBankName").selectOption("E2E Ten Digit Bank");
+    const hint = teacher.getByTestId("banking-number-hint").first();
+    await expect(hint).toHaveText("E2E Ten Digit Bank account numbers must contain exactly 10 digits.");
+    await fill(teacher, { personalAccountName: "List Teacher", personalAccountNumber: "123456789012", schoolAccountName: "GS List", schoolAccountNumber: "400100004567" });
+    await teacher.getByTestId("banking-submit").click();
+    await expect(teacher.locator("#banking-personalAccountNumber-error")).toHaveText("E2E Ten Digit Bank account numbers must contain exactly 10 digits.");
+    await fill(teacher, { personalAccountNumber: "1234567890" });
+    await teacher.getByTestId("banking-submit").click();
+    await expect(teacher.getByTestId("banking-saved")).toBeVisible();
+    await teacher.context().close();
+
+    const admin = await (await browser.newContext()).newPage();
+    await signIn(admin, "admin");
+    await admin.goto("/admin/banks");
+    await expect(admin.getByText("Only a Super Administrator manages the bank list.")).toBeVisible();
+    await admin.context().close();
   });
 });
