@@ -1,5 +1,6 @@
 'use client';
 
+import { initialsSource } from '@/lib/leaderboard/initials';
 import React, { useState } from 'react';
 import { useSession } from '@/lib/auth/session';
 import { useEntryAbove, useLeaderboard, useMyRank, useSchoolLeaderboard } from '@/lib/queries/community';
@@ -20,11 +21,15 @@ const PODIUM = [
   { place: 2, label: '3rd', accent: 'border-orange-400', order: 'order-3 md:order-3', height: 'md:pt-12', isFirst: false },
 ];
 
-/** The student's profile picture (or their initials), loaded through the session (AvatarBadge). */
+/**
+ * The student's profile picture (or initials), loaded through the session (AvatarBadge). Students see usernames, never
+ * names (owner 2026-11-27): "jean.damour" → "JD" (its two parts), "anitha" → "AN"; staff still see full names.
+ */
 function StudentPicture({ entry, className = '' }: { entry: LeaderboardEntry; className?: string }) {
-  const [first = '', last = ''] = entry.displayName.split(' ');
-  return <AvatarBadge user={{ id: entry.id, firstName: first, lastName: last.replace('.', ''), avatarUrl: entry.avatarUrl }} size="sm" className={className} />;
+  const [first = '', last = ''] = initialsSource(entry.displayName);
+  return <AvatarBadge user={{ id: entry.id, firstName: first, lastName: last, avatarUrl: entry.avatarUrl }} size="sm" className={className} />;
 }
+
 
 /** A school that has not confirmed the student yet. */
 function NotVerified() {
