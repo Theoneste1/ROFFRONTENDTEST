@@ -2,7 +2,8 @@
 
 /**
  * A student's profile, the same in every portal (`/<portal>/profiles/:id`): the Student Profile header, then what the
- * viewer may do — the Olympiad level (students.classifyLevel; the backend checks the scope), the account page for
+ * viewer may do — the Olympiad level (students.classifyLevel; the backend checks the scope; a Coach only sees it, owner
+ * 2026-11-27: coaches edit no student profile data), the account page for
  * administrators, the student page for teachers. A student who may not be viewed gets "not found" (as the backend).
  */
 import Link from "next/link";
@@ -18,6 +19,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import StudentProfileHeader from "./StudentProfileHeader";
 import OlympiadLevelCard from "./OlympiadLevelCard";
+import { mayChangeLevel } from "@/lib/accounts/olympiad-level";
 
 const action = "inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50";
 
@@ -58,7 +60,7 @@ export default function StudentProfilePage({ studentId }: { studentId: string })
               ) : undefined
             }
           />
-          {levels && <OlympiadLevelCard studentId={studentId} canChange />}
+          {levels && <OlympiadLevelCard studentId={studentId} canChange={mayChangeLevel(role)} />}
         </div>
       )}
     </div>

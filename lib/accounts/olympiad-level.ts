@@ -91,3 +91,12 @@ export function levelChangeProblem(v: Pick<OlympiadLevelView, "level" | "manual"
 export function setLevelInput(choice: string, reason: string): SetLevelInput {
   return choice === "AUTOMATIC" ? { automatic: true, reason: reason.trim() } : { divisionId: choice, reason: reason.trim() };
 }
+
+/**
+ * Whether this role may change a student's Olympiad level (it still needs students.classifyLevel). Owner 2026-11-27:
+ * a Coach edits no student profile data — they see the level, read only; the backend refuses them too (403
+ * COACH_CANNOT_EDIT_STUDENTS).
+ */
+export function mayChangeLevel(role: string | null | undefined): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN" || role === "HEAD_COACH";
+}
