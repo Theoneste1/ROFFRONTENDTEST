@@ -117,6 +117,8 @@ test.describe.serial("Administrator: Find a submission → reassign Junior Mathe
     await expect(n).toContainText(T.ms);
     await expect(n.locator("[data-changed]")).toHaveCount(2);   // test and level; the programme stays Mathematics
     await expect(d.getByTestId("reassign-kept")).toContainText("the typed answer");
+    // The student's own level is still Junior: the screen says their "My tests" lists Junior tests only.
+    await expect(d.getByTestId("reassign-profile-level")).toContainText("own level is Junior");
     await shot(page, "desktop-3-review");
     await d.getByTestId("reassign-confirm").click();
     await expect(page.getByTestId("reassign-dialog")).toHaveCount(0);

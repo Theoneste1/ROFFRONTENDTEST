@@ -17,7 +17,7 @@ import { formatDate, formatDateTime, personName } from "@/lib/format";
 import { SUBMISSION_STATUS_LABEL } from "@/lib/test-management/submissions";
 import {
   REASSIGN_PROBLEM_LABEL, REASSIGN_REASON_MAX, answerSummary, destinationsFor, keptParts, pickDestination, reassignChanges,
-  reassignChoiceProblems, subjectsOf, type ReassignChoice, type ReassignProblems,
+  profileLevelNote, reassignChoiceProblems, subjectsOf, type ReassignChoice, type ReassignProblems,
 } from "@/lib/test-management/reassignment";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { Modal } from "@/app/admin/components/adminUi";
@@ -211,6 +211,7 @@ function Review({ o, choice, levelName, destTitle, destSubject, error, pending, 
   const changed = reassignChanges(o, choice);
   const kept = [...keptParts(s.answer), `submitted ${formatDateTime(s.lastSubmittedAt ?? s.firstSubmittedAt)}`, `status “${SUBMISSION_STATUS_LABEL[s.status] ?? s.status}”`, "the status history"];
   const hi = (on: boolean) => (on ? "font-bold text-brand" : "text-slate-900");
+  const profileNote = profileLevelNote(o, choice.level, (c) => levelName(c));
   return (
     <>
       <dl className="grid grid-cols-1 gap-x-6 sm:grid-cols-[8rem_1fr]">
@@ -240,6 +241,9 @@ function Review({ o, choice, levelName, destTitle, destSubject, error, pending, 
         Kept exactly as they are: {kept.join(", ")}.{" "}
         {o.markingStarted ? "The marks stay with this test." : "No marking has started."}
       </div>
+      {profileNote && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="note" data-testid="reassign-profile-level">{profileNote}</div>
+      )}
       <Note>Recorded in the audit log: you, the time, the values before and after, and this reason.</Note>
       {error && <Alert tone="error"><span data-testid="reassign-error">{error}</span></Alert>}
       <Buttons>

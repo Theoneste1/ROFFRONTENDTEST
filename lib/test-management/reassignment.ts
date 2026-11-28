@@ -114,3 +114,14 @@ export function keptParts(answer: { pages: number; typed: boolean }): string[] {
   if (answer.typed) parts.push("the typed answer");
   return parts;
 }
+
+/**
+ * The student's own level (their profile) differs from the corrected level: "My tests" lists the tests of the student's
+ * own level only, so the screen says to correct it under Students as well. Null when they match or it is unknown.
+ */
+export function profileLevelNote(o: ReassignOptions, level: string, levelName: (code: string) => string): string | null {
+  const own = o.submission.student.division?.code;
+  if (!own || own === level) return null;
+  return `This student's own level is ${levelName(own)}. Their "My tests" page lists ${levelName(own)} tests only, so they will not see this answer there, `
+    + `and while a ${levelName(own)} test is open they could still answer it. If ${levelName(level)} is right, also change the student's level under Students.`;
+}

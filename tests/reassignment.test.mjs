@@ -109,3 +109,13 @@ test("answer summary and what is kept", () => {
   assert.equal(answerSummary({ pages: 0, typed: true }), "typed answer");
   assert.deepEqual(keptParts({ pages: 1, typed: true }), ["1 uploaded page", "the typed answer"]);
 });
+
+test("the student's own level differs from the corrected one: the screen says so; same level or unknown: nothing", async () => {
+  const { profileLevelNote } = await import("@/lib/test-management/reassignment");
+  const name = (c) => ({ JUNIOR: "Junior", SENIOR: "Senior" })[c] ?? c;
+  const opts = (division) => ({ submission: { student: { id: "s", username: "u", firstName: "A", lastName: "B", division } } });
+  assert.match(profileLevelNote(opts({ code: "JUNIOR", name: "Junior" }), "SENIOR", name), /own level is Junior.*change the student's level under Students/);
+  assert.equal(profileLevelNote(opts({ code: "SENIOR", name: "Senior" }), "SENIOR", name), null);
+  assert.equal(profileLevelNote(opts(null), "SENIOR", name), null);
+  assert.equal(profileLevelNote(opts(undefined), "SENIOR", name), null);
+});

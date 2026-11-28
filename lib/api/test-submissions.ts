@@ -400,7 +400,8 @@ export interface ReassignOptions {
     level: TestLevel | null;
     firstSubmittedAt: string | null;
     lastSubmittedAt: string | null;
-    student: { id: string; username: string; firstName: string; lastName: string };
+    /** `division`: the student's own level (profile); older backends omit it. */
+    student: { id: string; username: string; firstName: string; lastName: string; division?: { code: string; name: string } | null };
     answer: { pages: number; typed: boolean };
   };
   current: { test: { id: string; title: string; division: TestDivision }; subject: TestSubject; level: TestLevel | null };
