@@ -8,16 +8,17 @@
  * Administrators and Super Administrators can read every role's guide (?for=COACH).
  */
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowUp, BookOpen, Download, LifeBuoy, MessageCircle, Search } from "lucide-react";
+import { ArrowUp, BookOpen, Download, LifeBuoy, Search } from "lucide-react";
 import Image from "@/app/components/ui/Image";
 import { useSession } from "@/lib/auth/session";
 import {
-  ALL_HELP_ROLES, guideFileName, guideFor, guidePagePath, guideShown, guideUrl, helpRoleOf, searchTopics, whatsappUrl,
+  ALL_HELP_ROLES, SUPPORT_PAGE, guideFileName, guideFor, guidePagePath, guideShown, guideUrl, helpRoleOf, searchTopics,
   type HelpTopic,
 } from "@/lib/help/rules";
 import HelpTopicBody from "./HelpTopicBody";
+import { SupportButton, SupportDetails } from "./SupportContact";
 
 export default function UserGuide() {
   const { user } = useSession();
@@ -26,6 +27,12 @@ export default function UserGuide() {
   const [query, setQuery] = useState("");
   const shown = reader ? guideShown(reader, params.get("for")) : null;
   const guide = shown ? guideFor(shown) : null;
+  // Arriving with a section link (/mentor/guide#coach-dashboard, e.g. from Help): the sections exist only once the
+  // session has loaded, after the browser looked for the anchor — scroll to it now that it is on the page.
+  useEffect(() => {
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (id && guide) document.getElementById(id)?.scrollIntoView({ block: "start" });
+  }, [guide]);
   if (!reader || !shown || !guide) return null;
   const sections = [
     { key: "start", title: "Getting started", topics: searchTopics(guide.gettingStarted, query) },
@@ -53,14 +60,11 @@ export default function UserGuide() {
           >
             <Download className="h-4 w-4" aria-hidden="true" /> Download as PDF (optional)
           </a>
-          <a
-            href={whatsappUrl("User guide")}
-            target="_blank"
-            rel="noopener noreferrer"
+          <SupportButton
+            pageTitle="User guide"
+            testId="user-guide-support"
             className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-[0.8125rem] font-semibold text-brand-950 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
-          >
-            <MessageCircle className="h-4 w-4" aria-hidden="true" /> Ask on WhatsApp
-          </a>
+          />
         </div>
       </header>
 
@@ -112,7 +116,7 @@ export default function UserGuide() {
         <div className="min-w-0 space-y-8">
           {found === 0 && (
             <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600" role="status" data-testid="user-guide-empty">
-              Nothing in this guide matches “{query}”. Try another word, or ask on WhatsApp.
+              Nothing in this guide matches “{query}”. Try another word, or contact ROF support.
             </p>
           )}
           {sections.map((s) => s.topics.length > 0 && (
@@ -157,16 +161,13 @@ function GuideFooter({ audience, pdfUrl, pdfName }: { audience: string; pdfUrl: 
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <p className="font-serif text-lg font-semibold">Still stuck?</p>
-          <p className="mt-1 text-sm leading-6 text-blue-100/80">Send a message and tell us which page you are on.</p>
-          <a
-            href={whatsappUrl("User guide")}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="user-guide-footer-whatsapp"
+          <p className="mt-1 text-sm leading-6 text-blue-100/80">Contact ROF support and tell them which page you are on.</p>
+          <div className="mt-3"><SupportDetails tone="dark" /></div>
+          <SupportButton
+            pageTitle="User guide"
+            testId="user-guide-footer-whatsapp"
             className="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-300 px-4 py-2 text-[0.8125rem] font-bold text-brand-950 shadow-sm transition-colors hover:bg-amber-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-950"
-          >
-            <MessageCircle className="h-4 w-4" aria-hidden="true" /> Ask on WhatsApp
-          </a>
+          />
         </div>
 
         <nav aria-label="Guide links" className="flex flex-col gap-1.5">
@@ -177,7 +178,7 @@ function GuideFooter({ audience, pdfUrl, pdfName }: { audience: string; pdfUrl: 
           <a href={pdfUrl} download={pdfName} className={link}>
             <Download className="h-4 w-4" aria-hidden="true" /> Download as PDF
           </a>
-          <Link href="/support" className={link}>
+          <Link href={SUPPORT_PAGE} className={link}>
             <LifeBuoy className="h-4 w-4" aria-hidden="true" /> Help and Support
           </Link>
         </nav>

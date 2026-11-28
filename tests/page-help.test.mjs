@@ -1,13 +1,13 @@
 // Page help (owner, 2026-11-26; lib/help): the role's guide, the topic of each page, every portal page covered,
-// the technical support link (WhatsApp 0780 850 611) and the credit "Made by Theoneste, Technology lead".
+// ROF's official support (platform settings) and neutral ROF branding — no personal name or number (owner, 2026-11-28).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import {
-  HELP_CREDIT, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guidePagePath, guideShown, guideUrl, helpRoleOf, matchScore, roleFromGuideFile, searchTopics,
-  topicFor, whatsappUrl,
+  HELP_CREDIT, generalTopic, guideFileName, guideFor, guidePagePath, guideShown, guideUrl, helpRoleOf, matchScore, roleFromGuideFile, searchTopics,
+  topicFor, whatsappNumber, whatsappUrl,
 } from "@/lib/help/rules";
 import { ADMIN_NAV, MENTOR_NAV, TEACHER_NAV, ADMIN_TESTS, ADMIN_FORMS, ADMIN_COUNTRIES, ADMIN_SUBSCRIBERS, ADMIN_SETTINGS,
   ADMIN_TEACHER_APPLICATIONS, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_REGISTRATION_DATA, ADMIN_MARKING_OVERVIEW, ADMIN_TEST_REPORTS,
@@ -90,13 +90,29 @@ test("every portal page is covered by a help topic", () => {
   assert.deepEqual(missing, []);
 });
 
-test("technical support: Theoneste on WhatsApp 0780 850 611, with the page named in the first message", () => {
-  assert.equal(TECH_SUPPORT.whatsappNumber, "250780850611");
-  assert.equal(HELP_CREDIT, "Made by Theoneste, Technology lead");
-  const url = whatsappUrl("Marking");
-  assert.ok(url.startsWith("https://wa.me/250780850611?text="));
-  assert.equal(decodeURIComponent(url.split("text=")[1]), "Hello Theoneste, I need help with ROF LMS (page: Marking).");
-  assert.equal(decodeURIComponent(whatsappUrl().split("text=")[1]), "Hello Theoneste, I need help with ROF LMS.");
+test("ROF support: WhatsApp with the official support phone (platform settings), the page named in the first message", () => {
+  assert.equal(HELP_CREDIT, "ROF LMS · Rwanda Olympiad Foundation");
+  for (const phone of ["0788 123 456", "+250 788 123 456", "250788123456", "+250788123456"]) assert.equal(whatsappNumber(phone), "250788123456", phone);
+  assert.equal(whatsappNumber("+44 20 7946 0958"), "442079460958");
+  for (const none of [null, undefined, "", "   ", "call us", "12345"]) assert.equal(whatsappNumber(none), null, String(none));
+  const url = whatsappUrl("0788 123 456", "Marking");
+  assert.ok(url.startsWith("https://wa.me/250788123456?text="));
+  assert.equal(decodeURIComponent(url.split("text=")[1]), "Hello ROF support, I need help with ROF LMS (page: Marking).");
+  assert.equal(decodeURIComponent(whatsappUrl("0788 123 456").split("text=")[1]), "Hello ROF support, I need help with ROF LMS.");
+  assert.equal(whatsappUrl(null, "Marking"), null, "no support phone: no WhatsApp link (the Support page instead)");
+});
+
+test("no personal name or personal number anywhere in help: neutral ROF branding (owner, 2026-11-28)", () => {
+  const files = [];
+  const walk = (dir) => { for (const n of readdirSync(dir)) { const p = join(dir, n); statSync(p).isDirectory() ? walk(p) : files.push(p); } };
+  walk(join("lib", "help")); walk(join("app", "components", "help")); walk(join("app", "help"));
+  for (const f of files) {
+    const src = readFileSync(f, "utf8");
+    for (const personal of ["Theoneste", "Technology lead", "0780 850 611", "0780850611", "250780850611"]) assert.ok(!src.includes(personal), `${f} mentions ${personal}`);
+  }
+  for (const role of ROLES) {
+    for (const t of [...guideFor(role).gettingStarted, ...guideFor(role).topics]) assert.doesNotMatch(JSON.stringify(t), /Theoneste|Technology lead/, `${role}: ${t.id}`);
+  }
 });
 
 test("PDF file name and address per audience", () => {

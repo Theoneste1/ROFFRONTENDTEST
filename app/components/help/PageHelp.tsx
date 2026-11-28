@@ -2,17 +2,19 @@
 
 /**
  * Page help (owner, 2026-11-26): the Help button of the portal top bar and its panel — the guide for THIS page, written
- * for the signed-in role, the technical support contact on WhatsApp, the full user guide inside the system (owner,
- * 2026-11-28; the PDF stays an option) and the credit "Made by Theoneste, Technology lead". Desktop: a panel on the right; phone: a sheet from the bottom.
+ * for the signed-in role, ROF's official support details (platform settings; no personal name or number — owner,
+ * 2026-11-28), the full user guide inside the system (the PDF stays an option) and neutral ROF branding. Desktop: a
+ * panel on the right; phone: a sheet from the bottom.
  * Closed by default (owner, 2026-11-26): it opens only when the person presses Help, and closes when they leave the page.
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { BookOpen, CircleHelp, Download, MessageCircle, X } from "lucide-react";
+import { BookOpen, CircleHelp, Download, LifeBuoy, X } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
-import { ALL_HELP_ROLES, EVERY_ROLE_GUIDE, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guidePagePath, guideUrl, helpRoleOf, topicFor, whatsappUrl, type HelpRole } from "@/lib/help/rules";
+import { ALL_HELP_ROLES, EVERY_ROLE_GUIDE, HELP_CREDIT, SUPPORT_PAGE, generalTopic, guideFileName, guideFor, guidePagePath, guideUrl, helpRoleOf, topicFor, type HelpRole } from "@/lib/help/rules";
 import HelpTopicBody from "./HelpTopicBody";
+import { SupportButton, SupportDetails } from "./SupportContact";
 
 export default function PageHelp() {
   const { user } = useSession();
@@ -94,21 +96,20 @@ function HelpPanel({ role, topic, onClose }: { role: HelpRole; topic: NonNullabl
           <HelpTopicBody topic={topic} />
 
           <section className="rounded-xl border border-brand-100 bg-brand-50 p-3.5" data-testid="page-help-support">
-            <h3 className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-brand">Technical support</h3>
-            <p className="mt-1 text-slate-700">
-              Contact <span className="font-semibold text-brand-950">{TECH_SUPPORT.name}</span>, {TECH_SUPPORT.title}, on WhatsApp:{" "}
-              <span className="font-semibold tabular-nums text-brand-950">{TECH_SUPPORT.phoneDisplay}</span>
-            </p>
-            <a
-              href={whatsappUrl(topic.title)}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="page-help-whatsapp"
-              className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-brand px-3.5 py-1.5 text-[0.8125rem] font-semibold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2"
-            >
-              <MessageCircle className="h-4 w-4" aria-hidden="true" />
-              Chat on WhatsApp
-            </a>
+            <h3 className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-brand">ROF support</h3>
+            <p className="mt-1 text-slate-700">Something not working, or a question this guide does not answer? Contact ROF support.</p>
+            <div className="mt-2"><SupportDetails /></div>
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <SupportButton
+                pageTitle={topic.title}
+                onNavigate={onClose}
+                testId="page-help-whatsapp"
+                className="inline-flex items-center gap-2 rounded-full bg-brand px-3.5 py-1.5 text-[0.8125rem] font-semibold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2"
+              />
+              <Link href={SUPPORT_PAGE} onClick={onClose} data-testid="page-help-support-page" className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-brand hover:underline">
+                <LifeBuoy className="h-4 w-4" aria-hidden="true" /> Help and Support
+              </Link>
+            </div>
           </section>
 
           <section>
@@ -171,7 +172,7 @@ function HelpPanel({ role, topic, onClose }: { role: HelpRole; topic: NonNullabl
 
         <div className="flex items-center gap-2 border-t border-slate-200 px-5 py-3 text-xs text-slate-500" data-testid="page-help-credit">
           <span className="h-1.5 w-1.5 flex-none rounded-full bg-amber-300" aria-hidden="true" />
-          <span>Made by <span className="font-serif text-[0.9375rem] font-semibold text-brand-950">{TECH_SUPPORT.name}</span>, {TECH_SUPPORT.title}</span>
+          <span>{HELP_CREDIT}</span>
         </div>
       </div>
     </>

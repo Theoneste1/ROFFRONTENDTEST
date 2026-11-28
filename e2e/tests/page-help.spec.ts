@@ -1,26 +1,42 @@
 /**
  * Page help (owner, 2026-11-26): the Help button on every signed-in page opens the guide for THAT page and role, with
- * technical support on WhatsApp (Theoneste, 0780 850 611), the credit "Made by Theoneste, Technology lead", and the full
- * guide as a PDF that starts from signing in. Closed by default: it opens only from the Help button.
+ * ROF's official support details (platform settings — never a personal name or number, owner 2026-11-28), neutral ROF
+ * branding, the full guide inside the system and as a PDF. Closed by default: it opens only from the Help button.
  */
 import { expect, test } from "@playwright/test";
 import { signIn } from "../support/session";
+import { setSupportSettings } from "../support/support-settings";
 
 test.describe("Page help", () => {
-  test("administrator on Tests: the page's guide, support on WhatsApp, the credit, the PDF guide", async ({ page, request }) => {
-    await signIn(page, "admin");
-    await page.goto("/admin/tests");
-    await page.getByTestId("page-help-button").click();
+  test("administrator on Tests: the page's guide, official ROF support, neutral branding, the PDF guide", async ({ page, request }) => {
+    const restore = await setSupportSettings(request, { "platform.supportEmail": "support@rof.test", "support.phone": "0788 123 456", "support.hours": "Mon–Fri 8:00–17:00" });
     const panel = page.getByTestId("page-help-panel");
-    await expect(panel).toBeVisible();
-    await expect(page.getByTestId("page-help-topic")).toHaveText("Tests · for Administrators");
-    await expect(panel.getByRole("heading", { name: "How this page works" })).toBeVisible();
-    await expect(page.getByTestId("page-help-support")).toContainText("Theoneste");
-    await expect(page.getByTestId("page-help-support")).toContainText("0780 850 611");
-    const wa = await page.getByTestId("page-help-whatsapp").getAttribute("href");
-    expect(wa).toMatch(/^https:\/\/wa\.me\/250780850611\?text=/);
-    expect(decodeURIComponent(wa!.split("text=")[1])).toContain("(page: Tests)");
-    await expect(page.getByTestId("page-help-credit")).toHaveText("Made by Theoneste, Technology lead");
+    try {
+      await signIn(page, "admin");
+      await page.goto("/admin/tests");
+      await page.getByTestId("page-help-button").click();
+      await expect(panel).toBeVisible();
+      await expect(page.getByTestId("page-help-topic")).toHaveText("Tests · for Administrators");
+      await expect(panel.getByRole("heading", { name: "How this page works" })).toBeVisible();
+      // The official details from the platform settings, and WhatsApp with the official phone.
+      const support = page.getByTestId("page-help-support");
+      await expect(support).toContainText("ROF support");
+      await expect(support).toContainText("support@rof.test");
+      await expect(support).toContainText("0788 123 456");
+      await expect(support).toContainText("Mon–Fri 8:00–17:00");
+      await expect(page.getByTestId("page-help-whatsapp")).toHaveText("Ask on WhatsApp");
+      const wa = await page.getByTestId("page-help-whatsapp").getAttribute("href");
+      expect(wa).toMatch(/^https:\/\/wa\.me\/250788123456\?text=/);
+      expect(decodeURIComponent(wa!.split("text=")[1])).toBe("Hello ROF support, I need help with ROF LMS (page: Tests).");
+      await expect(page.getByTestId("page-help-support-page")).toHaveAttribute("href", "/support");
+      // Neutral branding: no personal name, title or personal number anywhere in the panel.
+      await expect(page.getByTestId("page-help-credit")).toHaveText("ROF LMS · Rwanda Olympiad Foundation");
+      for (const personal of ["Theoneste", "Technology lead", "0780 850 611", "250780850611"]) {
+        expect(await panel.innerHTML()).not.toContain(personal);
+      }
+    } finally {
+      await restore();
+    }
 
     const href = await page.getByTestId("page-help-download").getAttribute("href");
     expect(href).toBe("/help/guide/administrators.pdf");
@@ -44,7 +60,7 @@ test.describe("Page help", () => {
     const pdfs = page.getByTestId("page-help-all-guides").getByRole("link", { name: /^Download the guide for / });
     await expect(pdfs).toHaveCount(6);
     await expect(pdfs.nth(2)).toHaveAttribute("href", "/help/guide/coaches.pdf");
-    await expect(page.getByTestId("page-help-guide")).toHaveAttribute("href", "/admin/guide#tests");
+    await expect(page.getByTestId("page-help-guide")).toHaveAttribute("href", "/admin/guide#admin-tests");
 
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
