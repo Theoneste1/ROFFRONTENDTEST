@@ -29,6 +29,7 @@ import { hasFeature } from "@/lib/api/capabilities";
 import { EmptyState, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills, PageFrame } from "@/app/components/ui/PageFrame";
+import { TeacherTestsWidget } from "@/app/components/test-management/ResultViews";
 import { MetricCard, Notice, SearchInput, TableCard, TableMessage, td, th } from "@/app/admin/components/adminUi";
 import { FilterBar } from "@/app/components/ui/FilterBar";
 import { AnswerGate, WindowBadge } from "./AnswerWorkspace";
@@ -124,6 +125,8 @@ function TeacherList() {
   const whose = teacherStudentsText(useBackendCapabilities().detection);
   return (
     <PageFrame title="Tests" description={`Published tests. You can submit answers for ${whose}, until their deadline.`}>
+      {/* Owner 2026-11-27: the teacher's test overview lives here, on the Tests tab (no longer on My students). */}
+      <div className="mb-6"><TeacherTestsWidget allTestsLink={false} /></div>
       <div className="mb-4"><FilterPills label="Tests" options={WINDOWS} value={win} onChange={(v) => { setWin(v); setPage(1); }} /></div>
       {list.isPending ? <LoadingBlock /> : list.isError ? <ErrorState error={list.error} title="Couldn't load the tests" onRetry={() => list.refetch()} /> : (
         <>

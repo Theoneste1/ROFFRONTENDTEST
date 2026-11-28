@@ -95,6 +95,7 @@ export const TEACHER_GUIDE: RoleGuide = {
       id: "teacher-tests", paths: ["/teacher/tests"], title: "Tests",
       summary: "Published tests. You can submit answers for your students until their deadline.",
       steps: [
+        "Read the Overview at the top: tests open now (submitted and missing), extensions running, published results.",
         "Filter with All, Open, Not open yet and Closed. Click Students on a test.",
         "On \"Students for this test\", read the counters and filter by state, level or subject.",
         "Click Submit on a student's row. Add their pages (one photo or scan per page, in order) or type the answer.",
