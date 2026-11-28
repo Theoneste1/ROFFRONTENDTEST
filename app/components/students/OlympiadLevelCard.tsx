@@ -47,7 +47,7 @@ export default function OlympiadLevelCard({ studentId, canChange, className = ""
   // Outside the viewer's scope (a coach opening a student of another programme): nothing to show.
   if (view.isError && isApiError(view.error) && (view.error.status === 403 || view.error.status === 404)) return null;
   return (
-    <section className={`bg-white rounded-2xl p-6 shadow-sm border border-gray-100/80 ${className}`} data-testid="olympiad-level-card">
+    <section className={`bg-white rounded-2xl p-6 shadow-sm border border-gray-100/80 ${className}`} id="olympiad-level" data-testid="olympiad-level-card">
       <h2 className="text-base font-bold text-gray-900 mb-1">Olympiad level</h2>
       <p className="text-xs text-gray-600 mb-4">The level decides which tests and courses the student gets. It follows the school grade unless it is set by hand.</p>
       {view.isPending ? (

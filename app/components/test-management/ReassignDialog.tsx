@@ -79,6 +79,7 @@ function Steps({ o, testId, onClose, onDone }: { o: ReassignOptions; testId: str
   const offered = o.markingStarted
     ? o.destinations.filter((d) => d.id === o.current.test.id)
     : destinationsFor(o.destinations, choice.subjectId, choice.level);
+  const chooseNote = choice.level ? profileLevelNote(o, choice.level, (c) => levelName(c)) : null;
 
   // Changing the programme or the level keeps the chosen test when it still fits, else picks the first that can take it.
   const change = (next: Partial<ReassignChoice>) => {
@@ -180,6 +181,7 @@ function Steps({ o, testId, onClose, onDone }: { o: ReassignOptions; testId: str
             {problems.reason && <p id="reassign-reason-error" className="mt-1 text-xs text-red-700" data-testid="reassign-reason-error">{problems.reason}</p>}
           </div>
 
+          {chooseNote && <ProfileLevelNote note={chooseNote} />}
           <Note>The same submission moves: uploaded pages, typed answer, submission time, status and history are kept. Nothing is copied or deleted.</Note>
 
           <Buttons>
@@ -241,9 +243,7 @@ function Review({ o, choice, levelName, destTitle, destSubject, error, pending, 
         Kept exactly as they are: {kept.join(", ")}.{" "}
         {o.markingStarted ? "The marks stay with this test." : "No marking has started."}
       </div>
-      {profileNote && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="note" data-testid="reassign-profile-level">{profileNote}</div>
-      )}
+      {profileNote && <ProfileLevelNote note={profileNote} />}
       <Note>Recorded in the audit log: you, the time, the values before and after, and this reason.</Note>
       {error && <Alert tone="error"><span data-testid="reassign-error">{error}</span></Alert>}
       <Buttons>
@@ -286,4 +286,17 @@ function Note({ children }: { children: ReactNode }) {
 /** Cancel / Back, then the main action: side by side on wide screens, stacked (main action first) on phones. */
 function Buttons({ children }: { children: ReactNode }) {
   return <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">{children}</div>;
+}
+
+/** The student's own level differs from the corrected one: say what it means, and open their page at the level card (new tab: this dialog stays). */
+function ProfileLevelNote({ note }: { note: { title: string; body: string; href: string } }) {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="note" data-testid="reassign-profile-level">
+      <p className="font-semibold">{note.title}</p>
+      <p className="mt-1">{note.body}</p>
+      <a href={note.href} target="_blank" rel="noopener" className="mt-2 inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-semibold text-amber-900 hover:bg-amber-100" data-testid="reassign-open-student">
+        Open the student&apos;s page to change the level <span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span>
+      </a>
+    </div>
+  );
 }

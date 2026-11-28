@@ -114,7 +114,10 @@ test("the student's own level differs from the corrected one: the screen says so
   const { profileLevelNote } = await import("@/lib/test-management/reassignment");
   const name = (c) => ({ JUNIOR: "Junior", SENIOR: "Senior" })[c] ?? c;
   const opts = (division) => ({ submission: { student: { id: "s", username: "u", firstName: "A", lastName: "B", division } } });
-  assert.match(profileLevelNote(opts({ code: "JUNIOR", name: "Junior" }), "SENIOR", name), /own level is Junior.*change the student's level under Students/);
+  const note = profileLevelNote(opts({ code: "JUNIOR", name: "Junior" }), "SENIOR", name);
+  assert.equal(note.title, "The student's own level is Junior, not Senior");
+  assert.match(note.body, /shows Junior tests only.*change the student's level too/);
+  assert.equal(note.href, "/admin/users/s#olympiad-level");
   assert.equal(profileLevelNote(opts({ code: "SENIOR", name: "Senior" }), "SENIOR", name), null);
   assert.equal(profileLevelNote(opts(null), "SENIOR", name), null);
   assert.equal(profileLevelNote(opts(undefined), "SENIOR", name), null);

@@ -118,7 +118,15 @@ test.describe.serial("Administrator: Find a submission → reassign Junior Mathe
     await expect(n.locator("[data-changed]")).toHaveCount(2);   // test and level; the programme stays Mathematics
     await expect(d.getByTestId("reassign-kept")).toContainText("the typed answer");
     // The student's own level is still Junior: the screen says their "My tests" lists Junior tests only.
-    await expect(d.getByTestId("reassign-profile-level")).toContainText("own level is Junior");
+    await expect(d.getByTestId("reassign-profile-level")).toContainText("The student's own level is Junior, not Senior");
+    // The link opens the student's page at the level card, in a new tab (this dialog stays).
+    const link = d.getByTestId("reassign-open-student");
+    await expect(link).toHaveAttribute("target", "_blank");
+    const [profile] = await Promise.all([page.context().waitForEvent("page"), link.click()]);
+    await expect(profile).toHaveURL(/\/admin\/users\/[^/]+#olympiad-level$/);
+    await expect(profile.getByTestId("olympiad-level-card")).toBeVisible();
+    await profile.close();
+    await expect(d).toBeVisible();
     await shot(page, "desktop-3-review");
     await d.getByTestId("reassign-confirm").click();
     await expect(page.getByTestId("reassign-dialog")).toHaveCount(0);
