@@ -6,13 +6,16 @@
 import { EVERY_ROLE, renderGuide, type GuideScope } from "@/lib/help/pdf-document";
 import { EVERY_ROLE_GUIDE, guideFileName, roleFromGuideFile } from "@/lib/help/rules";
 import type { SupportInfo } from "@/lib/api/types";
+import { officialSupportUrl } from "@/lib/help/support-source";
 
 export const runtime = "nodejs";
 
 /** ROF's official support details (platform settings) for the guide; the guide is still made without them. */
-async function officialSupport(origin: string): Promise<SupportInfo | null> {
+async function officialSupport(): Promise<SupportInfo | null> {
+  const url = officialSupportUrl();
+  if (!url) return null;
   try {
-    const res = await fetch(`${origin}/api/v1/support`, { signal: AbortSignal.timeout(4_000), cache: "no-store" });
+    const res = await fetch(url, { signal: AbortSignal.timeout(4_000), cache: "no-store" });
     return res.ok ? ((await res.json()) as SupportInfo) : null;
   } catch {
     return null;
@@ -27,7 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
   if (!scope) return new Response("This guide does not exist.", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   try {
     const origin = new URL(request.url).origin;
-    const bytes = await renderGuide(scope, origin, new Date(), await officialSupport(origin));
+    const bytes = await renderGuide(scope, origin, new Date(), await officialSupport());
     return new Response(new Uint8Array(bytes), {
       headers: {
         "Content-Type": "application/pdf",
