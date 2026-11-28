@@ -3,26 +3,34 @@
 /**
  * Signs the person out after 60 minutes without activity, with a warning at 55 (owner 2026-11-28). The rules are in
  * lib/auth/idle.ts; this wires them to the page:
- *   - activity: clicks, key presses, scrolling, the wheel, touch and mouse movement in this tab (never background
- *     requests, polling or token refreshes — those make no DOM events);
+ *   - activity: clicks, key presses, the wheel, touch and real mouse movement in this tab (never background requests,
+ *     polling, token refreshes or the page scrolling by itself — those make no such events);
  *   - every tab shares one last-activity time (the "storage" event tells this tab about another tab's activity);
  *   - waking up (the tab shown again, the window focused) checks at once: timers do not run while a laptop sleeps;
- *   - the server is told at most once a minute (POST /auth/activity, when the backend has sessionIdleTimeout);
+ *   - the server is told at most once a minute (POST /auth/activity; an older backend's 404 is ignored; a report that
+ *     fails is retried);
  *   - at 60 minutes: the session's own secure sign-out (server logout, every tab), and the sign-in page says why.
  * Only for a signed-in person in their own session (never in a "view as" tab, which has its own 30-minute limit).
  */
 import { useEffect, useId, useRef, useState } from "react";
 import { Clock } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
-import { useBackendCapabilities } from "@/lib/queries/capabilities";
-import { hasFeature } from "@/lib/api/capabilities";
 import { authApi } from "@/lib/api/auth";
+import { getAccessToken, refreshSession } from "@/lib/api/client";
+import { tokenExpiresWithin } from "@/lib/api/refresh-outcome";
 import { isApiError } from "@/lib/api/errors";
 import { LAST_ACTIVITY_KEY, createIdleTracker, formatCountdown, type IdlePhase, type IdleTracker } from "@/lib/auth/idle";
 import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
-/** DOM events that are the person doing something. Mouse movement is included (owner); it is cheap: one timestamp. */
-const ACTIVITY_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart", "mousemove", "scroll"] as const;
+/**
+ * DOM events that only a person makes. Not "scroll": the page scrolls by itself too (content inserted above the view,
+ * layout changes, scrollIntoView), so a polling page would keep an unattended session alive (review 2026-11-28). A
+ * person's scrolling still counts through wheel, keys, touch and the scrollbar (pointerdown). Mouse movement counts
+ * only when the pointer really moved (browsers also send mousemove after a layout change under a still pointer).
+ */
+const ACTIVITY_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+/** Report a token refresh before an activity report when the access token ends within this (a lab's tokens expire together). */
+const TOKEN_MARGIN_MS = 30_000;
 
 export default function IdleSessionGuard() {
   const session = useSession();
@@ -32,10 +40,6 @@ export default function IdleSessionGuard() {
 
 function Tracker() {
   const { logout } = useSession();
-  const { detection } = useBackendCapabilities();
-  const reports = hasFeature(detection, "sessionIdleTimeout");
-  const reportsRef = useRef(reports);
-  useEffect(() => { reportsRef.current = reports; }, [reports]);
   const logoutRef = useRef(logout);
   useEffect(() => { logoutRef.current = logout; }, [logout]);
 
@@ -51,23 +55,40 @@ function Tracker() {
       store,
       setTimer: (fn, ms) => window.setTimeout(fn, ms),
       clearTimer: (h) => window.clearTimeout(h as number),
+      // Always sent (review 2026-11-28): gating on the cached capability skipped reports for up to minutes after the
+      // backend gained the feature, and the server then ended active sessions. An older backend answers 404: ignored.
       report: async () => {
-        if (!reportsRef.current) return "ok";
         try {
+          // A lab's tokens expire together: an expired token's report would count against the shared address.
+          if (tokenExpiresWithin(getAccessToken(), TOKEN_MARGIN_MS)) await refreshSession();
           await authApi.activity();
           return "ok";
         } catch (e) {
-          // 401 after the client's own refresh attempt: the server has ended this session.
-          return isApiError(e) && e.status === 401 ? "expired" : "failed";
+          if (isApiError(e) && (e.status === 404 || e.status === 405)) return "ok";
+          // 401 after the client's own refresh attempt: the session has ended — for inactivity, or for another reason
+          // (signed out elsewhere, password changed), whose own message must not be replaced by the inactivity one.
+          if (isApiError(e) && e.status === 401) return e.code === "SESSION_IDLE_EXPIRED" ? "expired" : "ended";
+          return "failed";
         }
       },
       onPhase: (p, left) => { setPhase(p); setMsLeft(left); },
-      onExpire: () => { void logoutRef.current({ reason: "inactive" }); },
+      onExpire: (reason) => { void (reason === "ended" ? logoutRef.current() : logoutRef.current({ reason: "inactive" })); },
     });
     tracker.current = t;
 
     const onActivity = () => t.activity();
+    let lastX = -1;
+    let lastY = -1;
+    const onMouseMove = (e: MouseEvent) => {
+      // Only a real move of the pointer (a still pointer also gets mousemove after layout changes).
+      if (e.screenX === lastX && e.screenY === lastY) return;
+      const first = lastX === -1;
+      lastX = e.screenX;
+      lastY = e.screenY;
+      if (!first) t.activity();
+    };
     for (const ev of ACTIVITY_EVENTS) window.addEventListener(ev, onActivity, { capture: true, passive: true });
+    window.addEventListener("mousemove", onMouseMove, { capture: true, passive: true });
     const onStorage = (e: StorageEvent) => { if (e.key === LAST_ACTIVITY_KEY || e.key === null) t.check(); };
     const onWake = () => t.check();
     window.addEventListener("storage", onStorage);
@@ -75,6 +96,7 @@ function Tracker() {
     window.addEventListener("focus", onWake);
     return () => {
       for (const ev of ACTIVITY_EVENTS) window.removeEventListener(ev, onActivity, { capture: true });
+      window.removeEventListener("mousemove", onMouseMove, { capture: true });
       window.removeEventListener("storage", onStorage);
       document.removeEventListener("visibilitychange", onWake);
       window.removeEventListener("focus", onWake);

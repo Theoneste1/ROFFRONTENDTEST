@@ -177,3 +177,32 @@ test("waking from sleep (timers late): the next check ends a session idle past 6
   t.tracker.check();                 // visibilitychange / focus
   assert.deepEqual(t.expired, ["idle"]);
 });
+
+test("review 2026-11-28: a report that fails is retried (never dropped), and the next activity reports at once", async () => {
+  const w = world();
+  const t = w.tab({ fresh: true, reportResult: "failed" });
+  t.tracker.activity();
+  assert.equal(t.reports, 1);
+  await flush();
+  t.reportResult = "ok";
+  w.advance(15_000);                 // the retry
+  assert.equal(t.reports, 2, "retried after 15 s");
+  await flush();
+  w.advance(5_000);
+  t.tracker.activity();              // within the minute after a delivered report: trailing, not immediate
+  assert.equal(t.reports, 2);
+  t.reportResult = "failed";
+  w.advance(60_000);
+  assert.equal(t.reports, 3, "the trailing report");
+  await flush();
+  t.tracker.activity();              // after a failure the next activity reports at once
+  assert.equal(t.reports, 4);
+});
+
+test("review 2026-11-28: the server ending the session for another reason is not called inactivity", async () => {
+  const w = world();
+  const t = w.tab({ fresh: true, reportResult: "ended" });
+  t.tracker.activity();
+  await flush();
+  assert.deepEqual(t.expired, ["ended"]);
+});

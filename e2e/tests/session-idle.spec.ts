@@ -48,7 +48,16 @@ test.describe("Session inactivity", () => {
     expect(await sessionLive(session)).toBe(true);
     const background: string[] = [];
     page.on("request", (r) => { if (r.url().includes("/api/v1/") && !r.url().includes("/auth/")) background.push(r.url()); });
-    await page.clock.fastForward("59:00");
+    await page.clock.fastForward("30:00");
+    // The page scrolling by itself (content inserted, scrollIntoView) and a mousemove with an unmoved pointer are not
+    // activity (review 2026-11-28): the hour keeps running.
+    await page.evaluate(() => {
+      window.scrollTo(0, 400);
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 200;
+      for (let i = 0; i < 3; i++) window.dispatchEvent(new MouseEvent("mousemove", { screenX: 10, screenY: 10 }));
+    });
+    await page.clock.fastForward("29:00");
     await expect(page).toHaveURL(/\/student\//);
     await page.clock.fastForward("01:00");
     await expect(page).toHaveURL(/\/login/);

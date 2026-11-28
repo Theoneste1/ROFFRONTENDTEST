@@ -66,7 +66,14 @@ export function shareLastActivity(store: KeyValueStore | null, at: number, { res
   }
 }
 
-export type ReportResult = "ok" | "expired" | "failed";
+/**
+ * ok: the server knows (or does not track activity — an older backend answers 404); expired: the server ended the
+ * session for inactivity; ended: the server refused for another reason (signed out elsewhere, password changed);
+ * failed: not delivered (network, 429, 5xx) — retried, so the server never lags behind the browser.
+ */
+export type ReportResult = "ok" | "expired" | "ended" | "failed";
+/** A report that could not be delivered is tried again after this long. */
+export const REPORT_RETRY_MS = 15_000;
 
 export interface IdleTrackerDeps {
   now(): number;
@@ -77,8 +84,8 @@ export interface IdleTrackerDeps {
   report(): Promise<ReportResult>;
   /** The phase or the time left changed (for the warning dialog). */
   onPhase(phase: IdlePhase, msLeft: number): void;
-  /** The session must end now (called once). */
-  onExpire(reason: "idle" | "server"): void;
+  /** The session must end now (called once): idle (60 minutes here), server (the server ended it for inactivity), ended (another reason). */
+  onExpire(reason: "idle" | "server" | "ended"): void;
 }
 
 export interface IdleTracker {
@@ -112,7 +119,7 @@ export function createIdleTracker(deps: IdleTrackerDeps, { fresh = false }: { fr
 
   const last = () => Math.max(local, readLastActivity(deps.store) ?? 0);
 
-  const end = (reason: "idle" | "server") => {
+  const end = (reason: "idle" | "server" | "ended") => {
     if (ended) return;
     ended = true;
     if (timer !== null) deps.clearTimer(timer);
@@ -150,7 +157,16 @@ export function createIdleTracker(deps: IdleTrackerDeps, { fresh = false }: { fr
     pendingReport = null;
     if (ended) return;
     lastReport = deps.now();
-    void deps.report().then((r) => { if (r === "expired") end("server"); }, () => undefined);
+    const retry = () => {
+      // Not delivered: the next activity reports at once, and the last one is tried again shortly (never dropped).
+      lastReport = 0;
+      if (!ended && pendingReport === null) pendingReport = deps.setTimer(sendReport, REPORT_RETRY_MS);
+    };
+    void deps.report().then((r) => {
+      if (r === "expired") end("server");
+      else if (r === "ended") end("ended");
+      else if (r === "failed") retry();
+    }, retry);
   };
 
   function activity({ explicit = false }: { explicit?: boolean } = {}) {
