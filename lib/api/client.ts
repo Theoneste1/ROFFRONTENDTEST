@@ -27,7 +27,7 @@ import {
 import { isMarkedSignedOut } from "../auth/signed-out";
 import { UPLOAD_ORIGIN } from "./upload-origin";
 import { trackUpload } from "./upload-progress";
-import type { TokenResponse } from "./types";
+import type { CurrentUser, TokenResponse } from "./types";
 
 export const API_BASE = "/api/v1";
 
@@ -117,8 +117,26 @@ async function postRefresh() {
   return {
     status: res.status,
     retryAfter: res.headers.get("retry-after"),
-    accessToken: async () => ((await res.json()) as Partial<TokenResponse>).access_token ?? null,
+    accessToken: async () => {
+      const body = (await res.json()) as Partial<TokenResponse> & { user?: CurrentUser };
+      // A backend that returns the profile with the tokens (2026-11-28) saves the page load a GET /me round trip.
+      refreshedProfile = body.access_token && body.user ? body.user : null;
+      return body.access_token ?? null;
+    },
   };
+}
+
+/** The profile the last successful refresh returned (newer backends), until the session takes it. */
+let refreshedProfile: CurrentUser | null = null;
+
+/**
+ * The signed-in user's profile from the refresh that just succeeded, once (then forgotten), or null when the backend
+ * does not return it. The session puts it in the query cache as GET /me's answer, so the page load needs no GET /me.
+ */
+export function takeRefreshedProfile(): CurrentUser | null {
+  const p = refreshedProfile;
+  refreshedProfile = null;
+  return p;
 }
 
 async function runRefresh(): Promise<RefreshOutcome> {

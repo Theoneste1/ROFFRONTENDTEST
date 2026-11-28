@@ -37,6 +37,7 @@ import {
   refreshSession,
   refreshUnavailableError,
   setAccessToken,
+  takeRefreshedProfile,
 } from "@/lib/api/client";
 import { viewAsApi } from "@/lib/api/view-as";
 import { VIEW_AS_ENDED_PATH, VIEW_AS_PATH, clearViewingSession, readViewingSession, type ViewAsInfo } from "@/lib/auth/view-as";
@@ -159,6 +160,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return;
       }
       const outcome = getAccessToken() ? "ok" : await refreshSession();
+      // The refresh brought the profile (newer backends): GET /me's answer is already here — one round trip saved.
+      const profile = outcome === "ok" ? takeRefreshedProfile() : null;
+      if (profile) queryClient.setQueryData(queryKeys.me.profile(), profile);
       if (!cancelled) setPhase(phaseFor(outcome));
     })();
     return () => {

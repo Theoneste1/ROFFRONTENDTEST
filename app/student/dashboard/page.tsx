@@ -20,13 +20,17 @@ import { NotificationLink } from "@/app/components/notifications/notificationUi"
 import { useNow } from "@/lib/hooks/useNow";
 import { StudentTestsWidget } from "@/app/components/test-management/ResultViews";
 
+/** The profile loaded this recently (e.g. by the sign-in or the page load) is fresh enough for points and problems. */
+const PROFILE_FRESH_MS = 60_000;
+
 export default function StudentDashboard() {
   const { user } = useSession();
   // Points and problems solved come from the profile, cached for minutes: refresh it whenever the
   // dashboard opens, so newly published results show at once.
   const qc = useQueryClient();
   useEffect(() => {
-    void qc.invalidateQueries({ queryKey: queryKeys.me.profile() });
+    const loadedAt = qc.getQueryState(queryKeys.me.profile())?.dataUpdatedAt ?? 0;
+    if (Date.now() - loadedAt > PROFILE_FRESH_MS) void qc.invalidateQueries({ queryKey: queryKeys.me.profile() });
   }, [qc]);
 
   return (

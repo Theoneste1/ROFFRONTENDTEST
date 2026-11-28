@@ -46,3 +46,6 @@ next-env.d.ts
 /test-results/
 /playwright/.cache/
 
+
+# Navigation measurements (playwright.perf.config.ts)
+/e2e/perf/results/
