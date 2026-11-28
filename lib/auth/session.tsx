@@ -37,6 +37,7 @@ import {
   refreshSession,
   refreshUnavailableError,
   setAccessToken,
+  takeRefreshedProfile,
 } from "@/lib/api/client";
 import { viewAsApi } from "@/lib/api/view-as";
 import { VIEW_AS_ENDED_PATH, VIEW_AS_PATH, clearViewingSession, readViewingSession, type ViewAsInfo } from "@/lib/auth/view-as";
@@ -143,6 +144,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOutLocally = useCallback(() => {
     setAccessToken(null);
+    takeRefreshedProfile();   // a profile a refresh brought and nobody took: forgotten too (review 2026-11-28)
     queryClient.clear();
     clearUserBrowserData();
     setPhase("signed-out");
@@ -178,12 +180,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return;
       }
       const outcome = getAccessToken() ? "ok" : await refreshSession();
+      // The refresh brought the profile and the permission summary (newer backends): GET /me's and GET /me/permissions'
+      // answers are already here — the portal renders complete (menus included), one round trip sooner.
+      const restored = outcome === "ok" ? takeRefreshedProfile() : null;
+      if (restored) {
+        queryClient.setQueryData(queryKeys.me.profile(), restored.user);
+        if (restored.permissions) queryClient.setQueryData(queryKeys.me.permissions(), restored.permissions);
+      }
       if (!cancelled) setPhase(phaseFor(outcome));
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [queryClient]);   // stable (one client per app): still runs once on load
 
   // The API client reports when a refresh is no longer possible.
   useEffect(() => onSessionExpired(signOutLocally), [signOutLocally]);
