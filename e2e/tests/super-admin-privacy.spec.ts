@@ -8,24 +8,29 @@ import { expect, test, type Page } from "@playwright/test";
 import { signIn } from "../support/session";
 import { ACCOUNTS } from "../support/accounts";
 
+const roleFilter = (page: Page) => page.getByRole("group", { name: "Role" });
+
 async function searchUsers(page: Page, text: string) {
   await page.goto(`/admin/users?q=${encodeURIComponent(text)}`);
-  await expect(page.getByRole("tab", { name: "All" }).or(page.getByRole("link", { name: "All" })).first()).toBeVisible();
+  await expect(roleFilter(page).getByRole("button", { name: "All", exact: true })).toBeVisible();
+  await page.waitForLoadState("networkidle");
 }
 
 test("an Administrator: no Super Admins tab; the Super Administrator is not found by username", async ({ page }) => {
   await signIn(page, "admin");
   await searchUsers(page, ACCOUNTS.superAdmin.username);
-  await expect(page.getByText("Super Admins", { exact: true })).toHaveCount(0);
+  await expect(roleFilter(page).getByRole("button", { name: "Super Admins" })).toHaveCount(0);
   await expect(page.getByText(ACCOUNTS.superAdmin.username)).toHaveCount(0);
   // Even asking for the role in the address shows no Super Administrator.
   await page.goto("/admin/users?role=SUPER_ADMIN");
+  await expect(roleFilter(page).getByRole("button", { name: "All", exact: true })).toBeVisible();
+  await page.waitForLoadState("networkidle");
   await expect(page.getByText(ACCOUNTS.superAdmin.username)).toHaveCount(0);
 });
 
 test("the Super Administrator: the Super Admins tab, and themselves in it", async ({ page }) => {
   await signIn(page, "superAdmin");
   await searchUsers(page, ACCOUNTS.superAdmin.username);
-  await expect(page.getByText("Super Admins", { exact: true }).first()).toBeVisible();
+  await expect(roleFilter(page).getByRole("button", { name: "Super Admins" })).toBeVisible();
   await expect(page.getByText(ACCOUNTS.superAdmin.username).first()).toBeVisible();
 });
