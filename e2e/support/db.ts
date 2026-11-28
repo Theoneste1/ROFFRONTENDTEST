@@ -60,3 +60,13 @@ export async function assignTeacherSchool(c: pg.Client, teacherId: string, schoo
     [teacherId, schoolId, admin],
   );
 }
+
+/** The session a sign-in just created for this person (its refresh-token family: the newest one). */
+export const newestSession = (username: string) => withDb(async (c) => (await c.query<{ f: string }>(
+  `SELECT r."familyId" AS f FROM "RefreshToken" r JOIN "User" u ON u.id = r."userId"
+    WHERE u.username = $1 ORDER BY r."createdAt" DESC LIMIT 1`, [username])).rows[0].f);
+
+/** Whether the server would still accept that session (a current, not revoked, not expired refresh token of the family). */
+export const sessionLive = (familyId: string) => withDb(async (c) => Number((await c.query<{ n: string }>(
+  `SELECT count(*) AS n FROM "RefreshToken" WHERE "familyId" = $1 AND "revokedAt" IS NULL AND "rotatedAt" IS NULL AND "expiresAt" > now()`,
+  [familyId])).rows[0].n) > 0);

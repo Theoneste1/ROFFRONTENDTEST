@@ -5,11 +5,12 @@
  */
 const KEY = "rof-login-notice";
 
-export type LoginNotice = "password-changed" | "signed-out-everywhere";
+export type LoginNotice = "password-changed" | "signed-out-everywhere" | "inactive";
 
 export const LOGIN_NOTICE_TEXT: Record<LoginNotice, string> = {
   "password-changed": "Your password was changed and all your sessions were signed out. Sign in with your new password.",
   "signed-out-everywhere": "You were signed out on every device. Sign in again to continue.",
+  inactive: "You were signed out after 60 minutes without activity. Sign in again to continue.",
 };
 
 export function setLoginNotice(notice: LoginNotice): void {
@@ -25,7 +26,7 @@ export function peekLoginNotice(): LoginNotice | null {
   if (typeof window === "undefined") return null;
   try {
     const v = sessionStorage.getItem(KEY);
-    return v === "password-changed" || v === "signed-out-everywhere" ? v : null;
+    return v === "password-changed" || v === "signed-out-everywhere" || v === "inactive" ? v : null;
   } catch {
     return null;
   }

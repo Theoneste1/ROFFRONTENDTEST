@@ -61,6 +61,12 @@ export const authApi = {
     }
   },
 
+  /**
+   * The person did something (owner 2026-11-28: sessions end after 60 minutes without activity): the server moves this
+   * session's inactivity deadline forward. Never sent for background requests (lib/auth/idle.ts decides when).
+   */
+  activity: () => api<{ idleTimeoutMinutes: number; idleDeadline: string }>("/auth/activity", { method: "POST" }),
+
   /** Needs a valid access token: on 401 the client refreshes once and retries (M1). */
   async logoutAll(): Promise<void> {
     try {

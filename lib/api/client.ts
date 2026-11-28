@@ -25,6 +25,7 @@ import {
   type SharedCooldown,
 } from "./refresh-outcome";
 import { isMarkedSignedOut } from "../auth/signed-out";
+import { setLoginNotice } from "../auth/notice";
 import { UPLOAD_ORIGIN } from "./upload-origin";
 import { trackUpload } from "./upload-progress";
 import type { TokenResponse } from "./types";
@@ -113,6 +114,15 @@ async function postRefresh() {
     });
   } finally {
     clearTimeout(timer);
+  }
+  // The server ended the session for inactivity (60 minutes): the sign-in page says so.
+  if (res.status === 401) {
+    try {
+      const body = (await res.clone().json()) as { code?: string };
+      if (body?.code === "SESSION_IDLE_EXPIRED") setLoginNotice("inactive");
+    } catch {
+      // not JSON: nothing to say
+    }
   }
   return {
     status: res.status,

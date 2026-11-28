@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/session";
+import { InsideRoleGate } from "@/lib/auth/role-gate-context";
 import { portalHome, sharesPortal } from "@/lib/auth/roles";
 import type { Role } from "@/lib/api/types";
 import { ErrorState, FullPageLoader } from "@/app/components/ui/feedback";
@@ -29,6 +30,11 @@ import { needsBanking } from "@/lib/accounts/banking";
  * This is navigation, not security: the API refuses anything the role may not do.
  */
 export default function RoleGate({ role, children }: { role: Role; children: ReactNode }) {
+  // Inside a portal: RoleGate makes the one navigation after a sign-out (the ROF logo's included).
+  return <InsideRoleGate.Provider value={true}><Gate role={role}>{children}</Gate></InsideRoleGate.Provider>;
+}
+
+function Gate({ role, children }: { role: Role; children: ReactNode }) {
   const session = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -37,11 +43,12 @@ export default function RoleGate({ role, children }: { role: Role; children: Rea
   useEffect(() => {
     if (session.status === "unauthenticated") {
       // The only redirect after a sign-out, so two navigations never race.
-      router.replace(session.signedOutByUser ? "/login" : `/login?next=${encodeURIComponent(pathname)}`);
+      // After a sign-out: where it asked to go (the ROF logo: the home page), else the sign-in page.
+      router.replace(session.signedOutByUser ? (session.afterSignOut ?? "/login") : `/login?next=${encodeURIComponent(pathname)}`);
     } else if (session.status === "authenticated" && !allowed) {
       router.replace(portalHome(session.role));
     }
-  }, [session.status, session.role, session.signedOutByUser, allowed, pathname, router]);
+  }, [session.status, session.role, session.signedOutByUser, session.afterSignOut, allowed, pathname, router]);
 
   if (session.status === "error") {
     return (
