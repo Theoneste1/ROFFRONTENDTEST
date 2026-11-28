@@ -36,10 +36,15 @@ test.describe("Page help", () => {
     expect(combined.status()).toBe(200);
     expect(combined.headers()["content-disposition"]).toContain("ROF-LMS-guide-Every-role.pdf");
     expect((await combined.body()).length).toBeGreaterThan((await pdf.body()).length);
-    const all = page.getByTestId("page-help-all-guides").getByRole("listitem").getByRole("link");
-    await expect(all).toHaveCount(6);
-    await expect(all.nth(2)).toHaveAttribute("href", "/help/guide/coaches.pdf");
-    await expect(all.nth(2)).toHaveText("Guide for Coaches");
+    // Each role's guide opens inside the system (owner, 2026-11-28); its PDF stays one click away beside it.
+    const read = page.getByTestId("page-help-role-guide");
+    await expect(read).toHaveCount(6);
+    await expect(read.nth(2)).toHaveAttribute("href", "/admin/guide?for=COACH");
+    await expect(read.nth(2)).toHaveText("Guide for Coaches");
+    const pdfs = page.getByTestId("page-help-all-guides").getByRole("link", { name: /^Download the guide for / });
+    await expect(pdfs).toHaveCount(6);
+    await expect(pdfs.nth(2)).toHaveAttribute("href", "/help/guide/coaches.pdf");
+    await expect(page.getByTestId("page-help-guide")).toHaveAttribute("href", "/admin/guide#tests");
 
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();

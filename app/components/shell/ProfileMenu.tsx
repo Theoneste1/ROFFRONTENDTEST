@@ -3,7 +3,7 @@
 /**
  * The signed-in user in every portal's top bar: their avatar, "Theoneste N" and their account title
  * (from the backend role: Student, Coach, Teacher, Head Coach, Administrator, Super Administrator;
- * never the e-mail). It opens the profile menu: My Profile, Settings, Help and Support, Logout
+ * never the e-mail). It opens the profile menu: My Profile, Settings, User guide, Help and Support, Logout
  * (lib/accounts/profile-menu.ts).
  *
  * Menu-button pattern (WAI-ARIA APG): Enter, Space or ArrowDown opens it on the first item, ArrowUp
@@ -13,14 +13,14 @@
  */
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
-import { ChevronDown, CircleHelp, LogOut, Settings, UserRound } from "lucide-react";
+import { BookOpen, ChevronDown, CircleHelp, LogOut, Settings, UserRound } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { accountTitle, profileMenuItems, type ProfileMenuKey } from "@/lib/accounts/profile-menu";
 import { avatarLabel, displayName } from "@/lib/accounts/avatar";
 import { Spinner } from "@/app/components/ui/feedback";
 import { AvatarBadge } from "@/app/components/account/UserAvatar";
 
-const ICON: Record<ProfileMenuKey, typeof UserRound> = { profile: UserRound, settings: Settings, help: CircleHelp, logout: LogOut };
+const ICON: Record<ProfileMenuKey, typeof UserRound> = { profile: UserRound, settings: Settings, guide: BookOpen, help: CircleHelp, logout: LogOut };
 
 export default function ProfileMenu() {
   const { user, logout } = useSession();

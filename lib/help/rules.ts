@@ -91,8 +91,40 @@ export function generalTopic(role: HelpRole): HelpTopic {
     paths: [],
     title: "Help",
     summary: `This page is part of the ${guide.audience.toLowerCase()}' portal. Use the menu on the left to move between pages.`,
-    steps: ["Download the full guide below: it explains every page, starting from signing in.", "Still stuck? Contact technical support on WhatsApp."],
+    steps: ["Open the user guide below: it explains every page, starting from signing in.", "Still stuck? Contact technical support on WhatsApp."],
   };
+}
+
+// ── The user guide inside the system (owner, 2026-11-28: read it on screen, no download needed) ─────────────────────
+
+/** The portal a guide audience reads its guide in (Coaches and Head Coaches share /mentor; Super Administrators /admin). */
+const GUIDE_PORTAL: Record<HelpRole, string> = {
+  STUDENT: "/student", TEACHER: "/teacher", COACH: "/mentor", HEAD_COACH: "/mentor", ADMIN: "/admin", SUPER_ADMIN: "/admin",
+};
+
+/** The in-system user guide of a role: "/mentor/guide"; with a topic, its section ("/mentor/guide#coach-marking"). */
+export function guidePagePath(role: HelpRole, topicId?: string): string {
+  return `${GUIDE_PORTAL[role]}/guide${topicId ? `#${encodeURIComponent(topicId)}` : ""}`;
+}
+
+/**
+ * Which guide the guide page shows: the reader's own, or — for Administrators and Super Administrators, who see every
+ * role's guide — the one asked for with ?for=COACH. Anything else is the reader's own guide.
+ */
+export function guideShown(reader: HelpRole, requested: string | null | undefined): HelpRole {
+  if (reader !== "ADMIN" && reader !== "SUPER_ADMIN") return reader;
+  return (ALL_HELP_ROLES as readonly string[]).includes(requested ?? "") ? (requested as HelpRole) : reader;
+}
+
+/** A topic's whole text, for searching the guide. */
+function topicText(t: HelpTopic): string {
+  return [t.title, t.summary, ...(t.steps ?? []), ...(t.tips ?? [])].join(" ").toLowerCase();
+}
+
+/** The topics that contain every word of the search (any order, any case); all of them for an empty search. */
+export function searchTopics(topics: readonly HelpTopic[], query: string): HelpTopic[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return words.length === 0 ? [...topics] : topics.filter((t) => { const text = topicText(t); return words.every((w) => text.includes(w)); });
 }
 
 /** The WhatsApp chat link, with a first message naming the page so support knows where the person is. */

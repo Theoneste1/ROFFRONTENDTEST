@@ -2,15 +2,17 @@
 
 /**
  * Page help (owner, 2026-11-26): the Help button of the portal top bar and its panel — the guide for THIS page, written
- * for the signed-in role, the technical support contact on WhatsApp, the full guide as a PDF (from signing in) and the
- * credit "Made by Theoneste, Technology lead". Desktop: a panel on the right; phone: a sheet from the bottom.
+ * for the signed-in role, the technical support contact on WhatsApp, the full user guide inside the system (owner,
+ * 2026-11-28; the PDF stays an option) and the credit "Made by Theoneste, Technology lead". Desktop: a panel on the right; phone: a sheet from the bottom.
  * Closed by default (owner, 2026-11-26): it opens only when the person presses Help, and closes when they leave the page.
  */
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { CircleHelp, Download, MessageCircle, X } from "lucide-react";
+import { BookOpen, CircleHelp, Download, MessageCircle, X } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
-import { ALL_HELP_ROLES, EVERY_ROLE_GUIDE, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guideUrl, helpRoleOf, topicFor, whatsappUrl, type HelpRole } from "@/lib/help/rules";
+import { ALL_HELP_ROLES, EVERY_ROLE_GUIDE, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guidePagePath, guideUrl, helpRoleOf, topicFor, whatsappUrl, type HelpRole } from "@/lib/help/rules";
+import HelpTopicBody from "./HelpTopicBody";
 
 export default function PageHelp() {
   const { user } = useSession();
@@ -89,33 +91,7 @@ function HelpPanel({ role, topic, onClose }: { role: HelpRole; topic: NonNullabl
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4 text-[0.875rem] leading-6 text-slate-900">
-          <section>
-            <h3 className="mb-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-brand">What you can do here</h3>
-            <p>{topic.summary}</p>
-          </section>
-          {topic.steps && topic.steps.length > 0 && (
-            <section>
-              <h3 className="mb-2 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-brand">Steps</h3>
-              <ol className="space-y-2">
-                {topic.steps.map((s, i) => (
-                  <li key={i} className="grid grid-cols-[24px_minmax(0,1fr)] gap-2.5">
-                    <span className="grid h-6 w-6 place-items-center rounded-full bg-brand text-xs font-bold text-white" aria-hidden="true">{i + 1}</span>
-                    <span>{s}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-          {topic.tips && topic.tips.length > 0 && (
-            <section>
-              <h3 className="mb-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-brand">Good to know</h3>
-              <ul className="space-y-1.5">
-                {topic.tips.map((tip, i) => (
-                  <li key={i} className="relative pl-3.5 text-slate-600 before:absolute before:left-0 before:top-[0.6em] before:h-1.5 before:w-1.5 before:rounded-full before:bg-amber-300">{tip}</li>
-                ))}
-              </ul>
-            </section>
-          )}
+          <HelpTopicBody topic={topic} />
 
           <section className="rounded-xl border border-brand-100 bg-brand-50 p-3.5" data-testid="page-help-support">
             <h3 className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-brand">Technical support</h3>
@@ -136,16 +112,21 @@ function HelpPanel({ role, topic, onClose }: { role: HelpRole; topic: NonNullabl
           </section>
 
           <section>
-            <a
-              href={guideUrl(role)}
-              download={guideFileName(role)}
-              data-testid="page-help-download"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-brand px-4 py-2 text-[0.8125rem] font-semibold text-brand hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+            <Link
+              href={guidePagePath(role, topic.id === "general" ? undefined : topic.id)}
+              onClick={onClose}
+              data-testid="page-help-guide"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-4 py-2 text-[0.8125rem] font-semibold text-white hover:bg-brand-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2"
             >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              Download the full guide (PDF)
-            </a>
-            <p className="mt-1.5 text-center text-xs text-slate-500">Every page for {guide.audience.toLowerCase()}, starting from signing in.</p>
+              <BookOpen className="h-4 w-4" aria-hidden="true" />
+              Open the full user guide
+            </Link>
+            <p className="mt-1.5 text-center text-xs text-slate-500">
+              Every page for {guide.audience.toLowerCase()}, starting from signing in. Or{" "}
+              <a href={guideUrl(role)} download={guideFileName(role)} data-testid="page-help-download" className="font-semibold text-brand underline hover:text-brand-dark">
+                download it as a PDF
+              </a>.
+            </p>
           </section>
 
           {(role === "ADMIN" || role === "SUPER_ADMIN") && (
@@ -163,14 +144,23 @@ function HelpPanel({ role, topic, onClose }: { role: HelpRole; topic: NonNullabl
               </a>
               <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200">
                 {ALL_HELP_ROLES.map((r) => (
-                  <li key={r}>
+                  <li key={r} className="flex items-center">
+                    <Link
+                      href={r === role ? guidePagePath(role) : `${guidePagePath(role)}?for=${r}`}
+                      onClick={onClose}
+                      data-testid="page-help-role-guide"
+                      className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-slate-800 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300"
+                    >
+                      <BookOpen className="h-4 w-4 flex-none text-brand" aria-hidden="true" />
+                      <span>Guide for {guideFor(r).audience}</span>
+                    </Link>
                     <a
                       href={guideUrl(r)}
                       download={guideFileName(r)}
-                      className="flex items-center justify-between gap-2 px-3 py-2 text-slate-800 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300"
+                      aria-label={`Download the guide for ${guideFor(r).audience} as a PDF`}
+                      className="flex-none px-3 py-2 text-brand hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-300"
                     >
-                      <span>Guide for {guideFor(r).audience}</span>
-                      <Download className="h-4 w-4 flex-none text-brand" aria-hidden="true" />
+                      <Download className="h-4 w-4" aria-hidden="true" />
                     </a>
                   </li>
                 ))}

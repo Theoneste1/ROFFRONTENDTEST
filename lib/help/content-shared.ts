@@ -116,3 +116,16 @@ export const discussion: HelpTopic = {
   ],
   tips: ["Be kind and stay on the subject. A comment can be reported to the moderators."],
 };
+
+export const userGuide: HelpTopic = {
+  id: "user-guide",
+  paths: ["/student/guide", "/teacher/guide", "/mentor/guide", "/admin/guide"],
+  title: "User guide",
+  summary: "This guide, inside the system: every page explained, starting from signing in. Nothing to download.",
+  steps: [
+    "Open it from your profile menu (User guide), or press Help on any page and choose Open the full user guide.",
+    "Click a title under Contents to go straight to that page's explanation, or type a word in Search the guide.",
+    "To print it or send it to someone, choose Download as PDF.",
+  ],
+  tips: ["Each section has a link of its own: copy it from the address bar to point someone to it."],
+};

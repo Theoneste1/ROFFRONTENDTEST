@@ -6,7 +6,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import {
-  HELP_CREDIT, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guideUrl, helpRoleOf, matchScore, roleFromGuideFile,
+  HELP_CREDIT, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guidePagePath, guideShown, guideUrl, helpRoleOf, matchScore, roleFromGuideFile, searchTopics,
   topicFor, whatsappUrl,
 } from "@/lib/help/rules";
 import { ADMIN_NAV, MENTOR_NAV, TEACHER_NAV, ADMIN_TESTS, ADMIN_FORMS, ADMIN_COUNTRIES, ADMIN_SUBSCRIBERS, ADMIN_SETTINGS,
@@ -107,4 +107,36 @@ test("PDF file name and address per audience", () => {
   assert.equal(roleFromGuideFile("coaches"), null);
   assert.equal(guideFileName("HEAD_COACH"), "ROF-LMS-guide-Head-Coaches.pdf");
   assert.equal(guideFileName("STUDENT"), "ROF-LMS-guide-Students.pdf");
+});
+
+test("the user guide inside the system: one page per portal, a section link per topic, and the page has its own topic", () => {
+  assert.deepEqual(ROLES.map((r) => guidePagePath(r)), ["/student/guide", "/teacher/guide", "/mentor/guide", "/mentor/guide", "/admin/guide", "/admin/guide"]);
+  assert.equal(guidePagePath("COACH", "coach-marking"), "/mentor/guide#coach-marking");
+  for (const role of ROLES) {
+    assert.equal(topicFor(role, guidePagePath(role))?.id, "user-guide", role);
+    for (const t of [...guideFor(role).gettingStarted, ...guideFor(role).topics]) assert.match(t.id, /^[a-z0-9-]+$/, `${role}: ${t.id} is a usable section link`);
+  }
+  assert.doesNotMatch(generalTopic("STUDENT").steps.join(" "), /Download/, "the general help points to the guide inside the system");
+});
+
+test("which guide the page shows: your own; Administrators and Super Administrators may open any role's", () => {
+  for (const reader of ["STUDENT", "TEACHER", "COACH", "HEAD_COACH"]) {
+    assert.equal(guideShown(reader, "ADMIN"), reader, `${reader} never reads another role's guide`);
+    assert.equal(guideShown(reader, null), reader);
+  }
+  for (const reader of ["ADMIN", "SUPER_ADMIN"]) {
+    for (const r of ROLES) assert.equal(guideShown(reader, r), r);
+    assert.equal(guideShown(reader, "NOT_A_ROLE"), reader);
+    assert.equal(guideShown(reader, undefined), reader);
+  }
+});
+
+test("searching the guide: every word must appear (title, summary, steps or tips), in any case and order", () => {
+  const topics = guideFor("STUDENT").topics;
+  assert.equal(searchTopics(topics, "").length, topics.length);
+  assert.equal(searchTopics(topics, "   ").length, topics.length);
+  const pw = searchTopics(guideFor("STUDENT").gettingStarted, "PASSWORD forgot");
+  assert.ok(pw.some((t) => t.id === "forgot-password" || /forgot/i.test(t.title)), "finds the forgotten-password topic");
+  assert.deepEqual(searchTopics(topics, "zzqx-nothing-matches"), []);
+  for (const t of searchTopics(topics, "leaderboard")) assert.match([t.title, t.summary, ...(t.steps ?? []), ...(t.tips ?? [])].join(" ").toLowerCase(), /leaderboard/);
 });
