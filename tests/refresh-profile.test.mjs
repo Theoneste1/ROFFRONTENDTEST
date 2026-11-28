@@ -53,3 +53,11 @@ test("a refused refresh never leaves a profile behind", async () => {
   assert.equal(await client.refreshSession(), "rejected");
   assert.equal(client.takeRefreshedProfile(), null);
 });
+
+test("review 2026-11-28: a refresh that arrives after the browser was signed out leaves no profile behind", async () => {
+  const signedOut = await import("../lib/auth/signed-out.ts");
+  script = [async () => { signedOut.markSignedOut(); return json(200, { access_token: "a.b.c", token_type: "Bearer", expires_in: 900, refresh_token: "r", user: PROFILE }); }];
+  assert.equal(await client.refreshSession(), "rejected");
+  assert.equal(client.takeRefreshedProfile(), null);
+  signedOut.clearSignedOut();
+});

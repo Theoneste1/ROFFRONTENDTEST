@@ -126,6 +126,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOutLocally = useCallback(() => {
     setAccessToken(null);
+    takeRefreshedProfile();   // a profile a refresh brought and nobody took: forgotten too (review 2026-11-28)
     queryClient.clear();
     setPhase("signed-out");
   }, [queryClient]);

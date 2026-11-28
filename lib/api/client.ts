@@ -148,8 +148,10 @@ async function runRefresh(): Promise<RefreshOutcome> {
   const result = await attemptRefresh({ post: postRefresh, delay });
   if (isMarkedSignedOut()) {
     accessToken = null;
+    refreshedProfile = null;   // review 2026-11-28: never keep a signed-out person's profile in memory
     return "rejected";
   }
+  if (result.outcome !== "ok") refreshedProfile = null;
   if (result.outcome === "ok" && result.accessToken) accessToken = result.accessToken;
   return result.outcome;
 }
