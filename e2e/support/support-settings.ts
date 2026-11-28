@@ -6,8 +6,8 @@ import type { APIRequestContext } from "@playwright/test";
 import { ACCOUNTS, passwordOf } from "./accounts";
 
 const API = () => (process.env.E2E_API_URL ?? "http://127.0.0.1:4100").replace(/\/+$/, "");
-const KEYS = ["platform.supportEmail", "support.phone", "support.hours"] as const;
-export type SupportSettings = Partial<Record<(typeof KEYS)[number], string | null>>;
+export const SUPPORT_KEYS = ["platform.supportEmail", "support.phone", "support.hours"] as const;
+export type SupportSettings = Partial<Record<(typeof SUPPORT_KEYS)[number], string | null>>;
 
 async function adminToken(request: APIRequestContext): Promise<string> {
   const res = await request.post(`${API()}/api/v1/auth/login`, { data: { username: ACCOUNTS.admin.username, password: passwordOf("admin") } });

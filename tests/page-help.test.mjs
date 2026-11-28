@@ -104,7 +104,7 @@ test("ROF support: WhatsApp with the official support phone (platform settings),
 
 test("no personal name or personal number anywhere in help: neutral ROF branding (owner, 2026-11-28)", () => {
   const files = [];
-  const walk = (dir) => { for (const n of readdirSync(dir)) { const p = join(dir, n); statSync(p).isDirectory() ? walk(p) : files.push(p); } };
+  const walk = (dir) => { for (const n of readdirSync(dir)) { const p = join(dir, n); if (statSync(p).isDirectory()) walk(p); else files.push(p); } };
   walk(join("lib", "help")); walk(join("app", "components", "help")); walk(join("app", "help"));
   for (const f of files) {
     const src = readFileSync(f, "utf8");
