@@ -9,11 +9,12 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { PASSWORD } from "../support/accounts";
 import { signIn, signInWith } from "../support/session";
-import { createStudentListFixture, type StudentListFixture } from "../support/student-lists";
+import { createStudentListFixture, endStudentListFixture, type StudentListFixture } from "../support/student-lists";
 
 let f: StudentListFixture;
 test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => { f = await createStudentListFixture("d", 22); });
+test.afterAll(async () => { await endStudentListFixture(f); });
 
 /** The table body's rows, once loaded. */
 const rows = (page: Page) => page.locator("tbody tr").filter({ has: page.getByTestId("student-cell") });
@@ -69,6 +70,8 @@ test("Teacher: picture or initials, Username column, search and two pages of 20"
   await expect(rows(page)).toHaveCount(20);
   const pager = page.getByRole("navigation", { name: "Pagination" });
   await expect(pager).toContainText("Page 1 of 2");
+  // The search has applied (it is debounced): paging before it would be reset to page 1 when it lands.
+  await expect(pager).toContainText("22 total");
   await everyRowHasPictureAndUsername(rows(page));
   await pager.getByRole("button", { name: "Next" }).click();
   await expect(pager).toContainText("Page 2 of 2");

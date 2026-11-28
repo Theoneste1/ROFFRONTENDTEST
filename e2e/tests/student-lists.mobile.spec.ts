@@ -5,11 +5,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { PASSWORD } from "../support/accounts";
 import { signIn, signInWith } from "../support/session";
-import { createStudentListFixture, type StudentListFixture } from "../support/student-lists";
+import { createStudentListFixture, endStudentListFixture, type StudentListFixture } from "../support/student-lists";
 
 let f: StudentListFixture;
 test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => { f = await createStudentListFixture("m", 3); });
+test.afterAll(async () => { await endStudentListFixture(f); });
 
 async function checkPhoneList(page: Page) {
   await page.getByLabel("Search students").fill(f.run);

@@ -11,12 +11,13 @@ import { request } from "@playwright/test";
 import { PASSWORD, passwordOf } from "./accounts";
 import { assignTeacherSchool, createSchool, createStudent, idOf, withDb } from "./db";
 
-export type StudentListFixture = { run: string; coachUser: string; students: { id: string; username: string; firstName: string }[] };
+export type StudentListFixture = { run: string; coachUser: string; schoolId: string; students: { id: string; username: string; firstName: string }[] };
 
 export async function createStudentListFixture(prefix: string, count: number): Promise<StudentListFixture> {
   const run = `${prefix}${Date.now().toString(36)}`;
   const coachUser = `e2e.slc.${run}`;
   const students: StudentListFixture["students"] = [];
+  let schoolId = "";
   await withDb(async (c) => {
     const maths = (await c.query(`SELECT id FROM "Discipline" WHERE code = 'MATHEMATICS'`)).rows[0].id;
     const coach = (await c.query<{ id: string }>(
@@ -25,6 +26,7 @@ export async function createStudentListFixture(prefix: string, count: number): P
       [coachUser, run, `${coachUser}@e2e.local`, hashSync(PASSWORD, 4)],
     )).rows[0].id;
     const school = await createSchool(c, `E2E List School ${run}`);
+    schoolId = school;
     await assignTeacherSchool(c, await idOf(c, "e2e.teacher"), school);
     for (let i = 1; i <= count; i++) {
       const username = `e2e.sl.${run}.${String(i).padStart(2, "0")}`;
@@ -60,5 +62,17 @@ export async function createStudentListFixture(prefix: string, count: number): P
   } finally {
     await api.dispose();
   }
-  return { run, coachUser, students };
+  return { run, coachUser, schoolId, students };
+}
+
+/**
+ * After the checks: the e2e Teacher leaves the fixture's school and its students leave the programme, so the other
+ * browser tests (which share the e2e Teacher and the Mathematics programme) see the same lists as without this fixture.
+ */
+export async function endStudentListFixture(f: StudentListFixture | undefined): Promise<void> {
+  if (!f) return;
+  await withDb(async (c) => {
+    await c.query(`UPDATE "TeacherSchoolAssignment" SET "isActive" = false, "endedAt" = now() WHERE "schoolId" = $1 AND "isActive" = true`, [f.schoolId]);
+    await c.query(`UPDATE "ProgrammeMembership" SET "isActive" = false, "endedAt" = now() WHERE "userId" = ANY($1::text[]) AND "isActive" = true`, [f.students.map((s) => s.id)]);
+  });
 }
