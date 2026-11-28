@@ -54,6 +54,8 @@ export type Permission =
   // Test Management, Phase 2 (capability testSubmissions): extensions and tracking (Administrators, Head Coaches), a
   // student's own answers, a teacher's answers for the verified students of their schools (G2).
   | "tests.extensions" | "tests.viewSubmissions" | "tests.authorizeResubmission" | "tests.submit" | "tests.submitForStudents"
+  // Reassign a submission to the correct test and/or level (owner 2026-11-28): Administrators and Super Administrators.
+  | "tests.reassignSubmission"
   // Test Management, Phase 3 (capability testMarking): distribution and review (Administrators, Head Coaches), choosing /
   // adjusting marks (the subject's Head Coaches only, G4), blind marking (Coaches: authorised subjects, assigned submissions).
   | "tests.distribute" | "tests.review" | "tests.adjustMarks" | "tests.mark"

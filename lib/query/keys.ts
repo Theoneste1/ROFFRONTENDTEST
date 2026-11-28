@@ -160,6 +160,10 @@ export const queryKeys = {
     submission: (testId: string, submissionId: string) => [...queryKeys.tests.all, "submission", testId, submissionId] as const,
     extensions: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "extensions", testId, filters] as const,
     extensionTargets: (testId: string, kind: string, q: string) => [...queryKeys.tests.all, "extension-targets", testId, kind, q] as const,
+    // Reassign a submission (owner 2026-11-28)
+    reassignable: (filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "reassignable", filters] as const,
+    reassignment: (testId: string, submissionId: string) => [...queryKeys.tests.all, "reassignment", testId, submissionId] as const,
+    reassignHistory: (testId: string, submissionId: string) => [...queryKeys.tests.all, "reassignment", testId, submissionId, "history"] as const,
     // Phase 3 (lib/api/test-marking.ts)
     marking: (testId: string) => [...queryKeys.tests.all, "marking", testId] as const,
     review: (testId: string, filters: Record<string, unknown> = {}) => [...queryKeys.tests.all, "marking", testId, "review", filters] as const,
