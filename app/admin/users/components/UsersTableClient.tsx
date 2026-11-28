@@ -132,7 +132,8 @@ export default function UsersTableClient() {
   // (GET /api/v1 capabilities). A role in the URL that is not offered is ignored, so a
   // production backend never receives a filter value it would reject.
   const { detection } = useBackendCapabilities();
-  const roleTabs = roleFilterTabs(detection?.state === "NEW" ? detection.roles : null);
+  const viewerRole = useSession().role;
+  const roleTabs = roleFilterTabs(detection?.state === "NEW" ? detection.roles : null, viewerRole);
   const requestedRole = (params.get("role") ?? "") as "" | Role;
   const role = roleTabs.some((t) => t.value === requestedRole) ? requestedRole : "";
   const status = STATUS_FILTERS[params.get("status") ?? ""] ? (params.get("status") ?? "") : "";

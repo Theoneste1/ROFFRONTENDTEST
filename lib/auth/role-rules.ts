@@ -157,8 +157,10 @@ const TAB_LABEL: Readonly<Record<KnownRole, string>> = {
  * them in `capabilities.roles` (`backendRoles`; null on LEGACY, UNKNOWN or
  * while loading).
  */
-export function roleFilterTabs(backendRoles: readonly string[] | null): { label: string; value: "" | KnownRole }[] {
-  const shown = ROLES.filter((r) => BASE_ASSIGNABLE_ROLES.includes(r) || (backendRoles?.includes(r) ?? false));
+export function roleFilterTabs(backendRoles: readonly string[] | null, viewerRole?: string | null): { label: string; value: "" | KnownRole }[] {
+  // Super Administrators are undiscoverable by everyone else (owner 2026-11-28): their tab only for a Super Administrator.
+  const shown = ROLES.filter((r) => BASE_ASSIGNABLE_ROLES.includes(r) || (backendRoles?.includes(r) ?? false))
+    .filter((r) => r !== "SUPER_ADMIN" || viewerRole === "SUPER_ADMIN");
   return [{ label: "All", value: "" }, ...shown.map((r) => ({ label: TAB_LABEL[r], value: r }))];
 }
 
