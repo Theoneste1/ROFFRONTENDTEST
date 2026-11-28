@@ -327,8 +327,19 @@ test("role filter tabs: production (LEGACY), UNKNOWN or loading → only the thr
 
 test("role filter tabs: a NEW backend adds the roles it lists, in a stable order", () => {
   const all = ["STUDENT", "TEACHER", "MENTOR", "HEAD_COACH", "ADMIN", "SUPER_ADMIN"];
-  assert.deepEqual(roleFilterTabs(all).map((t) => t.label), ["All", "Students", "Teachers", "Coaches", "Head Coaches", "Admins", "Super Admins"]);
+  assert.deepEqual(roleFilterTabs(all, "SUPER_ADMIN").map((t) => t.label), ["All", "Students", "Teachers", "Coaches", "Head Coaches", "Admins", "Super Admins"]);
   assert.deepEqual(roleFilterTabs(["STUDENT", "MENTOR", "ADMIN", "FUTURE_ROLE"]).map((t) => t.value), ["", "STUDENT", "MENTOR", "ADMIN"], "unknown role names ignored");
+});
+
+test("Super Administrators are undiscoverable (owner 2026-11-28): no Super Admins tab and no sharing with them, except for a Super Administrator", async () => {
+  const all = ["STUDENT", "TEACHER", "MENTOR", "HEAD_COACH", "ADMIN", "SUPER_ADMIN"];
+  for (const viewer of ["ADMIN", "HEAD_COACH", "MENTOR", "TEACHER", "STUDENT", null, undefined, "SOMETHING_NEW"]) {
+    assert.ok(!roleFilterTabs(all, viewer).some((t) => t.value === "SUPER_ADMIN"), String(viewer));
+  }
+  assert.ok(roleFilterTabs(all, "SUPER_ADMIN").some((t) => t.value === "SUPER_ADMIN"));
+  const { shareableRolesFor } = await import("../lib/reports/custom-reports.ts");
+  assert.deepEqual(shareableRolesFor("ADMIN").map((r) => r.value), ["ADMIN", "HEAD_COACH", "MENTOR", "TEACHER"]);
+  assert.deepEqual(shareableRolesFor("SUPER_ADMIN").map((r) => r.value), ["ADMIN", "SUPER_ADMIN", "HEAD_COACH", "MENTOR", "TEACHER"]);
 });
 
 // ─── Action buttons when /me/permissions failed ─────────────────────────────

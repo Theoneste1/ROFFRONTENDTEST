@@ -11,7 +11,8 @@ import { usersApi } from "@/lib/api/admin";
 import { errorMessage } from "@/lib/api/errors";
 import type { Role } from "@/lib/api/types";
 import { roleLabel } from "@/lib/auth/roles";
-import { SHAREABLE_ROLES, grantInputs, levelsText, normaliseLevels, type ReportGrant } from "@/lib/reports/custom-reports";
+import { SHAREABLE_ROLES, grantInputs, levelsText, normaliseLevels, shareableRolesFor, type ReportGrant } from "@/lib/reports/custom-reports";
+import { useSession } from "@/lib/auth/session";
 import { useReportGrants, useSetGrants } from "@/lib/queries/custom-reports";
 import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import { Modal, btnPrimary, btnSecondary } from "@/app/admin/components/adminUi";
@@ -21,6 +22,7 @@ const LEVELS: Array<{ key: Level; label: string }> = [{ key: "canView", label: "
 const keyOf = (g: ReportGrant) => (g.user ? `user:${g.user.id}` : `role:${g.role}`);
 
 function Editor({ reportId, initial, onClose }: { reportId: string; initial: ReportGrant[]; onClose: () => void }) {
+  const viewerRole = useSession().role;
   const save = useSetGrants(reportId);
   const [grants, setGrants] = useState<ReportGrant[]>(initial);
   const [search, setSearch] = useState("");
@@ -63,7 +65,7 @@ function Editor({ reportId, initial, onClose }: { reportId: string; initial: Rep
           <label htmlFor="share-role" className="mb-1 block text-xs font-semibold text-gray-700">Add a role</label>
           <select id="share-role" className="w-full rounded-xl border border-gray-300 p-2.5 text-sm" value="" onChange={(e) => e.target.value && add({ role: e.target.value as Role, user: null, canView: true, canDownload: false, canEdit: false })} data-testid="share-role">
             <option value="">Choose a role…</option>
-            {SHAREABLE_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+            {shareableRolesFor(viewerRole).map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
         </div>
       </div>
