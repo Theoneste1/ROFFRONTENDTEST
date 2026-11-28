@@ -173,7 +173,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [queryClient]);   // stable (one client per app): still runs once on load
 
   // The API client reports when a refresh is no longer possible.
   useEffect(() => onSessionExpired(signOutLocally), [signOutLocally]);
