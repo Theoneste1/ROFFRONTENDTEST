@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { changeText, changedByText, levelChangeProblem, levelSummary, setLevelInput } from "../lib/accounts/olympiad-level.ts";
+import { changeText, changedByText, levelChangeProblem, levelSummary, mayChangeLevel, setLevelInput } from "../lib/accounts/olympiad-level.ts";
 
 const J = { id: "j", code: "JUNIOR", name: "Junior" };
 const M = { id: "m", code: "MIDDLE", name: "Middle" };
@@ -43,4 +43,10 @@ test("a change needs a choice, a reason, and must change something", () => {
 test("request body", () => {
   assert.deepEqual(setLevelInput("AUTOMATIC", " r1 "), { automatic: true, reason: "r1" });
   assert.deepEqual(setLevelInput("m", "why"), { divisionId: "m", reason: "why" });
+});
+
+test("a Coach sees the level but never changes it (owner 2026-11-27); Head Coaches and administrators may", () => {
+  assert.equal(mayChangeLevel("MENTOR"), false);
+  for (const r of ["STUDENT", "TEACHER", null, undefined]) assert.equal(mayChangeLevel(r), false);
+  for (const r of ["HEAD_COACH", "ADMIN", "SUPER_ADMIN"]) assert.equal(mayChangeLevel(r), true);
 });
