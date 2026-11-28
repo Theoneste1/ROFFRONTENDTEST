@@ -160,9 +160,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return;
       }
       const outcome = getAccessToken() ? "ok" : await refreshSession();
-      // The refresh brought the profile (newer backends): GET /me's answer is already here — one round trip saved.
-      const profile = outcome === "ok" ? takeRefreshedProfile() : null;
-      if (profile) queryClient.setQueryData(queryKeys.me.profile(), profile);
+      // The refresh brought the profile and the permission summary (newer backends): GET /me's and GET /me/permissions'
+      // answers are already here — the portal renders complete (menus included), one round trip sooner.
+      const restored = outcome === "ok" ? takeRefreshedProfile() : null;
+      if (restored) {
+        queryClient.setQueryData(queryKeys.me.profile(), restored.user);
+        if (restored.permissions) queryClient.setQueryData(queryKeys.me.permissions(), restored.permissions);
+      }
       if (!cancelled) setPhase(phaseFor(outcome));
     })();
     return () => {

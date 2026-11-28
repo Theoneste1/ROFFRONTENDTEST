@@ -29,10 +29,17 @@ beforeEach(() => {
 });
 
 test("a refresh that returns the profile: the session takes it once (no GET /me needed)", async () => {
+  const PERMISSIONS = { role: "STUDENT", roleLabel: "Student", permissions: ["courses.view"], scopes: { courseDivisions: [], programmes: [] }, overrides: [] };
+  script = [() => json(200, { access_token: "a.b.c", token_type: "Bearer", expires_in: 900, refresh_token: "r", user: PROFILE, permissions: PERMISSIONS })];
+  assert.equal(await client.refreshSession(), "ok");
+  assert.deepEqual(client.takeRefreshedProfile(), { user: PROFILE, permissions: PERMISSIONS });
+  assert.equal(client.takeRefreshedProfile(), null, "taken once");
+});
+
+test("a backend with the profile but no permission summary: the profile only (GET /me/permissions as before)", async () => {
   script = [() => json(200, { access_token: "a.b.c", token_type: "Bearer", expires_in: 900, refresh_token: "r", user: PROFILE })];
   assert.equal(await client.refreshSession(), "ok");
-  assert.deepEqual(client.takeRefreshedProfile(), PROFILE);
-  assert.equal(client.takeRefreshedProfile(), null, "taken once");
+  assert.deepEqual(client.takeRefreshedProfile(), { user: PROFILE, permissions: null });
 });
 
 test("an older backend (no profile in the refresh): nothing to take, GET /me as before", async () => {

@@ -27,7 +27,7 @@ import {
 import { isMarkedSignedOut } from "../auth/signed-out";
 import { UPLOAD_ORIGIN } from "./upload-origin";
 import { trackUpload } from "./upload-progress";
-import type { CurrentUser, TokenResponse } from "./types";
+import type { CurrentUser, MePermissions, TokenResponse } from "./types";
 
 export const API_BASE = "/api/v1";
 
@@ -118,22 +118,23 @@ async function postRefresh() {
     status: res.status,
     retryAfter: res.headers.get("retry-after"),
     accessToken: async () => {
-      const body = (await res.json()) as Partial<TokenResponse> & { user?: CurrentUser };
-      // A backend that returns the profile with the tokens (2026-11-28) saves the page load a GET /me round trip.
-      refreshedProfile = body.access_token && body.user ? body.user : null;
+      const body = (await res.json()) as Partial<TokenResponse> & { user?: CurrentUser; permissions?: MePermissions };
+      // A backend that returns the profile and the permission summary with the tokens (2026-11-28) saves the page load
+      // its GET /me and GET /me/permissions round trip.
+      refreshedProfile = body.access_token && body.user ? { user: body.user, permissions: body.permissions ?? null } : null;
       return body.access_token ?? null;
     },
   };
 }
 
-/** The profile the last successful refresh returned (newer backends), until the session takes it. */
-let refreshedProfile: CurrentUser | null = null;
+/** The profile (and permission summary) the last successful refresh returned (newer backends), until the session takes it. */
+let refreshedProfile: { user: CurrentUser; permissions: MePermissions | null } | null = null;
 
 /**
  * The signed-in user's profile from the refresh that just succeeded, once (then forgotten), or null when the backend
  * does not return it. The session puts it in the query cache as GET /me's answer, so the page load needs no GET /me.
  */
-export function takeRefreshedProfile(): CurrentUser | null {
+export function takeRefreshedProfile(): { user: CurrentUser; permissions: MePermissions | null } | null {
   const p = refreshedProfile;
   refreshedProfile = null;
   return p;
