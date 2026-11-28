@@ -292,8 +292,12 @@ test.describe.serial("publication, results, rankings, withdrawal (G6)", () => {
     await coach.context().close();
     const t = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
     await signInWith(t, teacher, PASSWORD);
-    await t.goto("/teacher/dashboard");
+    // Owner 2026-11-27: the test overview is on the Tests tab; My students shows students only.
+    await t.goto("/teacher/tests");
     await expect(t.getByTestId("teacher-widget-results")).toContainText(title, { timeout: 30_000 });
+    await t.goto("/teacher/dashboard");
+    await expect(t.getByRole("heading", { name: "My students", level: 1 })).toBeVisible();
+    await expect(t.getByTestId("tests-widget-teacher")).toHaveCount(0);
     await noSeriousA11y(t);
     await t.context().close();
     const s = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();

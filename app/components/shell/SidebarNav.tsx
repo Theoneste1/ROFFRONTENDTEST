@@ -253,6 +253,7 @@ function NavEntry({ item, isOpen, inPanel, groupOpen, onToggleGroup }: EntryProp
   return (
     <Link
       href={item.href}
+      prefetch
       title={item.label}
       aria-current={item.active ? "page" : undefined}
       role={inPanel ? "menuitem" : undefined}
@@ -293,6 +294,7 @@ function NavGroup({ item, isOpen, inPanel, open, onToggle }: Omit<EntryProps, "g
             <Link
               key={c.href}
               href={c.href}
+              prefetch
               aria-current={c.active ? "page" : undefined}
               data-nav-child={inPanel ? undefined : ""}
               className={`flex items-center gap-3 w-full py-2 px-3 rounded-lg font-medium text-sm transition-all ${c.active ? "bg-blue-600/20 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white"}`}

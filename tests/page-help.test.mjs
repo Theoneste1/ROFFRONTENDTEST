@@ -1,13 +1,13 @@
 // Page help (owner, 2026-11-26; lib/help): the role's guide, the topic of each page, every portal page covered,
-// the technical support link (WhatsApp 0780 850 611) and the credit "Made by Theoneste, Technology lead".
+// ROF's official support (platform settings) and neutral ROF branding — no personal name or number (owner, 2026-11-28).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import {
-  HELP_CREDIT, TECH_SUPPORT, generalTopic, guideFileName, guideFor, guideUrl, helpRoleOf, matchScore, roleFromGuideFile,
-  topicFor, whatsappUrl,
+  HELP_CREDIT, generalTopic, guideFileName, guideFor, guidePagePath, guideShown, guideUrl, helpRoleOf, matchScore, roleFromGuideFile, searchTopics,
+  topicFor, whatsappNumber, whatsappUrl,
 } from "@/lib/help/rules";
 import { ADMIN_NAV, MENTOR_NAV, TEACHER_NAV, ADMIN_TESTS, ADMIN_FORMS, ADMIN_COUNTRIES, ADMIN_SUBSCRIBERS, ADMIN_SETTINGS,
   ADMIN_TEACHER_APPLICATIONS, ADMIN_NOTIFICATION_DELIVERIES, ADMIN_REGISTRATION_DATA, ADMIN_MARKING_OVERVIEW, ADMIN_TEST_REPORTS,
@@ -90,13 +90,29 @@ test("every portal page is covered by a help topic", () => {
   assert.deepEqual(missing, []);
 });
 
-test("technical support: Theoneste on WhatsApp 0780 850 611, with the page named in the first message", () => {
-  assert.equal(TECH_SUPPORT.whatsappNumber, "250780850611");
-  assert.equal(HELP_CREDIT, "Made by Theoneste, Technology lead");
-  const url = whatsappUrl("Marking");
-  assert.ok(url.startsWith("https://wa.me/250780850611?text="));
-  assert.equal(decodeURIComponent(url.split("text=")[1]), "Hello Theoneste, I need help with ROF LMS (page: Marking).");
-  assert.equal(decodeURIComponent(whatsappUrl().split("text=")[1]), "Hello Theoneste, I need help with ROF LMS.");
+test("ROF support: WhatsApp with the official support phone (platform settings), the page named in the first message", () => {
+  assert.equal(HELP_CREDIT, "ROF LMS · Rwanda Olympiad Foundation");
+  for (const phone of ["0788 123 456", "+250 788 123 456", "250788123456", "+250788123456"]) assert.equal(whatsappNumber(phone), "250788123456", phone);
+  assert.equal(whatsappNumber("+44 20 7946 0958"), "442079460958");
+  for (const none of [null, undefined, "", "   ", "call us", "12345"]) assert.equal(whatsappNumber(none), null, String(none));
+  const url = whatsappUrl("0788 123 456", "Marking");
+  assert.ok(url.startsWith("https://wa.me/250788123456?text="));
+  assert.equal(decodeURIComponent(url.split("text=")[1]), "Hello ROF support, I need help with ROF LMS (page: Marking).");
+  assert.equal(decodeURIComponent(whatsappUrl("0788 123 456").split("text=")[1]), "Hello ROF support, I need help with ROF LMS.");
+  assert.equal(whatsappUrl(null, "Marking"), null, "no support phone: no WhatsApp link (the Support page instead)");
+});
+
+test("no personal name or personal number anywhere in help: neutral ROF branding (owner, 2026-11-28)", () => {
+  const files = [];
+  const walk = (dir) => { for (const n of readdirSync(dir)) { const p = join(dir, n); if (statSync(p).isDirectory()) walk(p); else files.push(p); } };
+  walk(join("lib", "help")); walk(join("app", "components", "help")); walk(join("app", "help"));
+  for (const f of files) {
+    const src = readFileSync(f, "utf8");
+    for (const personal of ["Theoneste", "Technology lead", "0780 850 611", "0780850611", "250780850611"]) assert.ok(!src.includes(personal), `${f} mentions ${personal}`);
+  }
+  for (const role of ROLES) {
+    for (const t of [...guideFor(role).gettingStarted, ...guideFor(role).topics]) assert.doesNotMatch(JSON.stringify(t), /Theoneste|Technology lead/, `${role}: ${t.id}`);
+  }
 });
 
 test("PDF file name and address per audience", () => {
@@ -107,4 +123,36 @@ test("PDF file name and address per audience", () => {
   assert.equal(roleFromGuideFile("coaches"), null);
   assert.equal(guideFileName("HEAD_COACH"), "ROF-LMS-guide-Head-Coaches.pdf");
   assert.equal(guideFileName("STUDENT"), "ROF-LMS-guide-Students.pdf");
+});
+
+test("the user guide inside the system: one page per portal, a section link per topic, and the page has its own topic", () => {
+  assert.deepEqual(ROLES.map((r) => guidePagePath(r)), ["/student/guide", "/teacher/guide", "/mentor/guide", "/mentor/guide", "/admin/guide", "/admin/guide"]);
+  assert.equal(guidePagePath("COACH", "coach-marking"), "/mentor/guide#coach-marking");
+  for (const role of ROLES) {
+    assert.equal(topicFor(role, guidePagePath(role))?.id, "user-guide", role);
+    for (const t of [...guideFor(role).gettingStarted, ...guideFor(role).topics]) assert.match(t.id, /^[a-z0-9-]+$/, `${role}: ${t.id} is a usable section link`);
+  }
+  assert.doesNotMatch(generalTopic("STUDENT").steps.join(" "), /Download/, "the general help points to the guide inside the system");
+});
+
+test("which guide the page shows: your own; Administrators and Super Administrators may open any role's", () => {
+  for (const reader of ["STUDENT", "TEACHER", "COACH", "HEAD_COACH"]) {
+    assert.equal(guideShown(reader, "ADMIN"), reader, `${reader} never reads another role's guide`);
+    assert.equal(guideShown(reader, null), reader);
+  }
+  for (const reader of ["ADMIN", "SUPER_ADMIN"]) {
+    for (const r of ROLES) assert.equal(guideShown(reader, r), r);
+    assert.equal(guideShown(reader, "NOT_A_ROLE"), reader);
+    assert.equal(guideShown(reader, undefined), reader);
+  }
+});
+
+test("searching the guide: every word must appear (title, summary, steps or tips), in any case and order", () => {
+  const topics = guideFor("STUDENT").topics;
+  assert.equal(searchTopics(topics, "").length, topics.length);
+  assert.equal(searchTopics(topics, "   ").length, topics.length);
+  const pw = searchTopics(guideFor("STUDENT").gettingStarted, "PASSWORD forgot");
+  assert.ok(pw.some((t) => t.id === "forgot-password" || /forgot/i.test(t.title)), "finds the forgotten-password topic");
+  assert.deepEqual(searchTopics(topics, "zzqx-nothing-matches"), []);
+  for (const t of searchTopics(topics, "leaderboard")) assert.match([t.title, t.summary, ...(t.steps ?? []), ...(t.tips ?? [])].join(" ").toLowerCase(), /leaderboard/);
 });

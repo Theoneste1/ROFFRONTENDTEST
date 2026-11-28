@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { BookOpenCheck, Medal, MessagesSquare } from "lucide-react";
+import LogoLink from "./LogoLink";
 import Image from "@/app/components/ui/Image";
 
 /**
@@ -50,11 +51,11 @@ const HIGHLIGHTS = [
   { icon: Medal, text: "Preparation for national and international Olympiads" },
 ] as const;
 
-/** The ROF logo on a white tile, "ROF LMS" and the tagline; it opens the LMS home page. */
+/** The ROF logo on a white tile, "ROF LMS" and the tagline; it opens the LMS home page (signed in: signs out first). */
 function BrandMark({ size }: { size: "panel" | "bar" }) {
   const panel = size === "panel";
   return (
-    <Link href="/" className="inline-flex items-center gap-4 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="ROF LMS home page" data-testid="auth-brand-home">
+    <LogoLink className="inline-flex items-center gap-4 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white" testId="auth-brand-home">
       <span className={`flex flex-shrink-0 items-center justify-center overflow-hidden bg-white ${panel ? "h-20 w-20 rounded-2xl p-0.5 shadow-md shadow-black/10" : "h-12 w-12 rounded-xl p-0.5"}`}>
         <Image src="/logo.png" alt="" width={panel ? 160 : 96} height={panel ? 160 : 96} className="h-full w-full rounded-[0.875rem] object-cover" priority />
       </span>
@@ -62,7 +63,7 @@ function BrandMark({ size }: { size: "panel" | "bar" }) {
         <span className={`block font-serif font-medium text-white ${panel ? "text-[2rem]" : "text-[1.375rem]"}`}>ROF LMS</span>
         <span className={`block font-normal text-white/80 ${panel ? "mt-1.5 text-sm" : "mt-0.5 text-xs"}`}>Learn • Practise • Achieve</span>
       </span>
-    </Link>
+    </LogoLink>
   );
 }
 

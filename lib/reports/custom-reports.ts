@@ -193,7 +193,7 @@ export function grantInputs(grants: readonly ReportGrant[]): GrantInput[] {
     .filter((g) => g.canView || g.canDownload || g.canEdit);
 }
 
-/** Roles a report may be shared with (never students). */
+/** Roles a report may be shared with (never students); the labels of existing role grants. */
 export const SHAREABLE_ROLES: Array<{ value: Role; label: string }> = [
   { value: "ADMIN", label: "Administrators" },
   { value: "SUPER_ADMIN", label: "Super Administrators" },
@@ -201,6 +201,11 @@ export const SHAREABLE_ROLES: Array<{ value: Role; label: string }> = [
   { value: "MENTOR", label: "Coaches" },
   { value: "TEACHER", label: "Teachers" },
 ];
+
+/** The roles this person may choose to share with: Super Administrators only for a Super Administrator (owner 2026-11-28). */
+export function shareableRolesFor(viewerRole: string | null | undefined): Array<{ value: Role; label: string }> {
+  return SHAREABLE_ROLES.filter((r) => r.value !== "SUPER_ADMIN" || viewerRole === "SUPER_ADMIN");
+}
 
 /** A cell for display: dates as dates, booleans as Yes / No, empty as —. */
 export function cellText(v: string | number | boolean | null, type?: FieldType): string {

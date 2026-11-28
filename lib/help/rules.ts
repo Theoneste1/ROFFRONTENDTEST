@@ -1,6 +1,10 @@
 /**
- * Page help rules (owner, 2026-11-26): which guide a role reads, which topic explains the current page, the technical
- * support contact (WhatsApp) and the credit line. Pure functions (unit-tested in tests/page-help.test.mjs).
+ * Page help rules (owner, 2026-11-26): which guide a role reads, which topic explains the current page, how to reach
+ * ROF support and the credit line. Pure functions (unit-tested in tests/page-help.test.mjs).
+ *
+ * Branding (owner, 2026-11-28): no personal name or personal number anywhere in help — the official ROF support
+ * details (platform settings: e-mail, phone, hours; GET /support, the same as the Support page and the site footer) and
+ * neutral ROF branding.
  */
 import type { HelpRole, HelpTopic, RoleGuide } from "./types";
 import { COACH_GUIDE, HEAD_COACH_GUIDE } from "./content-coaches";
@@ -9,18 +13,11 @@ import { ADMIN_GUIDE, SUPER_ADMIN_GUIDE } from "./content-admins";
 
 export type { HelpRole, HelpTopic, RoleGuide };
 
-/** Technical support (owner, 2026-11-26): Theoneste, Technology lead, on WhatsApp. */
-export const TECH_SUPPORT = {
-  name: "Theoneste",
-  title: "Technology lead",
-  /** As people dial it in Rwanda. */
-  phoneDisplay: "0780 850 611",
-  /** International form for WhatsApp (wa.me takes digits only, country code first). */
-  whatsappNumber: "250780850611",
-} as const;
+/** The page with ROF's official support details (platform settings), shared by every role. */
+export const SUPPORT_PAGE = "/support";
 
-/** The credit shown at the bottom of every help panel and on every page of the PDF guide. */
-export const HELP_CREDIT = `Made by ${TECH_SUPPORT.name}, ${TECH_SUPPORT.title}`;
+/** The neutral line shown at the bottom of every help panel and on every page of the PDF guide. */
+export const HELP_CREDIT = "ROF LMS · Rwanda Olympiad Foundation";
 
 const GUIDES: Record<HelpRole, RoleGuide> = {
   STUDENT: STUDENT_GUIDE,
@@ -91,14 +88,65 @@ export function generalTopic(role: HelpRole): HelpTopic {
     paths: [],
     title: "Help",
     summary: `This page is part of the ${guide.audience.toLowerCase()}' portal. Use the menu on the left to move between pages.`,
-    steps: ["Download the full guide below: it explains every page, starting from signing in.", "Still stuck? Contact technical support on WhatsApp."],
+    steps: ["Open the user guide below: it explains every page, starting from signing in.", "Still stuck? Contact ROF support: their details are on the Help and Support page."],
   };
 }
 
-/** The WhatsApp chat link, with a first message naming the page so support knows where the person is. */
-export function whatsappUrl(pageTitle?: string | null): string {
-  const text = `Hello ${TECH_SUPPORT.name}, I need help with ROF LMS${pageTitle ? ` (page: ${pageTitle})` : ""}.`;
-  return `https://wa.me/${TECH_SUPPORT.whatsappNumber}?text=${encodeURIComponent(text)}`;
+// ── The user guide inside the system (owner, 2026-11-28: read it on screen, no download needed) ─────────────────────
+
+/** The portal a guide audience reads its guide in (Coaches and Head Coaches share /mentor; Super Administrators /admin). */
+const GUIDE_PORTAL: Record<HelpRole, string> = {
+  STUDENT: "/student", TEACHER: "/teacher", COACH: "/mentor", HEAD_COACH: "/mentor", ADMIN: "/admin", SUPER_ADMIN: "/admin",
+};
+
+/** The in-system user guide of a role: "/mentor/guide"; with a topic, its section ("/mentor/guide#coach-marking"). */
+export function guidePagePath(role: HelpRole, topicId?: string): string {
+  return `${GUIDE_PORTAL[role]}/guide${topicId ? `#${encodeURIComponent(topicId)}` : ""}`;
+}
+
+/**
+ * Which guide the guide page shows: the reader's own, or — for Administrators and Super Administrators, who see every
+ * role's guide — the one asked for with ?for=COACH. Anything else is the reader's own guide.
+ */
+export function guideShown(reader: HelpRole, requested: string | null | undefined): HelpRole {
+  if (reader !== "ADMIN" && reader !== "SUPER_ADMIN") return reader;
+  return (ALL_HELP_ROLES as readonly string[]).includes(requested ?? "") ? (requested as HelpRole) : reader;
+}
+
+/** A topic's whole text, for searching the guide. */
+function topicText(t: HelpTopic): string {
+  return [t.title, t.summary, ...(t.steps ?? []), ...(t.tips ?? [])].join(" ").toLowerCase();
+}
+
+/** The topics that contain every word of the search (any order, any case); all of them for an empty search. */
+export function searchTopics(topics: readonly HelpTopic[], query: string): HelpTopic[] {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return words.length === 0 ? [...topics] : topics.filter((t) => { const text = topicText(t); return words.every((w) => text.includes(w)); });
+}
+
+/**
+ * The official support phone (platform settings) in the international digits WhatsApp needs: "0788 123 456",
+ * "+250 788 123 456" and "250788123456" all give "250788123456"; another country's "+44 20…" keeps its code. Null when
+ * no phone is set or it is not a phone number.
+ */
+export function whatsappNumber(phone: string | null | undefined): string | null {
+  const raw = (phone ?? "").trim();
+  const digits = raw.replace(/\D/g, "");
+  if (/^0[27]\d{8}$/.test(digits)) return `250${digits.slice(1)}`;
+  if (/^250[27]\d{8}$/.test(digits)) return digits;
+  if (raw.startsWith("+") && /^[1-9]\d{7,14}$/.test(digits)) return digits;
+  return null;
+}
+
+/**
+ * A WhatsApp chat with ROF's official support phone, with a first message naming the page so support knows where the
+ * person is; null when the platform has no support phone (the caller then offers the Support page).
+ */
+export function whatsappUrl(supportPhone: string | null | undefined, pageTitle?: string | null): string | null {
+  const number = whatsappNumber(supportPhone);
+  if (!number) return null;
+  const text = `Hello ROF support, I need help with ROF LMS${pageTitle ? ` (page: ${pageTitle})` : ""}.`;
+  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
 }
 
 /** The PDF's file name, e.g. "ROF-LMS-guide-Coaches.pdf". */

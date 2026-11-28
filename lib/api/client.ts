@@ -25,9 +25,10 @@ import {
   type SharedCooldown,
 } from "./refresh-outcome";
 import { isMarkedSignedOut } from "../auth/signed-out";
+import { setLoginNotice } from "../auth/notice";
 import { UPLOAD_ORIGIN } from "./upload-origin";
 import { trackUpload } from "./upload-progress";
-import type { TokenResponse } from "./types";
+import type { CurrentUser, MePermissions, TokenResponse } from "./types";
 
 export const API_BASE = "/api/v1";
 
@@ -114,11 +115,39 @@ async function postRefresh() {
   } finally {
     clearTimeout(timer);
   }
+  // The server ended the session for inactivity (60 minutes): the sign-in page says so.
+  if (res.status === 401) {
+    try {
+      const body = (await res.clone().json()) as { code?: string };
+      if (body?.code === "SESSION_IDLE_EXPIRED") setLoginNotice("inactive");
+    } catch {
+      // not JSON: nothing to say
+    }
+  }
   return {
     status: res.status,
     retryAfter: res.headers.get("retry-after"),
-    accessToken: async () => ((await res.json()) as Partial<TokenResponse>).access_token ?? null,
+    accessToken: async () => {
+      const body = (await res.json()) as Partial<TokenResponse> & { user?: CurrentUser; permissions?: MePermissions };
+      // A backend that returns the profile and the permission summary with the tokens (2026-11-28) saves the page load
+      // its GET /me and GET /me/permissions round trip.
+      refreshedProfile = body.access_token && body.user ? { user: body.user, permissions: body.permissions ?? null } : null;
+      return body.access_token ?? null;
+    },
   };
+}
+
+/** The profile (and permission summary) the last successful refresh returned (newer backends), until the session takes it. */
+let refreshedProfile: { user: CurrentUser; permissions: MePermissions | null } | null = null;
+
+/**
+ * The signed-in user's profile from the refresh that just succeeded, once (then forgotten), or null when the backend
+ * does not return it. The session puts it in the query cache as GET /me's answer, so the page load needs no GET /me.
+ */
+export function takeRefreshedProfile(): { user: CurrentUser; permissions: MePermissions | null } | null {
+  const p = refreshedProfile;
+  refreshedProfile = null;
+  return p;
 }
 
 async function runRefresh(): Promise<RefreshOutcome> {
@@ -129,8 +158,10 @@ async function runRefresh(): Promise<RefreshOutcome> {
   const result = await attemptRefresh({ post: postRefresh, delay });
   if (isMarkedSignedOut()) {
     accessToken = null;
+    refreshedProfile = null;   // review 2026-11-28: never keep a signed-out person's profile in memory
     return "rejected";
   }
+  if (result.outcome !== "ok") refreshedProfile = null;
   if (result.outcome === "ok" && result.accessToken) accessToken = result.accessToken;
   return result.outcome;
 }

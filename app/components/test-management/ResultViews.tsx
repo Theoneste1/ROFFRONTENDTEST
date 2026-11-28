@@ -440,13 +440,16 @@ export function CoachTestsWidget() {
   );
 }
 
-/** Teachers (spec 12.4): open tests with their students submitted / missing, extensions, published results. */
-export function TeacherTestsWidget() {
+/**
+ * Teachers (spec 12.4): open tests with their students submitted / missing, extensions, published results. Shown at the
+ * top of the Tests tab (owner 2026-11-27: tests only there, not on My students) — so without the "All tests" link.
+ */
+export function TeacherTestsWidget({ allTestsLink = true }: { allTestsLink?: boolean } = {}) {
   const show = useWidget("tests.submitForStudents");
   const d = useQuery({ queryKey: queryKeys.tests.dashboard("teacher"), queryFn: schoolResultsApi.dashboard, enabled: show });
   if (!show) return null;
   return (
-    <Widget title="Tests" testId="tests-widget-teacher" link={{ href: "/teacher/tests", label: "All tests" }}>
+    <Widget title="Overview" testId="tests-widget-teacher" link={allTestsLink ? { href: "/teacher/tests", label: "All tests" } : undefined}>
       {d.isPending ? <LoadingBlock /> : d.isError ? <ErrorState error={d.error} title="Couldn't load the tests" onRetry={() => d.refetch()} /> : (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <div>

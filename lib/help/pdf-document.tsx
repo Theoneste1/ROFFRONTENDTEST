@@ -5,7 +5,8 @@
  * site's Content-Security-Policy rightly forbids the WebAssembly the PDF layout engine needs in the browser.
  */
 import { Document, Font, Image, Link, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
-import { ALL_HELP_ROLES, HELP_CREDIT, TECH_SUPPORT, guideFor, whatsappUrl, type HelpRole, type HelpTopic } from "./rules";
+import { ALL_HELP_ROLES, HELP_CREDIT, SUPPORT_PAGE, guideFor, whatsappUrl, type HelpRole, type HelpTopic } from "./rules";
+import type { SupportInfo } from "../api/types";
 import { SITE_URL } from "./content-shared";
 
 const C = { brand: "#00428c", brand950: "#001d3d", brand50: "#eef4fb", brand100: "#d9e6f4", amber: "#fcd34d", ink: "#0f172a", muted: "#475569", line: "#cbd5e1" };
@@ -81,7 +82,7 @@ function Frame({ audience }: { audience: string }) {
       <View fixed style={s.footRule} />
       <Text fixed style={s.footLeft}>
         <Text style={s.credit}>{HELP_CREDIT}</Text>
-        {`   ·   Technical support on WhatsApp: ${TECH_SUPPORT.phoneDisplay}`}
+        {`   ·   Support: ${SUPPORT_URL.replace("https://", "")}`}
       </Text>
     </>
   );
@@ -91,18 +92,34 @@ function Frame({ audience }: { audience: string }) {
 export const EVERY_ROLE = "EVERY_ROLE" as const;
 export type GuideScope = HelpRole | typeof EVERY_ROLE;
 
-const SUPPORT_BOX = (
-  <View style={[s.box, { marginTop: 6 }]} wrap={false}>
-    <Text style={[s.topicTitle, { marginBottom: 4 }]}>Technical support</Text>
-    <Text>{`Something not working, or a question this guide does not answer? Contact ${TECH_SUPPORT.name}, ${TECH_SUPPORT.title}, on WhatsApp.`}</Text>
-    <Text style={{ marginTop: 6 }}>
-      {"WhatsApp: "}<Text style={{ fontWeight: 700 }}>{TECH_SUPPORT.phoneDisplay}</Text>{"   ·   "}<Link src={whatsappUrl()} style={s.link}>Open a chat</Link>
-    </Text>
-    <Text style={{ marginTop: 4, color: C.muted, fontSize: 9 }}>Say which page you are on and what you tried. Never send your password.</Text>
-  </View>
-);
+/** Where every role finds ROF's official support details (the Help and Support page). */
+const SUPPORT_URL = `${SITE_URL}${SUPPORT_PAGE}`;
 
-export function GuideDocument({ scope, origin, date }: { scope: GuideScope; origin: string; date: Date }) {
+/**
+ * ROF support at the end of the guide: the official details from the platform settings (GET /support, the same as the
+ * Help and Support page) — never a personal name or number (owner, 2026-11-28) — and the Help and Support page.
+ */
+function SupportBox({ support }: { support: SupportInfo | null }) {
+  const wa = whatsappUrl(support?.phone);
+  return (
+    <View style={[s.box, { marginTop: 6 }]} wrap={false}>
+      <Text style={[s.topicTitle, { marginBottom: 4 }]}>ROF support</Text>
+      <Text>Something not working, or a question this guide does not answer? Contact ROF support.</Text>
+      {support?.email ? <Text style={{ marginTop: 6 }}>{"E-mail: "}<Text style={{ fontWeight: 700 }}>{support.email}</Text></Text> : null}
+      {support?.phone ? (
+        <Text style={{ marginTop: 4 }}>
+          {"Phone: "}<Text style={{ fontWeight: 700 }}>{support.phone}</Text>
+          {wa ? <>{"   ·   "}<Link src={wa} style={s.link}>Ask on WhatsApp</Link></> : null}
+        </Text>
+      ) : null}
+      {support?.hours ? <Text style={{ marginTop: 4 }}>{`Hours: ${support.hours}`}</Text> : null}
+      <Text style={{ marginTop: 6 }}>{"All support details: "}<Link src={SUPPORT_URL} style={s.link}>{SUPPORT_URL.replace("https://", "")}</Link></Text>
+      <Text style={{ marginTop: 4, color: C.muted, fontSize: 9 }}>Say which page you are on and what you tried. Never send your password.</Text>
+    </View>
+  );
+}
+
+export function GuideDocument({ scope, origin, date, support = null }: { scope: GuideScope; origin: string; date: Date; support?: SupportInfo | null }) {
   const every = scope === EVERY_ROLE;
   const roles: readonly HelpRole[] = scope === EVERY_ROLE ? ALL_HELP_ROLES : [scope];
   const audience = scope === EVERY_ROLE ? "every role" : guideFor(scope).audience;
@@ -130,7 +147,7 @@ export function GuideDocument({ scope, origin, date }: { scope: GuideScope; orig
           <Text style={{ fontSize: 10, color: "#c7d7ea", marginTop: 24 }}>{`Version of ${day}`}</Text>
         </View>
         <View style={{ position: "absolute", left: 56, right: 56, bottom: 56, borderTopWidth: 0.8, borderTopColor: "#33507a", paddingTop: 14, flexDirection: "row", justifyContent: "space-between" }}>
-          <Text style={{ fontSize: 9.5, color: "#dbe7f5" }}>{`Technical support: ${TECH_SUPPORT.name} on WhatsApp ${TECH_SUPPORT.phoneDisplay}`}</Text>
+          <Text style={{ fontSize: 9.5, color: "#dbe7f5" }}>{`Support: ${SUPPORT_URL.replace("https://", "")}`}</Text>
           <Text style={{ fontFamily: "Newsreader", fontWeight: 600, fontSize: 11 }}>{HELP_CREDIT}</Text>
         </View>
       </Page>
@@ -158,7 +175,7 @@ export function GuideDocument({ scope, origin, date }: { scope: GuideScope; orig
                 : "Every page of your portal, in the order of the menu. Inside the website, the Help button at the top right shows the part for the page you are on."}
             </Text>
             {guide.topics.map((topic) => <Topic key={topic.id} topic={topic} />)}
-            {n === roles.length - 1 && SUPPORT_BOX}
+            {n === roles.length - 1 && <SupportBox support={support} />}
           </Page>
         );
       })}
@@ -167,7 +184,7 @@ export function GuideDocument({ scope, origin, date }: { scope: GuideScope; orig
 }
 
 /** A guide as PDF bytes: one role's, or every role's. `origin`: where the fonts (/fonts/*.ttf) and the logo are served. */
-export async function renderGuide(scope: GuideScope, origin: string, date = new Date()): Promise<Buffer> {
+export async function renderGuide(scope: GuideScope, origin: string, date = new Date(), support: SupportInfo | null = null): Promise<Buffer> {
   registerFonts(origin);
-  return renderToBuffer(<GuideDocument scope={scope} origin={origin} date={date} />);
+  return renderToBuffer(<GuideDocument scope={scope} origin={origin} date={date} support={support} />);
 }

@@ -1,6 +1,6 @@
 /** Help for Coaches and Head Coaches (Coach and Head Coach user guides, 2026-11-25, and the marking redesign of 2026-11-26). */
 import type { HelpTopic, RoleGuide } from "./types";
-import { discussion, forgotPassword, notifications, openWebsite, otherProfile, phoneMenu, profile, settings, signIn } from "./content-shared";
+import { discussion, forgotPassword, notifications, openWebsite, otherProfile, phoneMenu, profile, settings, signIn, userGuide } from "./content-shared";
 
 const coachDashboard: HelpTopic = {
   id: "coach-dashboard", paths: ["/mentor/dashboard"], title: "Dashboard",
@@ -99,7 +99,7 @@ export const COACH_GUIDE: RoleGuide = {
   role: "COACH",
   audience: "Coaches",
   gettingStarted: [openWebsite, signIn, forgotPassword, phoneMenu],
-  topics: [coachDashboard, courses, assignments, reviews, marking, questionMarking, coachStudents, coachResults, sharedReports, discussion, notifications, profile, otherProfile, settings],
+  topics: [coachDashboard, courses, assignments, reviews, marking, questionMarking, coachStudents, coachResults, sharedReports, discussion, notifications, profile, otherProfile, settings, userGuide],
 };
 
 const programme: HelpTopic = {
@@ -147,6 +147,6 @@ export const HEAD_COACH_GUIDE: RoleGuide = {
   gettingStarted: [openWebsite, signIn, forgotPassword, phoneMenu],
   topics: [
     { ...coachDashboard, summary: "What is happening in your programmes: tests, papers awaiting approval and your coaches' work." },
-    programme, tests, markingOverview, testReports, courses, assignments, reviews, sharedReports, discussion, notifications, profile, otherProfile, settings,
+    programme, tests, markingOverview, testReports, courses, assignments, reviews, sharedReports, discussion, notifications, profile, otherProfile, settings, userGuide,
   ],
 };

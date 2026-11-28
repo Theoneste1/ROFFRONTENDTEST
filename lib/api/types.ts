@@ -1051,6 +1051,10 @@ export interface StudentReportRow {
   id: string;
   name: string;
   username: string;
+  /** Newer backends (owner 2026-11-27): for the picture and its initials. */
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string | null;
   email: string;
   gradeLevel: GradeLevel | null;
   division: DivisionRef | null;

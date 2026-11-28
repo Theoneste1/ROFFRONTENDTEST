@@ -1,8 +1,8 @@
 'use client';
 
-/** The portal top bar (menu toggle, ROF logo linking to the ROF website, notification bell, profile menu), shared by the portals. */
+/** The portal top bar (menu toggle, the ROF logo — a click signs out and opens the home page —, notification bell, profile menu), shared by the portals. */
 
-import Link from "next/link";
+import LogoLink from "@/app/components/shell/LogoLink";
 import type { Ref } from "react";
 import { Menu } from "lucide-react";
 import ProfileMenu from "@/app/components/shell/ProfileMenu";
@@ -38,12 +38,7 @@ export default function PortalNavbar({ onMenuClick, menuButtonRef, menuExpanded,
         </button>
 
         {/* Logo + Text: opens the ROF LMS home page (owner, 2026-11-20: never the foundation's website) */}
-        <Link
-          href="/"
-          aria-label="ROF LMS home page"
-          data-testid="rof-logo-link"
-          className="flex items-center gap-2 md:gap-4 min-w-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-        >
+        <LogoLink testId="rof-logo-link" className="flex items-center gap-2 md:gap-4 min-w-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
           <div className="h-10 w-10 md:h-12 md:w-12 rounded-full overflow-hidden flex-shrink-0">
             <Image
               src="/logo.png"
@@ -66,7 +61,7 @@ export default function PortalNavbar({ onMenuClick, menuButtonRef, menuExpanded,
               <div>Foundation</div>
             </div>
           </div>
-        </Link>
+        </LogoLink>
       </div>
 
       {/* RIGHT SIDE */}

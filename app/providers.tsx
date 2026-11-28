@@ -6,6 +6,7 @@ import { makeQueryClient } from "@/lib/query/client";
 import { SessionProvider } from "@/lib/auth/session";
 import UploadProgress from "./components/ui/UploadProgress";
 import ViewAsBanner from "./components/account/ViewAsBanner";
+import IdleSessionGuard from "./components/auth/IdleSessionGuard";
 
 export default function Providers({ children }: { children: ReactNode }) {
   // One QueryClient per browser session (created lazily, never shared between requests).
@@ -16,6 +17,7 @@ export default function Providers({ children }: { children: ReactNode }) {
         <ViewAsBanner />
         {children}
         <UploadProgress />
+        <IdleSessionGuard />
       </SessionProvider>
     </QueryClientProvider>
   );

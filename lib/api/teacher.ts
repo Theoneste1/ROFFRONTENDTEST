@@ -20,6 +20,8 @@ export interface TeacherStudent {
   username: string;
   firstName: string;
   lastName: string;
+  /** The profile picture (newer backends; GET /users/:id/avatar decides who sees it). */
+  avatarUrl?: string | null;
   gradeLevel: GradeLevel | null;
   division: DivisionRef | null;
   school: { id: string; name: string; location: string } | null;
