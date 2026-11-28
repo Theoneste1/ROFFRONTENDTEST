@@ -1,6 +1,6 @@
 /** Help for Administrators and Super Administrators (Administrator and Super Administrator user guides, 2026-11-25). */
 import type { HelpTopic, RoleGuide } from "./types";
-import { discussion, forgotPassword, notifications, openWebsite, otherProfile, phoneMenu, profile, settings, signIn } from "./content-shared";
+import { discussion, forgotPassword, notifications, openWebsite, otherProfile, phoneMenu, profile, settings, signIn, userGuide } from "./content-shared";
 
 const t = (id: string, paths: string[], title: string, summary: string, steps?: string[], tips?: string[]): HelpTopic =>
   ({ id: `admin-${id}`, paths, title, summary, steps, tips });
@@ -128,7 +128,7 @@ const ADMIN_TOPICS: HelpTopic[] = [
   t("settings-platform", ["/admin/settings"], "Settings (platform)",
     "Platform settings: support contact, registration rules, marking defaults and more.",
     ["Change the settings.", "Click Save settings, or Discard."]),
-  discussion, notifications, profile, otherProfile, settings,
+  discussion, notifications, profile, otherProfile, settings, userGuide,
 ];
 
 export const ADMIN_GUIDE: RoleGuide = {

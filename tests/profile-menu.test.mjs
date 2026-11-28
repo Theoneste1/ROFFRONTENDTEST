@@ -18,27 +18,27 @@ const ROUTES = [];
   }
 })(APP);
 
-test("exactly My Profile, Settings, Help and Support, Logout — in that order — for every role", () => {
+test("exactly My Profile, Settings, User guide, Help and Support, Logout — in that order — for every role", () => {
   for (const role of [...ROLES, "UNKNOWN_ROLE", null]) {
-    assert.deepEqual(profileMenuItems(role).map((i) => i.label), ["My Profile", "Settings", "Help and Support", "Logout"], String(role));
+    assert.deepEqual(profileMenuItems(role).map((i) => i.label), ["My Profile", "Settings", "User guide", "Help and Support", "Logout"], String(role));
     assert.equal(profileMenuItems(role).at(-1).href, undefined, "Logout is an action, not a page");
   }
 });
 
-test("destinations: the role's own profile and settings, and the shared support page — each page exists", () => {
+test("destinations: the role's own profile, settings and user guide, and the shared support page — each page exists", () => {
   const expected = {
-    STUDENT: ["/student/profile", "/student/account"],
-    MENTOR: ["/mentor/profile", "/mentor/account"],
-    HEAD_COACH: ["/mentor/profile", "/mentor/account"],
-    TEACHER: ["/teacher/profile", "/teacher/account"],
-    ADMIN: ["/admin/profile", "/admin/account"],
-    SUPER_ADMIN: ["/admin/profile", "/admin/account"],
+    STUDENT: ["/student/profile", "/student/account", "/student/guide"],
+    MENTOR: ["/mentor/profile", "/mentor/account", "/mentor/guide"],
+    HEAD_COACH: ["/mentor/profile", "/mentor/account", "/mentor/guide"],
+    TEACHER: ["/teacher/profile", "/teacher/account", "/teacher/guide"],
+    ADMIN: ["/admin/profile", "/admin/account", "/admin/guide"],
+    SUPER_ADMIN: ["/admin/profile", "/admin/account", "/admin/guide"],
   };
   for (const role of ROLES) {
-    const [profile, settings, help] = profileMenuItems(role);
-    assert.deepEqual([profile.href, settings.href], expected[role], role);
+    const [profile, settings, guide, help] = profileMenuItems(role);
+    assert.deepEqual([profile.href, settings.href, guide.href], expected[role], role);
     assert.equal(help.href, "/support");
-    for (const href of [profile.href, settings.href, help.href]) assert.ok(ROUTES.includes(href), `${role}: ${href} has no page`);
+    for (const href of [profile.href, settings.href, guide.href, help.href]) assert.ok(ROUTES.includes(href), `${role}: ${href} has no page`);
   }
 });
 

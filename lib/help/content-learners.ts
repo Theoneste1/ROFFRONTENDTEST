@@ -1,6 +1,6 @@
 /** Help for Students and Teachers (from the Student and Teacher user guides, checked against production 2026-11-25). */
 import type { RoleGuide } from "./types";
-import { discussion, forgotPassword, notifications, openWebsite, otherProfile, phoneMenu, profile, settings, signIn } from "./content-shared";
+import { discussion, forgotPassword, notifications, openWebsite, otherProfile, phoneMenu, profile, settings, signIn, userGuide } from "./content-shared";
 
 export const STUDENT_GUIDE: RoleGuide = {
   role: "STUDENT",
@@ -65,7 +65,7 @@ export const STUDENT_GUIDE: RoleGuide = {
       summary: "Your published test results: marks per question, total and comments.",
       steps: ["Click a test to see your marks per question and the comments.", "Results appear only once they are published."],
     },
-    discussion, notifications, profile, otherProfile, settings,
+    discussion, notifications, profile, otherProfile, settings, userGuide,
   ],
 };
 
@@ -113,6 +113,6 @@ export const TEACHER_GUIDE: RoleGuide = {
       summary: "Reports an Administrator shared with you. Each shows only the rows you are allowed to see.",
       steps: ["Click a report to open it.", "Download it if your access allows (View, Download or Edit)."],
     },
-    notifications, profile, otherProfile, settings,
+    notifications, profile, otherProfile, settings, userGuide,
   ],
 };
