@@ -1,11 +1,12 @@
 /**
- * The ROF logo always opens the ROF LMS home page (owner, 2026-11-20), never the foundation's website: on the public
- * home page, in every portal's top bar, and on the pages outside the portals (the public card).
+ * The ROF logo opens the ROF LMS home page (owner, 2026-11-20), never the foundation's website: on the public home page
+ * and on the pages outside the portals (the public card). For a signed-in person it signs out first (owner, 2026-11-28;
+ * e2e/tests/logo-logout.spec.ts covers every role).
  */
 import { expect, test } from "@playwright/test";
 import { signIn } from "../support/session";
 
-test("the logo opens the LMS home page: home page, a portal, a public page", async ({ page }) => {
+test("the logo opens the LMS home page: home page, a public page; in a portal it signs out, then opens the home page", async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto("/");
   const homeLogo = page.getByTestId("rof-logo-link").first();
@@ -17,11 +18,11 @@ test("the logo opens the LMS home page: home page, a portal, a public page", asy
   await signIn(page, "student");
   const portalLogo = page.getByTestId("rof-logo-link").first();
   await expect(portalLogo).toHaveAttribute("href", "/");
-  // The home page sends a signed-in user on to their portal (HomeNav): the click goes to "/", which then lands on the
-  // student's dashboard — never the foundation's website.
+  await expect(portalLogo).toHaveAttribute("data-signs-out", "true");
   await portalLogo.click();
-  await expect(page).toHaveURL(/\/($|student\/dashboard)/);
+  await expect(page).toHaveURL(/\/$/);
   await expect(page).not.toHaveURL(/rwandaolympiadfoundation\.org/);
+  await expect(page.getByTestId("rof-logo-link").first()).not.toHaveAttribute("data-signs-out", "true");
 });
 
 test("the browser tab shows the ROF logo and a clear title; search engines find the public pages, never the portals", async ({ page, request }) => {

@@ -254,6 +254,12 @@ export const KNOWN_FEATURES = [
    */
   "managedBanks",
   /**
+   * Session inactivity (owner 2026-11-28): POST /auth/activity reports user activity; the server ends a session after
+   * 60 minutes without it (refresh → 401 SESSION_IDLE_EXPIRED). Without it the browser still signs out at 60 minutes,
+   * but does not report activity.
+   */
+  "sessionIdleTimeout",
+  /**
    * Countries (owner decision 2026-11-19): `GET /countries` (every ISO country, names an Administrator may correct) and
    * the administrators' Countries screen (`/admin/countries`, reference.manage). Without it: the built-in country list.
    */

@@ -44,6 +44,9 @@ import { signInThenClearCooldown, type RefreshOutcome } from "@/lib/api/refresh-
 import { authApi, meApi } from "@/lib/api/auth";
 import { clearSignedOut, confirmSignedOut, isMarkedSignedOut, isSignedOutEvent, markSignedOut, needsServerLogout } from "@/lib/auth/signed-out";
 import { queryKeys } from "@/lib/query/keys";
+import { shareLastActivity } from "@/lib/auth/idle";
+import { setLoginNotice } from "@/lib/auth/notice";
+import { clearUserBrowserData } from "@/lib/auth/user-data";
 import type { CurrentUser, MePermissions, Permission, Role } from "@/lib/api/types";
 
 export type SessionStatus = "loading" | "authenticated" | "unauthenticated" | "error";
@@ -69,7 +72,14 @@ interface SessionValue {
   /** Active individual overrides from `GET /me/permissions` (empty on older backends or before it answers). */
   permissionOverrides: NonNullable<MePermissions["overrides"]>;
   login: (username: string, password: string) => Promise<CurrentUser>;
-  logout: () => Promise<void>;
+  /**
+   * Sign out securely: the server session (refresh family) is revoked, the access token blacklisted, this tab's data
+   * cleared and every other tab signed out. `reason: "inactive"` tells the sign-in page why; `to` is where RoleGate
+   * goes afterwards (default the sign-in page; the ROF logo goes to the home page). Concurrent calls share one sign-out.
+   */
+  logout: (options?: LogoutOptions) => Promise<void>;
+  /** Where to go after this tab signed out (set by `logout({ to })`); null: the sign-in page. */
+  afterSignOut: string | null;
   logoutEverywhere: () => Promise<void>;
   /**
    * Ends the session in this browser without calling the API, for when the
@@ -84,6 +94,11 @@ interface SessionValue {
   viewAs: ViewAsInfo | null;
   /** In a "view as" tab: end the viewing session on the server and forget it in this tab (never the viewer's own session). */
   endViewing: () => Promise<void>;
+}
+
+export interface LogoutOptions {
+  reason?: "inactive";
+  to?: string;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -106,6 +121,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>("checking");
   const [signedOutByUser, setSignedOutByUser] = useState(false);
+  const [afterSignOut, setAfterSignOut] = useState<string | null>(null);
+  /** The sign-out in progress, shared by concurrent callers (the logo, the inactivity timer, the menu). */
+  const loggingOut = useRef<Promise<void> | null>(null);
   const [storedViewAs, setStoredViewAs] = useState<ViewAsInfo | null>(null);
   const channel = useRef<BroadcastChannel | null>(null);
 
@@ -126,6 +144,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOutLocally = useCallback(() => {
     setAccessToken(null);
     queryClient.clear();
+    clearUserBrowserData();
     setPhase("signed-out");
   }, [queryClient]);
 
@@ -239,8 +258,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // Before any other request: a refresh while the marker is set is refused.
       clearSignedOut();
       queryClient.clear();
+      // A new session: a new inactivity clock for every tab of this browser (lib/auth/idle.ts).
+      shareLastActivity(typeof window === "undefined" ? null : window.localStorage, Date.now(), { reset: true });
       queryClient.setQueryData(queryKeys.me.profile(), res.user);
       setSignedOutByUser(false);
+      setAfterSignOut(null);
       setPhase("signed-in");
       channel.current?.postMessage({ type: "login" } satisfies AuthMessage);
       return res.user;
@@ -248,27 +270,36 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [queryClient],
   );
 
-  const logout = useCallback(async () => {
-    // A viewing tab: only the viewing session ends; the viewer's own session and the shared markers are untouched.
-    if (isViewingMode()) {
-      await endViewing();
-      showViewingEnded();
-      return;
-    }
-    // First, before any request: from now on nothing restores this session in
-    // this browser, even if the logout request below is lost.
-    markSignedOut();
-    try {
-      // The cookie identifies the session, so this works with an expired access token.
-      await authApi.logout();
-      confirmSignedOut();
-    } catch {
-      // The session ends locally even if the server could not be reached; the
-      // marker keeps it ended and the next load repeats the server logout.
-    }
-    setSignedOutByUser(true);
-    signOutLocally();
-    channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
+  const logout = useCallback((options: LogoutOptions = {}): Promise<void> => {
+    // One sign-out at a time: a second caller (a double click, the inactivity timer at the same moment) waits for it.
+    if (loggingOut.current) return loggingOut.current;
+    const run = async () => {
+      // A viewing tab: only the viewing session ends; the viewer's own session and the shared markers are untouched.
+      if (isViewingMode()) {
+        await endViewing();
+        showViewingEnded();
+        return;
+      }
+      if (options.reason === "inactive") setLoginNotice("inactive");
+      // First, before any request: from now on nothing restores this session in
+      // this browser, even if the logout request below is lost.
+      markSignedOut();
+      try {
+        // The cookie identifies the session, so this works with an expired access token.
+        await authApi.logout();
+        confirmSignedOut();
+      } catch {
+        // The session ends locally even if the server could not be reached; the
+        // marker keeps it ended and the next load repeats the server logout.
+      }
+      // Only now, with the server session revoked, does RoleGate navigate (one navigation, never a race).
+      setAfterSignOut(options.to ?? null);
+      setSignedOutByUser(true);
+      signOutLocally();
+      channel.current?.postMessage({ type: "logout" } satisfies AuthMessage);
+    };
+    loggingOut.current = run().finally(() => { loggingOut.current = null; });
+    return loggingOut.current;
   }, [signOutLocally, endViewing, showViewingEnded]);
 
   const logoutEverywhere = useCallback(async () => {
@@ -331,6 +362,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       user,
       role: user?.role ?? null,
       signedOutByUser,
+      afterSignOut,
       permissions,
       knownPermissions,
       permissionsStatus: knownPermissions ? "ready" : signedIn && permissionsQuery.isError ? "error" : "loading",
@@ -345,9 +377,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       viewAs: signedIn ? (user?.viewAs ?? storedViewAs) : null,
       endViewing,
     };
-  }, [phase, signedIn, signedOutByUser, meQuery.data, meQuery.isError, meQuery.error, permissionsQuery.data, permissionsQuery.isError, login, logout, logoutEverywhere, endSession, retry, storedViewAs, endViewing]);
+  }, [phase, signedIn, signedOutByUser, afterSignOut, meQuery.data, meQuery.isError, meQuery.error, permissionsQuery.data, permissionsQuery.isError, login, logout, logoutEverywhere, endSession, retry, storedViewAs, endViewing]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+}
+
+/** The session, or null outside <SessionProvider> (the global error page renders without it). */
+export function useOptionalSession(): SessionValue | null {
+  return useContext(SessionContext);
 }
 
 export function useSession(): SessionValue {
