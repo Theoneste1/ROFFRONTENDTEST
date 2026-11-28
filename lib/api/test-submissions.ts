@@ -337,3 +337,122 @@ export const testTrackingApi = {
   cancelResubmission: (testId: string, submissionId: string) =>
     api<StaffSubmissionDetail>(`${A(testId)}/submissions/${enc(submissionId)}/resubmission`, { method: "DELETE" }),
 };
+
+// ── Reassign a submission (owner 2026-11-28; tests.reassignSubmission: Administrators and Super Administrators) ──────
+//   GET  /admin/test-submissions?q&subjectId&level&status&testId&page&limit      submitted answers across every test
+//   GET  /admin/tests/:id/submissions/:sid/reassignment                         current test / subject / level, levels,
+//                                                                               every published test as a destination
+//   POST /admin/tests/:id/submissions/:sid/reassignment                         { testId, level, reason, expectedTestId }
+//   GET  /admin/tests/:id/submissions/:sid/reassignment/history                 the corrections, newest first
+// The SAME submission moves (pages, typed answer, times, status and history kept); nothing is copied or deleted.
+
+/** Why a destination test cannot take this answer (null: it can; SAME_TEST: the current test, for a level-only change). */
+export type ReassignProblem = "SAME_TEST" | "MARKING_STARTED" | "DUPLICATE_SUBMISSION" | "FORMAT_MISMATCH" | "TEST_NOT_PUBLISHED";
+
+export interface ReassignableRow {
+  id: string;
+  publicCode: string;
+  status: SubmissionStatus;
+  level: TestLevel | null;
+  firstSubmittedAt: string | null;
+  lastSubmittedAt: string | null;
+  student: { id: string; username: string; firstName: string; lastName: string };
+  test: { id: string; title: string; division: TestDivision; discipline: TestSubject };
+}
+
+export interface ReassignableFilters {
+  q?: string;
+  subjectId?: string;
+  level?: TestLevel;
+  status?: SubmissionStatus;
+  testId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface ReassignDestination {
+  id: string;
+  title: string;
+  /** "ALL" (every level) or one level code. */
+  division: TestDivision;
+  answerFormat: TestAnswerFormat;
+  closesAt: string;
+  subject: TestSubject;
+  available: boolean;
+  problem: ReassignProblem | null;
+}
+
+export interface ReassignMarkingState {
+  status: SubmissionStatus;
+  assignments: number;
+  markings: number;
+  questionTasks: number;
+  reviews: number;
+  withdrawals: number;
+  published: boolean;
+}
+
+export interface ReassignOptions {
+  submission: {
+    id: string;
+    publicCode: string;
+    status: SubmissionStatus;
+    level: TestLevel | null;
+    firstSubmittedAt: string | null;
+    lastSubmittedAt: string | null;
+    student: { id: string; username: string; firstName: string; lastName: string };
+    answer: { pages: number; typed: boolean };
+  };
+  current: { test: { id: string; title: string; division: TestDivision }; subject: TestSubject; level: TestLevel | null };
+  markingStarted: boolean;
+  marking: ReassignMarkingState;
+  markingStartedMessage?: string;
+  levels: Array<{ code: string; name: string }>;
+  destinations: ReassignDestination[];
+}
+
+/** One side of a correction as the audit log keeps it. */
+export interface ReassignSide {
+  testId: string;
+  testTitle: string;
+  subjectCode: string;
+  subjectName: string;
+  testDivision: TestDivision;
+  level: TestLevel | null;
+}
+
+export interface ReassignInput {
+  /** The destination test (the current one to change only the level). */
+  testId: string;
+  level: TestLevel;
+  /** 5–500 characters. */
+  reason: string;
+  /** The test the answer was seen under: refused with SUBMISSION_CHANGED if it moved meanwhile. */
+  expectedTestId: string;
+}
+
+export interface ReassignResult {
+  before: ReassignSide;
+  after: ReassignSide;
+  moved: boolean;
+  submission: StaffSubmissionDetail;
+}
+
+export interface ReassignHistoryEntry {
+  id: string;
+  at: string;
+  actorRole: string | null;
+  actor: { id: string; username: string; firstName: string; lastName: string } | null;
+  before: ReassignSide | null;
+  after: ReassignSide | null;
+  reason: string | null;
+}
+
+export const submissionReassignmentApi = {
+  search: (f: ReassignableFilters = {}) => api<Page<ReassignableRow>>("/admin/test-submissions", { query: { ...f } }),
+  options: (testId: string, submissionId: string) => api<ReassignOptions>(`${A(testId)}/submissions/${enc(submissionId)}/reassignment`),
+  reassign: (testId: string, submissionId: string, body: ReassignInput) =>
+    api<ReassignResult>(`${A(testId)}/submissions/${enc(submissionId)}/reassignment`, { method: "POST", body }),
+  history: (testId: string, submissionId: string) =>
+    api<ReassignHistoryEntry[]>(`${A(testId)}/submissions/${enc(submissionId)}/reassignment/history`),
+};

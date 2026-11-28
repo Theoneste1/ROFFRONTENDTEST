@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import Link from "next/link";
-import { BarChart3, Plus } from "lucide-react";
+import { BarChart3, FileSearch, Plus } from "lucide-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { testsApi, type TestDivision, type TestFilters, type TestStatus } from "@/lib/api/tests";
 import { useSession } from "@/lib/auth/session";
@@ -14,6 +14,7 @@ import { actionAllowed } from "@/lib/auth/navigation";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime } from "@/lib/format";
 import { TESTS_MANAGE } from "@/lib/test-management/rules";
+import { TESTS_REASSIGN_SUBMISSION } from "@/lib/test-management/reassignment";
 import { useTestLevelOptions } from "@/lib/queries/divisions";
 import LevelName from "./LevelName";
 import { TESTS_VIEW_RESULTS, resultsTabVisible } from "@/lib/test-management/results";
@@ -53,14 +54,21 @@ function List({ base, headCoach }: { base: string; headCoach?: boolean }) {
   const canManage = actionAllowed(TESTS_MANAGE, permissionsStatus, can);
   const { detection } = useBackendCapabilities();
   const showReports = resultsTabVisible(detection, permissionsStatus === "ready" && can(TESTS_VIEW_RESULTS));
+  // Reassign a submission (owner 2026-11-28): Administrators and Super Administrators only.
+  const canReassign = !headCoach && permissionsStatus === "ready" && can(TESTS_REASSIGN_SUBMISSION);
   const reset = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPage(1); };
 
   return (
     <PageFrame
       title="Tests"
       description={headCoach ? "Tests of the subjects you head: details, questions, the paper, the marking guide and markers." : "Tests of every subject: details, questions, the paper, the marking guide and markers."}
-      actions={(canManage || showReports) && (
+      actions={(canManage || showReports || canReassign) && (
         <>
+          {canReassign && (
+            <Link href={`${base}/submissions`} className={btnSecondary} data-testid="find-submission-link">
+              <FileSearch className="h-4 w-4" aria-hidden="true" /> Find a submission
+            </Link>
+          )}
           {/* Phase 4: the reporting overview (capability testResults, tests.viewResults). Reached from here and from the
               dashboard widget rather than the menu, which is already full for Administrators. */}
           {showReports && (

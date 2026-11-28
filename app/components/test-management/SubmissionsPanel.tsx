@@ -9,10 +9,10 @@
 import { useTestLevelOptions } from "@/lib/queries/divisions";
 import { useState, type FormEvent } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lock, Unlock } from "lucide-react";
+import { ArrowRightLeft, Lock, Unlock } from "lucide-react";
 import { useSession } from "@/lib/auth/session";
 import { errorMessage } from "@/lib/api/errors";
-import { testTrackingApi, type StaffSubmissionDetail, type TrackingFilter } from "@/lib/api/test-submissions";
+import { submissionReassignmentApi, testTrackingApi, type ReassignResult, type ReassignSide, type StaffSubmissionDetail, type TrackingFilter } from "@/lib/api/test-submissions";
 import { schoolsApi } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/query/keys";
 import { formatDateTime, personName } from "@/lib/format";
@@ -21,9 +21,12 @@ import { Alert, ErrorState, LoadingBlock } from "@/app/components/ui/feedback";
 import FileButton from "@/app/components/ui/FileButton";
 import Pagination from "@/app/components/ui/Pagination";
 import { FilterPills } from "@/app/components/ui/PageFrame";
-import { MetricCard, Modal, SearchInput, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "@/app/admin/components/adminUi";
+import { MetricCard, Modal, Notice, SearchInput, TableCard, TableMessage, btnPrimary, btnSecondary, linkBtn, td, th } from "@/app/admin/components/adminUi";
 import { FilterBar } from "@/app/components/ui/FilterBar";
 import StudentName from "@/app/components/students/StudentName";
+import { useDivisionLabel } from "@/lib/queries/divisions";
+import { TESTS_REASSIGN_SUBMISSION } from "@/lib/test-management/reassignment";
+import ReassignDialog, { reassignPrimary } from "./ReassignDialog";
 
 export function ExtendedBadge({ label = "Extended" }: { label?: string }) {
   return <span className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-900" data-testid="extended-badge">{label}</span>;
@@ -37,6 +40,8 @@ export default function SubmissionsPanel({ testId }: { testId: string }) {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState<string | null>(null);
+  const [moved, setMoved] = useState<string | null>(null);
+  const levelName = useDivisionLabel();
   const filters = { status: status || undefined, division: division || undefined, schoolId: schoolId || undefined, q: q || undefined, page, limit: 20 };
   const list = useQuery({ queryKey: queryKeys.tests.tracking(testId, filters), queryFn: () => testTrackingApi.list(testId, filters), placeholderData: keepPreviousData });
   // Schools for the filter (Administrators); a Head Coach without the school list simply has no school filter.
@@ -46,6 +51,7 @@ export default function SubmissionsPanel({ testId }: { testId: string }) {
 
   return (
     <div className="space-y-5" data-testid="submissions-panel">
+      {moved && <Notice tone="success" onClose={() => setMoved(null)}><span data-testid="reassign-success">{moved}</span></Notice>}
       {list.data && (
         <p className="text-sm text-slate-800">
           Deadline {formatDateTime(list.data.deadline.closesAt)}
@@ -122,21 +128,38 @@ export default function SubmissionsPanel({ testId }: { testId: string }) {
           <Pagination page={list.data.meta.page} totalPages={list.data.meta.totalPages} total={list.data.meta.total} onPage={setPage} disabled={list.isFetching} />
         </>
       )}
-      {open && <SubmissionDialog testId={testId} submissionId={open} onClose={() => setOpen(null)} />}
+      {open && (
+        <SubmissionDialog testId={testId} submissionId={open} onClose={() => setOpen(null)}
+          onMoved={(r) => {
+            // The answer no longer belongs to this test: close it and refresh the list.
+            setOpen(null);
+            setMoved(`The answer (${r.submission.publicCode}) now belongs to ${r.after.testTitle} · ${r.after.subjectName} · ${levelName(r.after.level)}.`);
+          }} />
+      )}
     </div>
   );
 }
 
-function SubmissionDialog({ testId, submissionId, onClose }: { testId: string; submissionId: string; onClose: () => void }) {
+function SubmissionDialog({ testId, submissionId, onClose, onMoved }: { testId: string; submissionId: string; onClose: () => void; onMoved: (r: ReassignResult) => void }) {
+  const qc = useQueryClient();
   const one = useQuery({ queryKey: queryKeys.tests.submission(testId, submissionId), queryFn: () => testTrackingApi.get(testId, submissionId) });
+  // Reassign (owner 2026-11-28): the dialog takes this one's place; Cancel comes back to the submission.
+  const [reassigning, setReassigning] = useState(false);
+  if (reassigning) {
+    return (
+      <ReassignDialog testId={testId} submissionId={submissionId} onClose={() => setReassigning(false)}
+        onDone={(r) => { void qc.invalidateQueries({ queryKey: queryKeys.tests.all }); onMoved(r); }} />
+    );
+  }
   return (
     <Modal title="Submission" onClose={onClose} wide>
-      {one.isPending ? <LoadingBlock /> : one.isError ? <ErrorState error={one.error} title="Couldn't load the submission" onRetry={() => one.refetch()} /> : <Detail s={one.data} testId={testId} />}
+      {one.isPending ? <LoadingBlock /> : one.isError ? <ErrorState error={one.error} title="Couldn't load the submission" onRetry={() => one.refetch()} /> : <Detail s={one.data} testId={testId} onReassign={() => setReassigning(true)} />}
     </Modal>
   );
 }
 
-function Detail({ s, testId }: { s: StaffSubmissionDetail; testId: string }) {
+function Detail({ s, testId, onReassign }: { s: StaffSubmissionDetail; testId: string; onReassign: () => void }) {
+  const mayReassign = useSession().permissions.has(TESTS_REASSIGN_SUBMISSION);
   return (
     <div className="space-y-4 text-sm" data-testid="submission-detail">
       <div>
@@ -146,6 +169,15 @@ function Detail({ s, testId }: { s: StaffSubmissionDetail; testId: string }) {
           {SUBMISSION_STATUS_LABEL[s.status]} · deadline {formatDateTime(s.deadline)} {s.extended && <ExtendedBadge label={`Extended (${EXTENSION_KIND_LABEL[s.extensionKind ?? "STUDENT"].toLowerCase()})`} />}
         </p>
       </div>
+      {mayReassign && (
+        <div className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-slate-700">Submitted under the wrong programme or level? Move this same answer to the correct test or level.</p>
+          <button type="button" className={reassignPrimary} onClick={onReassign} data-testid="reassign-open">
+            <ArrowRightLeft className="h-4 w-4" aria-hidden="true" /> Reassign submission
+          </button>
+        </div>
+      )}
+      {mayReassign && <Corrections testId={testId} submissionId={s.id} />}
       {s.resubmissions && <Resubmission s={s} testId={testId} />}
       <ol className="space-y-3">
         {s.versions.map((v) => (
@@ -257,5 +289,29 @@ function Resubmission({ s, testId }: { s: StaffSubmissionDetail; testId: string 
         </div>
       )}
     </section>
+  );
+}
+
+/** The corrections of this answer (reassignments), newest first: time · who · from → to · reason. Hidden when none. */
+function Corrections({ testId, submissionId }: { testId: string; submissionId: string }) {
+  const levelName = useDivisionLabel();
+  const history = useQuery({
+    queryKey: queryKeys.tests.reassignHistory(testId, submissionId),
+    queryFn: () => submissionReassignmentApi.history(testId, submissionId),
+    retry: false,
+  });
+  if (!history.data?.length) return null;
+  const side = (x: ReassignSide | null) => (x ? `${x.testTitle} · ${x.subjectName} · ${levelName(x.level)}` : "—");
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">Corrections</p>
+      <ul className="mt-1 space-y-1 text-xs text-slate-800" data-testid="reassign-history">
+        {history.data.map((h) => (
+          <li key={h.id} className="break-words">
+            {formatDateTime(h.at)} · {h.actor ? personName(h.actor) : "Unknown"} · {side(h.before)} → {side(h.after)}{h.reason && ` · ${h.reason}`}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
